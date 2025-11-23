@@ -4,6 +4,7 @@ import EstoqueInsumoModel from "../models/estoque-insumo.model";
 import EstoqueMedicamentoModel from "../models/estoque-medicamento.model";
 import InsumoModel from "../models/insumo.model";
 import MedicamentoModel from "../models/medicamento.model";
+import { MovimentacaoModel } from "../models/movimentacao.model";
 import { sequelize } from "../sequelize";
 
 export class ArmarioRepository {
@@ -45,21 +46,24 @@ export class ArmarioRepository {
     if (!armario) throw new Error("Armário não encontrado");
 
     await sequelize.transaction(async (t) => {
-      const medicamentos = await EstoqueMedicamentoModel.findAll({
-        where: { armario_id: numero },
-        transaction: t
-      });
-      for (const med of medicamentos) {
-        await med.update({ armario_id: destinos.destinoMedicamentos }, { transaction: t });
+      if (destinos.destinoMedicamentos) {
+        await EstoqueMedicamentoModel.update(
+          { armario_id: destinos.destinoMedicamentos },
+          { where: { armario_id: numero }, transaction: t }
+        );
       }
 
-      const insumos = await EstoqueInsumoModel.findAll({
+      if (destinos.destinoInsumos) {
+        await EstoqueInsumoModel.update(
+          { armario_id: destinos.destinoInsumos },
+          { where: { armario_id: numero }, transaction: t }
+        );
+      }
+
+      await MovimentacaoModel.destroy({
         where: { armario_id: numero },
         transaction: t
       });
-      for (const ins of insumos) {
-        await ins.update({ armario_id: destinos.destinoInsumos }, { transaction: t });
-      }
 
       await armario.destroy({ transaction: t });
     });

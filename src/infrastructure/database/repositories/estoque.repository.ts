@@ -65,14 +65,55 @@ export interface ProporcaoEstoque {
   async listarEstoque(params: { filter: string; type: string }) {
     const { filter, type } = params;
 
+  
     let baseQuery = "";
     let havingClause = "";
 
-    if (type === "medicamento") {
+    if (!type) {
+      baseQuery = `
+        SELECT 
+          'medicamento' AS tipo,
+          m.id AS item_id,
+          m.nome,
+          m.principio_ativo,
+          MIN(em.validade) AS validade,
+          SUM(em.quantidade) AS quantidade,
+          m.estoque_minimo AS minimo,
+          em.origem,
+          em.tipo AS subtipo,
+          r.nome AS paciente,
+          em.armario_id,
+          em.casela_id
+        FROM estoque_medicamento em
+        JOIN medicamento m ON m.id = em.medicamento_id
+        LEFT JOIN residente r ON r.num_casela = em.casela_id
+        GROUP BY m.id, m.nome, m.principio_ativo, m.estoque_minimo, 
+                em.origem, em.tipo, r.nome, em.armario_id, em.casela_id
+
+        UNION ALL
+
+        SELECT 
+          'insumo' AS tipo,
+          i.id AS item_id,
+          i.nome,
+          NULL AS principio_ativo,
+          NULL AS validade,
+          SUM(ei.quantidade) AS quantidade,
+          NULL AS minimo,
+          NULL AS origem,
+          NULL AS subtipo,
+          NULL AS paciente,
+          ei.armario_id,
+          NULL AS casela_id
+        FROM estoque_insumo ei
+        JOIN insumo i ON i.id = ei.insumo_id
+        GROUP BY i.id, i.nome, ei.armario_id
+      `;
+    } else if (type === "medicamento") {
       baseQuery = `
         SELECT 
           m.id AS item_id,
-          m.nome AS nome,
+          m.nome,
           m.principio_ativo,
           MIN(em.validade) AS validade,
           SUM(em.quantidade) AS quantidade,
@@ -85,25 +126,21 @@ export interface ProporcaoEstoque {
         FROM estoque_medicamento em
         JOIN medicamento m ON m.id = em.medicamento_id
         LEFT JOIN residente r ON r.num_casela = em.casela_id
-        GROUP BY m.id, m.nome, m.principio_ativo, m.estoque_minimo,
-                 em.origem, em.tipo, r.nome, em.armario_id, em.casela_id
+        GROUP BY m.id, m.nome, m.principio_ativo, m.estoque_minimo, 
+                em.origem, em.tipo, r.nome, em.armario_id, em.casela_id
       `;
-    }
-
-    else if (type === "insumo") {
+    } else if (type === "insumo") {
       baseQuery = `
         SELECT 
           i.id AS item_id,
-          i.nome AS nome,
+          i.nome,
           SUM(ei.quantidade) AS quantidade,
           ei.armario_id
         FROM estoque_insumo ei
         JOIN insumo i ON i.id = ei.insumo_id
         GROUP BY i.id, i.nome, ei.armario_id
       `;
-    }
-
-    else if (type === "armarios") {
+    } else if (type === "armarios") {
       baseQuery = `
         SELECT 
           a.num_armario AS armario_id,
@@ -116,12 +153,10 @@ export interface ProporcaoEstoque {
         GROUP BY a.num_armario
         ORDER BY a.num_armario
       `;
-    }
-
-    else {
+    } else {
       throw new Error("Tipo inválido. Use medicamento, insumo ou armarios.");
     }
-
+    
     switch (filter) {
       case "noStock":
         havingClause = `HAVING SUM(em.quantidade) = 0`;

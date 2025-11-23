@@ -7,8 +7,8 @@ export interface ArmarioAttributes {
 }
 
 export interface RemanejamentoDTO {
-  destinoMedicamentos: number; 
-  destinoInsumos: number;     
+  destinoMedicamentos?: number; 
+  destinoInsumos?: number;     
 } 
 
 export interface ArmarioCreationAttributes

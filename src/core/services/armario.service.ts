@@ -1,3 +1,4 @@
+import { RemanejamentoDTO } from "../../infrastructure/database/models/armario.model";
 import { ArmarioRepository } from "../../infrastructure/database/repositories/armario.repository";
 import { Armario } from "../domain/armario";
 
@@ -28,7 +29,7 @@ export class ArmarioService {
     }
   }
 
-  async removerComRemanejamento(numero: number, destinos: { destinoMedicamentos: number; destinoInsumos: number }): Promise<void> {
+  async removerComRemanejamento(numero: number, destinos: RemanejamentoDTO): Promise<void> {
     return this.repo.deleteWithTransference(numero, destinos);
   }
 }

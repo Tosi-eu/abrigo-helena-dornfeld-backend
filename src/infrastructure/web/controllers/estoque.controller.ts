@@ -35,11 +35,11 @@ export class EstoqueController {
 
   async listar(req: Request, res: Response) {
     try {
-      const { filter, type = "medicamento" } = req.query;
+      const { filter, type } = req.query;
 
       const data = await this.service.listarEstoque({
         filter: String(filter || ""),
-        type: String(type),
+        type: String(type || ""),
       });
 
       return res.json(data);

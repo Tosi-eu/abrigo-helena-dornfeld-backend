@@ -8,7 +8,7 @@ const service = new ArmarioService(repo);
 const controller = new ArmarioController(service);
 
 const router = Router();
-
+  
 router.post("/", (req, res) => controller.create(req, res));
 router.get("/", (req, res) => controller.getAll(req, res));
 router.put("/:numero", (req, res) => controller.update(req, res));
