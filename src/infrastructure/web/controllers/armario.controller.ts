@@ -51,12 +51,17 @@ export class ArmarioController {
   async delete(req: Request, res: Response) {
     try {
       const numero = Number(req.params.numero);
+      const destinos = req.body as RemanejamentoDTO | undefined;
 
-      await this.service.remover(numero);
+      await this.service.removerComVerificacao(numero, destinos);
 
-      return res.json({ message: `Armário ${numero} excluído com sucesso.` });
+      return res.json({
+        message: destinos
+          ? `Armário ${numero} excluído e itens remanejados.`
+          : `Armário ${numero} excluído com sucesso.`,
+      });
     } catch (e: any) {
-      return res.status(404).json({ error: e.message });
+      return res.status(400).json({ error: e.message });
     }
   }
 
@@ -72,6 +77,19 @@ export class ArmarioController {
       await this.service.removerComRemanejamento(numero, destinos as RemanejamentoDTO);
 
       return res.json({ message: `Armário ${numero} excluído e itens remanejados.` });
+    } catch (e: any) {
+      return res.status(400).json({ error: e.message });
+    }
+  }
+
+  async checkReferences(req: Request, res: Response) {
+    try {
+      const numero = Number(req.params.numero);
+
+      const hasMedicineStock = (await this.service.countMedicamento(numero)) > 0;
+      const hasInputStock = (await this.service.countInsumo(numero)) > 0;
+
+      return res.json({ hasMedicineStock, hasInputStock });
     } catch (e: any) {
       return res.status(400).json({ error: e.message });
     }

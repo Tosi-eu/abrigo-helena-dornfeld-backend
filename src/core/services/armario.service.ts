@@ -32,4 +32,29 @@ export class ArmarioService {
   async removerComRemanejamento(numero: number, destinos: RemanejamentoDTO): Promise<void> {
     return this.repo.deleteWithTransference(numero, destinos);
   }
+
+  async countMedicamento(numero: number): Promise<number> {
+  return this.repo.countMedicamento(numero);
+}
+
+  async countInsumo(numero: number): Promise<number> {
+    return this.repo.countInsumo(numero);
+  }
+
+  async removerComVerificacao(numero: number, destinos?: RemanejamentoDTO): Promise<void> {
+    const hasStock =
+      (await this.countMedicamento(numero)) > 0 ||
+      (await this.countInsumo(numero)) > 0;
+
+    if (hasStock) {
+      if (!destinos || (!destinos.destinoMedicamentos && !destinos.destinoInsumos)) {
+        throw new Error(
+          `O armário ${numero} possui itens em estoque. Informe os armários de destino para remanejamento.`
+        );
+      }
+      return this.removerComRemanejamento(numero, destinos);
+    }
+
+    return this.remover(numero);
+  }
 }

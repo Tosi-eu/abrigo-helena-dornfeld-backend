@@ -65,12 +65,10 @@ export interface ProporcaoEstoque {
   async listarEstoque(params: { filter: string; type: string }) {
     const { filter, type } = params;
 
-  
     let baseQuery = "";
-    let havingClause = "";
 
-    if (!type) {
-      baseQuery = `
+    if (!type || type === "all") {
+      let medicamentoQuery = `
         SELECT 
           'medicamento' AS tipo,
           m.id AS item_id,
@@ -89,9 +87,32 @@ export interface ProporcaoEstoque {
         LEFT JOIN residente r ON r.num_casela = em.casela_id
         GROUP BY m.id, m.nome, m.principio_ativo, m.estoque_minimo, 
                 em.origem, em.tipo, r.nome, em.armario_id, em.casela_id
+      `;
 
-        UNION ALL
+      if (["noStock", "belowMin", "expired", "expiringSoon"].includes(filter)) {
+        switch (filter) {
+          case "noStock":
+            medicamentoQuery += " HAVING SUM(em.quantidade) = 0";
+            break;
+          case "belowMin":
+            medicamentoQuery += `
+              HAVING SUM(em.quantidade) > 0
+              AND SUM(em.quantidade) <= COALESCE(m.estoque_minimo,0)
+            `;
+            break;
+          case "expired":
+            medicamentoQuery += " HAVING MIN(em.validade) < CURRENT_DATE";
+            break;
+          case "expiringSoon":
+            medicamentoQuery += `
+              HAVING SUM(em.quantidade) > 0
+              AND MIN(em.validade) BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '60 days'
+            `;
+            break;
+        }
+      }
 
+      let insumoQuery = `
         SELECT 
           'insumo' AS tipo,
           i.id AS item_id,
@@ -109,7 +130,14 @@ export interface ProporcaoEstoque {
         JOIN insumo i ON i.id = ei.insumo_id
         GROUP BY i.id, i.nome, ei.armario_id
       `;
-    } else if (type === "medicamento") {
+
+      if (filter === "noStock") {
+        insumoQuery += " HAVING SUM(ei.quantidade) = 0";
+      }
+
+      baseQuery = `${medicamentoQuery} UNION ALL ${insumoQuery}`;
+    } 
+    else if (type === "medicamento") {
       baseQuery = `
         SELECT 
           m.id AS item_id,
@@ -129,7 +157,28 @@ export interface ProporcaoEstoque {
         GROUP BY m.id, m.nome, m.principio_ativo, m.estoque_minimo, 
                 em.origem, em.tipo, r.nome, em.armario_id, em.casela_id
       `;
-    } else if (type === "insumo") {
+      switch (filter) {
+        case "noStock":
+          baseQuery += " HAVING SUM(em.quantidade) = 0";
+          break;
+        case "belowMin":
+          baseQuery += `
+            HAVING SUM(em.quantidade) > 0
+            AND SUM(em.quantidade) <= COALESCE(m.estoque_minimo,0)
+          `;
+          break;
+        case "expired":
+          baseQuery += " HAVING MIN(em.validade) < CURRENT_DATE";
+          break;
+        case "expiringSoon":
+          baseQuery += `
+            HAVING SUM(em.quantidade) > 0
+            AND MIN(em.validade) BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '60 days'
+          `;
+          break;
+      }
+    } 
+    else if (type === "insumo") {
       baseQuery = `
         SELECT 
           i.id AS item_id,
@@ -140,7 +189,11 @@ export interface ProporcaoEstoque {
         JOIN insumo i ON i.id = ei.insumo_id
         GROUP BY i.id, i.nome, ei.armario_id
       `;
-    } else if (type === "armarios") {
+      if (filter === "noStock") {
+        baseQuery += " HAVING SUM(ei.quantidade) = 0";
+      }
+    } 
+    else if (type === "armarios") {
       baseQuery = `
         SELECT 
           a.num_armario AS armario_id,
@@ -153,39 +206,12 @@ export interface ProporcaoEstoque {
         GROUP BY a.num_armario
         ORDER BY a.num_armario
       `;
-    } else {
-      throw new Error("Tipo inválido. Use medicamento, insumo ou armarios.");
-    }
-    
-    switch (filter) {
-      case "noStock":
-        havingClause = `HAVING SUM(em.quantidade) = 0`;
-        break;
-
-      case "belowMin":
-        havingClause = `
-          HAVING SUM(em.quantidade) > 0
-          AND SUM(em.quantidade) <= COALESCE(m.estoque_minimo, 0)
-        `;
-        break;
-
-      case "expired":
-        if (type === "medicamento")
-          havingClause = `HAVING MIN(em.validade) < CURRENT_DATE`;
-        break;
-
-      case "expiringSoon":
-        if (type === "medicamento")
-          havingClause = `
-            HAVING SUM(em.quantidade) > 0
-            AND MIN(em.validade) BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '60 days'
-          `;
-        break;
+    } 
+    else {
+      throw new Error("Tipo inválido. Use medicamento, insumo, armarios ou all.");
     }
 
-    const finalQuery = `${baseQuery} ${havingClause}`;
-
-    return await sequelize.query(finalQuery, { type: QueryTypes.SELECT });
+    return await sequelize.query(baseQuery, { type: QueryTypes.SELECT });
   }
 
   async obterProporcao(): Promise<ProporcaoEstoque> {

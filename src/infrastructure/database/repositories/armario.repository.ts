@@ -68,4 +68,12 @@ export class ArmarioRepository {
       await armario.destroy({ transaction: t });
     });
   }
+
+  async countMedicamento(numero: number): Promise<number> {
+  return EstoqueMedicamentoModel.count({ where: { armario_id: numero } });
+}
+
+  async countInsumo(numero: number): Promise<number> {
+    return EstoqueInsumoModel.count({ where: { armario_id: numero } });
+  }
 }
