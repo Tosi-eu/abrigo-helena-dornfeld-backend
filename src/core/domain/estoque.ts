@@ -1,11 +1,11 @@
 export interface EstoqueMedicamento {
   medicamento_id: number;
-  casela_id?: number | null;
   armario_id: number;
-  validade?: Date | null;
+  validade: Date;
   quantidade: number;
-  origem?: string | null;
-  tipo?: "individual" | "geral";
+  origem: string;
+  tipo: "individual" | "geral";
+  casela_id: number | null;
 }
 
 export interface EstoqueInsumo {

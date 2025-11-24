@@ -13,6 +13,7 @@ export interface ProporcaoEstoque {
 
   export class EstoqueRepository {
     async registrarEntradaMedicamento(data: EstoqueMedicamento) {
+    try {
       await EstoqueMedicamentoModel.create({
         medicamento_id: data.medicamento_id,
         casela_id: data.casela_id ?? null,
@@ -24,7 +25,10 @@ export interface ProporcaoEstoque {
       }); 
 
       return { message: "Entrada de medicamento registrada." };
+    } catch (error: any) {
+      throw new Error(error);
     }
+  }
 
     async registrarEntradaInsumo(data: EstoqueInsumo) {
       await EstoqueInsumoModel.create({
@@ -67,7 +71,7 @@ export interface ProporcaoEstoque {
 
     let baseQuery = "";
 
-    if (!type || type === "all") {
+    if (!type) {
       let medicamentoQuery = `
         SELECT 
           'medicamento' AS tipo,
@@ -88,29 +92,6 @@ export interface ProporcaoEstoque {
         GROUP BY m.id, m.nome, m.principio_ativo, m.estoque_minimo, 
                 em.origem, em.tipo, r.nome, em.armario_id, em.casela_id
       `;
-
-      if (["noStock", "belowMin", "expired", "expiringSoon"].includes(filter)) {
-        switch (filter) {
-          case "noStock":
-            medicamentoQuery += " HAVING SUM(em.quantidade) = 0";
-            break;
-          case "belowMin":
-            medicamentoQuery += `
-              HAVING SUM(em.quantidade) > 0
-              AND SUM(em.quantidade) <= COALESCE(m.estoque_minimo,0)
-            `;
-            break;
-          case "expired":
-            medicamentoQuery += " HAVING MIN(em.validade) < CURRENT_DATE";
-            break;
-          case "expiringSoon":
-            medicamentoQuery += `
-              HAVING SUM(em.quantidade) > 0
-              AND MIN(em.validade) BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '60 days'
-            `;
-            break;
-        }
-      }
 
       let insumoQuery = `
         SELECT 
@@ -135,7 +116,33 @@ export interface ProporcaoEstoque {
         insumoQuery += " HAVING SUM(ei.quantidade) = 0";
       }
 
-      baseQuery = `${medicamentoQuery} UNION ALL ${insumoQuery}`;
+      if (["noStock", "belowMin", "expired", "expiringSoon"].includes(filter)) {
+        switch (filter) {
+          case "noStock":
+            medicamentoQuery += " HAVING SUM(em.quantidade) = 0";
+            break;
+          case "belowMin":
+            medicamentoQuery += `
+              HAVING SUM(em.quantidade) > 0
+              AND SUM(em.quantidade) <= COALESCE(m.estoque_minimo,0)
+            `;
+            break;
+          case "expired":
+            medicamentoQuery += " HAVING MIN(em.validade) < CURRENT_DATE";
+            break;
+          case "expiringSoon":
+            medicamentoQuery += `
+              HAVING SUM(em.quantidade) > 0
+              AND MIN(em.validade) IS NOT NULL
+              AND MIN(em.validade) BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '60 days'
+            `;
+            break;
+        }
+      }
+
+      const medicineFilters = ["expired", "expiringSoon", "belowMin"];
+      medicineFilters.includes(filter) ? baseQuery = medicamentoQuery : baseQuery = `${medicamentoQuery} UNION ALL ${insumoQuery}`;
+
     } 
     else if (type === "medicamento") {
       baseQuery = `
@@ -173,6 +180,7 @@ export interface ProporcaoEstoque {
         case "expiringSoon":
           baseQuery += `
             HAVING SUM(em.quantidade) > 0
+            AND MIN(em.validade) IS NOT NULL
             AND MIN(em.validade) BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '60 days'
           `;
           break;
@@ -208,7 +216,7 @@ export interface ProporcaoEstoque {
       `;
     } 
     else {
-      throw new Error("Tipo inválido. Use medicamento, insumo, armarios ou all.");
+      throw new Error("Tipo inválido. Use medicamento, insumo, armarios ou deixe vazio.");
     }
 
     return await sequelize.query(baseQuery, { type: QueryTypes.SELECT });

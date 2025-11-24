@@ -6,19 +6,17 @@ export class EstoqueController {
 
     async entrada(req: Request, res: Response) {
       try {
-        const { tipo } = req.body;
+        const { medicamento_id, insumo_id } = req.body;
 
-        if (tipo === "medicamento") {
+        if (medicamento_id) {
           const result = await this.service.entradaMedicamento(req.body);
           return res.json(result);
         }
 
-        if (tipo === "insumo") {
+        if (insumo_id) {
           const result = await this.service.entradaInsumo(req.body);
           return res.json(result);
         }
-
-        return res.status(400).json({ error: "tipo inválido" });
       } catch (e: any) {
         return res.status(400).json({ error: e.message });
       }
