@@ -74,7 +74,6 @@ export interface ProporcaoEstoque {
     if (!type) {
       let medicamentoQuery = `
         SELECT 
-          'medicamento' AS tipo,
           m.id AS item_id,
           m.nome,
           m.principio_ativo,
@@ -82,7 +81,7 @@ export interface ProporcaoEstoque {
           SUM(em.quantidade) AS quantidade,
           m.estoque_minimo AS minimo,
           em.origem,
-          em.tipo AS subtipo,
+          em.tipo as tipo,
           r.nome AS paciente,
           em.armario_id,
           em.casela_id
@@ -95,7 +94,6 @@ export interface ProporcaoEstoque {
 
       let insumoQuery = `
         SELECT 
-          'insumo' AS tipo,
           i.id AS item_id,
           i.nome,
           NULL AS principio_ativo,
@@ -103,7 +101,7 @@ export interface ProporcaoEstoque {
           SUM(ei.quantidade) AS quantidade,
           NULL AS minimo,
           NULL AS origem,
-          NULL AS subtipo,
+          'geral' AS tipo,
           NULL AS paciente,
           ei.armario_id,
           NULL AS casela_id

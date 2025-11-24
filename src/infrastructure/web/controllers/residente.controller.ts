@@ -43,12 +43,12 @@ export class ResidenteController {
 
   async delete(req: Request, res: Response) {
     const casela = Number(req.params.casela);
+
     try {
       await this.service.delete(casela);
-      return res.status(200).json({ message: "Residente deletado com sucesso" });
-    } catch (e: any) {
-      const status = e.message === "Residente não encontrado" ? 404 : 500;
-      res.status(status).json({ error: e.message });
+      res.status(200).json({ message: "Residente removido com sucesso." });
+    } catch (err: any) {
+      res.status(400).json({ message: err.message });
     }
   }
 }

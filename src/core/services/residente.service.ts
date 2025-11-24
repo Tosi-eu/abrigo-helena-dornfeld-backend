@@ -54,6 +54,12 @@ export class ResidenteService {
     const exists = await this.repo.findByCasela(casela);
     if (!exists) throw new Error("Residente não encontrado");
 
+    const medCount = await this.repo.countMedicationsByCasela(casela);
+
+    if (medCount > 0) {
+      return this.repo.deleteWithMedicationTransfer(casela);
+    }
+
     return this.repo.delete(casela);
   }
 }

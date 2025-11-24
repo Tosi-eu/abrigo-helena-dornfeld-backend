@@ -1,4 +1,6 @@
+import EstoqueMedicamentoModel from "../models/estoque-medicamento.model";
 import ResidenteModel from "../models/residente.model";
+import { sequelize } from "../sequelize";
 
 export class ResidenteRepository {
   async findAll() {
@@ -30,4 +32,27 @@ export class ResidenteRepository {
     const count = await ResidenteModel.destroy({ where: { num_casela: casela } });
     return count > 0;
   }
+
+  async deleteWithMedicationTransfer(casela: number) {
+    return sequelize.transaction(async (t) => {
+
+      await EstoqueMedicamentoModel.update(
+        { tipo: "geral", casela_id: null },
+        { where: { casela_id: casela }, transaction: t }
+      );
+
+      await ResidenteModel.destroy({
+        where: { num_casela: casela },
+        transaction: t,
+      });
+
+      return true;
+    });
+  }
+  async countMedicationsByCasela(casela: number): Promise<number> {
+    return EstoqueMedicamentoModel.count({
+      where: { casela_id: casela },
+    });
+  }
+
 }
