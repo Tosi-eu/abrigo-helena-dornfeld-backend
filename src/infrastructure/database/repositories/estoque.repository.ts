@@ -96,7 +96,7 @@ export interface ProporcaoEstoque {
         SELECT 
           i.id AS item_id,
           i.nome,
-          NULL AS principio_ativo,
+          i.descricao as descricao,
           NULL AS validade,
           SUM(ei.quantidade) AS quantidade,
           NULL AS minimo,
