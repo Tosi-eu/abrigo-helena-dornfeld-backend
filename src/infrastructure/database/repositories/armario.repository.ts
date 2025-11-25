@@ -2,15 +2,10 @@ import { Armario } from "../../../core/domain/armario";
 import ArmarioModel, { RemanejamentoDTO } from "../models/armario.model";
 import EstoqueInsumoModel from "../models/estoque-insumo.model";
 import EstoqueMedicamentoModel from "../models/estoque-medicamento.model";
-import InsumoModel from "../models/insumo.model";
-import MedicamentoModel from "../models/medicamento.model";
 import { MovimentacaoModel } from "../models/movimentacao.model";
 import { sequelize } from "../sequelize";
 
 export class ArmarioRepository {
-  deleteWithRemanejamento(numero: number, destinos: RemanejamentoDTO): void | PromiseLike<void> {
-    throw new Error("Method not implemented.");
-  }
   async create(data: { numero: number; categoria: string }): Promise<Armario> {
     const item = await ArmarioModel.create({
       num_armario: data.numero,

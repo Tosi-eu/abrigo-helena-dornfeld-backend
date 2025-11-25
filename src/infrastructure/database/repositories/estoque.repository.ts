@@ -40,31 +40,24 @@ export interface ProporcaoEstoque {
       return { message: "Entrada de insumo registrada." };
     }
 
-  async registrarSaidaMedicamento(itemId: number, armarioId: number, quantidade: number) {
-    const registro = await EstoqueMedicamentoModel.findOne({
-      where: { medicamento_id: itemId, armario_id: armarioId },
-    });
-
-    if (!registro) throw new Error("Registro não encontrado.");
-
-    registro.quantidade -= quantidade;
-    await registro.save();
-
-    return { message: "Saída realizada" };
+  async registrarSaida(estoqueId: number, tipoItem: "medicamento" | "insumo", quantidade: number) {
+    if (tipoItem === "medicamento") {
+      const registro = await EstoqueMedicamentoModel.findByPk(estoqueId);
+      if (!registro) throw new Error("Registro de medicamento não encontrado.");
+      if (registro.quantidade < quantidade) throw new Error("Quantidade insuficiente.");
+      registro.quantidade -= quantidade;
+      await registro.save();
+      return { message: "Saída de medicamento realizada." };
+    } else {
+      const registro = await EstoqueInsumoModel.findByPk(estoqueId);
+      if (!registro) throw new Error("Registro de insumo não encontrado.");
+      if (registro.quantidade < quantidade) throw new Error("Quantidade insuficiente.");
+      registro.quantidade -= quantidade;
+      await registro.save();
+      return { message: "Saída de insumo realizada." };
+    }
   }
 
-  async registrarSaidaInsumo(itemId: number, armarioId: number, quantidade: number) {
-    const registro = await EstoqueInsumoModel.findOne({
-      where: { insumo_id: itemId, armario_id: armarioId },
-    });
-
-    if (!registro) throw new Error("Registro não encontrado.");
-
-    registro.quantidade -= quantidade;
-    await registro.save();
-
-    return { message: "Saída realizada" };
-  }
 
   async listarEstoque(params: { filter: string; type: string }) {
     const { filter, type } = params;
@@ -74,6 +67,8 @@ export interface ProporcaoEstoque {
     if (!type) {
       let medicamentoQuery = `
         SELECT 
+          'medicamento' AS tipo_item,
+          em.id as estoque_id,
           m.id AS item_id,
           m.nome,
           m.principio_ativo,
@@ -88,12 +83,14 @@ export interface ProporcaoEstoque {
         FROM estoque_medicamento em
         JOIN medicamento m ON m.id = em.medicamento_id
         LEFT JOIN residente r ON r.num_casela = em.casela_id
-        GROUP BY m.id, m.nome, m.principio_ativo, m.estoque_minimo, 
+        GROUP BY em.id, m.id, m.nome, m.principio_ativo, m.estoque_minimo, 
                 em.origem, em.tipo, r.nome, em.armario_id, em.casela_id
       `;
 
       let insumoQuery = `
         SELECT 
+          'insumo' as tipo_item,
+          ei.id as estoque_id,
           i.id AS item_id,
           i.nome,
           i.descricao as descricao,
@@ -107,7 +104,7 @@ export interface ProporcaoEstoque {
           NULL AS casela_id
         FROM estoque_insumo ei
         JOIN insumo i ON i.id = ei.insumo_id
-        GROUP BY i.id, i.nome, ei.armario_id
+        GROUP BY ei.id, i.id, i.nome, ei.armario_id
       `;
 
       if (filter === "noStock") {

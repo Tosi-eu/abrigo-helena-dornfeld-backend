@@ -16,17 +16,15 @@ export class EstoqueService {
     return this.repo.registrarEntradaInsumo(data);
   }
 
-  async saida(data: { tipo: string; itemId: number; quantidade: number; armarioId: number }) {
-    const { tipo, itemId, quantidade, armarioId } = data;
+  async saida(data: { estoqueId: number; tipo: "medicamento" | "insumo"; quantidade: number }) {
+    const { estoqueId, tipo, quantidade } = data;
 
-    if (!tipo || !itemId || !quantidade || !armarioId)
-      throw new Error("Campos obrigatórios faltando.");
+    if (!estoqueId) throw new Error("Nenhum item foi selecionado");
+    if (quantidade <= 0) throw new Error("Quantidade inválida.");
 
-    if (tipo === "medicamento")
-      return this.repo.registrarSaidaMedicamento(itemId, armarioId, quantidade);
-
-    if (tipo === "insumo")
-      return this.repo.registrarSaidaInsumo(itemId, armarioId, quantidade);
+    if (tipo === "medicamento" || tipo === "insumo") {
+      return this.repo.registrarSaida(estoqueId, tipo, quantidade);
+    }
 
     throw new Error("Tipo inválido.");
   }

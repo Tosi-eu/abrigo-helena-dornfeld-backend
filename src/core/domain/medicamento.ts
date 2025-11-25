@@ -1,10 +1,24 @@
 export class Medicamento {
+  id: number;
+  nome: string;
+  dosagem: number;
+  unidade_medida: string;
+  estoque_minimo: number;
+  principio_ativo?: string | null;
+
   constructor(
-    public id: number,
-    public nome: string,
-    public dosagem: number,
-    public unidade_medida: string,
-    public estoque_minimo: number,
-    public principio_ativo?: string | null,
-  ) {}
+    id: number,
+    nome: string,
+    dosagem: number,
+    unidade_medida: string,
+    estoque_minimo: number,
+    principio_ativo?: string | null
+  ) {
+    this.id = id;
+    this.nome = nome;
+    this.dosagem = dosagem;
+    this.unidade_medida = unidade_medida;
+    this.estoque_minimo = estoque_minimo;
+    this.principio_ativo = principio_ativo ?? null;
+  }
 }
