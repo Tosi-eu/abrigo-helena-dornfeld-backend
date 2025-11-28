@@ -5,6 +5,7 @@ export interface InputStockAttributes {
   insumo_id: number;
   armario_id: number;
   quantidade: number;
+  validade: Date
 }
 
 export class InputStockModel
@@ -14,6 +15,7 @@ export class InputStockModel
   declare insumo_id: number;
   declare armario_id: number;
   declare quantidade: number;
+  declare validade: Date;
 }
 
 InputStockModel.init(
@@ -21,6 +23,7 @@ InputStockModel.init(
     insumo_id: { type: DataTypes.INTEGER, allowNull: false },
     armario_id: { type: DataTypes.INTEGER, allowNull: false },
     quantidade: { type: DataTypes.INTEGER, allowNull: false },
+    validade: { type: DataTypes.DATE, allowNull: false },
   },
   {
     sequelize,

@@ -31,7 +31,7 @@ export class StockService {
   }
 
   async listStock(params: { filter: string; type: string }) {
-    return this.repo.listItemsStock(params);
+    return this.repo.listStockItems(params);
   }
 
   async getProportion() {

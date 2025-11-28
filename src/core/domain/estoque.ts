@@ -32,10 +32,12 @@ export class InputStock {
   insumo_id: number;
   armario_id: number;
   quantidade: number;
+  validade: Date;
 
-  constructor(insumo_id: number, armario_id: number, quantidade: number) {
+  constructor(insumo_id: number, armario_id: number, quantidade: number, validade: Date) {
     this.insumo_id = insumo_id;
     this.armario_id = armario_id;
     this.quantidade = quantidade;
+    this.validade = validade
   }
 }

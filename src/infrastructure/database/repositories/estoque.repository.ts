@@ -36,6 +36,7 @@ export interface StockProportion {
         insumo_id: data.insumo_id,
         armario_id: data.armario_id,
         quantidade: data.quantidade,
+        validade: data.validade
       });
 
       return { message: "Entrada de insumo registrada." };
@@ -95,7 +96,7 @@ export interface StockProportion {
           i.id AS item_id,
           i.nome,
           i.descricao as descricao,
-          NULL AS validade,
+          ei.validade AS validade,
           SUM(ei.quantidade) AS quantidade,
           NULL AS minimo,
           NULL AS origem,

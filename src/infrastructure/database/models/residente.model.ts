@@ -33,7 +33,7 @@ import { sequelize } from "../sequelize";
     },
     {
       sequelize,
-      tableName: "resident",
+      tableName: "residente",
       timestamps: false,
     }
   );

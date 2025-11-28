@@ -1,6 +1,7 @@
 export enum OperationType {
   INDIVIDUAL = "individual",
-  GERAL = "geral"
+  GERAL = "geral",
+  CARRINHO = "carrinho_emergencia"
 }
 
 export enum MovementType {
