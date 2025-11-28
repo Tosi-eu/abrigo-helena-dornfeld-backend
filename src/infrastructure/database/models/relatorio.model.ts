@@ -1,4 +1,4 @@
-export interface RelatorioMedicamento {
+export interface MedicineReport {
   medicamento: string;
   principio_ativo: string | null;
   quantidade: number;
@@ -6,13 +6,13 @@ export interface RelatorioMedicamento {
   residente: string | null;
 }
 
-export interface RelatorioInsumo {
+export interface InputReport {
   insumo: string;
   quantidade: number;
   armario: number;
 }
 
-export interface RelatorioResidente {
+export interface ResidentReport {
   residente: string;
   casela: number;
   medicamento: string;
@@ -21,7 +21,7 @@ export interface RelatorioResidente {
   validade: string | null;
 }
 
-export interface RelatorioCombo {
-  medicamentos: RelatorioMedicamento[];
-  insumos: RelatorioInsumo[];
+export interface AllItemsReport {
+  medicamentos: MedicineReport[];
+  insumos: InputReport[];
 }

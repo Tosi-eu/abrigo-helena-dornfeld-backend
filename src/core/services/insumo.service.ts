@@ -1,23 +1,24 @@
-import { InsumoRepository } from "../../infrastructure/database/repositories/insumo.repository";
+import { InputRepository } from "../../infrastructure/database/repositories/insumo.repository";
+import { Input } from "../domain/insumo";
 
-export class InsumoService {
-  constructor(private readonly repo: InsumoRepository) {}
+export class InputService {
+  constructor(private readonly repo: InputRepository) {}
 
-  cadastrarNovo(data: { nome: string; descricao?: string }) {
+  createInput(data: Omit<Input, "id">) {
     if (!data.nome) throw new Error("Nome é obrigatório");
-    return this.repo.criar(data);
+    return this.repo.createInput(data);
   }
 
-  listarTodos() {
-    return this.repo.listar();
+  listAll() {
+    return this.repo.listAllInputs();
   }
 
-  atualizar(id: number, data: { nome: string; descricao?: string }) {
+  updateInput(id: number, data: Omit<Input, "id">) {
     if (!data.nome) throw new Error("Nome é obrigatório");
-    return this.repo.atualizar(id, data);
+    return this.repo.updateInputById(id, data);
   }
 
-  remover(id: number) {
-    return this.repo.remover(id);
+  deleteInput(id: number) {
+    return this.repo.deleteInputById(id);
   }
 }

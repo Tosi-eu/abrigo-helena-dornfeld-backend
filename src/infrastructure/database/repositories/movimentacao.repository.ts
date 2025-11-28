@@ -1,21 +1,21 @@
-import { MovimentacaoModel } from "../models/movimentacao.model";
 import { Op } from "sequelize";
-import { Movimentacao } from "../../../core/domain/movimentacao";
-import MedicamentoModel from "../models/medicamento.model";
-import ArmarioModel from "../models/armario.model";
+import MovementModel from "../models/movimentacao.model";
+import Movement from "../../../core/domain/movimentacao";
+import MedicineModel from "../models/medicamento.model";
+import CabinetModel from "../models/armario.model";
 import ResidenteModel from "../models/residente.model";
-import { LoginModel } from "../models/login.model";
-import InsumoModel from "../models/insumo.model";
+import LoginModel from "../models/login.model";
+import InputModel from "../models/insumo.model";
 
-export class MovimentacaoRepository {
-  async create(data: Movimentacao) {
-    return await MovimentacaoModel.create({
+export class MovementRepository {
+  async create(data: Movement) {
+    return await MovementModel.create({
       ...data,
       data: new Date(),
     });
   }
 
-  async findMedicamentos(days: number, type: string) {
+  async listMedicineMovements(days: number, type: string) {
     const where: any = { medicamento_id: { [Op.not]: null } };
 
     if (days > 0) {
@@ -24,19 +24,19 @@ export class MovimentacaoRepository {
 
     if (type) where.tipo = type;
 
-    return await MovimentacaoModel.findAll({
+    return await MovementModel.findAll({
       where,
       order: [["data", "DESC"]],
       include: [
-        { model: MedicamentoModel, attributes: ["nome", "principio_ativo"] },
-        { model: ArmarioModel, attributes: ["num_armario"] },
+        { model: MedicineModel, attributes: ["nome", "principio_ativo"] },
+        { model: CabinetModel, attributes: ["num_armario"] },
         { model: ResidenteModel, attributes: ["num_casela"] },
         { model: LoginModel, attributes: ["login"] },
       ],
     });
   }
 
-  async findInsumos(days: number, type?: string) {
+  async listInputMovements(days: number, type?: string) {
     const where: any = { insumo_id: { [Op.not]: null } };
 
     if (days > 0) {
@@ -45,12 +45,12 @@ export class MovimentacaoRepository {
 
     if (type) where.tipo = type;
 
-    return await MovimentacaoModel.findAll({
+    return await MovementModel.findAll({
       where,
       order: [["data", "DESC"]],
       include: [
-        { model: InsumoModel, attributes: ["nome", "descricao"] },
-        { model: ArmarioModel, attributes: ["num_armario"] },
+        { model: InputModel, attributes: ["nome", "descricao"] },
+        { model: CabinetModel, attributes: ["num_armario"] },
         { model: ResidenteModel, attributes: ["num_casela"] },
         { model: LoginModel, attributes: ["login"] },
       ],

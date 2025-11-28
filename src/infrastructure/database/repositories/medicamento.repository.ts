@@ -1,9 +1,9 @@
-import MedicamentoModel from "../models/medicamento.model";
-import { Medicamento } from "../../../core/domain/medicamento";
+import MedicineModel from "../models/medicamento.model";
+import { Medicine } from "../../../core/domain/medicamento";
 
-export class MedicamentoRepository {
-  async create(data: Omit<Medicamento, "id">): Promise<Medicamento> {
-    const record = await MedicamentoModel.create({
+export class MedicineRepository {
+  async createMedicine(data: Omit<Medicine, "id">): Promise<Medicine> {
+    const record = await MedicineModel.create({
       nome: data.nome,
       dosagem: data.dosagem,
       unidade_medida: data.unidade_medida,
@@ -11,7 +11,7 @@ export class MedicamentoRepository {
       estoque_minimo: data.estoque_minimo,
     });
 
-    return new Medicamento(
+    return new Medicine(
       record.id,
       record.nome,
       Number(record.dosagem),
@@ -21,11 +21,11 @@ export class MedicamentoRepository {
     );
   }
 
-  async findAll(): Promise<Medicamento[]> {
-    const rows = await MedicamentoModel.findAll({ order: [["nome", "ASC"]] });
+  async findAllMedicines(): Promise<Medicine[]> {
+    const rows = await MedicineModel.findAll({ order: [["nome", "ASC"]] });
     return rows.map(
       (r) =>
-        new Medicamento(
+        new Medicine(
           r.id,
           r.nome,
           Number(r.dosagem),
@@ -36,25 +36,25 @@ export class MedicamentoRepository {
     );
   }
 
-  async findById(id: number): Promise<Medicamento | null> {
-    const r = await MedicamentoModel.findByPk(id);
-    return r
-      ? new Medicamento(
-          r.id,
-          r.nome,
-          Number(r.dosagem),
-          r.unidade_medida,
-          r.estoque_minimo,
-          r.principio_ativo
+  async findMedicineById(id: number): Promise<Medicine | null> {
+    const row = await MedicineModel.findByPk(id);
+    return row
+      ? new Medicine(
+          row.id,
+          row.nome,
+          Number(row.dosagem),
+          row.unidade_medida,
+          row.estoque_minimo,
+          row.principio_ativo
         )
       : null;
   }
 
-  async update(
+  async updateMedicineById(
     id: number,
-    data: Partial<Omit<Medicamento, "id">>
-  ): Promise<Medicamento | null> {
-    const result = await MedicamentoModel.update(data, {
+    data: Partial<Omit<Medicine, "id">>
+  ): Promise<Medicine | null> {
+    const result = await MedicineModel.update(data, {
       where: { id },
       returning: true,
     });
@@ -62,7 +62,7 @@ export class MedicamentoRepository {
     const updated = result[1][0];
 
     return updated
-      ? new Medicamento(
+      ? new Medicine(
           updated.id,
           updated.nome,
           Number(updated.dosagem),
@@ -73,8 +73,8 @@ export class MedicamentoRepository {
       : null;
   }
 
-  async delete(id: number): Promise<boolean> {
-    const count = await MedicamentoModel.destroy({ where: { id } });
+  async deleteMedicineById(id: number): Promise<boolean> {
+    const count = await MedicineModel.destroy({ where: { id } });
     return count > 0;
   }
 }

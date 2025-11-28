@@ -1,20 +1,21 @@
-import { EstoqueMedicamento, EstoqueInsumo } from "../../../core/domain/estoque";
-import EstoqueMedicamentoModel from "../models/estoque-medicamento.model";
-import EstoqueInsumoModel from "../models/estoque-insumo.model";
+import { MedicineStock, InputStock } from "../../../core/domain/estoque";
+import MedicineStockModel from "../models/estoque-medicamento.model";
+import InputStockModel from "../models/estoque-insumo.model";
 import { QueryTypes } from "sequelize";
 import { sequelize } from "../sequelize";
+import { ItemType } from "../../../core/enum/enum";
 
-export interface ProporcaoEstoque {
+export interface StockProportion {
   total_medicamentos: number;
   total_individuais: number;
   total_gerais: number;
   total_insumos: number;
 }
 
-  export class EstoqueRepository {
-    async registrarEntradaMedicamento(data: EstoqueMedicamento) {
+  export class StockRepository {
+    async createMedicineStockIn(data: MedicineStock) {
     try {
-      await EstoqueMedicamentoModel.create({
+      await MedicineStockModel.create({
         medicamento_id: data.medicamento_id,
         casela_id: data.casela_id ?? null,
         armario_id: data.armario_id,
@@ -30,8 +31,8 @@ export interface ProporcaoEstoque {
     }
   }
 
-    async registrarEntradaInsumo(data: EstoqueInsumo) {
-      await EstoqueInsumoModel.create({
+    async createInputStockIn(data: InputStock) {
+      await InputStockModel.create({
         insumo_id: data.insumo_id,
         armario_id: data.armario_id,
         quantidade: data.quantidade,
@@ -40,26 +41,26 @@ export interface ProporcaoEstoque {
       return { message: "Entrada de insumo registrada." };
     }
 
-  async registrarSaida(estoqueId: number, tipoItem: "medicamento" | "insumo", quantidade: number) {
+  async createStockOut(estoqueId: number, tipoItem: ItemType, quantidade: number) {
     if (tipoItem === "medicamento") {
-      const registro = await EstoqueMedicamentoModel.findByPk(estoqueId);
-      if (!registro) throw new Error("Registro de medicamento não encontrado.");
-      if (registro.quantidade < quantidade) throw new Error("Quantidade insuficiente.");
-      registro.quantidade -= quantidade;
-      await registro.save();
+      const register = await MedicineStockModel.findByPk(estoqueId);
+      if (!register) throw new Error("register de medicamento não encontrado.");
+      if (register.quantidade < quantidade) throw new Error("Quantidade insuficiente.");
+      register.quantidade -= quantidade;
+      await register.save();
       return { message: "Saída de medicamento realizada." };
     } else {
-      const registro = await EstoqueInsumoModel.findByPk(estoqueId);
-      if (!registro) throw new Error("Registro de insumo não encontrado.");
-      if (registro.quantidade < quantidade) throw new Error("Quantidade insuficiente.");
-      registro.quantidade -= quantidade;
-      await registro.save();
+      const register = await InputStockModel.findByPk(estoqueId);
+      if (!register) throw new Error("register de insumo não encontrado.");
+      if (register.quantidade < quantidade) throw new Error("Quantidade insuficiente.");
+      register.quantidade -= quantidade;
+      await register.save();
       return { message: "Saída de insumo realizada." };
     }
   }
 
 
-  async listarEstoque(params: { filter: string; type: string }) {
+  async listStockItems(params: { filter: string; type: string }) {
     const { filter, type } = params;
 
     let baseQuery = "";
@@ -217,13 +218,13 @@ export interface ProporcaoEstoque {
     return await sequelize.query(baseQuery, { type: QueryTypes.SELECT });
   }
 
-  async obterProporcao(): Promise<ProporcaoEstoque> {
-    const total_medicamentos = await EstoqueMedicamentoModel.sum("quantidade");
-    const total_individuais = await EstoqueMedicamentoModel.sum("quantidade", { where: { tipo: "individual" } });
-    const total_gerais = await EstoqueMedicamentoModel.sum("quantidade", { where: { tipo: "geral" } });
-    const total_insumos = await EstoqueInsumoModel.sum("quantidade");
+  async getStockProportion(): Promise<StockProportion> {
+    const totalMedicines = await MedicineStockModel.sum("quantidade");
+    const totalIndividualType = await MedicineStockModel.sum("quantidade", { where: { tipo: "individual" } });
+    const totalGeralType = await MedicineStockModel.sum("quantidade", { where: { tipo: "geral" } });
+    const totalInputs = await InputStockModel.sum("quantidade");
 
-    return { total_medicamentos, total_individuais, total_gerais, total_insumos };
+    return { total_medicamentos: totalMedicines, total_individuais: totalIndividualType, total_gerais: totalGeralType, total_insumos: totalInputs };
   } 
 }
 

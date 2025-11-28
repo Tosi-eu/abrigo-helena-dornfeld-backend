@@ -1,17 +1,17 @@
 import { Request, Response } from "express";
-import { RelatorioService } from "../../../core/services/relatorio.service";
+import { ReportService } from "../../../core/services/relatorio.service";
 
-export class RelatorioController {
-  constructor(private readonly service: RelatorioService) {}
+export class ReportController {
+  constructor(private readonly service: ReportService) {}
 
-  async gerar(req: Request, res: Response) {
+  async generate(req: Request, res: Response) {
     try {
-      const tipo = req.query.tipo as string;
-      if (!tipo) return res.status(400).json({ error: "Tipo obrigatório" });
+      const type = req.query.tipo as string;
+      if (!type) return res.status(400).json({ error: "Tipo obrigatório" });
 
-      const dados = await this.service.gerar(tipo);
+      const data = await this.service.generateReport(type);
 
-      return res.json(dados);
+      return res.json(data);
     } catch (e: any) {
       console.error("Erro ao gerar relatório:", e);
       return res.status(500).json({ error: e.message });

@@ -1,6 +1,6 @@
 import { OperationType } from "../enum/enum";
 
-export class Movimentacao {
+export class Movement {
   tipo: OperationType;
   login_id: number;
   armario_id: number;
@@ -10,15 +10,16 @@ export class Movimentacao {
   casela_id?: number | null;
   validade_medicamento?: Date | null;
 
-  constructor(data: {
-    tipo: OperationType;
-    login_id: number;
-    armario_id: number;
-    quantidade: number;
-    insumo_id?: number | null;
-    medicamento_id?: number | null;
-    casela_id?: number | null;
-    validade_medicamento?: Date | null;
+  constructor(
+    data: {
+      tipo: OperationType;
+      login_id: number;
+      armario_id: number;
+      quantidade: number;
+      insumo_id?: number | null;
+      medicamento_id?: number | null;
+      casela_id?: number | null;
+      validade_medicamento?: Date | null;
   }) {
     this.tipo = data.tipo;
     this.login_id = data.login_id;
@@ -30,3 +31,5 @@ export class Movimentacao {
     this.validade_medicamento = data.validade_medicamento ?? null;
   }
 }
+
+export default Movement;

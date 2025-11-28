@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { LoginService } from "../../../core/services/login.service";
+
 export class LoginController {
   constructor(private readonly service: LoginService) {}
 
@@ -13,7 +14,7 @@ export class LoginController {
       const user = await this.service.create(login, password);
       return res.status(201).json(user);
     } catch (err: any) {
-      if (err.message === "duplicate key") {
+      if (err === "duplicate key") {
         return res.status(409).json({ error: "Login já cadastrado" });
       }
       return res.status(500).json({ error: "Erro ao criar usuário" });

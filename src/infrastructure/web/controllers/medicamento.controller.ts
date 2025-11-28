@@ -1,27 +1,27 @@
 import { Request, Response } from "express";
-import { MedicamentoService } from "../../../core/services/medicamento.service";
+import { MedicineService } from "../../../core/services/medicamento.service";
 
-export class MedicamentoController {
-  constructor(private readonly service: MedicamentoService) {}
+export class MedicineController {
+  constructor(private readonly service: MedicineService) {}
 
   async create(req: Request, res: Response) {
     try {
-      const novo = await this.service.cadastrarNovo(req.body);
-      res.status(201).json(novo);
+      const data = await this.service.createMedicine(req.body);
+      res.status(201).json(data);
     } catch (e: any) {
       res.status(400).json({ error: e.message });
     }
   }
 
   async getAll(_req: Request, res: Response) {
-    const lista = await this.service.listarTodos();
-    res.json(lista);
+    const list = await this.service.findAll();
+    res.json(list);
   }
 
   async update(req: Request, res: Response) {
     const id = Number(req.params.id);
     try {
-      const updated = await this.service.atualizar(id, req.body);
+      const updated = await this.service.updateMedicine(id, req.body);
       if (!updated) return res.status(404).json({ error: "Não encontrado" });
       res.json(updated);
     } catch (e: any) {
@@ -31,7 +31,7 @@ export class MedicamentoController {
 
   async delete(req: Request, res: Response) {
     const id = Number(req.params.id);
-    const ok = await this.service.remover(id);
+    const ok = await this.service.deleteMedicine(id);
     if (!ok) return res.status(404).json({ error: "Não encontrado" });
     res.json({ message: "Removido com sucesso" });
   }

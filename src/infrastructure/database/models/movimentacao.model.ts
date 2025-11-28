@@ -1,7 +1,7 @@
 import { DataTypes, Model, Optional } from "sequelize";
 import { sequelize } from "../sequelize";
 
-interface MovimentacaoAttributes {
+interface MovementAttrs {
   id: number;
   tipo: string;
   data: Date;
@@ -14,11 +14,11 @@ interface MovimentacaoAttributes {
   validade_medicamento?: Date | null;
 }
 
-type MovimentacaoCreation = Optional<MovimentacaoAttributes, "id" | "insumo_id" | "medicamento_id" | "casela_id" | "validade_medicamento">;
+type MovementCreation = Optional<MovementAttrs, "id" | "insumo_id" | "medicamento_id" | "casela_id" | "validade_medicamento">;
 
-export class MovimentacaoModel
-  extends Model<MovimentacaoAttributes, MovimentacaoCreation>
-  implements MovimentacaoAttributes
+export class MovementModel
+  extends Model<MovementAttrs, MovementCreation>
+  implements MovementAttrs
 {
   id!: number;
   tipo!: string;
@@ -32,7 +32,7 @@ export class MovimentacaoModel
   validade_medicamento!: Date | null;
 }
 
-MovimentacaoModel.init(
+MovementModel.init(
   {
     id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
     tipo: { type: DataTypes.STRING, allowNull: false },
@@ -51,3 +51,5 @@ MovimentacaoModel.init(
     timestamps: false,
   }
 );
+
+export default MovementModel;

@@ -1,23 +1,23 @@
 import { Router } from "express";
 
-import armarioRoutes from "./armario.routes";
-import medicamentoRoutes from "./medicamento.routes";
-import insumoRoutes from "./insumo.routes";
+import cabinetRoutes from "./armario.routes";
+import medicineRoutes from "./medicamento.routes";
+import inputRoutes from "./insumo.routes";
 import loginRoutes from "./login.routes";
-import estoqueRoutes from "./estoque.routes";
-import movimentacaoRoutes from "./movimentacao.routes";
-import relatorioRoutes from "./relatorio.routes";
-import residenteRoutes from "./residente.routes";
+import stockRoutes from "./estoque.routes";
+import movementRoutes from "./movimentacao.routes";
+import reportRoutes from "./relatorio.routes";
+import residentRoutes from "./residente.routes";
 
 const router = Router();
 
-router.use("/armarios", armarioRoutes); //check
-router.use("/medicamentos", medicamentoRoutes); //check
-router.use("/insumos", insumoRoutes); //check
-router.use("/login", loginRoutes); //check
-router.use("/estoque", estoqueRoutes); //check
-router.use("/movimentacoes", movimentacaoRoutes); //check
-router.use("/relatorios", relatorioRoutes); //check
-router.use("/residentes", residenteRoutes); //check
+router.use("/armarios", cabinetRoutes); 
+router.use("/medicamentos", medicineRoutes); 
+router.use("/insumos", inputRoutes); 
+router.use("/login", loginRoutes); 
+router.use("/estoque", stockRoutes); 
+router.use("/movimentacoes", movementRoutes); 
+router.use("/relatorios", reportRoutes); 
+router.use("/residentes", residentRoutes); 
 
 export default router;

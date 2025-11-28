@@ -1,4 +1,4 @@
-export class Armario {
+export class Cabinet {
   numero: number;
   categoria: string;
 

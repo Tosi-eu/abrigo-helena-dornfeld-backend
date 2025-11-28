@@ -1,23 +1,23 @@
 import { DataTypes, Model, Optional } from "sequelize";
 import { sequelize } from "../sequelize";
 
-  export interface ResidenteAttributes {
+  export interface ResidentAttributes {
     num_casela: number;
     nome: string;
   }
 
-  export interface ResidenteCreationAttributes
-    extends Optional<ResidenteAttributes, "num_casela"> {}
+  export interface ResidentCreationAttributes
+    extends Optional<ResidentAttributes, "num_casela"> {}
 
-  export class ResidenteModel
-    extends Model<ResidenteAttributes, ResidenteCreationAttributes>
-    implements ResidenteAttributes
+  export class ResidentModel
+    extends Model<ResidentAttributes, ResidentCreationAttributes>
+    implements ResidentAttributes
   {
     declare num_casela: number;
     declare nome: string;
   }
 
-  ResidenteModel.init(
+  ResidentModel.init(
     {
       num_casela: {
         type: DataTypes.INTEGER,
@@ -33,9 +33,9 @@ import { sequelize } from "../sequelize";
     },
     {
       sequelize,
-      tableName: "residente",
+      tableName: "resident",
       timestamps: false,
     }
   );
 
-  export default ResidenteModel;
+  export default ResidentModel;

@@ -30,3 +30,5 @@ LoginModel.init(
     timestamps: false,
   },
 );
+
+export default LoginModel;

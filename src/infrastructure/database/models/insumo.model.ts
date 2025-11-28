@@ -1,24 +1,24 @@
 import { DataTypes, Model, Optional } from "sequelize";
 import { sequelize } from "../sequelize";
 
-export interface InsumoAttributes {
+export interface InputAttrs {
   id: number;
   nome: string;
   descricao?: string | null;
 }
 
-export interface InsumoCreationAttributes extends Optional<InsumoAttributes, "id"> {}
+export interface InsumoCreationAttributes extends Optional<InputAttrs, "id"> {}
 
-export class InsumoModel
-  extends Model<InsumoAttributes, InsumoCreationAttributes>
-  implements InsumoAttributes
+export class InputModel
+  extends Model<InputAttrs, InsumoCreationAttributes>
+  implements InputAttrs
 {
   declare id: number;
   declare nome: string;
   declare descricao: string | null;
 }
 
-InsumoModel.init(
+InputModel.init(
   {
     id: {
       type: DataTypes.INTEGER,
@@ -41,4 +41,4 @@ InsumoModel.init(
   }
 );
 
-export default InsumoModel;
+export default InputModel;

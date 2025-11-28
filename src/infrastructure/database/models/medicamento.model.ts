@@ -1,7 +1,7 @@
 import { DataTypes, Model, Optional } from "sequelize";
 import { sequelize } from "../sequelize";
 
-export interface MedicamentoAttributes {
+export interface MedicineAttrs {
   id: number;
   nome: string;
   dosagem: number;
@@ -10,12 +10,12 @@ export interface MedicamentoAttributes {
   estoque_minimo: number;
 }
 
-export interface MedicamentoCreationAttributes
-  extends Optional<MedicamentoAttributes, "id" | "principio_ativo"> {}
+export interface MedicineCreationAttrs
+  extends Optional<MedicineAttrs, "id" | "principio_ativo"> {}
 
-export class MedicamentoModel
-  extends Model<MedicamentoAttributes, MedicamentoCreationAttributes>
-  implements MedicamentoAttributes
+export class MedicineModel
+  extends Model<MedicineAttrs, MedicineCreationAttrs>
+  implements MedicineAttrs
 {
   declare id: number;
   declare nome: string;
@@ -25,7 +25,7 @@ export class MedicamentoModel
   declare estoque_minimo: number;
 }
 
-MedicamentoModel.init(
+MedicineModel.init(
   {
     id: {
       type: DataTypes.INTEGER,
@@ -60,4 +60,4 @@ MedicamentoModel.init(
   }
 );
 
-export default MedicamentoModel;
+export default MedicineModel;

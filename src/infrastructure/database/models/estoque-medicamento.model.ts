@@ -1,7 +1,7 @@
 import { DataTypes, Model } from "sequelize";
 import { sequelize } from "../sequelize";
 
-export interface EstoqueMedicamentoAttributes {
+export interface MedicineStockAttributes {
   medicamento_id: number;
   casela_id?: number | null;
   armario_id: number;
@@ -11,9 +11,9 @@ export interface EstoqueMedicamentoAttributes {
   tipo?: string | null;
 }
 
-export class EstoqueMedicamentoModel
-  extends Model<EstoqueMedicamentoAttributes>
-  implements EstoqueMedicamentoAttributes
+export class MedicineStockModel
+  extends Model<MedicineStockAttributes>
+  implements MedicineStockAttributes
 {
   declare medicamento_id: number;
   declare casela_id: number | null;
@@ -24,7 +24,7 @@ export class EstoqueMedicamentoModel
   declare tipo: string | null;
 }
 
-EstoqueMedicamentoModel.init(
+MedicineStockModel.init(
   {
     medicamento_id: { type: DataTypes.INTEGER, allowNull: false },
     casela_id: { type: DataTypes.INTEGER, allowNull: true },
@@ -41,4 +41,4 @@ EstoqueMedicamentoModel.init(
   }
 );
 
-export default EstoqueMedicamentoModel;
+export default MedicineStockModel;

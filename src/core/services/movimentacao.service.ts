@@ -1,17 +1,17 @@
-import { MovimentacaoRepository } from "../../infrastructure/database/repositories/movimentacao.repository";
+import { MovementRepository } from "../../infrastructure/database/repositories/movimentacao.repository";
 
-export class MovimentacaoService {
-  constructor(private readonly repo: MovimentacaoRepository) {}
+export class MovementService {
+  constructor(private readonly repo: MovementRepository) {}
 
-  async listarMovMedicamentos(days: number, type: string) {
-    return this.repo.findMedicamentos(days, type);
+  async findMedicineMovements(days: number, type: string) {
+    return this.repo.listMedicineMovements(days, type);
   }
 
-  async listarMovInsumos(days: number) {
-    return this.repo.findInsumos(days);
+  async listInputMovements(days: number) {
+    return this.repo.listInputMovements(days);
   }
 
-  async registrar(data: any) {
+  async createMovement(data: any) {
     if (!data.tipo || !data.quantidade || !data.armario_id || !data.login_id) {
       throw new Error("Campos obrigatórios faltando.");
     }

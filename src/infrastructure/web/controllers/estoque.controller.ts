@@ -1,20 +1,20 @@
 import { Request, Response } from "express";
-import { EstoqueService } from "../../../core/services/estoque.service";
+import { StockService } from "../../../core/services/estoque.service";
 
-export class EstoqueController {
-  constructor(private readonly service: EstoqueService) {}
+export class StockController {
+  constructor(private readonly service: StockService) {}
 
-    async entrada(req: Request, res: Response) {
+    async stockIn(req: Request, res: Response) {
       try {
         const { medicamento_id, insumo_id } = req.body;
 
         if (medicamento_id) {
-          const result = await this.service.entradaMedicamento(req.body);
+          const result = await this.service.medicineStockIn(req.body);
           return res.json(result);
         }
 
         if (insumo_id) {
-          const result = await this.service.entradaInsumo(req.body);
+          const result = await this.service.inputStockIn(req.body);
           return res.json(result);
         }
       } catch (e: any) {
@@ -22,20 +22,20 @@ export class EstoqueController {
       }
     }
 
-  async saida(req: Request, res: Response) {
+  async stockOut(req: Request, res: Response) {
     try {
-      const result = await this.service.saida(req.body);
+      const result = await this.service.stockOut(req.body);
       return res.json(result);
     } catch (e: any) {
       return res.status(400).json({ error: e.message });
     }
   }
 
-  async listar(req: Request, res: Response) {
+  async list(req: Request, res: Response) {
     try {
       const { filter, type } = req.query;
 
-      const data = await this.service.listarEstoque({
+      const data = await this.service.listStock({
         filter: String(filter || ""),
         type: String(type || ""),
       });
@@ -46,28 +46,28 @@ export class EstoqueController {
     }
   }
 
-  async proporcao(_req: Request, res: Response) {
+  async proportion(_req: Request, res: Response) {
     try {
-      const data = await this.service.obterProporcao();
+      const data = await this.service.getProportion();
 
-      const totalMedicamentosGerais = Number(data.total_gerais || 0);
-      const totalMedicamentosIndividuais = Number(data.total_individuais || 0);
-      const totalInsumos = Number(data.total_insumos || 0);
-      const totalMedicamentos = Number(data.total_medicamentos || 0);
+      const totalOverallMedicines = Number(data.total_gerais || 0);
+      const totalInvidualMedicines = Number(data.total_individuais || 0);
+      const totalInputsRaw = Number(data.total_insumos || 0);
+      const totalMedicinesRaw = Number(data.total_medicamentos || 0);
 
-      const totalGeral = totalMedicamentos + totalInsumos;
+      const totalGeral = totalMedicinesRaw + totalInputsRaw;
 
       const pct = (value: number) =>
         totalGeral > 0 ? Number(((value / totalGeral) * 100).toFixed(2)) : 0;
 
       return res.json({
-        medicamentos_geral: pct(totalMedicamentosGerais),
-        medicamentos_individual: pct(totalMedicamentosIndividuais),
-        insumos: pct(totalInsumos),
+        medicamentos_geral: pct(totalOverallMedicines),
+        medicamentos_individual: pct(totalInvidualMedicines),
+        insumos: pct(totalInputsRaw),
         totais: {
-          medicamentos_geral: totalMedicamentosGerais,
-          medicamentos_individual: totalMedicamentosIndividuais,
-          insumos: totalInsumos,
+          medicamentos_geral: totalOverallMedicines,
+          medicamentos_individual: totalInvidualMedicines,
+          insumos: totalInputsRaw,
           total_geral: totalGeral,
         },
       });

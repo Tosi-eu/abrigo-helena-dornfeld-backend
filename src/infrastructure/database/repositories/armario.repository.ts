@@ -1,74 +1,44 @@
-import { Armario } from "../../../core/domain/armario";
-import ArmarioModel, { RemanejamentoDTO } from "../models/armario.model";
-import EstoqueInsumoModel from "../models/estoque-insumo.model";
-import EstoqueMedicamentoModel from "../models/estoque-medicamento.model";
-import { MovimentacaoModel } from "../models/movimentacao.model";
-import { sequelize } from "../sequelize";
+import { Cabinet } from "../../../core/domain/armario";
+import CabinetModel from "../models/armario.model";
+import InputStockModel from "../models/estoque-insumo.model";
+import MedicineStockModel from "../models/estoque-medicamento.model";
 
-export class ArmarioRepository {
-  async create(data: { numero: number; categoria: string }): Promise<Armario> {
-    const item = await ArmarioModel.create({
+export class CabinetRepository {
+  async createCabinet(data: Cabinet): Promise<Cabinet> {
+    const item = await CabinetModel.create({
       num_armario: data.numero,
       categoria: data.categoria,
     });
-    return new Armario(item.num_armario, item.categoria);
+    return new Cabinet(item.num_armario, item.categoria);
   }
 
-  async findAll(): Promise<Armario[]> {
-    const items = await ArmarioModel.findAll({ order: [["num_armario", "ASC"]] });
-    return items.map(i => new Armario(i.num_armario, i.categoria));
+  async findAllCabinets(): Promise<Cabinet[]> {
+    const items = await CabinetModel.findAll({ order: [["num_armario", "ASC"]] });
+    return items.map(i => new Cabinet(i.num_armario, i.categoria));
   }
 
-  async findByNumero(numero: number): Promise<Armario | null> {
-    const item = await ArmarioModel.findByPk(numero);
-    return item ? new Armario(item.num_armario, item.categoria) : null;
+  async findByCabinetNumber(number: number): Promise<Cabinet | null> {
+    const item = await CabinetModel.findByPk(number);
+    return item ? new Cabinet(item.num_armario, item.categoria) : null;
   }
 
-  async update(numero: number, categoria: string): Promise<Armario | null> {
-    const item = await ArmarioModel.findByPk(numero);
+  async update(number: number, categoria: string): Promise<Cabinet | null> {
+    const item = await CabinetModel.findByPk(number);
     if (!item) return null;
     await item.update({ categoria });
-    return new Armario(item.num_armario, item.categoria);
+    return new Cabinet(item.num_armario, item.categoria);
   }
 
-  async delete(numero: number): Promise<boolean> {
-    const deleted = await ArmarioModel.destroy({ where: { num_armario: numero } });
+  async delete(number: number): Promise<boolean> {
+    const deleted = await CabinetModel.destroy({ where: { num_armario: number } });
     return deleted > 0;
   }
 
-  async deleteWithTransference(numero: number, destinos: RemanejamentoDTO): Promise<void> {
-    const armario = await ArmarioModel.findByPk(numero);
-    if (!armario) throw new Error("Armário não encontrado");
-
-    await sequelize.transaction(async (t) => {
-      if (destinos.destinoMedicamentos) {
-        await EstoqueMedicamentoModel.update(
-          { armario_id: destinos.destinoMedicamentos },
-          { where: { armario_id: numero }, transaction: t }
-        );
-      }
-
-      if (destinos.destinoInsumos) {
-        await EstoqueInsumoModel.update(
-          { armario_id: destinos.destinoInsumos },
-          { where: { armario_id: numero }, transaction: t }
-        );
-      }
-
-      await MovimentacaoModel.destroy({
-        where: { armario_id: numero },
-        transaction: t
-      });
-
-      await armario.destroy({ transaction: t });
-    });
-  }
-
-  async countMedicamento(numero: number): Promise<number> {
-  return EstoqueMedicamentoModel.count({ where: { armario_id: numero } });
+  async countMedicine(number: number): Promise<number> {
+  return MedicineStockModel.count({ where: { armario_id: number } });
 }
 
-  async countInsumo(numero: number): Promise<number> {
-    return EstoqueInsumoModel.count({ where: { armario_id: numero } });
+  async countInput(number: number): Promise<number> {
+    return InputStockModel.count({ where: { armario_id: number } });
   }
 }

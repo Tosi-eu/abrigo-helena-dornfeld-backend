@@ -1,15 +1,15 @@
 import { sequelize } from "../sequelize";
 import { QueryTypes } from "sequelize";
 import { 
-  RelatorioCombo, 
-  RelatorioInsumo, 
-  RelatorioMedicamento, 
-  RelatorioResidente 
+  AllItemsReport, 
+  InputReport, 
+  MedicineReport, 
+  ResidentReport 
 } from "../models/relatorio.model";
 
-export class RelatorioRepository {
+export class ReportRepository {
 
-  async getMedicamentos(): Promise<RelatorioMedicamento[]> {
+  async getMedicinesData(): Promise<MedicineReport[]> {
     const query = `
       SELECT 
         m.nome as medicamento, m.principio_ativo, 
@@ -22,14 +22,14 @@ export class RelatorioRepository {
       GROUP BY m.nome, m.principio_ativo, p.nome
     `;
 
-    const rows = await sequelize.query<RelatorioMedicamento>(query, {
+    const rows = await sequelize.query<MedicineReport>(query, {
       type: QueryTypes.SELECT,
     });
 
     return rows;
   }
 
-  async getInsumos(): Promise<RelatorioInsumo[]> {
+  async getInputsData(): Promise<InputReport[]> {
     const query = `
       SELECT 
         i.nome as insumo, 
@@ -40,14 +40,14 @@ export class RelatorioRepository {
       GROUP BY i.nome, ei.armario_id
     `;
 
-    const rows = await sequelize.query<RelatorioInsumo>(query, {
+    const rows = await sequelize.query<InputReport>(query, {
       type: QueryTypes.SELECT,
     });
 
     return rows;
   }
 
-  async getResidentes(): Promise<RelatorioResidente[]> {
+  async getResidentsData(): Promise<ResidentReport[]> {
     const query = `
       SELECT 
         p.nome AS residente, 
@@ -63,14 +63,14 @@ export class RelatorioRepository {
       ORDER BY p.nome, m.nome
     `;
 
-    const rows = await sequelize.query<RelatorioResidente>(query, {
+    const rows = await sequelize.query<ResidentReport>(query, {
       type: QueryTypes.SELECT,
     });
 
     return rows;
   }
 
-  async getCombo(): Promise<RelatorioCombo> {
+  async getAllItemsData(): Promise<AllItemsReport> {
     const medQuery = `
       SELECT 
         m.nome AS medicamento, 
@@ -94,14 +94,14 @@ export class RelatorioRepository {
       GROUP BY i.nome, ei.armario_id
     `;
 
-    const medicamentos = await sequelize.query<RelatorioMedicamento>(medQuery, {
+    const medicines = await sequelize.query<MedicineReport>(medQuery, {
       type: QueryTypes.SELECT,
     });
 
-    const insumos = await sequelize.query<RelatorioInsumo>(insQuery, {
+    const inputs = await sequelize.query<InputReport>(insQuery, {
       type: QueryTypes.SELECT,
     });
 
-    return { medicamentos, insumos };
+    return { medicamentos: medicines, insumos: inputs };
   }
 }

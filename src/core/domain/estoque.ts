@@ -1,10 +1,12 @@
-export class EstoqueMedicamento {
+import { OperationType } from "../enum/enum";
+
+export class MedicineStock {
   medicamento_id: number;
   armario_id: number;
   validade: Date;
   quantidade: number;
   origem: string;
-  tipo: "individual" | "geral";
+  tipo: OperationType;
   casela_id: number | null;
 
   constructor(
@@ -13,7 +15,7 @@ export class EstoqueMedicamento {
     validade: Date,
     quantidade: number,
     origem: string,
-    tipo: "individual" | "geral",
+    tipo: OperationType,
     casela_id: number | null
   ) {
     this.medicamento_id = medicamento_id;
@@ -26,7 +28,7 @@ export class EstoqueMedicamento {
   }
 }
 
-export class EstoqueInsumo {
+export class InputStock {
   insumo_id: number;
   armario_id: number;
   quantidade: number;

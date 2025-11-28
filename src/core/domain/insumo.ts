@@ -1,4 +1,4 @@
-export class Insumo {
+export class Input {
   id: number;
   nome: string;
   descricao?: string;

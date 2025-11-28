@@ -1,12 +1,11 @@
 import { Router } from "express";
+import { ResidentRepository } from "../../database/repositories/residente.repository";
+import { ResidentService } from "../../../core/services/residente.service";
+import { ResidentController } from "../controllers/residente.controller";
 
-import { ResidenteRepository } from "../../database/repositories/residente.repository";
-import { ResidenteService } from "../../../core/services/residente.service";
-import { ResidenteController } from "../controllers/residente.controller";
-
-const repo = new ResidenteRepository();
-const service = new ResidenteService(repo);
-const controller = new ResidenteController(service);
+const repo = new ResidentRepository();
+const service = new ResidentService(repo);
+const controller = new ResidentController(service);
 
 const router = Router();
 

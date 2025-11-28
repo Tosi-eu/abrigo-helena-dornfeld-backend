@@ -1,11 +1,11 @@
 import { Router } from "express";
-import { MedicamentoRepository } from "../../database/repositories/medicamento.repository";
-import { MedicamentoService } from "../../../core/services/medicamento.service";
-import { MedicamentoController } from "../controllers/medicamento.controller";
+import { MedicineRepository } from "../../database/repositories/medicamento.repository";
+import { MedicineService } from "../../../core/services/medicamento.service";
+import { MedicineController } from "../controllers/medicamento.controller";
 
-const repo = new MedicamentoRepository();
-const service = new MedicamentoService(repo);
-const controller = new MedicamentoController(service);
+const repo = new MedicineRepository();
+const service = new MedicineService(repo);
+const controller = new MedicineController(service);
 
 const router = Router();
 

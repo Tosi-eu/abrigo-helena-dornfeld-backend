@@ -1,21 +1,21 @@
-import { RelatorioRepository } from "../../infrastructure/database/repositories/relatorio.repository";
+import { ReportRepository } from "../../infrastructure/database/repositories/relatorio.repository";
 
-export class RelatorioService {
-  constructor(private readonly repo: RelatorioRepository) {}
+export class ReportService {
+  constructor(private readonly repo: ReportRepository) {}
 
-  async gerar(tipo: string) {
-    switch (tipo) {
+  async generateReport(type: string) {
+    switch (type) {
       case "medicamentos":
-        return this.repo.getMedicamentos();
+        return this.repo.getMedicinesData();
 
       case "insumos":
-        return this.repo.getInsumos();
+        return this.repo.getInputsData();
 
       case "residentes":
-        return this.repo.getResidentes();
+        return this.repo.getResidentsData();
 
       case "insumos_medicamentos":
-        return this.repo.getCombo();
+        return this.repo.getAllItemsData();
 
       default:
         throw new Error("Tipo inválido");

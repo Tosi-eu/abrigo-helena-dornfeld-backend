@@ -1,20 +1,21 @@
-import { ResidenteRepository } from "../../infrastructure/database/repositories/residente.repository";
-import ResidenteModel from "../../infrastructure/database/models/residente.model";
+import { ResidentRepository } from "../../infrastructure/database/repositories/residente.repository";
+import ResidentModel from "../../infrastructure/database/models/residente.model";
+import { Resident } from "../domain/residente";
 
-export class ResidenteService {
-  constructor(private readonly repo: ResidenteRepository) {}
+export class ResidentService {
+  constructor(private readonly repo: ResidentRepository) {}
 
   async findAll() {
     return this.repo.findAll();
   }
 
   async findByCasela(casela: number) {
-    const residente = await this.repo.findByCasela(casela);
-    if (!residente) throw new Error("Residente não encontrado");
-    return residente;
+    const resident = await this.repo.findByCasela(casela);
+    if (!resident) throw new Error("Residente não encontrado");
+    return resident;
   }
 
-  async create(data: { casela: number; nome: string }) {
+  async createResident(data: Resident) {
     if (!data.casela || !Number.isInteger(data.casela) || data.casela <= 0) {
       throw new Error("Número de casela inválido");
     }
@@ -26,15 +27,15 @@ export class ResidenteService {
     const exists = await this.repo.findByCasela(data.casela);
     if (exists) throw new Error(`Já existe um residente com a casela ${data.casela}`);
 
-    const model = ResidenteModel.build({
+    const model = ResidentModel.build({
       num_casela: data.casela,
       nome: data.nome,
     });
 
-    return this.repo.create(model);
+    return this.repo.createResident(model);
   }
 
-  async update(data: { casela: number; nome: string }) {
+  async updateResident(data: Resident) {
     if (!data.nome || typeof data.nome !== "string" || data.nome.trim() === "") {
       throw new Error("Nome inválido");
     }
@@ -42,15 +43,15 @@ export class ResidenteService {
     const exists = await this.repo.findByCasela(data.casela);
     if (!exists) throw new Error("Residente não encontrado");
 
-    const model = ResidenteModel.build({
+    const model = ResidentModel.build({
       num_casela: data.casela,
       nome: data.nome,
     });
 
-    return this.repo.update(model);
+    return this.repo.updateResidentById(model);
   }
 
-  async delete(casela: number) {
+  async deleteResident(casela: number) {
     const exists = await this.repo.findByCasela(casela);
     if (!exists) throw new Error("Residente não encontrado");
 
@@ -60,6 +61,6 @@ export class ResidenteService {
       return this.repo.deleteWithMedicationTransfer(casela);
     }
 
-    return this.repo.delete(casela);
+    return this.repo.deleteResidentById(casela);
   }
 }

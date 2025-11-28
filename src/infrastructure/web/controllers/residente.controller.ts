@@ -1,12 +1,12 @@
 import { Request, Response } from "express";
-import { ResidenteService } from "../../../core/services/residente.service";
+import { ResidentService } from "../../../core/services/residente.service";
 
-export class ResidenteController {
-  constructor(private readonly service: ResidenteService) {}
+export class ResidentController {
+  constructor(private readonly service: ResidentService) {}
 
   async findAll(_req: Request, res: Response) {
-    const lista = await this.service.findAll();
-    res.json(lista);
+    const list = await this.service.findAll();
+    res.json(list);
   }
 
   async findByCasela(req: Request, res: Response) {
@@ -22,7 +22,7 @@ export class ResidenteController {
 
   async create(req: Request, res: Response) {
     try {
-      const novo = await this.service.create(req.body);
+      const novo = await this.service.createResident(req.body);
       res.status(201).json(novo);
     } catch (e: any) {
       const status = e.message.includes("Já existe") ? 409 : 400;
@@ -33,7 +33,7 @@ export class ResidenteController {
   async update(req: Request, res: Response) {
     const casela = Number(req.params.casela);
     try {
-      const updated = await this.service.update({ casela, nome: req.body.nome });
+      const updated = await this.service.updateResident({ casela, nome: req.body.nome });
       res.json(updated);
     } catch (e: any) {
       const status = e.message === "Residente não encontrado" ? 404 : 400;
@@ -45,7 +45,7 @@ export class ResidenteController {
     const casela = Number(req.params.casela);
 
     try {
-      await this.service.delete(casela);
+      await this.service.deleteResident(casela);
       res.status(200).json({ message: "Residente removido com sucesso." });
     } catch (err: any) {
       res.status(400).json({ message: err.message });

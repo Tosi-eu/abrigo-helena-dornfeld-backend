@@ -1,27 +1,22 @@
 import { DataTypes, Model, Optional } from "sequelize";
 import { sequelize } from "../sequelize";
 
-export interface ArmarioAttributes {
+export interface CabinetAttributes {
   num_armario: number;
   categoria: string;
 }
 
-export interface RemanejamentoDTO {
-  destinoMedicamentos?: number; 
-  destinoInsumos?: number;     
-} 
+export interface CabinetCreationAttributes
+  extends Optional<CabinetAttributes, "num_armario"> {}
 
-export interface ArmarioCreationAttributes
-  extends Optional<ArmarioAttributes, "num_armario"> {}
-
-export class ArmarioModel
-  extends Model<ArmarioAttributes, ArmarioCreationAttributes>
-  implements ArmarioAttributes
+export class CabinetModel
+  extends Model<CabinetAttributes, CabinetCreationAttributes>
+  implements CabinetAttributes
 {
   declare num_armario: number;
   declare categoria: string;
 }
-ArmarioModel.init(
+CabinetModel.init(
   {
     num_armario: {
       type: DataTypes.INTEGER,
@@ -42,4 +37,4 @@ ArmarioModel.init(
   }
 );
 
-export default ArmarioModel;
+export default CabinetModel;
