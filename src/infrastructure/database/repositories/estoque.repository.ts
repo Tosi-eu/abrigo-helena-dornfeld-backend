@@ -4,6 +4,7 @@ import InputStockModel from "../models/estoque-insumo.model";
 import { QueryTypes } from "sequelize";
 import { sequelize } from "../sequelize";
 import { ItemType } from "../../../core/enum/enum";
+import { computeExpiryStatus, computeQuantityStatus } from "../../helpers/expiry-status";
 
 export interface StockProportion {
   total_medicamentos: number;
@@ -216,7 +217,41 @@ export interface StockProportion {
       throw new Error("Tipo inválido. Use medicamento, insumo, armarios ou deixe vazio.");
     }
 
-    return await sequelize.query(baseQuery, { type: QueryTypes.SELECT });
+    const results = await sequelize.query(baseQuery, { type: QueryTypes.SELECT });
+
+    return results.map((item: any) => {
+      const isCabinetType = type === "armarios";
+
+      let expiryInfo: { status: string | null; message: string | null } = {
+        status: null,
+        message: null,
+      };
+
+      let quantityInfo: { status: string | null; message: string | null } = {
+        status: null,
+        message: null,
+      };
+
+      if (!isCabinetType) {
+        expiryInfo = computeExpiryStatus(item.validade);
+        quantityInfo = computeQuantityStatus(item.quantidade, item.minimo);
+      }
+
+      item.validade = item.validade
+        ? new Date(item.validade).toLocaleDateString("pt-BR", {
+            timeZone: "America/Sao_Paulo",
+          })
+        : null;
+
+      return {
+        ...item,
+        st_expiracao: expiryInfo.status,
+        msg_expiracao: expiryInfo.message,
+        st_quantidade: quantityInfo.status,
+        msg_quantidade: quantityInfo.message,
+      };
+    });
+
   }
 
   async getStockProportion(): Promise<StockProportion> {
