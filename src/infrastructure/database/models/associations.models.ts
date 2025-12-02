@@ -1,4 +1,5 @@
 import CabinetModel from "./armario.model";
+import CabinetCategoryModel from "./categorias-armario.model";
 import StockInputAttrs from "./estoque-insumo.model";
 import StockMedicineAttrs from "./estoque-medicamento.model";
 import InputModel from "./insumo.model";
@@ -8,6 +9,29 @@ import MovementModel from "./movimentacao.model";
 import ResidentModel from "./residente.model";
 
 export function setupAssociations() {
+
+  CabinetCategoryModel.hasMany(CabinetModel, {
+    foreignKey: "categoria_id",
+    onDelete: "RESTRICT",
+    onUpdate: "CASCADE",
+  });
+
+  CabinetModel.belongsTo(CabinetCategoryModel, {
+    foreignKey: "categoria_id",
+    onDelete: "RESTRICT",
+    onUpdate: "CASCADE",
+  });
+
+  CabinetModel.belongsTo(CabinetCategoryModel, {
+    foreignKey: "categoria_id",
+    as: "categoria"
+  });
+
+  CabinetCategoryModel.hasMany(CabinetModel, {
+    foreignKey: "categoria_id",
+    as: "armarios"
+  });
+
   CabinetModel.hasMany(StockInputAttrs, { foreignKey: "armario_id", onDelete: 'SET NULL', onUpdate: 'CASCADE' });
   StockInputAttrs.belongsTo(CabinetModel, { foreignKey: "armario_id", onDelete: 'SET NULL', onUpdate: 'CASCADE' });
 

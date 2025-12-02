@@ -1,5 +1,6 @@
 import { Cabinet } from "../../../core/domain/armario";
 import CabinetModel from "../models/armario.model";
+import CabinetCategoryModel from "../models/categorias-armario.model";
 import InputStockModel from "../models/estoque-insumo.model";
 import MedicineStockModel from "../models/estoque-medicamento.model";
 
@@ -7,19 +8,29 @@ export class CabinetRepository {
   async createCabinet(data: Cabinet): Promise<Cabinet> {
     const item = await CabinetModel.create({
       num_armario: data.numero,
-      categoria: data.categoria,
+      categoria_id: data.categoria_id,
     });
     return {
       numero: item.num_armario,
-      categoria: item.categoria,
+      categoria_id: item.categoria_id,
     };
   }
 
-  async findAllCabinets(): Promise<Cabinet[]> {
-    const items = await CabinetModel.findAll({ order: [["num_armario", "ASC"]] });
+  async findAllCabinets() {
+    const items = await CabinetModel.findAll({
+      order: [["num_armario", "ASC"]],
+      include: [
+        {
+          model: CabinetCategoryModel,
+          attributes: ["id", "nome"],
+        },
+      ],
+    });
+
     return items.map(i => ({
       numero: i.num_armario,
-      categoria: i.categoria,
+      categoria_id: i.categoria_id,
+      categoria: i.CabinetCategoryModel.nome,
     }));
   }
 
@@ -28,17 +39,17 @@ export class CabinetRepository {
     if (!item) return null;
     return {
       numero: item.num_armario,
-      categoria: item.categoria,
+      categoria_id: item.categoria_id,
     };
   }
 
-  async update(number: number, categoria: string): Promise<Cabinet | null> {
+  async update(number: number, categoria_id: number): Promise<Cabinet | null> {
     const item = await CabinetModel.findByPk(number);
     if (!item) return null;
-    await item.update({ categoria });
+    await item.update({ categoria_id });
     return {
       numero: item.num_armario,
-      categoria: item.categoria,
+      categoria_id: item.categoria_id,
     };
   }
 

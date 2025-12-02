@@ -16,8 +16,8 @@ export class CabinetService {
     return this.repo.findByCabinetNumber(numero);
   }
 
-  async updateCabinet(numero: number, categoria: string): Promise<Cabinet | null> {
-    return this.repo.update(numero, categoria);
+  async updateCabinet(numero: number, categoria_id: number): Promise<Cabinet | null> {
+    return this.repo.update(numero, categoria_id);
   }
 
   async removeCabinet(numero: number): Promise<void> {

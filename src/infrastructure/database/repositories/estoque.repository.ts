@@ -299,7 +299,9 @@ export interface StockProportion {
     const totalEmergencyCarInputs = await InputStockModel.sum("quantidade", {
       where: { tipo: "carrinho_emergencia" }
     });
-    const totalInputs = await InputStockModel.sum("quantidade");
+    const totalInputs = await InputStockModel.sum("quantidade", {
+      where: { tipo: "geral" }
+    });;
 
    return { 
       total_medicamentos: totalMedicines,

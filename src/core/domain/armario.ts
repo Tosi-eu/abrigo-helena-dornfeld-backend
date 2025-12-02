@@ -1,4 +1,4 @@
 export interface Cabinet {
   numero: number;
-  categoria: string;
+  categoria_id: number;
 }

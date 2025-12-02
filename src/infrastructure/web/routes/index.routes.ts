@@ -8,6 +8,7 @@ import stockRoutes from "./estoque.routes";
 import movementRoutes from "./movimentacao.routes";
 import reportRoutes from "./relatorio.routes";
 import residentRoutes from "./residente.routes";
+import categoriaArmarioRoutes from "./categoria-armario.routes"
 
 const router = Router();
 
@@ -19,5 +20,6 @@ router.use("/estoque", stockRoutes);
 router.use("/movimentacoes", movementRoutes); 
 router.use("/relatorios", reportRoutes); 
 router.use("/residentes", residentRoutes); 
+router.use("/categoria-armario", categoriaArmarioRoutes); 
 
 export default router;

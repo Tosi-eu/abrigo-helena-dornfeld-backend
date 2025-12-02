@@ -3,7 +3,7 @@ import { sequelize } from "../sequelize";
 
 export interface CabinetAttributes {
   num_armario: number;
-  categoria: string;
+  categoria_id: number;
 }
 
 export interface CabinetCreationAttributes
@@ -14,20 +14,23 @@ export class CabinetModel
   implements CabinetAttributes
 {
   declare num_armario: number;
-  declare categoria: string;
+  declare categoria_id: number;
 }
+
 CabinetModel.init(
   {
     num_armario: {
       type: DataTypes.INTEGER,
       primaryKey: true,
       allowNull: false,
-      field: "num_armario",
     },
-    categoria: {
-      type: DataTypes.STRING(255),
+    categoria_id: {
+      type: DataTypes.INTEGER,
       allowNull: false,
-      field: "categoria",
+      references: {
+        model: "categoria_armario",
+        key: "id",
+      },
     },
   },
   {
