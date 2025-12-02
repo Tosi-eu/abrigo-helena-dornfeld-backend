@@ -15,6 +15,7 @@ export class CabinetModel
 {
   declare num_armario: number;
   declare categoria_id: number;
+  CabinetCategoryModel: any;
 }
 
 CabinetModel.init(
