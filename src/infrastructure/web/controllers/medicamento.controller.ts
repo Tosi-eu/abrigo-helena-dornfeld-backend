@@ -1,6 +1,11 @@
 import { Request, Response } from "express";
 import { MedicineService } from "../../../core/services/medicamento.service";
 
+export interface PaginationParams {
+  page: number;
+  limit: number;
+}
+
 export class MedicineController {
   constructor(private readonly service: MedicineService) {}
 
@@ -13,8 +18,11 @@ export class MedicineController {
     }
   }
 
-  async getAll(_req: Request, res: Response) {
-    const list = await this.service.findAll();
+  async getAll(req: Request, res: Response) {
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+
+    const list = await this.service.findAll({ page, limit });
     res.json(list);
   }
 

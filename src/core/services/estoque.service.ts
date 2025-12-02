@@ -12,7 +12,7 @@ export class StockService {
   }
 
   async inputStockIn(data: InputStock) {
-    if (!data.insumo_id || !data.armario_id || !data.quantidade)
+    if (!data.insumo_id || !data.armario_id || !data.quantidade || !data.tipo)
       throw new Error("Campos obrigatórios faltando.");
     return this.repo.createInputStockIn(data);
   }
@@ -30,7 +30,7 @@ export class StockService {
     throw new Error("Tipo inválido.");
   }
 
-  async listStock(params: { filter: string; type: string }) {
+  async listStock(params: { filter: string; type: string; page?: number; limit?: number }) {
     return this.repo.listStockItems(params);
   }
 

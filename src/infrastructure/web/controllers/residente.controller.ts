@@ -4,9 +4,18 @@ import { ResidentService } from "../../../core/services/residente.service";
 export class ResidentController {
   constructor(private readonly service: ResidentService) {}
 
-  async findAll(_req: Request, res: Response) {
-    const list = await this.service.findAll();
-    res.json(list);
+  async findAll(req: Request, res: Response) {
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 20;
+
+    const result = await this.service.findAll(page, limit);
+
+    res.json({
+      data: result.data,
+      page,
+      limit,
+      hasNext: result.hasNext,
+    });
   }
 
   async findByCasela(req: Request, res: Response) {

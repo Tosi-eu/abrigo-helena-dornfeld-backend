@@ -11,10 +11,10 @@ interface MovementAttrs {
   armario_id: number;
   quantidade: number;
   casela_id?: number | null;
-  validade_medicamento?: Date | null;
+  validade: Date;
 }
 
-type MovementCreation = Optional<MovementAttrs, "id" | "insumo_id" | "medicamento_id" | "casela_id" | "validade_medicamento">;
+type MovementCreation = Optional<MovementAttrs, "id" | "insumo_id" | "medicamento_id" | "casela_id">;
 
 export class MovementModel
   extends Model<MovementAttrs, MovementCreation>
@@ -29,7 +29,7 @@ export class MovementModel
   armario_id!: number;
   quantidade!: number;
   casela_id!: number | null;
-  validade_medicamento!: Date | null;
+  validade!: Date;
 }
 
 MovementModel.init(
@@ -43,12 +43,12 @@ MovementModel.init(
     armario_id: { type: DataTypes.INTEGER, allowNull: false },
     quantidade: { type: DataTypes.INTEGER, allowNull: false },
     casela_id: { type: DataTypes.INTEGER, allowNull: true },
-    validade_medicamento: { type: DataTypes.DATEONLY, allowNull: true },
+    validade: { type: DataTypes.DATEONLY, allowNull: false },
   },
   {
     sequelize,
     tableName: "movimentacao",
-    timestamps: false,
+    timestamps: true,
   }
 );
 

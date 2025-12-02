@@ -9,24 +9,37 @@ export class CabinetRepository {
       num_armario: data.numero,
       categoria: data.categoria,
     });
-    return new Cabinet(item.num_armario, item.categoria);
+    return {
+      numero: item.num_armario,
+      categoria: item.categoria,
+    };
   }
 
   async findAllCabinets(): Promise<Cabinet[]> {
     const items = await CabinetModel.findAll({ order: [["num_armario", "ASC"]] });
-    return items.map(i => new Cabinet(i.num_armario, i.categoria));
+    return items.map(i => ({
+      numero: i.num_armario,
+      categoria: i.categoria,
+    }));
   }
 
   async findByCabinetNumber(number: number): Promise<Cabinet | null> {
     const item = await CabinetModel.findByPk(number);
-    return item ? new Cabinet(item.num_armario, item.categoria) : null;
+    if (!item) return null;
+    return {
+      numero: item.num_armario,
+      categoria: item.categoria,
+    };
   }
 
   async update(number: number, categoria: string): Promise<Cabinet | null> {
     const item = await CabinetModel.findByPk(number);
     if (!item) return null;
     await item.update({ categoria });
-    return new Cabinet(item.num_armario, item.categoria);
+    return {
+      numero: item.num_armario,
+      categoria: item.categoria,
+    };
   }
 
   async delete(number: number): Promise<boolean> {
@@ -35,8 +48,8 @@ export class CabinetRepository {
   }
 
   async countMedicine(number: number): Promise<number> {
-  return MedicineStockModel.count({ where: { armario_id: number } });
-}
+    return MedicineStockModel.count({ where: { armario_id: number } });
+  }
 
   async countInput(number: number): Promise<number> {
     return InputStockModel.count({ where: { armario_id: number } });

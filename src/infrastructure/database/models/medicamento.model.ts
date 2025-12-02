@@ -6,12 +6,12 @@ export interface MedicineAttrs {
   nome: string;
   dosagem: number;
   unidade_medida: string;
-  principio_ativo: string | null;
+  principio_ativo: string;
   estoque_minimo: number;
 }
 
 export interface MedicineCreationAttrs
-  extends Optional<MedicineAttrs, "id" | "principio_ativo"> {}
+  extends Optional<MedicineAttrs, "id" | "estoque_minimo"> {}
 
 export class MedicineModel
   extends Model<MedicineAttrs, MedicineCreationAttrs>
@@ -21,7 +21,7 @@ export class MedicineModel
   declare nome: string;
   declare dosagem: number;
   declare unidade_medida: string;
-  declare principio_ativo: string | null;
+  declare principio_ativo: string;
   declare estoque_minimo: number;
 }
 
@@ -46,17 +46,17 @@ MedicineModel.init(
     },
     principio_ativo: {
       type: DataTypes.STRING,
-      allowNull: true,
+      allowNull: false,
     },
     estoque_minimo: {
       type: DataTypes.INTEGER,
-      allowNull: false,
+      allowNull: true,
     },
   },
   {
     sequelize,
     tableName: "medicamento",
-    timestamps: false,
+    timestamps: true,
   }
 );
 

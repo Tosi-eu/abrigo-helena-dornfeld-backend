@@ -33,11 +33,13 @@ export class StockController {
 
   async list(req: Request, res: Response) {
     try {
-      const { filter, type } = req.query;
+      const { filter, type, page, limit } = req.query;
 
       const data = await this.service.listStock({
         filter: String(filter || ""),
         type: String(type || ""),
+        page: Number(page) || 1,
+        limit: Number(limit) || 10,
       });
 
       return res.json(data);
@@ -50,26 +52,39 @@ export class StockController {
     try {
       const data = await this.service.getProportion();
 
-      const totalOverallMedicines = Number(data.total_gerais || 0);
-      const totalInvidualMedicines = Number(data.total_individuais || 0);
-      const totalInputsRaw = Number(data.total_insumos || 0);
-      const totalMedicinesRaw = Number(data.total_medicamentos || 0);
+      const totalMedicineTypeGeral = Number(data.total_gerais || 0);
+      const totalMedicineTypeIndividual = Number(data.total_individuais || 0);
+      const totalInputs = Number(data.total_insumos || 0);
 
-      const totalGeral = totalMedicinesRaw + totalInputsRaw;
+      const totalCarrinhoMedicamentos = Number(data.total_carrinho_medicamentos || 0);
+      const totalCarrinhoInsumos = Number(data.total_carrinho_insumos || 0);
 
-      const pct = (value: number) =>
-        totalGeral > 0 ? Number(((value / totalGeral) * 100).toFixed(2)) : 0;
+      const totalGeral =
+        totalMedicineTypeGeral +
+        totalMedicineTypeIndividual +
+        totalInputs +
+        totalCarrinhoMedicamentos +
+        totalCarrinhoInsumos; 
+
+      const pct = (v: number) =>
+        totalGeral > 0 ? Number(((v / totalGeral) * 100).toFixed(2)) : 0;
 
       return res.json({
-        medicamentos_geral: pct(totalOverallMedicines),
-        medicamentos_individual: pct(totalInvidualMedicines),
-        insumos: pct(totalInputsRaw),
-        totais: {
-          medicamentos_geral: totalOverallMedicines,
-          medicamentos_individual: totalInvidualMedicines,
-          insumos: totalInputsRaw,
-          total_geral: totalGeral,
+        percentuais: {
+          medicamentos_geral: pct(totalMedicineTypeGeral),
+          medicamentos_individual: pct(totalMedicineTypeIndividual),
+          insumos: pct(totalInputs),
+          carrinho_medicamentos: pct(totalCarrinhoMedicamentos),
+          carrinho_insumos: pct(totalCarrinhoInsumos)
         },
+        totais: {
+          medicamentos_geral: totalMedicineTypeGeral,
+          medicamentos_individual: totalMedicineTypeIndividual,
+          insumos: totalInputs,
+          carrinho_medicamentos: totalCarrinhoMedicamentos,
+          carrinho_insumos: totalCarrinhoInsumos,
+          total_geral: totalGeral
+        }
       });
     } catch (e: any) {
       return res.status(500).json({ error: e.message });

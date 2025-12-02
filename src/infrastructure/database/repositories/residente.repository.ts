@@ -3,9 +3,19 @@ import ResidentModel from "../models/residente.model";
 import { sequelize } from "../sequelize";
 
 export class ResidentRepository {
-  async findAll() {
-    const rows = await ResidentModel.findAll({ order: [["num_casela", "ASC"]] });
-    return rows.map(r => ({ casela: r.num_casela, name: r.nome }));
+  async findAll(page: number = 1, limit: number = 20) {
+    const offset = (page - 1) * limit;
+
+    const { rows, count } = await ResidentModel.findAndCountAll({
+      offset,
+      limit,
+      order: [["num_casela", "ASC"]],
+    });
+
+    return {
+      data: rows.map(r => ({ casela: r.num_casela, name: r.nome })),
+      hasNext: offset + rows.length < count,
+    };
   }
 
   async findByCasela(casela: number) {
@@ -49,6 +59,7 @@ export class ResidentRepository {
       return true;
     });
   }
+  
   async countMedicationsByCasela(casela: number): Promise<number> {
     return MedicineStockModel.count({
       where: { casela_id: casela },

@@ -1,11 +1,5 @@
-export class Input {
-  id: number;
+export interface Input {
   nome: string;
   descricao?: string;
-
-  constructor(id: number, nome: string, descricao?: string) {
-    this.nome = nome;
-    this.descricao = descricao;
-    this.id = id;
-  }
+  estoque_minimo?: number
 }

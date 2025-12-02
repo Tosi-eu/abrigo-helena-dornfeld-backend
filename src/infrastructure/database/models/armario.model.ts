@@ -33,7 +33,7 @@ CabinetModel.init(
   {
     sequelize,
     tableName: "armario",
-    timestamps: false,
+    timestamps: true,
   }
 );
 

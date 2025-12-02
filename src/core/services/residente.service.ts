@@ -5,8 +5,8 @@ import { Resident } from "../domain/residente";
 export class ResidentService {
   constructor(private readonly repo: ResidentRepository) {}
 
-  async findAll() {
-    return this.repo.findAll();
+  async findAll(page: number = 1, limit: number = 20) {
+    return this.repo.findAll(page, limit);
   }
 
   async findByCasela(casela: number) {

@@ -1,8 +1,8 @@
 export interface MedicineReport {
   medicamento: string;
-  principio_ativo: string | null;
+  principio_ativo: string;
   quantidade: number;
-  validade: string | null;
+  validade: string;
   residente: string | null;
 }
 

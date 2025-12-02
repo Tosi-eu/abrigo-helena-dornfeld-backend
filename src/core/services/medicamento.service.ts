@@ -1,5 +1,6 @@
 import { Medicine } from "../domain/medicamento";
 import { MedicineRepository } from "../../infrastructure/database/repositories/medicamento.repository";
+import { PaginationParams } from "../../infrastructure/web/controllers/medicamento.controller";
 
 export class MedicineService {
   constructor(private readonly repo: MedicineRepository) {}
@@ -8,8 +9,8 @@ export class MedicineService {
         nome: string;
         dosagem: number;
         unidade_medida: string;
-        principio_ativo?: string | null;
-        estoque_minimo: number;
+        principio_ativo: string;
+        estoque_minimo?: number;
     }): Promise<Medicine>{
     if (!data.nome || !data.unidade_medida || data.dosagem == null) {
       throw new Error("Nome, dosagem e unidade de medida são obrigatórios.");
@@ -22,8 +23,8 @@ export class MedicineService {
     return this.repo.createMedicine(data);
   }
 
-  async findAll() {
-    return this.repo.findAllMedicines();
+  async findAll({ page = 1, limit = 10 }: { page?: number; limit?: number }) {
+    return this.repo.findAllMedicines({ page, limit });
   }
 
   async findById(id: number) {

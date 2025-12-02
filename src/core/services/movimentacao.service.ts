@@ -3,12 +3,12 @@ import { MovementRepository } from "../../infrastructure/database/repositories/m
 export class MovementService {
   constructor(private readonly repo: MovementRepository) {}
 
-  async findMedicineMovements(days: number, type: string) {
-    return this.repo.listMedicineMovements(days, type);
+  async findMedicineMovements(params: any) {
+    return this.repo.listMedicineMovements(params);
   }
 
-  async listInputMovements(days: number) {
-    return this.repo.listInputMovements(days);
+  async listInputMovements(params: any) {
+    return this.repo.listInputMovements(params);
   }
 
   async createMovement(data: any) {

@@ -11,6 +11,8 @@ export interface StockProportion {
   total_individuais: number;
   total_gerais: number;
   total_insumos: number;
+  total_carrinho_medicamentos: number;
+  total_carrinho_insumos: number;
 }
 
   export class StockRepository {
@@ -37,7 +39,8 @@ export interface StockProportion {
         insumo_id: data.insumo_id,
         armario_id: data.armario_id,
         quantidade: data.quantidade,
-        validade: data.validade
+        validade: data.validade,
+        tipo: data.tipo
       });
 
       return { message: "Entrada de insumo registrada." };
@@ -62,8 +65,9 @@ export interface StockProportion {
   }
 
 
-  async listStockItems(params: { filter: string; type: string }) {
-    const { filter, type } = params;
+  async listStockItems(params: { filter: string; type: string; page?: number; limit?: number }) {
+    const { filter, type, page = 1, limit = 20 } = params;
+    const offset = (page - 1) * limit;
 
     let baseQuery = "";
 
@@ -99,9 +103,9 @@ export interface StockProportion {
           i.descricao as descricao,
           ei.validade AS validade,
           SUM(ei.quantidade) AS quantidade,
-          NULL AS minimo,
+          i.estoque_minimo AS minimo,
           NULL AS origem,
-          'geral' AS tipo,
+          ei.tipo AS tipo,
           NULL AS paciente,
           ei.armario_id,
           NULL AS casela_id
@@ -203,34 +207,57 @@ export interface StockProportion {
       baseQuery = `
         SELECT 
           a.num_armario AS armario_id,
-          COALESCE(SUM(em.quantidade), 0) AS total_medicamentos,
-          COALESCE(SUM(ei.quantidade), 0) AS total_insumos,
-          COALESCE(SUM(em.quantidade), 0) + COALESCE(SUM(ei.quantidade), 0) AS total_geral
+
+          COALESCE((
+            SELECT SUM(em.quantidade)
+            FROM estoque_medicamento em
+            WHERE em.armario_id = a.num_armario
+          ), 0) AS total_medicamentos,
+
+          COALESCE((
+            SELECT SUM(ei.quantidade)
+            FROM estoque_insumo ei
+            WHERE ei.armario_id = a.num_armario
+          ), 0) AS total_insumos,
+
+          COALESCE((
+            SELECT SUM(em.quantidade)
+            FROM estoque_medicamento em
+            WHERE em.armario_id = a.num_armario
+          ), 0)
+          +
+          COALESCE((
+            SELECT SUM(ei.quantidade)
+            FROM estoque_insumo ei
+            WHERE ei.armario_id = a.num_armario
+          ), 0) AS total_geral
+
         FROM armario a
-        LEFT JOIN estoque_medicamento em ON em.armario_id = a.num_armario
-        LEFT JOIN estoque_insumo ei ON ei.armario_id = a.num_armario
-        GROUP BY a.num_armario
         ORDER BY a.num_armario
       `;
-    } 
+    }
     else {
       throw new Error("Tipo inválido. Use medicamento, insumo, armarios ou deixe vazio.");
     }
 
+    if (type !== "armarios") {
+      baseQuery += ` ORDER BY nome ASC LIMIT ${limit} OFFSET ${offset}`;
+    }
+
     const results = await sequelize.query(baseQuery, { type: QueryTypes.SELECT });
 
-    return results.map((item: any) => {
+    let countQuery = baseQuery;
+
+    countQuery = countQuery.replace(/ORDER BY [\s\S]*?LIMIT.*OFFSET.*/i, "");
+
+    const countResults = await sequelize.query(countQuery, { type: QueryTypes.SELECT });
+    const total = countResults.length;
+
+    const mapped = results.map((item: any) => {
       const isCabinetType = type === "armarios";
 
-      let expiryInfo: { status: string | null; message: string | null } = {
-        status: null,
-        message: null,
-      };
-
-      let quantityInfo: { status: string | null; message: string | null } = {
-        status: null,
-        message: null,
-      };
+      let expiryInfo: {status: string | null, message: string | null } = { status: null, message: null };
+      let quantityInfo: {status: string | null, message: string | null } = { status: null, message: null };
 
       if (!isCabinetType) {
         expiryInfo = computeExpiryStatus(item.validade);
@@ -252,15 +279,36 @@ export interface StockProportion {
       };
     });
 
+    return {
+      data: mapped,
+      total,
+      page,
+      limit,
+      hasNext: total > page * limit,
+    };
   }
 
   async getStockProportion(): Promise<StockProportion> {
     const totalMedicines = await MedicineStockModel.sum("quantidade");
     const totalIndividualType = await MedicineStockModel.sum("quantidade", { where: { tipo: "individual" } });
     const totalGeralType = await MedicineStockModel.sum("quantidade", { where: { tipo: "geral" } });
+    const totalEmergencyCarMedicines = await MedicineStockModel.sum("quantidade", {
+      where: { tipo: "carrinho_emergencia" }
+    });
+
+    const totalEmergencyCarInputs = await InputStockModel.sum("quantidade", {
+      where: { tipo: "carrinho_emergencia" }
+    });
     const totalInputs = await InputStockModel.sum("quantidade");
 
-    return { total_medicamentos: totalMedicines, total_individuais: totalIndividualType, total_gerais: totalGeralType, total_insumos: totalInputs };
+   return { 
+      total_medicamentos: totalMedicines,
+      total_individuais: totalIndividualType,
+      total_gerais: totalGeralType,
+      total_insumos: totalInputs,
+      total_carrinho_medicamentos: totalEmergencyCarMedicines,
+      total_carrinho_insumos: totalEmergencyCarInputs
+    };
   } 
 }
 

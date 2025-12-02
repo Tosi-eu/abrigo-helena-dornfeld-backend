@@ -5,6 +5,7 @@ export interface InputAttrs {
   id: number;
   nome: string;
   descricao?: string | null;
+  estoque_minimo?: number
 }
 
 export interface InsumoCreationAttributes extends Optional<InputAttrs, "id"> {}
@@ -15,7 +16,8 @@ export class InputModel
 {
   declare id: number;
   declare nome: string;
-  declare descricao: string | null;
+  declare descricao?: string | null;
+  declare estoque_minimo?: number
 }
 
 InputModel.init(
@@ -33,11 +35,15 @@ InputModel.init(
       type: DataTypes.STRING(255),
       allowNull: true,
     },
+    estoque_minimo: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
   },
   {
     sequelize,
     tableName: "insumo",
-    timestamps: false,
+    timestamps: true,
   }
 );
 

@@ -1,11 +1,4 @@
-export class Resident {
+export interface Resident {
   casela: number;
   nome: string;
-  constructor(
-     casela: number,
-     nome: string) {
-      this.casela = casela
-      this.nome = nome
-     }
-
 }

@@ -13,11 +13,11 @@ export function computeQuantityStatus(quantity: number, minimumStock?: number) {
     return { status: "high", message: `Quantidade: ${quantity}` };
   }
 
-  const margin = minimumStock * 0.2;
+  const margin = minimumStock * 0.3;
 
   if (quantity > minimumStock * 2)
     return { status: "high", message: `Estoque saudável. Mínimo: ${minimumStock}` };
-  if (quantity > minimumStock + margin)
+  if (quantity > Math.ceil(minimumStock + margin))
     return { status: "medium", message: `Estoque médio. Mínimo: ${minimumStock}` };
   return { status: "low", message: `Estoque baixo. Mínimo: ${minimumStock}` };
 }

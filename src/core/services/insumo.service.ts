@@ -9,8 +9,8 @@ export class InputService {
     return this.repo.createInput(data);
   }
 
-  listAll() {
-    return this.repo.listAllInputs();
+  listPaginated(page: number = 1, limit: number = 10) {
+    return this.repo.listAllInputs(page, limit);
   }
 
   updateInput(id: number, data: Omit<Input, "id">) {
@@ -22,3 +22,4 @@ export class InputService {
     return this.repo.deleteInputById(id);
   }
 }
+

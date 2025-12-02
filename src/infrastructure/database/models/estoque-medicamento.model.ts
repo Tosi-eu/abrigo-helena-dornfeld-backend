@@ -29,15 +29,15 @@ MedicineStockModel.init(
     medicamento_id: { type: DataTypes.INTEGER, allowNull: false },
     casela_id: { type: DataTypes.INTEGER, allowNull: true },
     armario_id: { type: DataTypes.INTEGER, allowNull: false },
-    validade: { type: DataTypes.DATEONLY, allowNull: true },
+    validade: { type: DataTypes.DATEONLY, allowNull: false },
     quantidade: { type: DataTypes.INTEGER, allowNull: false },
-    origem: { type: DataTypes.STRING, allowNull: true },
-    tipo: { type: DataTypes.STRING, allowNull: true }, // individual / geral
+    origem: { type: DataTypes.STRING, allowNull: false },
+    tipo: { type: DataTypes.STRING, allowNull: false }, 
   },
   {
     sequelize,
     tableName: "estoque_medicamento",
-    timestamps: false,
+    timestamps: true,
   }
 );
 

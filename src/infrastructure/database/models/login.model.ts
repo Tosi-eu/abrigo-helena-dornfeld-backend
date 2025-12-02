@@ -27,7 +27,7 @@ LoginModel.init(
   {
     sequelize,
     tableName: "login",
-    timestamps: false,
+    timestamps: true,
   },
 );
 

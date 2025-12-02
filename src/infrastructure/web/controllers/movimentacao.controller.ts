@@ -4,28 +4,43 @@ import { MovementService } from "../../../core/services/movimentacao.service";
 export class MovementController {
   constructor(private readonly service: MovementService) {}
 
-  async getMedicines(req: Request, res: Response) {
-    try {
-      const days = Number(req.query.days) || 0;
-      const type = req.query.type as string;
+    async getMedicines(req: Request, res: Response) {
+      try {
+        const days = Number(req.query.days) || 0;
+        const type = req.query.type as string;
+        const page = Number(req.query.page) || 1;
+        const limit = Number(req.query.limit) || 10;
 
-      const list = await this.service.findMedicineMovements(days, type);
-      res.json(list);
-    } catch (e: any) {
-      res.status(500).json({ error: e.message });
+        const result = await this.service.findMedicineMovements({
+          days,
+          type,
+          page,
+          limit
+        });
+
+        res.json(result);
+      } catch (e: any) {
+        res.status(500).json({ error: e.message });
+      }
     }
-  }
 
-  async getInputs(req: Request, res: Response) {
-    try {
-      const days = Number(req.query.days) || 0;
+    async getInputs(req: Request, res: Response) {
+      try {
+        const days = Number(req.query.days) || 0;
+        const page = Number(req.query.page) || 1;
+        const limit = Number(req.query.limit) || 10;
 
-      const list = await this.service.listInputMovements(days);
-      res.json(list);
-    } catch (e: any) {
-      res.status(500).json({ error: e.message });
+        const result = await this.service.listInputMovements({
+          days,
+          page,
+          limit
+        });
+
+        res.json(result);
+      } catch (e: any) {
+        res.status(500).json({ error: e.message });
+      }
     }
-  }
 
   async create(req: Request, res: Response) {
     try {
