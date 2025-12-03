@@ -4,6 +4,8 @@ import {
   AllItemsReport, 
   InputReport, 
   MedicineReport, 
+  PsicotropicoData, 
+  PsicotropicosReport, 
   ResidentReport 
 } from "../models/relatorio.model";
 
@@ -68,6 +70,41 @@ export class ReportRepository {
     });
 
     return rows;
+  }
+
+  async getPsicotropicosData(): Promise<PsicotropicosReport> {
+    const query = `
+      SELECT
+          mov.tipo AS tipo,
+          m.nome AS medicamento,
+          r.nome AS residente,
+          mov.data AS data_movimentacao,
+          mov.quantidade AS quantidade
+      FROM MOVIMENTACAO mov
+      JOIN MEDICAMENTO m
+          ON m.id = mov.medicamento_id
+      LEFT JOIN RESIDENTE r
+          ON r.num_casela = mov.casela_id
+      JOIN ARMARIO a
+          ON a.num_armario = mov.armario_id
+      JOIN CATEGORIA_ARMARIO ca
+          ON ca.id = a.categoria_id
+      WHERE mov.medicamento_id IS NOT NULL
+        AND ca.id = 2     
+      ORDER BY mov.data ASC;
+    `;
+
+    const psicotropicosRes = await sequelize.query<PsicotropicoData>(query, {
+      type: QueryTypes.SELECT,
+    });
+
+  const formatted = psicotropicosRes.map(p => ({
+    ...p,
+    data_movimentacao: new Date(p.data_movimentacao)
+      .toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })
+  }));
+
+  return { psicotropico: formatted };
   }
 
   async getAllItemsData(): Promise<AllItemsReport> {

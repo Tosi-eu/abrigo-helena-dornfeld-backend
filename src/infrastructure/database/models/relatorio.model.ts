@@ -1,3 +1,5 @@
+import { MovementType } from "../../../core/enum/enum";
+
 export interface MedicineReport {
   medicamento: string;
   principio_ativo: string;
@@ -24,4 +26,16 @@ export interface ResidentReport {
 export interface AllItemsReport {
   medicamentos: MedicineReport[];
   insumos: InputReport[];
+}
+
+export interface PsicotropicoData {
+  tipo: MovementType;
+  medicamento: string;  
+  residente: string;       
+  data_movimentacao: string;
+  quantidade: number;
+}
+
+export interface PsicotropicosReport {
+  psicotropico: PsicotropicoData[]
 }

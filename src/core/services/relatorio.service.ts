@@ -17,6 +17,9 @@ export class ReportService {
       case "insumos_medicamentos":
         return this.repo.getAllItemsData();
 
+      case "psicotropicos":
+        return this.repo.getPsicotropicosData();
+
       default:
         throw new Error("Tipo inválido");
     }
