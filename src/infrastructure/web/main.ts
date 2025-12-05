@@ -3,7 +3,7 @@ import dotenv from "dotenv";
 import routes from "./routes/index.routes";
 import { sequelize } from "../database/sequelize";
 import { setupAssociations } from "../database/models/associations.models";
-import { seedCabinetCategories } from "../database/seed/cabinet-categories.seed";
+import { seedCabinetCategories } from "../database/seed/categoria-armario.seed";
 
 dotenv.config();
 

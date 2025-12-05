@@ -1,4 +1,5 @@
-import { MovementType } from "../../../core/enum/enum";
+import { MovementType } from "../../../core/utils/utils";
+
 
 export interface MedicineReport {
   medicamento: string;

@@ -8,7 +8,7 @@ export class CabinetCategoryService {
   }
 
   async list(page = 1, limit = 10) {
-    return this.repo.listAllCabinetCategories(page, limit);
+    return this.repo.list(page, limit);
   }
 
   async get(id: number) {
@@ -19,7 +19,7 @@ export class CabinetCategoryService {
     return this.repo.update(id, nome);
   }
 
-  async remove(id: number) {
+  async delete(id: number) {
     return this.repo.delete(id);
   }
 }

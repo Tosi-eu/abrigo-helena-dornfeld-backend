@@ -16,10 +16,10 @@ export const sequelize = new Sequelize(
     port: db.port,
     logging: false,
     pool: {
-      max: 20,
+      max: 1,
       min: 0,
-      acquire: 30000,
-      idle: 10000,
+      acquire: 5000,
+      idle: 5000,
     },
   }
 );

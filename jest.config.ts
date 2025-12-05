@@ -1,9 +1,6 @@
-/** @type {import('ts-jest').JestConfigWithTsJest} */
 module.exports = {
   preset: "ts-jest",
   testEnvironment: "node",
-
-  setupFiles: ["./jest.setup.ts"],
 
   testMatch: [
     "**/tests/**/*.test.ts",
@@ -16,12 +13,15 @@ module.exports = {
     "src/**/*.ts",
     "!src/tests/**",
     "!src/infrastructure/web/main.ts",
-    "!src/infrastructure/database/sequelize.ts"
+    "!src/infrastructure/database/sequelize.ts",
   ],
 
   clearMocks: true,
   testTimeout: 10000,
   verbose: true,
+  maxWorkers: 1,
+
+  globalTeardown: "<rootDir>/jest.teardown.ts",
 
   moduleFileExtensions: ["ts", "js", "json"]
 };

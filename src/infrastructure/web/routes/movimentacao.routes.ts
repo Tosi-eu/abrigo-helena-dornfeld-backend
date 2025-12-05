@@ -12,5 +12,10 @@ const controller = new MovementController(service);
 router.get("/medicamentos", controller.getMedicines.bind(controller));
 router.get("/insumos", controller.getInputs.bind(controller));
 router.post("/", controller.create.bind(controller));
+router.get(
+  "/medicamentos/ranking",
+  controller.getMedicineRanking.bind(controller)
+);
+
 
 export default router;

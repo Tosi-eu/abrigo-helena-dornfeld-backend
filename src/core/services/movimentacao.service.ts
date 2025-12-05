@@ -18,4 +18,9 @@ export class MovementService {
 
     return this.repo.create(data);
   }
+
+  async getMedicineRanking(params: any) {
+    return this.repo.getMedicineRanking(params);
+  }
+
 }

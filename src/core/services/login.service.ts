@@ -1,14 +1,13 @@
 import bcrypt from "bcrypt";
 import { LoginRepository } from "../../infrastructure/database/repositories/login.repository";
-import { LoginModel } from "../../infrastructure/database/models/login.model";
 
 export class LoginService {
   constructor(private readonly repo: LoginRepository) {}
 
-  async create(login: string, password: string): Promise<LoginModel> {
-    const hashedPassword = await bcrypt.hash(password, 10);
+  async create(login: string, password: string) {
+    const hashed = await bcrypt.hash(password, 10);
     try {
-      return await this.repo.create({ login, password: hashedPassword });
+      return await this.repo.create({ login, password: hashed });
     } catch (err: any) {
       if (err.name === "SequelizeUniqueConstraintError") {
         throw new Error("duplicate key");
@@ -17,14 +16,14 @@ export class LoginService {
     }
   }
 
-  async authenticate(login: string, password: string): Promise<LoginModel | null> {
+  async authenticate(login: string, password: string) {
     const user = await this.repo.findByLogin(login);
     if (!user) return null;
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return null;
+    const match = await bcrypt.compare(password, user.password);
+    if (!match) return null;
 
-    return user;
+    return { id: user.id, login: user.login };
   }
 
   async updateUser(
@@ -37,16 +36,20 @@ export class LoginService {
     const user = await this.repo.findById(id);
     if (!user) return null;
 
-    const isMatch = await bcrypt.compare(currentPassword, user.password);
-    if (!isMatch || user.login !== currentLogin) return null;
+    const match = await bcrypt.compare(currentPassword, user.password);
+    if (!match || user.login !== currentLogin) return null;
 
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    const hashed = await bcrypt.hash(newPassword, 10);
 
     try {
-      return await this.repo.update(id, {
+      const updated = await this.repo.update(id, {
         login: newLogin,
-        password: hashedPassword,
+        password: hashed,
       });
+
+      if (!updated) return null;
+
+      return { id: updated.id, login: updated.login };
     } catch (err: any) {
       if (err.name === "SequelizeUniqueConstraintError") {
         throw new Error("duplicate key");
@@ -55,15 +58,17 @@ export class LoginService {
     }
   }
 
-  async deleteUser(id: number): Promise<boolean> {
-    return await this.repo.delete(id);
+  deleteUser(id: number) {
+    return this.repo.delete(id);
   }
 
   async resetPassword(login: string, newPassword: string) {
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
     const user = await this.repo.findByLogin(login);
     if (!user) return null;
 
-    return await this.repo.update(user.id, { password: hashedPassword });
+    const hashed = await bcrypt.hash(newPassword, 10);
+    const updated = await this.repo.update(user.id, { password: hashed });
+
+    return { id: updated!.id, login: updated!.login };
   }
 }

@@ -5,35 +5,26 @@ export class CabinetCategoryRepository {
     return CabinetCategoryModel.create({ nome });
   }
 
-    async listAllCabinetCategories(
-    page: number = 1,
-    limit: number = 5
-    ): Promise<{
-    data: { id: number; nome: string }[];
-    total: number;
-    page: number;
-    limit: number;
-    hasNext: boolean;
-    }> {
+  async list(page: number = 1, limit: number = 10) {
     const offset = (page - 1) * limit;
 
     const { rows, count } = await CabinetCategoryModel.findAndCountAll({
-        offset,
-        limit,
-        order: [["nome", "ASC"]], 
+      offset,
+      limit,
+      order: [["nome", "ASC"]],
     });
 
     return {
-        data: rows.map((r) => ({
+      data: rows.map((r) => ({
         id: r.id,
         nome: r.nome,
-        })),
-        total: count,
-        page,
-        limit,
-        hasNext: offset + rows.length < count,
+      })),
+      total: count,
+      page,
+      limit,
+      hasNext: offset + rows.length < count,
     };
-    }
+  }
 
   async findById(id: number) {
     return CabinetCategoryModel.findByPk(id);

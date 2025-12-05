@@ -1,4 +1,4 @@
-import { OperationType } from "../enum/enum";
+import { OperationType } from "../utils/utils";
 
 export interface Movement {
   tipo: OperationType;

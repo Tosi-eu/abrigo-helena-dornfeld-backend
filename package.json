@@ -11,7 +11,7 @@
     "lint": "eslint . --ext .ts",
     "lint:fix": "eslint . --ext .ts --fix",
     "test": "jest tests/unit",
-    "test:e2e": "jest tests/e2e",
+    "test:e2e": "jest tests/e2e --detectOpenHandles",
     "test:watch": "jest --watchAll"
   },
   "dependencies": {

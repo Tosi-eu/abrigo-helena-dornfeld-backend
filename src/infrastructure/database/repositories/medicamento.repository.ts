@@ -5,6 +5,7 @@ import { PaginationParams } from "../../web/controllers/medicamento.controller";
 export class MedicineRepository {
   async createMedicine(data: Medicine): Promise<Medicine> {
     const record = await MedicineModel.create({
+      id: data.id,
       nome: data.nome,
       dosagem: data.dosagem,
       unidade_medida: data.unidade_medida,
@@ -13,6 +14,7 @@ export class MedicineRepository {
     });
 
     return {
+      id: record.id,
       nome: record.nome,
       dosagem: Number(record.dosagem),
       unidade_medida: record.unidade_medida,

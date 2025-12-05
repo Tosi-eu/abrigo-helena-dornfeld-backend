@@ -39,8 +39,13 @@ export class MedicineController {
 
   async delete(req: Request, res: Response) {
     const id = Number(req.params.id);
+
     const ok = await this.service.deleteMedicine(id);
-    if (!ok) return res.status(404).json({ error: "Não encontrado" });
-    res.json({ message: "Removido com sucesso" });
+
+    if (!ok) {
+      return res.status(404).json({ error: "Não encontrado" });
+    }
+
+    return res.status(204).end(); 
   }
 }

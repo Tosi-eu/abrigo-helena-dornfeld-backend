@@ -1,6 +1,6 @@
 import { StockRepository } from "../../infrastructure/database/repositories/estoque.repository";
 import { MedicineStock, InputStock } from "../domain/estoque";
-import { ItemType } from "../enum/enum";
+import { ItemType } from "../utils/utils";
 
 export class StockService {
   constructor(private readonly repo: StockRepository) {}

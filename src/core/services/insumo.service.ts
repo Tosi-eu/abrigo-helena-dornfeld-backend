@@ -22,4 +22,3 @@ export class InputService {
     return this.repo.deleteInputById(id);
   }
 }
-

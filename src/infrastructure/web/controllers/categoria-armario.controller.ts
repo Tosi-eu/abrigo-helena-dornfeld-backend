@@ -53,13 +53,13 @@ export class CabinetCategoryController {
   async delete(req: Request, res: Response) {
     try {
       const id = Number(req.params.id);
-      const ok = await this.service.remove(id);
+      const deleted = await this.service.delete(id);
 
-      if (!ok) {
+      if (!deleted) {
         return res.status(404).json({ error: "Categoria não encontrada" });
       }
 
-      return res.json({ message: `Categoria ${id} removida com sucesso.` });
+      return res.sendStatus(204);
     } catch (e: any) {
       return res.status(400).json({ error: e.message });
     }

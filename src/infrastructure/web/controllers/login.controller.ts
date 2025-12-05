@@ -14,7 +14,7 @@ export class LoginController {
       const user = await this.service.create(login, password);
       return res.status(201).json(user);
     } catch (err: any) {
-      if (err === "duplicate key") {
+      if (err.message === "duplicate key") {
         return res.status(409).json({ error: "Login já cadastrado" });
       }
       return res.status(500).json({ error: "Erro ao criar usuário" });
@@ -27,13 +27,8 @@ export class LoginController {
     if (!login || !password)
       return res.status(400).json({ error: "Login e senha obrigatórios" });
 
-    const user = await this.service.authenticate(
-      login as string,
-      password as string
-    );
-
-    if (!user)
-      return res.status(401).json({ error: "Credenciais inválidas" });
+    const user = await this.service.authenticate(login, password);
+    if (!user) return res.status(401).json({ error: "Credenciais inválidas" });
 
     return res.json(user);
   }
@@ -43,15 +38,17 @@ export class LoginController {
     const { currentLogin, currentPassword, login, password } = req.body;
 
     if (!currentLogin || !currentPassword || !login || !password)
-      return res.status(400).json({ error: "Dados obrigatórios ausentes" });
+      return res
+        .status(400)
+        .json({ error: "Dados obrigatórios ausentes" });
 
     try {
       const updated = await this.service.updateUser(
         Number(id),
         currentLogin,
-        String(currentPassword),
+        currentPassword,
         login,
-        String(password)
+        password
       );
 
       if (!updated)
@@ -67,12 +64,8 @@ export class LoginController {
   }
 
   async delete(req: Request, res: Response) {
-    const { id } = req.params;
-
-    const ok = await this.service.deleteUser(Number(id));
-
-    if (!ok)
-      return res.status(404).json({ error: "Usuário não encontrado" });
+    const ok = await this.service.deleteUser(Number(req.params.id));
+    if (!ok) return res.status(404).json({ error: "Usuário não encontrado" });
 
     return res.status(204).send();
   }
@@ -81,7 +74,9 @@ export class LoginController {
     const { login, newPassword } = req.body;
 
     if (!login || !newPassword)
-      return res.status(400).json({ error: "Login e nova senha obrigatórios" });
+      return res
+        .status(400)
+        .json({ error: "Login e nova senha obrigatórios" });
 
     const user = await this.service.resetPassword(login, newPassword);
 

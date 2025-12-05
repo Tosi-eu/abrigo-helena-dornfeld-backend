@@ -3,8 +3,8 @@ import MedicineStockModel from "../models/estoque-medicamento.model";
 import InputStockModel from "../models/estoque-insumo.model";
 import { QueryTypes } from "sequelize";
 import { sequelize } from "../sequelize";
-import { ItemType } from "../../../core/enum/enum";
 import { computeExpiryStatus, computeQuantityStatus } from "../../helpers/expiry-status";
+import { ItemType } from "../../../core/utils/utils";
 
 export interface StockProportion {
   total_medicamentos: number;

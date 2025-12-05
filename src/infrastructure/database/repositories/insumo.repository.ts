@@ -5,8 +5,10 @@ export class InputRepository {
   async createInput(data: Omit<Input, "id">): Promise<Input> {
     const input = await InputModel.create(data);
     return {
+      id: input.id,
       nome: input.nome,
       descricao: input.descricao ?? "",
+      estoque_minimo: input.estoque_minimo
     };
   }
 
@@ -47,14 +49,16 @@ export class InputRepository {
     if (!insumo) return null;
 
     const updated = await insumo.update(data);
+
     return {
+      id: updated.id,
       nome: updated.nome,
       descricao: updated.descricao ?? "",
+      estoque_minimo: updated.estoque_minimo
     };
   }
 
   async deleteInputById(id: number): Promise<boolean> {
-    const count = await InputModel.destroy({ where: { id } });
-    return count > 0;
+    return (await InputModel.destroy({ where: { id } })) > 0;
   }
 }

@@ -6,8 +6,8 @@ export class InsumoController {
 
   async create(req: Request, res: Response) {
     try {
-      const data = await this.service.createInput(req.body);
-      return res.status(201).json(data);
+      const created = await this.service.createInput(req.body);
+      return res.status(201).json(created);
     } catch (e: any) {
       return res.status(400).json({ error: e.message });
     }
@@ -22,10 +22,14 @@ export class InsumoController {
   }
 
   async update(req: Request, res: Response) {
-    const id = Number(req.params.id);
     try {
+      const id = Number(req.params.id);
       const updated = await this.service.updateInput(id, req.body);
-      if (!updated) return res.status(404).json({ error: "Não encontrado" });
+
+      if (!updated) {
+        return res.status(404).json({ error: "Não encontrado" });
+      }
+
       return res.json(updated);
     } catch (e: any) {
       return res.status(400).json({ error: e.message });
@@ -35,7 +39,9 @@ export class InsumoController {
   async delete(req: Request, res: Response) {
     const id = Number(req.params.id);
     const ok = await this.service.deleteInput(id);
+
     if (!ok) return res.status(404).json({ error: "Não encontrado" });
-    return res.json({ message: "Removido com sucesso" });
+
+    return res.sendStatus(204);
   }
 }

@@ -2,7 +2,8 @@ import { LoginModel } from "../models/login.model";
 
 export class LoginRepository {
   async create(data: { login: string; password: string }) {
-    return await LoginModel.create(data);
+    const user = await LoginModel.create(data);
+    return { id: user.id, login: user.login };
   }
 
   async findByLogin(login: string) {
@@ -24,7 +25,6 @@ export class LoginRepository {
   }
 
   async delete(id: number): Promise<boolean> {
-    const count = await LoginModel.destroy({ where: { id } });
-    return count > 0;
+    return (await LoginModel.destroy({ where: { id } })) > 0;
   }
 }

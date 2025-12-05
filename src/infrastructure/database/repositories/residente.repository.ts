@@ -42,23 +42,6 @@ export class ResidentRepository {
     const count = await ResidentModel.destroy({ where: { num_casela: casela } });
     return count > 0;
   }
-
-  async deleteWithMedicationTransfer(casela: number) {
-    return sequelize.transaction(async (t) => {
-
-      await MedicineStockModel.update(
-        { tipo: "geral", casela_id: null },
-        { where: { casela_id: casela }, transaction: t }
-      );
-
-      await ResidentModel.destroy({
-        where: { num_casela: casela },
-        transaction: t,
-      });
-
-      return true;
-    });
-  }
   
   async countMedicationsByCasela(casela: number): Promise<number> {
     return MedicineStockModel.count({

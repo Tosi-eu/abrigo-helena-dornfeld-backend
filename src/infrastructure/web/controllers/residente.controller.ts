@@ -54,10 +54,14 @@ export class ResidentController {
     const casela = Number(req.params.casela);
 
     try {
-      await this.service.deleteResident(casela);
-      res.status(200).json({ message: "Residente removido com sucesso." });
+      const deleted = await this.service.deleteResident(casela);
+
+      if (!deleted) {
+        return res.status(404).json({ error: "Residente não encontrado" });
+      }
+      return res.status(204).end(); 
     } catch (err: any) {
-      res.status(400).json({ message: err.message });
+      return res.status(400).json({ error: err.message });
     }
   }
 }

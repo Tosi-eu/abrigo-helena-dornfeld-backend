@@ -14,8 +14,8 @@ export class CabinetController {
   }
 
   async getAll(req: Request, res: Response) {
-    const cabinet = await this.service.findAll();
-    return res.json(cabinet);
+    const cabinets = await this.service.findAll();
+    return res.json(cabinets);
   }
 
   async getById(req: Request, res: Response) {
@@ -26,13 +26,13 @@ export class CabinetController {
       return res.status(404).json({ error: "Armário não encontrado" });
     }
 
-    return res.json();
+    return res.json(cabinet);
   }
 
   async update(req: Request, res: Response) {
     try {
       const number = Number(req.params.numero);
-      const category = req.body.categoria;
+      const category = req.body.categoria_id;
 
       const updated = await this.service.updateCabinet(number, category);
 
@@ -42,18 +42,21 @@ export class CabinetController {
 
       return res.json(updated);
     } catch (e: any) {
-      return res.status(500).json({ error: e.message });
+      return res.status(400).json({ error: e.message });
     }
   }
 
   async delete(req: Request, res: Response) {
+    const number = Number(req.params.numero);
+
     try {
-      const number = Number(req.params.numero);
+      const deleted = await this.service.removeCabinet(number);
 
-      await this.service.removeCabinet(number);
+      if (!deleted) {
+        return res.status(404).json({ error: "Armário não encontrado" });
+      }
 
-      return res.json({
-        message:  `Armário ${number} excluído com sucesso.` });
+      return res.status(204).end(); 
     } catch (e: any) {
       return res.status(400).json({ error: e.message });
     }

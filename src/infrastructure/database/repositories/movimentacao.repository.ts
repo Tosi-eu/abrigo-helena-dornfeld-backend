@@ -7,6 +7,7 @@ import ResidenteModel from "../models/residente.model";
 import LoginModel from "../models/login.model";
 import InputModel from "../models/insumo.model";
 import { toLocaleDateBRT } from "../../helpers/date.helper";
+import sequelize from "sequelize";
 
 export interface MovementQueryParams {
   days: number;
@@ -49,7 +50,6 @@ export class MovementRepository {
 
     const formatted = rows.map(r => ({
       ...r.get({ plain: true }),
-      validade: toLocaleDateBRT(r.validade),
       data: toLocaleDateBRT(r.data),
     }));
 
@@ -87,7 +87,6 @@ export class MovementRepository {
 
     const formatted = rows.map(r => ({
       ...r.get({ plain: true }),
-      validade: toLocaleDateBRT(r.validade),
       data: toLocaleDateBRT(r.data),
     }));
 
@@ -100,4 +99,101 @@ export class MovementRepository {
       limit,
     };
   }
+
+  async getMedicineRanking({ type, page, limit }: MovementQueryParams) {
+    const offset = (page - 1) * limit;
+    const orderDirection = type === "less" ? "ASC" : "DESC";
+
+    const result = await MovementModel.findAll({
+      where: { medicamento_id: { [Op.not]: null } },
+
+      attributes: [
+        "medicamento_id",
+        [
+          sequelize.literal(
+            `SUM(CASE WHEN "MovementModel"."tipo" = 'entrada' THEN "MovementModel"."quantidade" ELSE 0 END)`
+          ),
+          "total_entradas"
+        ],
+        [
+          sequelize.literal(
+            `SUM(CASE WHEN "MovementModel"."tipo" = 'saida' THEN "MovementModel"."quantidade" ELSE 0 END)`
+          ),
+          "total_saidas"
+        ],
+        [
+          sequelize.literal(
+            `COUNT(CASE WHEN "MovementModel"."tipo" = 'entrada' THEN 1 END)`
+          ),
+          "qtd_entradas"
+        ],
+        [
+          sequelize.literal(
+            `COUNT(CASE WHEN "MovementModel"."tipo" = 'saida' THEN 1 END)`
+          ),
+          "qtd_saidas"
+        ],
+        [
+          sequelize.literal(`SUM("MovementModel"."quantidade")`),
+          "total_movimentado"
+        ]
+      ],
+
+      include: [
+        {
+          model: MedicineModel,
+          attributes: ["id", "nome", "principio_ativo"],
+          required: false
+        }
+      ],
+
+      group: [
+        "medicamento_id",
+        "MedicineModel.id",
+        "MedicineModel.nome",
+        "MedicineModel.principio_ativo"
+      ],
+
+      order: [[sequelize.literal('"total_movimentado"'), orderDirection]],
+      limit,
+      offset,
+      subQuery: false
+    });
+
+    const totalCount = await MovementModel.count({
+      where: { medicamento_id: { [Op.not]: null } },
+      distinct: true,
+      col: "medicamento_id"
+    });
+
+    const data = result.map(r => {
+      const row = (r as any).get ? (r as any).get({ plain: true }) : r;
+      const medicamento = row.MedicineModel
+        ? {
+            id: row.MedicineModel.id,
+            nome: row.MedicineModel.nome,
+            principio_ativo: row.MedicineModel.principio_ativo
+          }
+        : null;
+        
+      return {
+        medicamento_id: row.medicamento_id,
+        total_entradas: Number(row.total_entradas) || 0,
+        total_saidas: Number(row.total_saidas) || 0,
+        qtd_entradas: Number(row.qtd_entradas) || 0,
+        qtd_saidas: Number(row.qtd_saidas) || 0,
+        total_movimentado: Number(row.total_movimentado) || 0,
+        medicamento
+      };
+    });
+
+    return {
+      data,
+      hasNext: totalCount > page * limit,
+      total: totalCount,
+      page,
+      limit
+    };
+  }
+
 }

@@ -51,16 +51,11 @@ export class ResidentService {
     return this.repo.updateResidentById(model);
   }
 
-  async deleteResident(casela: number) {
+  async deleteResident(casela: number): Promise<boolean> {
     const exists = await this.repo.findByCasela(casela);
-    if (!exists) throw new Error("Residente não encontrado");
+    if (!exists) return false;
 
-    const medCount = await this.repo.countMedicationsByCasela(casela);
-
-    if (medCount > 0) {
-      return this.repo.deleteWithMedicationTransfer(casela);
-    }
-
-    return this.repo.deleteResidentById(casela);
+    const ok = await this.repo.deleteResidentById(casela);
+    return ok;
   }
 }

@@ -32,6 +32,22 @@ export class MedicineService {
   }
 
   async updateMedicine(id: number, data: Partial<Omit<Medicine, "id">>) {
+
+  if (!data.nome || data.nome.trim() === "") {
+    throw new Error("Nome é obrigatório.");
+  }
+
+  if (data.dosagem != null && data.dosagem <= 0) {
+    throw new Error("Dosagem deve ser maior que zero.");
+  }
+
+  if (data.unidade_medida && data.unidade_medida.trim() === "") {
+    throw new Error("Unidade de medida inválida.");
+  }
+
+  if (data.estoque_minimo != null && data.estoque_minimo < 0) {
+    throw new Error("Estoque mínimo não pode ser negativo.");
+  }
     return this.repo.updateMedicineById(id, data);
   }
 
