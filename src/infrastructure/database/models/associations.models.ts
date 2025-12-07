@@ -6,6 +6,7 @@ import InputModel from "./insumo.model";
 import LoginModel from "./login.model";
 import MedicineModel from "./medicamento.model";
 import MovementModel from "./movimentacao.model";
+import NotificationEventModel from "./notification-event.model";
 import ResidentModel from "./residente.model";
 
 export function setupAssociations() {
@@ -30,6 +31,21 @@ export function setupAssociations() {
   CabinetCategoryModel.hasMany(CabinetModel, {
     foreignKey: "categoria_id",
     as: "armarios"
+  });
+
+  NotificationEventModel.belongsTo(ResidentModel, {
+    foreignKey: "residente_id",
+    as: "residente",
+  });
+
+  NotificationEventModel.belongsTo(MedicineModel, {
+    foreignKey: "medicamento_id",
+    as: "medicamento",
+  });
+
+  NotificationEventModel.belongsTo(LoginModel, {
+    foreignKey: "criado_por",
+    as: "usuario",
   });
 
   CabinetModel.hasMany(StockInputAttrs, { foreignKey: "armario_id", onDelete: 'SET NULL', onUpdate: 'CASCADE' });

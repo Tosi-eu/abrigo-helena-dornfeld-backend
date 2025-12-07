@@ -33,3 +33,28 @@ export interface StockRawResponse {
   st_quantidade: string,
   msg_quantidade: string
 }
+
+export interface ResidentMonthlyUsage {
+  residente: string;
+  casela: number;
+  medicamento: string;
+  principio_ativo: string;
+  data: Date;
+  consumo_mensal: number;
+}
+
+export interface QueryPaginationParams {
+  filter: string; 
+  type: string; 
+  page?: number; 
+  limit?: number 
+}
+
+export interface StockProportion {
+  total_medicamentos: number;
+  total_individuais: number;
+  total_gerais: number;
+  total_insumos: number;
+  total_carrinho_medicamentos: number;
+  total_carrinho_insumos: number;
+}

@@ -8,6 +8,7 @@ import {
   PsicotropicosReport, 
   ResidentReport 
 } from "../models/relatorio.model";
+import { ResidentMonthlyUsage } from "../../../core/utils/utils";
 
 export class ReportRepository {
 
@@ -70,6 +71,38 @@ export class ReportRepository {
     });
 
     return rows;
+  }
+
+  async getResidentsMonthlyUsage(): Promise<ResidentMonthlyUsage[]> {
+    const query = `
+      SELECT 
+      r.nome AS residente,
+      r.num_casela AS casela,
+      m.nome AS medicamento,
+      m.principio_ativo,
+      DATE_TRUNC('month', mov.data) AS data,
+      SUM(mov.quantidade) AS consumo_mensal
+    FROM movimentacao mov
+    JOIN medicamento m ON m.id = mov.medicamento_id
+    JOIN residente r ON r.num_casela = mov.casela_id
+    WHERE 
+      mov.tipo = 'saida' 
+      AND DATE_TRUNC('month', mov.data) = DATE_TRUNC('month', CURRENT_DATE)
+    GROUP BY 
+      r.num_casela,
+      r.nome,
+      m.id,
+      m.nome,
+      m.principio_ativo,
+      DATE_TRUNC('month', mov.data)
+    ORDER BY 
+      r.nome,
+      m.nome;
+    `;
+
+    return sequelize.query<ResidentMonthlyUsage>(query, {
+      type: QueryTypes.SELECT,
+    });
   }
 
   async getPsicotropicosData(): Promise<PsicotropicosReport> {

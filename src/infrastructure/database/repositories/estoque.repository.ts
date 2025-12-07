@@ -4,16 +4,7 @@ import InputStockModel from "../models/estoque-insumo.model";
 import { QueryTypes } from "sequelize";
 import { sequelize } from "../sequelize";
 import { computeExpiryStatus, computeQuantityStatus } from "../../helpers/expiry-status";
-import { ItemType } from "../../../core/utils/utils";
-
-export interface StockProportion {
-  total_medicamentos: number;
-  total_individuais: number;
-  total_gerais: number;
-  total_insumos: number;
-  total_carrinho_medicamentos: number;
-  total_carrinho_insumos: number;
-}
+import { ItemType, OperationType, QueryPaginationParams, StockProportion } from "../../../core/utils/utils";
 
   export class StockRepository {
     async createMedicineStockIn(data: MedicineStock) {
@@ -64,8 +55,7 @@ export interface StockProportion {
     }
   }
 
-
-  async listStockItems(params: { filter: string; type: string; page?: number; limit?: number }) {
+  async listStockItems(params: QueryPaginationParams) {
     const { filter, type, page = 1, limit = 20 } = params;
     const offset = (page - 1) * limit;
 
@@ -149,6 +139,8 @@ export interface StockProportion {
     else if (type === "medicamento") {
       baseQuery = `
         SELECT 
+         'medicamento' AS tipo_item,
+          em.id as estoque_id,
           m.id AS item_id,
           m.nome,
           m.principio_ativo,
@@ -163,7 +155,7 @@ export interface StockProportion {
         FROM estoque_medicamento em
         JOIN medicamento m ON m.id = em.medicamento_id
         LEFT JOIN residente r ON r.num_casela = em.casela_id
-        GROUP BY m.id, m.nome, m.principio_ativo, m.estoque_minimo, 
+        GROUP BY em.id, m.id, m.nome, m.principio_ativo, m.estoque_minimo, 
                 em.origem, em.tipo, r.nome, em.armario_id, em.casela_id
       `;
       switch (filter) {
@@ -191,6 +183,8 @@ export interface StockProportion {
     else if (type === "insumo") {
       baseQuery = `
         SELECT 
+          'insumo' AS tipo_item,
+          ei.id as estoque_id,
           i.id AS item_id,
           i.nome,
           SUM(ei.quantidade) AS quantidade,
@@ -290,14 +284,14 @@ export interface StockProportion {
 
   async getStockProportion(): Promise<StockProportion> {
     const totalMedicines = await MedicineStockModel.sum("quantidade");
-    const totalIndividualType = await MedicineStockModel.sum("quantidade", { where: { tipo: "individual" } });
-    const totalGeralType = await MedicineStockModel.sum("quantidade", { where: { tipo: "geral" } });
+    const totalIndividualType = await MedicineStockModel.sum("quantidade", { where: { tipo: OperationType.INDIVIDUAL } });
+    const totalGeralType = await MedicineStockModel.sum("quantidade", { where: { tipo: OperationType.GERAL } });
     const totalEmergencyCarMedicines = await MedicineStockModel.sum("quantidade", {
-      where: { tipo: "carrinho_emergencia" }
+      where: { tipo: OperationType.CARRINHO }
     });
 
     const totalEmergencyCarInputs = await InputStockModel.sum("quantidade", {
-      where: { tipo: "carrinho_emergencia" }
+      where: { tipo: OperationType.CARRINHO }
     });
     const totalInputs = await InputStockModel.sum("quantidade", {
       where: { tipo: "geral" }

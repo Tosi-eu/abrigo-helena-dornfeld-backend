@@ -21,7 +21,7 @@ export interface ResidentReport {
   medicamento: string;
   principio_ativo: string | null;
   quantidade: number;
-  validade: string | null;
+  validade: Date;
 }
 
 export interface AllItemsReport {

@@ -1,6 +1,6 @@
 import { StockRepository } from "../../infrastructure/database/repositories/estoque.repository";
 import { MedicineStock, InputStock } from "../domain/estoque";
-import { ItemType } from "../utils/utils";
+import { ItemType, QueryPaginationParams } from "../utils/utils";
 
 export class StockService {
   constructor(private readonly repo: StockRepository) {}
@@ -30,7 +30,7 @@ export class StockService {
     throw new Error("Tipo inválido.");
   }
 
-  async listStock(params: { filter: string; type: string; page?: number; limit?: number }) {
+  async listStock(params: QueryPaginationParams) {
     return this.repo.listStockItems(params);
   }
 

@@ -1,6 +1,6 @@
 export function computeExpiryStatus(expiryDate: Date) {
   const today = new Date();
-  const diff = Math.ceil((expiryDate.getTime() - today.getTime()) / (86400000));
+  const diff = Math.ceil((new Date(expiryDate).getTime() - today.getTime()) / (86400000));
 
   if (diff < 0) return { status: "expired", message: `Vencido há ${Math.abs(diff)} dias` };
   if (diff <= 30) return { status: "critical", message: `Vencerá em ${diff} dias` };

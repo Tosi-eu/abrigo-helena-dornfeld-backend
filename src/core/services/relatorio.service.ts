@@ -1,4 +1,5 @@
 import { ReportRepository } from "../../infrastructure/database/repositories/relatorio.repository";
+import { formatDateToPtBr } from "../../infrastructure/helpers/date.helper";
 
 export class ReportService {
   constructor(private readonly repo: ReportRepository) {}
@@ -12,7 +13,23 @@ export class ReportService {
         return this.repo.getInputsData();
 
       case "residentes":
-        return this.repo.getResidentsData();
+        const detailed = await this.repo.getResidentsData();
+        const monthly = await this.repo.getResidentsMonthlyUsage();
+
+        const monthlyFormatted = monthly.map((item) => ({
+          ...item,
+          data: formatDateToPtBr(item.data),
+        }));
+
+        const detailedFormatted = detailed.map((item) => ({
+          ...item,
+          validade: formatDateToPtBr(item.validade),
+        }));
+
+        return {
+          detalhes: detailedFormatted,
+          consumo_mensal: monthlyFormatted,
+        };
 
       case "insumos_medicamentos":
         return this.repo.getAllItemsData();

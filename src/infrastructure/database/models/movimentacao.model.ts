@@ -19,15 +19,15 @@ export class MovementModel
   extends Model<MovementAttrs, MovementCreation>
   implements MovementAttrs
 {
-  id!: number;
-  tipo!: string;
-  data!: Date;
-  login_id!: number;
-  insumo_id!: number | null;
-  medicamento_id!: number | null;
-  armario_id!: number;
-  quantidade!: number;
-  casela_id!: number | null;
+  declare id: number;
+  declare tipo: string;
+  declare data: Date;
+  declare login_id: number;
+  declare insumo_id: number | null;
+  declare medicamento_id: number | null;
+  declare armario_id: number;
+  declare quantidade: number;
+  declare casela_id: number | null;
 }
 
 MovementModel.init(
