@@ -11,6 +11,7 @@ export class NotificationEventRepository {
     destino: "SUS" | "Família";
     data_prevista: Date;
     criado_por: number;
+    visto: boolean
   }) {
     return NotificationEventModel.create(data);
   }
@@ -81,5 +82,23 @@ export class NotificationEventRepository {
 
   async delete(id: number) {
     return (await NotificationEventModel.destroy({ where: { id } })) > 0;
+  }
+
+  async getTodayPendingNotifications() {
+    const now = new Date();
+    const today = now.toLocaleDateString("pt-BR").split('/').reverse().join('-');
+
+    return NotificationEventModel.findAll({
+      where: {
+        status: "pending",
+        data_prevista: today
+      },
+      order: [["data_prevista", "ASC"]],
+      include: [
+        { model: ResidentModel, as: "residente", attributes: ["nome"] },
+        { model: MedicineModel, as: "medicamento", attributes: ["nome"] },
+        { model: LoginModel, as: "usuario", attributes: { exclude: ["password"] } },
+      ]
+    });
   }
 }

@@ -2,7 +2,8 @@ import { Request, Response } from "express";
 import { NotificationEventService } from "../../../core/services/notification-event.service";
 
 export class NotificationEventController {
-  constructor(private readonly service: NotificationEventService) {}
+  constructor(private readonly service: NotificationEventService) {
+  }
 
   async create(req: Request, res: Response) {
     try {
@@ -61,6 +62,21 @@ export class NotificationEventController {
       return res.sendStatus(204);
     } catch (e: any) {
       return res.status(400).json({ error: e.message });
+    }
+  }
+
+  async getToday(req: Request, res: Response) {
+    try {
+      const data = await this.service.getTodayPending();
+
+      return res.json({
+        date: new Date().toISOString(),
+        count: data.length,
+        data
+      });
+
+    } catch (e: any) {
+      return res.status(500).json({ error: e.message });
     }
   }
 }

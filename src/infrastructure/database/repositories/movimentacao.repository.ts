@@ -6,7 +6,7 @@ import CabinetModel from "../models/armario.model";
 import ResidenteModel from "../models/residente.model";
 import LoginModel from "../models/login.model";
 import InputModel from "../models/insumo.model";
-import { toLocaleDateBRT } from "../../helpers/date.helper";
+import { formatDateToPtBr, toLocaleDateBRT } from "../../helpers/date.helper";
 import sequelize from "sequelize";
 
 export interface MovementQueryParams {
@@ -43,14 +43,14 @@ export class MovementRepository {
       include: [
         { model: MedicineModel, attributes: ["nome", "principio_ativo"] },
         { model: CabinetModel, attributes: ["num_armario"] },
-        { model: ResidenteModel, attributes: ["num_casela"] },
+        { model: ResidenteModel, attributes: ["num_casela", "nome"] },
         { model: LoginModel, attributes: ["login"] },
       ],
     });
 
     const formatted = rows.map(r => ({
       ...r.get({ plain: true }),
-      data: toLocaleDateBRT(r.data),
+      data: formatDateToPtBr(r.data),
     }));
 
 
@@ -80,7 +80,7 @@ export class MovementRepository {
       include: [
         { model: InputModel, attributes: ["nome", "descricao"] },
         { model: CabinetModel, attributes: ["num_armario"] },
-        { model: ResidenteModel, attributes: ["num_casela"] },
+        { model: ResidenteModel, attributes: ["num_casela", "nome"] },
         { model: LoginModel, attributes: ["login"] },
       ],
     });

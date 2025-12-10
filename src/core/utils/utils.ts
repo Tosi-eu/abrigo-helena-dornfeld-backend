@@ -58,3 +58,12 @@ export interface StockProportion {
   total_carrinho_medicamentos: number;
   total_carrinho_insumos: number;
 }
+
+export interface NonMovementedItem {
+  tipo_item: ItemType;
+  item_id: number;
+  nome: string;
+  detalhe: string | null;
+  ultima_movimentacao: string | null; 
+  dias_parados: number;
+}

@@ -1,6 +1,7 @@
 import { StockRepository } from "../../infrastructure/database/repositories/estoque.repository";
+import { formatDateToPtBr } from "../../infrastructure/helpers/date.helper";
 import { MedicineStock, InputStock } from "../domain/estoque";
-import { ItemType, QueryPaginationParams } from "../utils/utils";
+import { ItemType, NonMovementedItem, QueryPaginationParams } from "../utils/utils";
 
 export class StockService {
   constructor(private readonly repo: StockRepository) {}
@@ -31,10 +32,33 @@ export class StockService {
   }
 
   async listStock(params: QueryPaginationParams) {
-    return this.repo.listStockItems(params);
+    const data = await this.repo.listStockItems(params);
+
+    const mappedData = data.data.map(item => ({
+      ...item,
+      quantidade: Number(item.quantidade), 
+    }));
+
+    return {
+      ...data,
+      data: mappedData,
+    };
   }
 
   async getProportion() {
     return this.repo.getStockProportion();
+  }
+
+  async getNonMovementedMedicines(limit = 10): Promise<NonMovementedItem[]> {
+    const data = await this.repo.getNonMovementedMedicines(limit);
+
+    return data.map(item => ({
+      tipo_item: item.tipo_item,
+      item_id: item.item_id,
+      nome: item.nome,
+      detalhe: item.detalhe ?? null,
+      ultima_movimentacao: formatDateToPtBr(item.ultima_movimentacao),
+      dias_parados: Number(item.dias_parados),
+    }));
   }
 }

@@ -4,7 +4,7 @@ import InputStockModel from "../models/estoque-insumo.model";
 import { QueryTypes } from "sequelize";
 import { sequelize } from "../sequelize";
 import { computeExpiryStatus, computeQuantityStatus } from "../../helpers/expiry-status";
-import { ItemType, OperationType, QueryPaginationParams, StockProportion } from "../../../core/utils/utils";
+import { ItemType, NonMovementedItem, OperationType, QueryPaginationParams, StockProportion } from "../../../core/utils/utils";
 
   export class StockRepository {
     async createMedicineStockIn(data: MedicineStock) {
@@ -113,12 +113,12 @@ import { ItemType, OperationType, QueryPaginationParams, StockProportion } from 
           case "noStock":
             medicamentoQuery += " HAVING SUM(em.quantidade) = 0";
             break;
-          case "belowMin":
-            medicamentoQuery += `
-              HAVING SUM(em.quantidade) > 0
-              AND SUM(em.quantidade) <= COALESCE(m.estoque_minimo,0)
-            `;
-            break;
+        case "belowMin":
+          medicamentoQuery += `
+            HAVING SUM(em.quantidade) >= COALESCE(m.estoque_minimo, 0)
+              AND SUM(em.quantidade) <= COALESCE(m.estoque_minimo, 0) * 1.35
+          `;
+          break;
           case "expired":
             medicamentoQuery += " HAVING MIN(em.validade) < CURRENT_DATE";
             break;
@@ -126,7 +126,7 @@ import { ItemType, OperationType, QueryPaginationParams, StockProportion } from 
             medicamentoQuery += `
               HAVING SUM(em.quantidade) > 0
               AND MIN(em.validade) IS NOT NULL
-              AND MIN(em.validade) BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '60 days'
+              AND MIN(em.validade) BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '45 days'
             `;
             break;
         }
@@ -191,7 +191,7 @@ import { ItemType, OperationType, QueryPaginationParams, StockProportion } from 
           ei.armario_id
         FROM estoque_insumo ei
         JOIN insumo i ON i.id = ei.insumo_id
-        GROUP BY i.id, i.nome, ei.armario_id
+        GROUP BY ei.id, i.id, i.nome, ei.armario_id
       `;
       if (filter === "noStock") {
         baseQuery += " HAVING SUM(ei.quantidade) = 0";
@@ -306,5 +306,41 @@ import { ItemType, OperationType, QueryPaginationParams, StockProportion } from 
       total_carrinho_insumos: totalEmergencyCarInputs
     };
   } 
+
+  async getNonMovementedMedicines(limit = 10) {
+    const query = `
+        SELECT 
+          'medicamento' AS tipo_item,
+          m.id AS item_id,
+          m.nome,
+          m.principio_ativo AS detalhe,
+          MAX(mov.data) AS ultima_movimentacao,
+          DATE_PART('day', CURRENT_DATE - COALESCE(MAX(mov.data), '1900-01-01')) AS dias_parados
+        FROM medicamento m
+        JOIN movimentacao mov ON mov.medicamento_id = m.id
+        GROUP BY m.id, m.nome, m.principio_ativo
+
+        UNION ALL
+
+        SELECT 
+          'insumo' AS tipo_item,
+          i.id AS item_id,
+          i.nome,
+          i.descricao AS detalhe,
+          MAX(mov.data) AS ultima_movimentacao,
+          DATE_PART('day', CURRENT_DATE - COALESCE(MAX(mov.data), '1900-01-01')) AS dias_parados
+        FROM insumo i
+        LEFT JOIN movimentacao mov ON mov.insumo_id = i.id
+        GROUP BY i.id, i.nome, i.descricao
+
+        ORDER BY dias_parados DESC
+        LIMIT :limit
+      `;
+
+    return sequelize.query(query, {
+      type: QueryTypes.SELECT,
+      replacements: { limit },
+    }) as Promise<NonMovementedItem[]>;
+  }
 }
 

@@ -9,6 +9,7 @@ export class NotificationEventService {
     destino: "SUS" | "Família";
     data_prevista: Date;
     criado_por: number;
+    visto: boolean
   }) {
     return this.repo.create(data);
   }
@@ -27,5 +28,9 @@ export class NotificationEventService {
 
   async delete(id: number) {
     return this.repo.delete(id);
+  }
+
+  async getTodayPending() {
+    return this.repo.getTodayPendingNotifications();
   }
 }

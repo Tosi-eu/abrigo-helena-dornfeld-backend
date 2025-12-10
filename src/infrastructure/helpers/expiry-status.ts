@@ -4,20 +4,25 @@ export function computeExpiryStatus(expiryDate: Date) {
 
   if (diff < 0) return { status: "expired", message: `Vencido há ${Math.abs(diff)} dias` };
   if (diff <= 30) return { status: "critical", message: `Vencerá em ${diff} dias` };
-  if (diff <= 60) return { status: "warning", message: `Vencerá em ${diff} dias` };
+  if (diff <= 45) return { status: "warning", message: `Vencerá em ${diff} dias` };
   return { status: "healthy", message: `Vencerá em ${diff} dias` };
 }
+ 
+export function computeQuantityStatus(quantity: number, minimumStock: number) {
+  const lowMax = minimumStock * 1.35;    
+  const highThreshold = minimumStock * 3;
 
-export function computeQuantityStatus(quantity: number, minimumStock?: number) {
-  if (minimumStock == null) {
-    return { status: "high", message: `Quantidade: ${quantity}` };
+  if (quantity >= highThreshold) {
+    return { status: "high", message: `Estoque saudável. Mínimo: ${minimumStock}` };
   }
 
-  const margin = minimumStock * 0.3;
+  if (quantity >= minimumStock && quantity <= lowMax) {
+    return { status: "low", message: `Estoque baixo. Mínimo: ${minimumStock}` };
+  }
 
-  if (quantity > minimumStock * 2)
-    return { status: "high", message: `Estoque saudável. Mínimo: ${minimumStock}` };
-  if (quantity > Math.ceil(minimumStock + margin))
+  if (quantity > lowMax && quantity < highThreshold) {
     return { status: "medium", message: `Estoque médio. Mínimo: ${minimumStock}` };
-  return { status: "low", message: `Estoque baixo. Mínimo: ${minimumStock}` };
+  }
+
+  return { status: "critical", message: `Estoque crítico. Mínimo: ${minimumStock}` };
 }

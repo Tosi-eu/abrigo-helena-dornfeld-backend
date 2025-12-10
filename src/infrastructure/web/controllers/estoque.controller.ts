@@ -90,4 +90,14 @@ export class StockController {
       return res.status(500).json({ error: e.message });
     }
   }
+
+  async nonMovementMedications(req: Request, res: Response) {
+    try {
+      const limit = Number(req.query.limit) || 10;
+      const result = await this.service.getNonMovementedMedicines(limit);
+      return res.json(result); 
+    } catch (e: any) {
+      return res.status(500).json({ error: e.message });
+    }
+  }
 }
