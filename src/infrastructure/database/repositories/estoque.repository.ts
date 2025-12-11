@@ -335,41 +335,5 @@ import { formatDateToPtBr } from "../../helpers/date.helper";
       total_carrinho_insumos: totalEmergencyCarInputs
     };
   } 
-
-  async getNonMovementedMedicines(limit = 10) {
-    const query = `
-        SELECT 
-          'medicamento' AS tipo_item,
-          m.id AS item_id,
-          m.nome,
-          m.principio_ativo AS detalhe,
-          MAX(mov.data) AS ultima_movimentacao,
-          DATE_PART('day', CURRENT_DATE - COALESCE(MAX(mov.data), '1900-01-01')) AS dias_parados
-        FROM medicamento m
-        JOIN movimentacao mov ON mov.medicamento_id = m.id
-        GROUP BY m.id, m.nome, m.principio_ativo
-
-        UNION ALL
-
-        SELECT 
-          'insumo' AS tipo_item,
-          i.id AS item_id,
-          i.nome,
-          i.descricao AS detalhe,
-          MAX(mov.data) AS ultima_movimentacao,
-          DATE_PART('day', CURRENT_DATE - COALESCE(MAX(mov.data), '1900-01-01')) AS dias_parados
-        FROM insumo i
-        LEFT JOIN movimentacao mov ON mov.insumo_id = i.id
-        GROUP BY i.id, i.nome, i.descricao
-
-        ORDER BY dias_parados DESC
-        LIMIT :limit
-      `;
-
-    return sequelize.query(query, {
-      type: QueryTypes.SELECT,
-      replacements: { limit },
-    }) as Promise<NonMovementedItem[]>;
-  }
 }
 

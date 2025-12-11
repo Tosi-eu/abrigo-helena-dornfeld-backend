@@ -1,4 +1,4 @@
-import { Op } from "sequelize";
+import { Op, QueryTypes } from "sequelize";
 import MovementModel from "../models/movimentacao.model";
 import Movement from "../../../core/domain/movimentacao";
 import MedicineModel from "../models/medicamento.model";
@@ -7,7 +7,8 @@ import ResidenteModel from "../models/residente.model";
 import LoginModel from "../models/login.model";
 import InputModel from "../models/insumo.model";
 import { formatDateToPtBr } from "../../helpers/date.helper";
-import sequelize from "sequelize";
+import { sequelize } from "../sequelize";
+import { NonMovementedItem } from "../../../core/utils/utils";
 
 export interface MovementQueryParams {
   days: number;
@@ -194,6 +195,42 @@ export class MovementRepository {
       page,
       limit
     };
+  }
+
+  async getNonMovementedMedicines(limit = 10) {
+    const query = `
+        SELECT 
+          'medicamento' AS tipo_item,
+          m.id AS item_id,
+          m.nome,
+          m.principio_ativo AS detalhe,
+          MAX(mov.data) AS ultima_movimentacao,
+          DATE_PART('day', CURRENT_DATE - COALESCE(MAX(mov.data), '1900-01-01')) AS dias_parados
+        FROM medicamento m
+        JOIN movimentacao mov ON mov.medicamento_id = m.id
+        GROUP BY m.id, m.nome, m.principio_ativo
+
+        UNION ALL
+
+        SELECT 
+          'insumo' AS tipo_item,
+          i.id AS item_id,
+          i.nome,
+          i.descricao AS detalhe,
+          MAX(mov.data) AS ultima_movimentacao,
+          DATE_PART('day', CURRENT_DATE - COALESCE(MAX(mov.data), '1900-01-01')) AS dias_parados
+        FROM insumo i
+        JOIN movimentacao mov ON mov.insumo_id = i.id
+        GROUP BY i.id, i.nome, i.descricao
+
+        ORDER BY dias_parados DESC
+        LIMIT :limit
+      `;
+
+    return sequelize.query(query, {
+      type: QueryTypes.SELECT,
+      replacements: { limit },
+    }) as Promise<NonMovementedItem[]>;
   }
 
 }

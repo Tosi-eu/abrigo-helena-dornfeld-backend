@@ -48,17 +48,4 @@ export class StockService {
   async getProportion() {
     return this.repo.getStockProportion();
   }
-
-  async getNonMovementedMedicines(limit = 10): Promise<NonMovementedItem[]> {
-    const data = await this.repo.getNonMovementedMedicines(limit);
-
-    return data.map(item => ({
-      tipo_item: item.tipo_item,
-      item_id: item.item_id,
-      nome: item.nome,
-      detalhe: item.detalhe ?? null,
-      ultima_movimentacao: formatDateToPtBr(item.ultima_movimentacao),
-      dias_parados: Number(item.dias_parados),
-    }));
-  }
 }

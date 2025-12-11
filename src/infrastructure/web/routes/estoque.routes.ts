@@ -9,7 +9,6 @@ const controller = new StockController(service);
 
 const router = Router();
 
-router.get("/produtos-parados", (req, res) => controller.nonMovementMedications(req, res));
 router.post("/entrada", (req, res) => controller.stockIn(req, res));
 router.post("/saida", (req, res) => controller.stockOut(req, res));
 router.get("/", (req, res) => controller.list(req, res));

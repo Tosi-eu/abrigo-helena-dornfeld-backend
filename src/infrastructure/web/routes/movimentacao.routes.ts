@@ -9,6 +9,7 @@ const repo = new MovementRepository();
 const service = new MovementService(repo);
 const controller = new MovementController(service);
 
+router.get("/produtos-parados", (req, res) => controller.nonMovementMedications(req, res));
 router.get("/medicamentos", controller.getMedicines.bind(controller));
 router.get("/insumos", controller.getInputs.bind(controller));
 router.post("/", controller.create.bind(controller));
