@@ -6,7 +6,7 @@ import CabinetModel from "../models/armario.model";
 import ResidenteModel from "../models/residente.model";
 import LoginModel from "../models/login.model";
 import InputModel from "../models/insumo.model";
-import { formatDateToPtBr, toLocaleDateBRT } from "../../helpers/date.helper";
+import { formatDateToPtBr } from "../../helpers/date.helper";
 import sequelize from "sequelize";
 
 export interface MovementQueryParams {
@@ -87,7 +87,7 @@ export class MovementRepository {
 
     const formatted = rows.map(r => ({
       ...r.get({ plain: true }),
-      data: toLocaleDateBRT(r.data),
+      data: formatDateToPtBr(r.data),
     }));
 
 

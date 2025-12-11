@@ -9,6 +9,7 @@ import {
   ResidentReport 
 } from "../models/relatorio.model";
 import { ResidentMonthlyUsage } from "../../../core/utils/utils";
+import { formatDateToPtBr } from "../../helpers/date.helper";
 
 export class ReportRepository {
 
@@ -133,8 +134,7 @@ export class ReportRepository {
 
   const formatted = psicotropicosRes.map(p => ({
     ...p,
-    data_movimentacao: new Date(p.data_movimentacao)
-      .toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })
+    data_movimentacao: formatDateToPtBr(p.data_movimentacao)
   }));
 
   return { psicotropico: formatted };

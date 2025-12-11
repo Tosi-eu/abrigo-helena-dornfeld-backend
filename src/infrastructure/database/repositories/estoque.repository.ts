@@ -5,27 +5,60 @@ import { QueryTypes } from "sequelize";
 import { sequelize } from "../sequelize";
 import { computeExpiryStatus, computeQuantityStatus } from "../../helpers/expiry-status";
 import { ItemType, NonMovementedItem, OperationType, QueryPaginationParams, StockProportion } from "../../../core/utils/utils";
+import { formatDateToPtBr } from "../../helpers/date.helper";
 
   export class StockRepository {
     async createMedicineStockIn(data: MedicineStock) {
-    try {
-      await MedicineStockModel.create({
-        medicamento_id: data.medicamento_id,
-        casela_id: data.casela_id ?? null,
-        armario_id: data.armario_id,
-        validade: data.validade ?? null,
-        quantidade: data.quantidade,
-        origem: data.origem ?? null,
-        tipo: data.tipo ?? null,
-      }); 
+      try {
+        const existing = await MedicineStockModel.findOne({
+          where: {
+            medicamento_id: data.medicamento_id,
+            armario_id: data.armario_id,
+            validade: data.validade ?? null,
+            tipo: data.tipo,
+            casela_id: data.casela_id ?? null,
+            origem: data.origem
+          },
+        });
 
-      return { message: "Entrada de medicamento registrada." };
-    } catch (error: any) {
-      throw new Error(error);
+        if (existing) {
+          existing.quantidade += data.quantidade;
+          await existing.save();
+          return { message: "Quantidade somada ao estoque existente." };
+        }
+
+        await MedicineStockModel.create({
+          medicamento_id: data.medicamento_id,
+          casela_id: data.casela_id ?? null,
+          armario_id: data.armario_id,
+          validade: data.validade,
+          quantidade: data.quantidade,
+          origem: data.origem,
+          tipo: data.tipo,
+        });
+
+        return { message: "Entrada de medicamento registrada." };
+      } catch (error: any) {
+        throw new Error(error);
+      }
     }
-  }
 
     async createInputStockIn(data: InputStock) {
+      const existing = await InputStockModel.findOne({
+        where: {
+          insumo_id: data.insumo_id,
+          armario_id: data.armario_id,
+          validade: data.validade ?? null,
+          tipo: data.tipo
+        },
+      });
+
+      if (existing) {
+        existing.quantidade += data.quantidade;
+        await existing.save();
+        return { message: "Quantidade somada ao estoque existente." };
+      }
+
       await InputStockModel.create({
         insumo_id: data.insumo_id,
         armario_id: data.armario_id,
@@ -258,11 +291,7 @@ import { ItemType, NonMovementedItem, OperationType, QueryPaginationParams, Stoc
         quantityInfo = computeQuantityStatus(item.quantidade, item.minimo);
       }
 
-      item.validade = item.validade
-        ? new Date(item.validade).toLocaleDateString("pt-BR", {
-            timeZone: "America/Sao_Paulo",
-          })
-        : null;
+      item.validade = formatDateToPtBr(item.validade)
 
       return {
         ...item,
