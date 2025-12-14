@@ -153,7 +153,7 @@ import { formatDateToPtBr } from "../../helpers/date.helper";
           `;
           break;
           case "expired":
-            medicamentoQuery += " HAVING MIN(em.validade) < CURRENT_DATE";
+            medicamentoQuery += " HAVING SUM(em.quantidade) > 0 AND MIN(em.validade) < CURRENT_DATE";
             break;
           case "expiringSoon":
             medicamentoQuery += `
