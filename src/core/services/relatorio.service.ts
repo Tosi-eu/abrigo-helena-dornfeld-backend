@@ -6,30 +6,31 @@ export class ReportService {
 
   async generateReport(type: string) {
     switch (type) {
-      case "medicamentos":
-        return this.repo.getMedicinesData();
+    case "medicamentos": {
+      const data = await this.repo.getMedicinesData();
+      return this.formatItemsWithValidity(data.map(item => ({...item, validade: new Date(item.validade)})));
+    }
 
-      case "insumos":
-        return this.repo.getInputsData();
-
-      case "residentes":
+    case "insumos": {
+      const data = await this.repo.getInputsData();
+      return this.formatItemsWithValidity(data.map(item => ({...item, validade: new Date(item.validade)})));
+    }
+    
+      case "residentes": {
         const detailed = await this.repo.getResidentsData();
         const monthly = await this.repo.getResidentsMonthlyUsage();
 
-        const monthlyFormatted = monthly.map((item) => ({
-          ...item,
-          data: formatDateToPtBr(item.data),
-        }));
-
-        const detailedFormatted = detailed.map((item) => ({
-          ...item,
-          validade: formatDateToPtBr(item.validade),
-        }));
-
         return {
-          detalhes: detailedFormatted,
-          consumo_mensal: monthlyFormatted,
+          detalhes: detailed.map(item => ({
+            ...item,
+            validade: formatDateToPtBr(item.validade),
+          })),
+          consumo_mensal: monthly.map(item => ({
+            ...item,
+            data: formatDateToPtBr(item.data),
+          })),
         };
+      }
 
       case "insumos_medicamentos":
         return this.repo.getAllItemsData();
@@ -41,4 +42,12 @@ export class ReportService {
         throw new Error("Tipo inválido");
     }
   }
+
+  private formatItemsWithValidity<T extends { validade: Date }>(data: T[]) {
+    return data.map(item => ({
+      ...item,
+      validade: formatDateToPtBr(item.validade),
+    }));
+  }
 }
+

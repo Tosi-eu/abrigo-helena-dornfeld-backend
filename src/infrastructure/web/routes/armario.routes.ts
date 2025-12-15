@@ -15,6 +15,3 @@ router.put("/:numero", (req, res) => controller.update(req, res));
 router.delete("/:numero", (req, res) => controller.delete(req, res)); 
 
 export default router;
-
-
-

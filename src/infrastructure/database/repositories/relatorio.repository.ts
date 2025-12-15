@@ -16,14 +16,24 @@ export class ReportRepository {
   async getMedicinesData(): Promise<MedicineReport[]> {
     const query = `
       SELECT 
-        m.nome as medicamento, m.principio_ativo, 
+        m.nome AS medicamento,
+        m.principio_ativo,
+        em.validade,
         SUM(em.quantidade) AS quantidade,
-        MIN(em.validade) AS validade, 
         p.nome AS residente
       FROM ESTOQUE_MEDICAMENTO em
-      JOIN MEDICAMENTO m ON m.id = em.medicamento_id
-      LEFT JOIN RESIDENTE p ON p.num_casela = em.casela_id
-      GROUP BY m.nome, m.principio_ativo, p.nome
+      JOIN MEDICAMENTO m 
+        ON m.id = em.medicamento_id
+      LEFT JOIN RESIDENTE p 
+        ON p.num_casela = em.casela_id
+      GROUP BY 
+        m.nome,
+        m.principio_ativo,
+        em.validade,
+        p.nome
+      ORDER BY 
+        m.nome,
+        em.validade;
     `;
 
     const rows = await sequelize.query<MedicineReport>(query, {
@@ -36,12 +46,20 @@ export class ReportRepository {
   async getInputsData(): Promise<InputReport[]> {
     const query = `
       SELECT 
-        i.nome as insumo, 
-        SUM(ei.quantidade) AS quantidade, 
-        ei.armario_id as armario
+        i.nome AS insumo,
+        ei.validade,
+        SUM(ei.quantidade) AS quantidade,
+        ei.armario_id AS armario
       FROM ESTOQUE_INSUMO ei
-      JOIN INSUMO i ON i.id = ei.insumo_id
-      GROUP BY i.nome, ei.armario_id
+      JOIN INSUMO i 
+        ON i.id = ei.insumo_id
+      GROUP BY 
+        i.nome,
+        ei.validade,
+        ei.armario_id
+      ORDER BY 
+        i.nome,
+        ei.validade;
     `;
 
     const rows = await sequelize.query<InputReport>(query, {

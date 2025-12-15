@@ -8,8 +8,8 @@ import stockRoutes from "./estoque.routes";
 import movementRoutes from "./movimentacao.routes";
 import reportRoutes from "./relatorio.routes";
 import residentRoutes from "./residente.routes";
-import categoriaArmarioRoutes from "./categoria-armario.routes"
-import notificacaoRoutes from "./notification-event.routes"
+import cabinetCategoryRoutes from "./categoria-armario.routes"
+import notificationRoutes from "./notification-event.routes"
     
 const router = Router();
 
@@ -21,7 +21,7 @@ router.use("/estoque", stockRoutes);
 router.use("/movimentacoes", movementRoutes); 
 router.use("/relatorios", reportRoutes); 
 router.use("/residentes", residentRoutes); 
-router.use("/categoria-armario", categoriaArmarioRoutes); 
-router.use("/notificacao", notificacaoRoutes); 
+router.use("/categoria-armario", cabinetCategoryRoutes); 
+router.use("/notificacao", notificationRoutes); 
 
 export default router;

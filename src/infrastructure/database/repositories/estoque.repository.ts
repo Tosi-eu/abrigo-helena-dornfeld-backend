@@ -123,7 +123,7 @@ import { formatDateToPtBr } from "../../helpers/date.helper";
           ei.id as estoque_id,
           i.id AS item_id,
           i.nome,
-          i.descricao as descricao,
+          i.descricao AS descricao,
           ei.validade AS validade,
           SUM(ei.quantidade) AS quantidade,
           i.estoque_minimo AS minimo,
@@ -221,10 +221,12 @@ import { formatDateToPtBr } from "../../helpers/date.helper";
           i.id AS item_id,
           i.nome,
           SUM(ei.quantidade) AS quantidade,
-          ei.armario_id
+          ei.armario_id,
+          i.estoque_minimo AS minimo,
+          ei.validade as validade
         FROM estoque_insumo ei
         JOIN insumo i ON i.id = ei.insumo_id
-        GROUP BY ei.id, i.id, i.nome, ei.armario_id
+        GROUP BY ei.id, i.id, i.nome, ei.armario_id, i.estoque_minimo ,ei.validade
       `;
       if (filter === "noStock") {
         baseQuery += " HAVING SUM(ei.quantidade) = 0";

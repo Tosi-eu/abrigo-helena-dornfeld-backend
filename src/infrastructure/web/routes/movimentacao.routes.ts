@@ -10,12 +10,12 @@ const service = new MovementService(repo);
 const controller = new MovementController(service);
 
 router.get("/produtos-parados", (req, res) => controller.nonMovementMedications(req, res));
-router.get("/medicamentos", controller.getMedicines.bind(controller));
-router.get("/insumos", controller.getInputs.bind(controller));
-router.post("/", controller.create.bind(controller));
+router.get("/medicamentos", (req, res) => controller.getMedicines(req, res));
+router.get("/insumos", (req, res) => controller.getInputs(req, res));
+router.post("/", (req, res) => controller.create(req, res));
 router.get(
   "/medicamentos/ranking",
-  controller.getMedicineRanking.bind(controller)
+  (req, res) => controller.getMedicineRanking(req, res)
 );
 
 
