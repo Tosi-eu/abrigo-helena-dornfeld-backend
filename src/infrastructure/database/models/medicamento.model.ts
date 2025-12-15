@@ -1,5 +1,5 @@
-import { DataTypes, Model, Optional } from "sequelize";
-import { sequelize } from "../sequelize";
+import { DataTypes, Model, Optional } from 'sequelize';
+import { sequelize } from '../sequelize';
 
 export interface MedicineAttrs {
   id: number;
@@ -10,8 +10,10 @@ export interface MedicineAttrs {
   estoque_minimo: number;
 }
 
-export interface MedicineCreationAttrs
-  extends Optional<MedicineAttrs, "id" | "estoque_minimo"> {}
+export interface MedicineCreationAttrs extends Optional<
+  MedicineAttrs,
+  'id' | 'estoque_minimo'
+> {}
 
 export class MedicineModel
   extends Model<MedicineAttrs, MedicineCreationAttrs>
@@ -55,9 +57,9 @@ MedicineModel.init(
   },
   {
     sequelize,
-    tableName: "medicamento",
+    tableName: 'medicamento',
     timestamps: true,
-  }
+  },
 );
 
 export default MedicineModel;

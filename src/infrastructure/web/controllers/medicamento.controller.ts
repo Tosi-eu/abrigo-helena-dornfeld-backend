@@ -1,5 +1,5 @@
-import { Request, Response } from "express";
-import { MedicineService } from "../../../core/services/medicamento.service";
+import { Request, Response } from 'express';
+import { MedicineService } from '../../../core/services/medicamento.service';
 
 export interface PaginationParams {
   page: number;
@@ -30,7 +30,7 @@ export class MedicineController {
     const id = Number(req.params.id);
     try {
       const updated = await this.service.updateMedicine(id, req.body);
-      if (!updated) return res.status(404).json({ error: "Não encontrado" });
+      if (!updated) return res.status(404).json({ error: 'Não encontrado' });
       res.json(updated);
     } catch (e: any) {
       res.status(400).json({ error: e.message });
@@ -43,9 +43,9 @@ export class MedicineController {
     const ok = await this.service.deleteMedicine(id);
 
     if (!ok) {
-      return res.status(404).json({ error: "Não encontrado" });
+      return res.status(404).json({ error: 'Não encontrado' });
     }
 
-    return res.status(204).end(); 
+    return res.status(204).end();
   }
 }

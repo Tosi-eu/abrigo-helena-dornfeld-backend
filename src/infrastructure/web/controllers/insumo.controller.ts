@@ -1,5 +1,5 @@
-import { Request, Response } from "express";
-import { InputService } from "../../../core/services/insumo.service";
+import { Request, Response } from 'express';
+import { InputService } from '../../../core/services/insumo.service';
 
 export class InsumoController {
   constructor(private readonly service: InputService) {}
@@ -27,7 +27,7 @@ export class InsumoController {
       const updated = await this.service.updateInput(id, req.body);
 
       if (!updated) {
-        return res.status(404).json({ error: "Não encontrado" });
+        return res.status(404).json({ error: 'Não encontrado' });
       }
 
       return res.json(updated);
@@ -40,7 +40,7 @@ export class InsumoController {
     const id = Number(req.params.id);
     const ok = await this.service.deleteInput(id);
 
-    if (!ok) return res.status(404).json({ error: "Não encontrado" });
+    if (!ok) return res.status(404).json({ error: 'Não encontrado' });
 
     return res.sendStatus(204);
   }

@@ -1,5 +1,5 @@
-import { CabinetService } from "../../../core/services/armario.service";
-import { Request, Response } from "express";
+import { CabinetService } from '../../../core/services/armario.service';
+import { Request, Response } from 'express';
 
 export class CabinetController {
   constructor(private readonly service: CabinetService) {}
@@ -23,7 +23,7 @@ export class CabinetController {
     const cabinet = await this.service.findCabinetByNumber(number);
 
     if (!cabinet) {
-      return res.status(404).json({ error: "Armário não encontrado" });
+      return res.status(404).json({ error: 'Armário não encontrado' });
     }
 
     return res.json(cabinet);
@@ -37,7 +37,7 @@ export class CabinetController {
       const updated = await this.service.updateCabinet(number, category);
 
       if (!updated) {
-        return res.status(404).json({ error: "Armário não encontrado" });
+        return res.status(404).json({ error: 'Armário não encontrado' });
       }
 
       return res.json(updated);
@@ -53,10 +53,10 @@ export class CabinetController {
       const deleted = await this.service.removeCabinet(number);
 
       if (!deleted) {
-        return res.status(404).json({ error: "Armário não encontrado" });
+        return res.status(404).json({ error: 'Armário não encontrado' });
       }
 
-      return res.status(204).end(); 
+      return res.status(204).end();
     } catch (e: any) {
       return res.status(400).json({ error: e.message });
     }

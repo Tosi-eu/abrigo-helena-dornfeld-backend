@@ -1,23 +1,22 @@
-import { Medicine } from "../domain/medicamento";
-import { MedicineRepository } from "../../infrastructure/database/repositories/medicamento.repository";
-import { PaginationParams } from "../../infrastructure/web/controllers/medicamento.controller";
+import { Medicine } from '../domain/medicamento';
+import { MedicineRepository } from '../../infrastructure/database/repositories/medicamento.repository';
 
 export class MedicineService {
   constructor(private readonly repo: MedicineRepository) {}
 
   async createMedicine(data: {
-        nome: string;
-        dosagem: number;
-        unidade_medida: string;
-        principio_ativo: string;
-        estoque_minimo?: number;
-    }): Promise<Medicine>{
+    nome: string;
+    dosagem: number;
+    unidade_medida: string;
+    principio_ativo: string;
+    estoque_minimo?: number;
+  }): Promise<Medicine> {
     if (!data.nome || !data.unidade_medida || data.dosagem == null) {
-      throw new Error("Nome, dosagem e unidade de medida são obrigatórios.");
+      throw new Error('Nome, dosagem e unidade de medida são obrigatórios.');
     }
 
     if (data.dosagem <= 0) {
-      throw new Error("A dosagem deve ser positiva.");
+      throw new Error('A dosagem deve ser positiva.');
     }
 
     return this.repo.createMedicine(data);
@@ -31,23 +30,22 @@ export class MedicineService {
     return this.repo.findMedicineById(id);
   }
 
-  async updateMedicine(id: number, data: Partial<Omit<Medicine, "id">>) {
+  async updateMedicine(id: number, data: Partial<Omit<Medicine, 'id'>>) {
+    if (!data.nome || data.nome.trim() === '') {
+      throw new Error('Nome é obrigatório.');
+    }
 
-  if (!data.nome || data.nome.trim() === "") {
-    throw new Error("Nome é obrigatório.");
-  }
+    if (data.dosagem != null && data.dosagem <= 0) {
+      throw new Error('Dosagem deve ser maior que zero.');
+    }
 
-  if (data.dosagem != null && data.dosagem <= 0) {
-    throw new Error("Dosagem deve ser maior que zero.");
-  }
+    if (data.unidade_medida && data.unidade_medida.trim() === '') {
+      throw new Error('Unidade de medida inválida.');
+    }
 
-  if (data.unidade_medida && data.unidade_medida.trim() === "") {
-    throw new Error("Unidade de medida inválida.");
-  }
-
-  if (data.estoque_minimo != null && data.estoque_minimo < 0) {
-    throw new Error("Estoque mínimo não pode ser negativo.");
-  }
+    if (data.estoque_minimo != null && data.estoque_minimo < 0) {
+      throw new Error('Estoque mínimo não pode ser negativo.');
+    }
     return this.repo.updateMedicineById(id, data);
   }
 

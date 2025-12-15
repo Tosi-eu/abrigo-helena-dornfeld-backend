@@ -1,22 +1,26 @@
-import { ReportRepository } from "../../infrastructure/database/repositories/relatorio.repository";
-import { formatDateToPtBr } from "../../infrastructure/helpers/date.helper";
+import { ReportRepository } from '../../infrastructure/database/repositories/relatorio.repository';
+import { formatDateToPtBr } from '../../infrastructure/helpers/date.helper';
 
 export class ReportService {
   constructor(private readonly repo: ReportRepository) {}
 
   async generateReport(type: string) {
     switch (type) {
-    case "medicamentos": {
-      const data = await this.repo.getMedicinesData();
-      return this.formatItemsWithValidity(data.map(item => ({...item, validade: new Date(item.validade)})));
-    }
+      case 'medicamentos': {
+        const data = await this.repo.getMedicinesData();
+        return this.formatItemsWithValidity(
+          data.map(item => ({ ...item, validade: new Date(item.validade) })),
+        );
+      }
 
-    case "insumos": {
-      const data = await this.repo.getInputsData();
-      return this.formatItemsWithValidity(data.map(item => ({...item, validade: new Date(item.validade)})));
-    }
-    
-      case "residentes": {
+      case 'insumos': {
+        const data = await this.repo.getInputsData();
+        return this.formatItemsWithValidity(
+          data.map(item => ({ ...item, validade: new Date(item.validade) })),
+        );
+      }
+
+      case 'residentes': {
         const detailed = await this.repo.getResidentsData();
         const monthly = await this.repo.getResidentsMonthlyUsage();
 
@@ -32,14 +36,14 @@ export class ReportService {
         };
       }
 
-      case "insumos_medicamentos":
+      case 'insumos_medicamentos':
         return this.repo.getAllItemsData();
 
-      case "psicotropicos":
+      case 'psicotropicos':
         return this.repo.getPsicotropicosData();
 
       default:
-        throw new Error("Tipo inválido");
+        throw new Error('Tipo inválido');
     }
   }
 
@@ -50,4 +54,3 @@ export class ReportService {
     }));
   }
 }
-

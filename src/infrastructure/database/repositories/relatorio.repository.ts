@@ -1,18 +1,17 @@
-import { sequelize } from "../sequelize";
-import { QueryTypes } from "sequelize";
-import { 
-  AllItemsReport, 
-  InputReport, 
-  MedicineReport, 
-  PsicotropicoData, 
-  PsicotropicosReport, 
-  ResidentReport 
-} from "../models/relatorio.model";
-import { ResidentMonthlyUsage } from "../../../core/utils/utils";
-import { formatDateToPtBr } from "../../helpers/date.helper";
+import { sequelize } from '../sequelize';
+import { QueryTypes } from 'sequelize';
+import {
+  AllItemsReport,
+  InputReport,
+  MedicineReport,
+  PsicotropicoData,
+  PsicotropicosReport,
+  ResidentReport,
+} from '../models/relatorio.model';
+import { ResidentMonthlyUsage } from '../../../core/utils/utils';
+import { formatDateToPtBr } from '../../helpers/date.helper';
 
 export class ReportRepository {
-
   async getMedicinesData(): Promise<MedicineReport[]> {
     const query = `
       SELECT 
@@ -150,12 +149,12 @@ export class ReportRepository {
       type: QueryTypes.SELECT,
     });
 
-  const formatted = psicotropicosRes.map(p => ({
-    ...p,
-    data_movimentacao: formatDateToPtBr(p.data_movimentacao)
-  }));
+    const formatted = psicotropicosRes.map(p => ({
+      ...p,
+      data_movimentacao: formatDateToPtBr(p.data_movimentacao),
+    }));
 
-  return { psicotropico: formatted };
+    return { psicotropico: formatted };
   }
 
   async getAllItemsData(): Promise<AllItemsReport> {

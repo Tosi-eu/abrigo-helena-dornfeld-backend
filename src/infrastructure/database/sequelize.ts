@@ -1,6 +1,6 @@
-import { Sequelize } from "sequelize";
-import dotenv from "dotenv";
-import { getDatabaseConfig } from "../helpers/database.helper";
+import { Sequelize } from 'sequelize';
+import dotenv from 'dotenv';
+import { getDatabaseConfig } from '../helpers/database.helper';
 
 dotenv.config();
 
@@ -12,7 +12,7 @@ export const sequelize = new Sequelize(
   db.pass as string,
   {
     host: db.host,
-    dialect: "postgres",
+    dialect: 'postgres',
     port: db.port,
     logging: false,
     pool: {
@@ -21,5 +21,5 @@ export const sequelize = new Sequelize(
       acquire: 30000,
       idle: 10000,
     },
-  }
+  },
 );

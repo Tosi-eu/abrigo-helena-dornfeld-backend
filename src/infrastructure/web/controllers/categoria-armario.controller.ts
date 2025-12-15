@@ -1,5 +1,5 @@
-import { Request, Response } from "express";
-import { CabinetCategoryService } from "../../../core/services/categoria-armario.service";
+import { Request, Response } from 'express';
+import { CabinetCategoryService } from '../../../core/services/categoria-armario.service';
 
 export class CabinetCategoryController {
   constructor(private readonly service: CabinetCategoryService) {}
@@ -27,7 +27,7 @@ export class CabinetCategoryController {
     const category = await this.service.get(id);
 
     if (!category) {
-      return res.status(404).json({ error: "Categoria não encontrada" });
+      return res.status(404).json({ error: 'Categoria não encontrada' });
     }
 
     return res.json(category);
@@ -41,7 +41,7 @@ export class CabinetCategoryController {
       const updated = await this.service.update(id, nome);
 
       if (!updated) {
-        return res.status(404).json({ error: "Categoria não encontrada" });
+        return res.status(404).json({ error: 'Categoria não encontrada' });
       }
 
       return res.json(updated);
@@ -56,7 +56,7 @@ export class CabinetCategoryController {
       const deleted = await this.service.delete(id);
 
       if (!deleted) {
-        return res.status(404).json({ error: "Categoria não encontrada" });
+        return res.status(404).json({ error: 'Categoria não encontrada' });
       }
 
       return res.sendStatus(204);

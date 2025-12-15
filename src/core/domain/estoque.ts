@@ -1,4 +1,4 @@
-import { OperationType } from "../utils/utils";
+import { OperationType } from '../utils/utils';
 
 export interface MedicineStock {
   medicamento_id: number;

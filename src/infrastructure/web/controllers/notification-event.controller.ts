@@ -1,9 +1,8 @@
-import { Request, Response } from "express";
-import { NotificationEventService } from "../../../core/services/notification-event.service";
+import { Request, Response } from 'express';
+import { NotificationEventService } from '../../../core/services/notification-event.service';
 
 export class NotificationEventController {
-  constructor(private readonly service: NotificationEventService) {
-  }
+  constructor(private readonly service: NotificationEventService) {}
 
   async create(req: Request, res: Response) {
     try {
@@ -29,7 +28,7 @@ export class NotificationEventController {
     const event = await this.service.get(id);
 
     if (!event) {
-      return res.status(404).json({ error: "Notificação não encontrada" });
+      return res.status(404).json({ error: 'Notificação não encontrada' });
     }
 
     return res.json(event);
@@ -41,7 +40,7 @@ export class NotificationEventController {
       const updated = await this.service.update(id, req.body);
 
       if (!updated) {
-        return res.status(404).json({ error: "Notificação não encontrada" });
+        return res.status(404).json({ error: 'Notificação não encontrada' });
       }
 
       return res.json(updated);
@@ -56,7 +55,7 @@ export class NotificationEventController {
       const deleted = await this.service.delete(id);
 
       if (!deleted) {
-        return res.status(404).json({ error: "Notificação não encontrada" });
+        return res.status(404).json({ error: 'Notificação não encontrada' });
       }
 
       return res.sendStatus(204);
@@ -72,9 +71,8 @@ export class NotificationEventController {
       return res.json({
         date: new Date().toISOString(),
         count: data.length,
-        data
+        data,
       });
-
     } catch (e: any) {
       return res.status(500).json({ error: e.message });
     }

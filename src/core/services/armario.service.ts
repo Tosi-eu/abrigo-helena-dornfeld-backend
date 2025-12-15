@@ -1,15 +1,15 @@
-import { CabinetRepository } from "../../infrastructure/database/repositories/armario.repository";
-import { Cabinet } from "../domain/armario";
+import { CabinetRepository } from '../../infrastructure/database/repositories/armario.repository';
+import { Cabinet } from '../domain/armario';
 
 export class CabinetService {
   constructor(private readonly repo: CabinetRepository) {}
 
   async createCabinet(data: Cabinet): Promise<Cabinet> {
     if (!data.numero || data.numero <= 0) {
-      throw new Error("Número do armário inválido");
+      throw new Error('Número do armário inválido');
     }
     if (!data.categoria_id || data.categoria_id <= 0) {
-      throw new Error("Categoria inválida");
+      throw new Error('Categoria inválida');
     }
 
     return this.repo.createCabinet(data);
@@ -25,7 +25,7 @@ export class CabinetService {
 
   async updateCabinet(numero: number, categoria_id: number) {
     if (!categoria_id || categoria_id <= 0) {
-      throw new Error("Categoria inválida");
+      throw new Error('Categoria inválida');
     }
 
     return this.repo.update(numero, categoria_id);

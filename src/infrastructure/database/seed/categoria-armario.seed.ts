@@ -1,4 +1,4 @@
-import CabinetCategoryModel from "../models/categorias-armario.model";
+import CabinetCategoryModel from '../models/categorias-armario.model';
 
 export async function seedCabinetCategories() {
   const count = await CabinetCategoryModel.count();
@@ -7,15 +7,13 @@ export async function seedCabinetCategories() {
   }
 
   const defaults = [
-    "Medicação geral",
-    "Psicotrópicos e injeções",
-    "Medicamentos doados / Fitas / Dersane / Clorexidina",
-    "Lactulose / Hipratrópio / Pomadas / Domperidona / Materiais de glicemia",
+    'Medicação geral',
+    'Psicotrópicos e injeções',
+    'Medicamentos doados / Fitas / Dersane / Clorexidina',
+    'Lactulose / Hipratrópio / Pomadas / Domperidona / Materiais de glicemia',
   ];
 
-  await CabinetCategoryModel.bulkCreate(
-    defaults.map((nome) => ({ nome }))
-  );
+  await CabinetCategoryModel.bulkCreate(defaults.map(nome => ({ nome })));
 
-  console.log("✓ Categorias criadas.");
+  console.log('✓ Categorias criadas.');
 }

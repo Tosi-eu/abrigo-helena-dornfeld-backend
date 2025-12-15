@@ -1,4 +1,4 @@
-import CabinetCategoryModel from "../models/categorias-armario.model";
+import CabinetCategoryModel from '../models/categorias-armario.model';
 
 export class CabinetCategoryRepository {
   async create(nome: string) {
@@ -11,11 +11,11 @@ export class CabinetCategoryRepository {
     const { rows, count } = await CabinetCategoryModel.findAndCountAll({
       offset,
       limit,
-      order: [["nome", "ASC"]],
+      order: [['nome', 'ASC']],
     });
 
     return {
-      data: rows.map((r) => ({
+      data: rows.map(r => ({
         id: r.id,
         nome: r.nome,
       })),

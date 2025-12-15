@@ -1,4 +1,4 @@
-import { OperationType } from "../utils/utils";
+import { OperationType } from '../utils/utils';
 
 export interface Movement {
   tipo: OperationType;

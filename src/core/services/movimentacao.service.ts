@@ -1,6 +1,6 @@
-import { MovementRepository } from "../../infrastructure/database/repositories/movimentacao.repository";
-import { formatDateToPtBr } from "../../infrastructure/helpers/date.helper";
-import { NonMovementedItem } from "../utils/utils";
+import { MovementRepository } from '../../infrastructure/database/repositories/movimentacao.repository';
+import { formatDateToPtBr } from '../../infrastructure/helpers/date.helper';
+import { NonMovementedItem } from '../utils/utils';
 
 export class MovementService {
   constructor(private readonly repo: MovementRepository) {}
@@ -15,7 +15,7 @@ export class MovementService {
 
   async createMovement(data: any) {
     if (!data.tipo || !data.quantidade || !data.armario_id || !data.login_id) {
-      throw new Error("Campos obrigatórios faltando.");
+      throw new Error('Campos obrigatórios faltando.');
     }
 
     return this.repo.create(data);
@@ -37,5 +37,4 @@ export class MovementService {
       dias_parados: Number(item.dias_parados),
     }));
   }
-
 }

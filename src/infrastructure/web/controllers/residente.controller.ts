@@ -1,5 +1,5 @@
-import { Request, Response } from "express";
-import { ResidentService } from "../../../core/services/residente.service";
+import { Request, Response } from 'express';
+import { ResidentService } from '../../../core/services/residente.service';
 
 export class ResidentController {
   constructor(private readonly service: ResidentService) {}
@@ -34,7 +34,7 @@ export class ResidentController {
       const novo = await this.service.createResident(req.body);
       res.status(201).json(novo);
     } catch (e: any) {
-      const status = e.message.includes("Já existe") ? 409 : 400;
+      const status = e.message.includes('Já existe') ? 409 : 400;
       res.status(status).json({ error: e.message });
     }
   }
@@ -42,10 +42,13 @@ export class ResidentController {
   async update(req: Request, res: Response) {
     const casela = Number(req.params.casela);
     try {
-      const updated = await this.service.updateResident({ casela, nome: req.body.nome });
+      const updated = await this.service.updateResident({
+        casela,
+        nome: req.body.nome,
+      });
       res.json(updated);
     } catch (e: any) {
-      const status = e.message === "Residente não encontrado" ? 404 : 400;
+      const status = e.message === 'Residente não encontrado' ? 404 : 400;
       res.status(status).json({ error: e.message });
     }
   }
@@ -57,9 +60,9 @@ export class ResidentController {
       const deleted = await this.service.deleteResident(casela);
 
       if (!deleted) {
-        return res.status(404).json({ error: "Residente não encontrado" });
+        return res.status(404).json({ error: 'Residente não encontrado' });
       }
-      return res.status(204).end(); 
+      return res.status(204).end();
     } catch (err: any) {
       return res.status(400).json({ error: err.message });
     }

@@ -1,5 +1,5 @@
-import bcrypt from "bcrypt";
-import { LoginRepository } from "../../infrastructure/database/repositories/login.repository";
+import bcrypt from 'bcrypt';
+import { LoginRepository } from '../../infrastructure/database/repositories/login.repository';
 
 export class LoginService {
   constructor(private readonly repo: LoginRepository) {}
@@ -9,8 +9,8 @@ export class LoginService {
     try {
       return await this.repo.create({ login, password: hashed });
     } catch (err: any) {
-      if (err.name === "SequelizeUniqueConstraintError") {
-        throw new Error("duplicate key");
+      if (err.name === 'SequelizeUniqueConstraintError') {
+        throw new Error('duplicate key');
       }
       throw err;
     }
@@ -31,7 +31,7 @@ export class LoginService {
     currentLogin: string,
     currentPassword: string,
     newLogin: string,
-    newPassword: string
+    newPassword: string,
   ) {
     const user = await this.repo.findById(id);
     if (!user) return null;
@@ -51,8 +51,8 @@ export class LoginService {
 
       return { id: updated.id, login: updated.login };
     } catch (err: any) {
-      if (err.name === "SequelizeUniqueConstraintError") {
-        throw new Error("duplicate key");
+      if (err.name === 'SequelizeUniqueConstraintError') {
+        throw new Error('duplicate key');
       }
       throw err;
     }

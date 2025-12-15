@@ -1,5 +1,5 @@
-import { DataTypes, Model } from "sequelize";
-import { sequelize } from "../sequelize";
+import { DataTypes, Model } from 'sequelize';
+import { sequelize } from '../sequelize';
 
 export class LoginModel extends Model {
   declare id: number;
@@ -26,7 +26,7 @@ LoginModel.init(
   },
   {
     sequelize,
-    tableName: "login",
+    tableName: 'login',
     timestamps: true,
   },
 );

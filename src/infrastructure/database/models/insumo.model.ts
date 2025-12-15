@@ -1,14 +1,14 @@
-import { DataTypes, Model, Optional } from "sequelize";
-import { sequelize } from "../sequelize";
+import { DataTypes, Model, Optional } from 'sequelize';
+import { sequelize } from '../sequelize';
 
 export interface InputAttrs {
   id: number;
   nome: string;
   descricao?: string | null;
-  estoque_minimo?: number
+  estoque_minimo?: number;
 }
 
-export interface InsumoCreationAttributes extends Optional<InputAttrs, "id"> {}
+export interface InsumoCreationAttributes extends Optional<InputAttrs, 'id'> {}
 
 export class InputModel
   extends Model<InputAttrs, InsumoCreationAttributes>
@@ -17,7 +17,7 @@ export class InputModel
   declare id: number;
   declare nome: string;
   declare descricao?: string | null;
-  declare estoque_minimo?: number
+  declare estoque_minimo?: number;
 }
 
 InputModel.init(
@@ -42,9 +42,9 @@ InputModel.init(
   },
   {
     sequelize,
-    tableName: "insumo",
+    tableName: 'insumo',
     timestamps: true,
-  }
+  },
 );
 
 export default InputModel;

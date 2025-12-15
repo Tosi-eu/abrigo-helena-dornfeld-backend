@@ -1,5 +1,4 @@
-import { MovementType } from "../../../core/utils/utils";
-
+import { MovementType } from '../../../core/utils/utils';
 
 export interface MedicineReport {
   medicamento: string;
@@ -32,12 +31,12 @@ export interface AllItemsReport {
 
 export interface PsicotropicoData {
   tipo: MovementType;
-  medicamento: string;  
-  residente: string;       
+  medicamento: string;
+  residente: string;
   data_movimentacao: string;
   quantidade: number;
 }
 
 export interface PsicotropicosReport {
-  psicotropico: PsicotropicoData[]
+  psicotropico: PsicotropicoData[];
 }

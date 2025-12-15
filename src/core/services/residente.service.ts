@@ -1,6 +1,6 @@
-import { ResidentRepository } from "../../infrastructure/database/repositories/residente.repository";
-import ResidentModel from "../../infrastructure/database/models/residente.model";
-import { Resident } from "../domain/residente";
+import { ResidentRepository } from '../../infrastructure/database/repositories/residente.repository';
+import ResidentModel from '../../infrastructure/database/models/residente.model';
+import { Resident } from '../domain/residente';
 
 export class ResidentService {
   constructor(private readonly repo: ResidentRepository) {}
@@ -11,21 +11,26 @@ export class ResidentService {
 
   async findByCasela(casela: number) {
     const resident = await this.repo.findByCasela(casela);
-    if (!resident) throw new Error("Residente não encontrado");
+    if (!resident) throw new Error('Residente não encontrado');
     return resident;
   }
 
   async createResident(data: Resident) {
     if (!data.casela || !Number.isInteger(data.casela) || data.casela <= 0) {
-      throw new Error("Número de casela inválido");
+      throw new Error('Número de casela inválido');
     }
 
-    if (!data.nome || typeof data.nome !== "string" || data.nome.trim() === "") {
-      throw new Error("Nome inválido");
+    if (
+      !data.nome ||
+      typeof data.nome !== 'string' ||
+      data.nome.trim() === ''
+    ) {
+      throw new Error('Nome inválido');
     }
 
     const exists = await this.repo.findByCasela(data.casela);
-    if (exists) throw new Error(`Já existe um residente com a casela ${data.casela}`);
+    if (exists)
+      throw new Error(`Já existe um residente com a casela ${data.casela}`);
 
     const model = ResidentModel.build({
       num_casela: data.casela,
@@ -36,12 +41,16 @@ export class ResidentService {
   }
 
   async updateResident(data: Resident) {
-    if (!data.nome || typeof data.nome !== "string" || data.nome.trim() === "") {
-      throw new Error("Nome inválido");
+    if (
+      !data.nome ||
+      typeof data.nome !== 'string' ||
+      data.nome.trim() === ''
+    ) {
+      throw new Error('Nome inválido');
     }
 
     const exists = await this.repo.findByCasela(data.casela);
-    if (!exists) throw new Error("Residente não encontrado");
+    if (!exists) throw new Error('Residente não encontrado');
 
     const model = ResidentModel.build({
       num_casela: data.casela,

@@ -1,26 +1,26 @@
-import { Request, Response } from "express";
-import { StockService } from "../../../core/services/estoque.service";
+import { Request, Response } from 'express';
+import { StockService } from '../../../core/services/estoque.service';
 
 export class StockController {
   constructor(private readonly service: StockService) {}
 
-    async stockIn(req: Request, res: Response) {
-      try {
-        const { medicamento_id, insumo_id } = req.body;
+  async stockIn(req: Request, res: Response) {
+    try {
+      const { medicamento_id, insumo_id } = req.body;
 
-        if (medicamento_id) {
-          const result = await this.service.medicineStockIn(req.body);
-          return res.json(result);
-        }
-
-        if (insumo_id) {
-          const result = await this.service.inputStockIn(req.body);
-          return res.json(result);
-        }
-      } catch (e: any) {
-        return res.status(400).json({ error: e.message });
+      if (medicamento_id) {
+        const result = await this.service.medicineStockIn(req.body);
+        return res.json(result);
       }
+
+      if (insumo_id) {
+        const result = await this.service.inputStockIn(req.body);
+        return res.json(result);
+      }
+    } catch (e: any) {
+      return res.status(400).json({ error: e.message });
     }
+  }
 
   async stockOut(req: Request, res: Response) {
     try {
@@ -36,8 +36,8 @@ export class StockController {
       const { filter, type, page, limit } = req.query;
 
       const data = await this.service.listStock({
-        filter: String(filter || ""),
-        type: String(type || ""),
+        filter: String(filter || ''),
+        type: String(type || ''),
         page: Number(page) || 1,
         limit: Number(limit) || 10,
       });
@@ -56,7 +56,9 @@ export class StockController {
       const totalMedicineTypeIndividual = Number(data.total_individuais || 0);
       const totalInputs = Number(data.total_insumos || 0);
 
-      const totalCarrinhoMedicamentos = Number(data.total_carrinho_medicamentos || 0);
+      const totalCarrinhoMedicamentos = Number(
+        data.total_carrinho_medicamentos || 0,
+      );
       const totalCarrinhoInsumos = Number(data.total_carrinho_insumos || 0);
 
       const totalGeral =
@@ -64,7 +66,7 @@ export class StockController {
         totalMedicineTypeIndividual +
         totalInputs +
         totalCarrinhoMedicamentos +
-        totalCarrinhoInsumos; 
+        totalCarrinhoInsumos;
 
       const pct = (v: number) =>
         totalGeral > 0 ? Number(((v / totalGeral) * 100).toFixed(2)) : 0;
@@ -75,7 +77,7 @@ export class StockController {
           medicamentos_individual: pct(totalMedicineTypeIndividual),
           insumos: pct(totalInputs),
           carrinho_medicamentos: pct(totalCarrinhoMedicamentos),
-          carrinho_insumos: pct(totalCarrinhoInsumos)
+          carrinho_insumos: pct(totalCarrinhoInsumos),
         },
         totais: {
           medicamentos_geral: totalMedicineTypeGeral,
@@ -83,8 +85,8 @@ export class StockController {
           insumos: totalInputs,
           carrinho_medicamentos: totalCarrinhoMedicamentos,
           carrinho_insumos: totalCarrinhoInsumos,
-          total_geral: totalGeral
-        }
+          total_geral: totalGeral,
+        },
       });
     } catch (e: any) {
       return res.status(500).json({ error: e.message });

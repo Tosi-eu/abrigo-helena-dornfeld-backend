@@ -1,5 +1,5 @@
-import { DataTypes, Model, Optional } from "sequelize";
-import { sequelize } from "../sequelize";
+import { DataTypes, Model, Optional } from 'sequelize';
+import { sequelize } from '../sequelize';
 
 interface MovementAttrs {
   id: number;
@@ -13,7 +13,10 @@ interface MovementAttrs {
   casela_id?: number | null;
 }
 
-type MovementCreation = Optional<MovementAttrs, "id" | "insumo_id" | "medicamento_id" | "casela_id">;
+type MovementCreation = Optional<
+  MovementAttrs,
+  'id' | 'insumo_id' | 'medicamento_id' | 'casela_id'
+>;
 
 export class MovementModel
   extends Model<MovementAttrs, MovementCreation>
@@ -44,9 +47,9 @@ MovementModel.init(
   },
   {
     sequelize,
-    tableName: "movimentacao",
+    tableName: 'movimentacao',
     timestamps: true,
-  }
+  },
 );
 
 export default MovementModel;

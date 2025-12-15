@@ -1,4 +1,4 @@
-import { LoginModel } from "../models/login.model";
+import { LoginModel } from '../models/login.model';
 
 export class LoginRepository {
   async create(data: { login: string; password: string }) {
@@ -9,13 +9,13 @@ export class LoginRepository {
   async findByLogin(login: string) {
     return await LoginModel.findOne({
       where: { login },
-      attributes: ["id", "login", "password"],
+      attributes: ['id', 'login', 'password'],
     });
   }
 
   async findById(id: number) {
     return await LoginModel.findByPk(id, {
-      attributes: ["id", "login", "password"],
+      attributes: ['id', 'login', 'password'],
     });
   }
 

@@ -1,17 +1,17 @@
-import { formatDateToPtBr } from "../../helpers/date.helper";
-import LoginModel from "../models/login.model";
-import MedicineModel from "../models/medicamento.model";
-import NotificationEventModel from "../models/notification-event.model";
-import ResidentModel from "../models/residente.model";
+import { formatDateToPtBr } from '../../helpers/date.helper';
+import LoginModel from '../models/login.model';
+import MedicineModel from '../models/medicamento.model';
+import NotificationEventModel from '../models/notification-event.model';
+import ResidentModel from '../models/residente.model';
 
 export class NotificationEventRepository {
   async create(data: {
     medicamento_id: number;
     residente_id: number;
-    destino: "SUS" | "Família";
+    destino: 'SUS' | 'Família';
     data_prevista: Date;
     criado_por: number;
-    visto: boolean
+    visto: boolean;
   }) {
     return NotificationEventModel.create(data);
   }
@@ -26,27 +26,27 @@ export class NotificationEventRepository {
       where,
       offset,
       limit,
-      order: [["data_prevista", "ASC"]],
+      order: [['data_prevista', 'ASC']],
       include: [
         {
           model: ResidentModel,
-          as: "residente",
-          attributes: ["nome"],
+          as: 'residente',
+          attributes: ['nome'],
         },
         {
           model: MedicineModel,
-          as: "medicamento",
-          attributes: ["nome"],
+          as: 'medicamento',
+          attributes: ['nome'],
         },
         {
           model: LoginModel,
-          as: "usuario",
-          attributes: { exclude: ["password"] },
+          as: 'usuario',
+          attributes: { exclude: ['password'] },
         },
       ],
     });
 
-    const data = rows.map((row) => ({
+    const data = rows.map(row => ({
       id: row.id,
       destino: row.destino,
       data_prevista: formatDateToPtBr(row.data_prevista),
@@ -56,7 +56,7 @@ export class NotificationEventRepository {
       medicamento_nome: row.medicamento?.nome,
       medicamento_id: row.medicamento_id,
       residente_id: row.residente_id,
-      usuario: row.usuario, 
+      usuario: row.usuario,
     }));
 
     return {
@@ -86,19 +86,27 @@ export class NotificationEventRepository {
 
   async getTodayPendingNotifications() {
     const now = new Date();
-    const today = now.toLocaleDateString("pt-BR").split('/').reverse().join('-');
+    const today = now
+      .toLocaleDateString('pt-BR')
+      .split('/')
+      .reverse()
+      .join('-');
 
     return NotificationEventModel.findAll({
       where: {
-        status: "pending",
-        data_prevista: today
+        status: 'pending',
+        data_prevista: today,
       },
-      order: [["data_prevista", "ASC"]],
+      order: [['data_prevista', 'ASC']],
       include: [
-        { model: ResidentModel, as: "residente", attributes: ["nome"] },
-        { model: MedicineModel, as: "medicamento", attributes: ["nome"] },
-        { model: LoginModel, as: "usuario", attributes: { exclude: ["password"] } },
-      ]
+        { model: ResidentModel, as: 'residente', attributes: ['nome'] },
+        { model: MedicineModel, as: 'medicamento', attributes: ['nome'] },
+        {
+          model: LoginModel,
+          as: 'usuario',
+          attributes: { exclude: ['password'] },
+        },
+      ],
     });
   }
 }

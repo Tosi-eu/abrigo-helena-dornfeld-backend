@@ -1,9 +1,9 @@
-import express from "express";
-import dotenv from "dotenv";
-import routes from "./routes/index.routes";
-import { sequelize } from "../database/sequelize";
-import { setupAssociations } from "../database/models/associations.models";
-import { seedCabinetCategories } from "../database/seed/categoria-armario.seed";
+import express from 'express';
+import dotenv from 'dotenv';
+import routes from './routes/index.routes';
+import { sequelize } from '../database/sequelize';
+import { setupAssociations } from '../database/models/associations.models';
+import { seedCabinetCategories } from '../database/seed/categoria-armario.seed';
 
 dotenv.config();
 
@@ -13,25 +13,28 @@ const port = Number(process.env.PORT) || 3001;
 app.use(express.json());
 
 app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH");
-  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH');
+  res.header(
+    'Access-Control-Allow-Headers',
+    'Origin, X-Requested-With, Content-Type, Accept',
+  );
 
-  if (req.method === "OPTIONS") return res.sendStatus(200);
+  if (req.method === 'OPTIONS') return res.sendStatus(200);
   next();
 });
 
-app.use("/api", routes);
+app.use('/api', routes);
 
-(async () => {
+void (async () => {
   try {
     await sequelize.authenticate();
-    console.log("✓ Conexão com o banco estabelecida.");
+    console.log('✓ Conexão com o banco estabelecida.');
 
     setupAssociations();
 
     await sequelize.sync({ alter: false });
-    console.log("✓ Tabelas sincronizadas.");
+    console.log('✓ Tabelas sincronizadas.');
 
     await seedCabinetCategories();
 
@@ -39,6 +42,7 @@ app.use("/api", routes);
       console.log(`🚀 Servidor rodando na porta ${port}`);
     });
   } catch (err) {
-    console.error("Erro ao iniciar:", err);
+    console.error('Erro ao iniciar:', err);
+    process.exit(1);
   }
 })();

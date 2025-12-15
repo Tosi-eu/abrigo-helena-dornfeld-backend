@@ -1,90 +1,104 @@
-import { MedicineStock, InputStock } from "../../../core/domain/estoque";
-import MedicineStockModel from "../models/estoque-medicamento.model";
-import InputStockModel from "../models/estoque-insumo.model";
-import { QueryTypes } from "sequelize";
-import { sequelize } from "../sequelize";
-import { computeExpiryStatus, computeQuantityStatus } from "../../helpers/expiry-status";
-import { ItemType, NonMovementedItem, OperationType, QueryPaginationParams, StockProportion } from "../../../core/utils/utils";
-import { formatDateToPtBr } from "../../helpers/date.helper";
+import { MedicineStock, InputStock } from '../../../core/domain/estoque';
+import MedicineStockModel from '../models/estoque-medicamento.model';
+import InputStockModel from '../models/estoque-insumo.model';
+import { QueryTypes } from 'sequelize';
+import { sequelize } from '../sequelize';
+import {
+  computeExpiryStatus,
+  computeQuantityStatus,
+} from '../../helpers/expiry-status';
+import {
+  ItemType,
+  OperationType,
+  QueryPaginationParams,
+  StockProportion,
+} from '../../../core/utils/utils';
+import { formatDateToPtBr } from '../../helpers/date.helper';
 
-  export class StockRepository {
-    async createMedicineStockIn(data: MedicineStock) {
-      try {
-        const existing = await MedicineStockModel.findOne({
-          where: {
-            medicamento_id: data.medicamento_id,
-            armario_id: data.armario_id,
-            validade: data.validade ?? null,
-            tipo: data.tipo,
-            casela_id: data.casela_id ?? null,
-            origem: data.origem
-          },
-        });
-
-        if (existing) {
-          existing.quantidade += data.quantidade;
-          await existing.save();
-          return { message: "Quantidade somada ao estoque existente." };
-        }
-
-        await MedicineStockModel.create({
-          medicamento_id: data.medicamento_id,
-          casela_id: data.casela_id ?? null,
-          armario_id: data.armario_id,
-          validade: data.validade,
-          quantidade: data.quantidade,
-          origem: data.origem,
-          tipo: data.tipo,
-        });
-
-        return { message: "Entrada de medicamento registrada." };
-      } catch (error: any) {
-        throw new Error(error);
-      }
-    }
-
-    async createInputStockIn(data: InputStock) {
-      const existing = await InputStockModel.findOne({
+export class StockRepository {
+  async createMedicineStockIn(data: MedicineStock) {
+    try {
+      const existing = await MedicineStockModel.findOne({
         where: {
-          insumo_id: data.insumo_id,
+          medicamento_id: data.medicamento_id,
           armario_id: data.armario_id,
           validade: data.validade ?? null,
-          tipo: data.tipo
+          tipo: data.tipo,
+          casela_id: data.casela_id ?? null,
+          origem: data.origem,
         },
       });
 
       if (existing) {
         existing.quantidade += data.quantidade;
         await existing.save();
-        return { message: "Quantidade somada ao estoque existente." };
+        return { message: 'Quantidade somada ao estoque existente.' };
       }
 
-      await InputStockModel.create({
-        insumo_id: data.insumo_id,
+      await MedicineStockModel.create({
+        medicamento_id: data.medicamento_id,
+        casela_id: data.casela_id ?? null,
         armario_id: data.armario_id,
-        quantidade: data.quantidade,
         validade: data.validade,
-        tipo: data.tipo
+        quantidade: data.quantidade,
+        origem: data.origem,
+        tipo: data.tipo,
       });
 
-      return { message: "Entrada de insumo registrada." };
+      return { message: 'Entrada de medicamento registrada.' };
+    } catch (error: any) {
+      throw new Error(error);
+    }
+  }
+
+  async createInputStockIn(data: InputStock) {
+    const existing = await InputStockModel.findOne({
+      where: {
+        insumo_id: data.insumo_id,
+        armario_id: data.armario_id,
+        validade: data.validade ?? null,
+        tipo: data.tipo,
+      },
+    });
+
+    if (existing) {
+      existing.quantidade += data.quantidade;
+      await existing.save();
+      return { message: 'Quantidade somada ao estoque existente.' };
     }
 
-  async createStockOut(estoqueId: number, tipoItem: ItemType, quantidade: number) {
-    if (tipoItem === "medicamento") {
+    await InputStockModel.create({
+      insumo_id: data.insumo_id,
+      armario_id: data.armario_id,
+      quantidade: data.quantidade,
+      validade: data.validade,
+      tipo: data.tipo,
+    });
+
+    return { message: 'Entrada de insumo registrada.' };
+  }
+
+  async createStockOut(
+    estoqueId: number,
+    tipoItem: ItemType,
+    quantidade: number,
+  ) {
+    if (tipoItem === 'medicamento') {
       const register = await MedicineStockModel.findByPk(estoqueId);
-      if (!register) throw new Error("register de medicamento não encontrado.");
-      if (register.quantidade < quantidade) throw new Error("Quantidade insuficiente.");
+      if (!register) throw new Error('register de medicamento não encontrado.');
+      if (register.quantidade < quantidade)
+        throw new Error('Quantidade insuficiente.');
       register.quantidade -= quantidade;
       await register.save();
-      return { message: "Saída de medicamento realizada." };
+      return { message: 'Saída de medicamento realizada.' };
     } else {
       const register = await InputStockModel.findByPk(estoqueId);
-      if (!register) throw new Error("register de insumo não encontrado.");
-      if (register.quantidade < quantidade) throw new Error("Quantidade insuficiente.");
+      if (!register) throw new Error('register de insumo não encontrado.');
+      if (register.quantidade < quantidade)
+        throw new Error('Quantidade insuficiente.');
       register.quantidade -= quantidade;
       await register.save();
-      return { message: "Saída de insumo realizada." };
+      return { message: 'Saída de insumo realizada.' };
     }
   }
 
@@ -92,7 +106,7 @@ import { formatDateToPtBr } from "../../helpers/date.helper";
     const { filter, type, page = 1, limit = 20 } = params;
     const offset = (page - 1) * limit;
 
-    let baseQuery = "";
+    let baseQuery = '';
 
     if (!type) {
       let medicamentoQuery = `
@@ -137,25 +151,26 @@ import { formatDateToPtBr } from "../../helpers/date.helper";
         GROUP BY ei.id, i.id, i.nome, ei.armario_id
       `;
 
-      if (filter === "noStock") {
-        insumoQuery += " HAVING SUM(ei.quantidade) = 0";
+      if (filter === 'noStock') {
+        insumoQuery += ' HAVING SUM(ei.quantidade) = 0';
       }
 
-      if (["noStock", "belowMin", "expired", "expiringSoon"].includes(filter)) {
+      if (['noStock', 'belowMin', 'expired', 'expiringSoon'].includes(filter)) {
         switch (filter) {
-          case "noStock":
-            medicamentoQuery += " HAVING SUM(em.quantidade) = 0";
+          case 'noStock':
+            medicamentoQuery += ' HAVING SUM(em.quantidade) = 0';
             break;
-        case "belowMin":
-          medicamentoQuery += `
+          case 'belowMin':
+            medicamentoQuery += `
             HAVING SUM(em.quantidade) >= COALESCE(m.estoque_minimo, 0)
               AND SUM(em.quantidade) <= COALESCE(m.estoque_minimo, 0) * 1.35
           `;
-          break;
-          case "expired":
-            medicamentoQuery += " HAVING SUM(em.quantidade) > 0 AND MIN(em.validade) < CURRENT_DATE";
             break;
-          case "expiringSoon":
+          case 'expired':
+            medicamentoQuery +=
+              ' HAVING SUM(em.quantidade) > 0 AND MIN(em.validade) < CURRENT_DATE';
+            break;
+          case 'expiringSoon':
             medicamentoQuery += `
               HAVING SUM(em.quantidade) > 0
               AND MIN(em.validade) IS NOT NULL
@@ -165,11 +180,11 @@ import { formatDateToPtBr } from "../../helpers/date.helper";
         }
       }
 
-      const medicineFilters = ["expired", "expiringSoon", "belowMin"];
-      medicineFilters.includes(filter) ? baseQuery = medicamentoQuery : baseQuery = `${medicamentoQuery} UNION ALL ${insumoQuery}`;
-
-    } 
-    else if (type === "medicamento") {
+      const medicineFilters = ['expired', 'expiringSoon', 'belowMin'];
+      medicineFilters.includes(filter)
+        ? (baseQuery = medicamentoQuery)
+        : (baseQuery = `${medicamentoQuery} UNION ALL ${insumoQuery}`);
+    } else if (type === 'medicamento') {
       baseQuery = `
         SELECT 
          'medicamento' AS tipo_item,
@@ -192,19 +207,19 @@ import { formatDateToPtBr } from "../../helpers/date.helper";
                 em.origem, em.tipo, r.nome, em.armario_id, em.casela_id
       `;
       switch (filter) {
-        case "noStock":
-          baseQuery += " HAVING SUM(em.quantidade) = 0";
+        case 'noStock':
+          baseQuery += ' HAVING SUM(em.quantidade) = 0';
           break;
-        case "belowMin":
+        case 'belowMin':
           baseQuery += `
             HAVING SUM(em.quantidade) > 0
             AND SUM(em.quantidade) <= COALESCE(m.estoque_minimo,0)
           `;
           break;
-        case "expired":
-          baseQuery += " HAVING MIN(em.validade) < CURRENT_DATE";
+        case 'expired':
+          baseQuery += ' HAVING MIN(em.validade) < CURRENT_DATE';
           break;
-        case "expiringSoon":
+        case 'expiringSoon':
           baseQuery += `
             HAVING SUM(em.quantidade) > 0
             AND MIN(em.validade) IS NOT NULL
@@ -212,8 +227,7 @@ import { formatDateToPtBr } from "../../helpers/date.helper";
           `;
           break;
       }
-    } 
-    else if (type === "insumo") {
+    } else if (type === 'insumo') {
       baseQuery = `
         SELECT 
           'insumo' AS tipo_item,
@@ -228,11 +242,10 @@ import { formatDateToPtBr } from "../../helpers/date.helper";
         JOIN insumo i ON i.id = ei.insumo_id
         GROUP BY ei.id, i.id, i.nome, ei.armario_id, i.estoque_minimo ,ei.validade
       `;
-      if (filter === "noStock") {
-        baseQuery += " HAVING SUM(ei.quantidade) = 0";
+      if (filter === 'noStock') {
+        baseQuery += ' HAVING SUM(ei.quantidade) = 0';
       }
-    } 
-    else if (type === "armarios") {
+    } else if (type === 'armarios') {
       baseQuery = `
         SELECT 
           a.num_armario AS armario_id,
@@ -264,36 +277,47 @@ import { formatDateToPtBr } from "../../helpers/date.helper";
         FROM armario a
         ORDER BY a.num_armario
       `;
-    }
-    else {
-      throw new Error("Tipo inválido. Use medicamento, insumo, armarios ou deixe vazio.");
+    } else {
+      throw new Error(
+        'Tipo inválido. Use medicamento, insumo, armarios ou deixe vazio.',
+      );
     }
 
-    if (type !== "armarios") {
+    if (type !== 'armarios') {
       baseQuery += ` ORDER BY nome ASC LIMIT ${limit} OFFSET ${offset}`;
     }
 
-    const results = await sequelize.query(baseQuery, { type: QueryTypes.SELECT });
+    const results = await sequelize.query(baseQuery, {
+      type: QueryTypes.SELECT,
+    });
 
     let countQuery = baseQuery;
 
-    countQuery = countQuery.replace(/ORDER BY [\s\S]*?LIMIT.*OFFSET.*/i, "");
+    countQuery = countQuery.replace(/ORDER BY [\s\S]*?LIMIT.*OFFSET.*/i, '');
 
-    const countResults = await sequelize.query(countQuery, { type: QueryTypes.SELECT });
+    const countResults = await sequelize.query(countQuery, {
+      type: QueryTypes.SELECT,
+    });
     const total = countResults.length;
 
     const mapped = results.map((item: any) => {
-      const isCabinetType = type === "armarios";
+      const isCabinetType = type === 'armarios';
 
-      let expiryInfo: {status: string | null, message: string | null } = { status: null, message: null };
-      let quantityInfo: {status: string | null, message: string | null } = { status: null, message: null };
+      let expiryInfo: { status: string | null; message: string | null } = {
+        status: null,
+        message: null,
+      };
+      let quantityInfo: { status: string | null; message: string | null } = {
+        status: null,
+        message: null,
+      };
 
       if (!isCabinetType) {
         expiryInfo = computeExpiryStatus(item.validade);
         quantityInfo = computeQuantityStatus(item.quantidade, item.minimo);
       }
 
-      item.validade = formatDateToPtBr(item.validade)
+      item.validade = formatDateToPtBr(item.validade);
 
       return {
         ...item,
@@ -314,28 +338,34 @@ import { formatDateToPtBr } from "../../helpers/date.helper";
   }
 
   async getStockProportion(): Promise<StockProportion> {
-    const totalMedicines = await MedicineStockModel.sum("quantidade");
-    const totalIndividualType = await MedicineStockModel.sum("quantidade", { where: { tipo: OperationType.INDIVIDUAL } });
-    const totalGeralType = await MedicineStockModel.sum("quantidade", { where: { tipo: OperationType.GERAL } });
-    const totalEmergencyCarMedicines = await MedicineStockModel.sum("quantidade", {
-      where: { tipo: OperationType.CARRINHO }
+    const totalMedicines = await MedicineStockModel.sum('quantidade');
+    const totalIndividualType = await MedicineStockModel.sum('quantidade', {
+      where: { tipo: OperationType.INDIVIDUAL },
+    });
+    const totalGeralType = await MedicineStockModel.sum('quantidade', {
+      where: { tipo: OperationType.GERAL },
+    });
+    const totalEmergencyCarMedicines = await MedicineStockModel.sum(
+      'quantidade',
+      {
+        where: { tipo: OperationType.CARRINHO },
+      },
+    );
+
+    const totalEmergencyCarInputs = await InputStockModel.sum('quantidade', {
+      where: { tipo: OperationType.CARRINHO },
+    });
+    const totalInputs = await InputStockModel.sum('quantidade', {
+      where: { tipo: 'geral' },
     });
 
-    const totalEmergencyCarInputs = await InputStockModel.sum("quantidade", {
-      where: { tipo: OperationType.CARRINHO }
-    });
-    const totalInputs = await InputStockModel.sum("quantidade", {
-      where: { tipo: "geral" }
-    });;
-
-   return { 
+    return {
       total_medicamentos: totalMedicines,
       total_individuais: totalIndividualType,
       total_gerais: totalGeralType,
       total_insumos: totalInputs,
       total_carrinho_medicamentos: totalEmergencyCarMedicines,
-      total_carrinho_insumos: totalEmergencyCarInputs
+      total_carrinho_insumos: totalEmergencyCarInputs,
     };
-  } 
+  }
 }
-

@@ -1,6 +1,5 @@
-import MedicineModel from "../models/medicamento.model";
-import { Medicine } from "../../../core/domain/medicamento";
-import { PaginationParams } from "../../web/controllers/medicamento.controller";
+import MedicineModel from '../models/medicamento.model';
+import { Medicine } from '../../../core/domain/medicamento';
 
 export class MedicineRepository {
   async createMedicine(data: Medicine): Promise<Medicine> {
@@ -27,13 +26,13 @@ export class MedicineRepository {
     const offset = (page - 1) * limit;
 
     const { rows, count } = await MedicineModel.findAndCountAll({
-      order: [["nome", "ASC"]],
+      order: [['nome', 'ASC']],
       offset,
       limit,
     });
 
     return {
-      data: rows.map((r) => ({
+      data: rows.map(r => ({
         id: r.id,
         nome: r.nome,
         dosagem: Number(r.dosagem),
@@ -63,7 +62,7 @@ export class MedicineRepository {
 
   async updateMedicineById(
     id: number,
-    data: Partial<Omit<Medicine, "id">>
+    data: Partial<Omit<Medicine, 'id'>>,
   ): Promise<Medicine | null> {
     const result = await MedicineModel.update(data, {
       where: { id },

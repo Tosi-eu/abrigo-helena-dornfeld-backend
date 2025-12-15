@@ -1,5 +1,5 @@
-import { DataTypes, Model } from "sequelize";
-import { sequelize } from "../sequelize";
+import { DataTypes, Model } from 'sequelize';
+import { sequelize } from '../sequelize';
 
 export interface InputStockAttributes {
   insumo_id: number;
@@ -26,13 +26,13 @@ InputStockModel.init(
     armario_id: { type: DataTypes.INTEGER, allowNull: false },
     quantidade: { type: DataTypes.INTEGER, allowNull: false },
     validade: { type: DataTypes.DATE, allowNull: false },
-    tipo: {type: DataTypes.TEXT, allowNull: false }
+    tipo: { type: DataTypes.TEXT, allowNull: false },
   },
   {
     sequelize,
-    tableName: "estoque_insumo",
+    tableName: 'estoque_insumo',
     timestamps: false,
-  }
+  },
 );
 
 export default InputStockModel;

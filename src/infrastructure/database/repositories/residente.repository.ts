@@ -1,6 +1,5 @@
-import MedicineStockModel from "../models/estoque-medicamento.model";
-import ResidentModel from "../models/residente.model";
-import { sequelize } from "../sequelize";
+import MedicineStockModel from '../models/estoque-medicamento.model';
+import ResidentModel from '../models/residente.model';
 
 export class ResidentRepository {
   async findAll(page: number = 1, limit: number = 20) {
@@ -9,7 +8,7 @@ export class ResidentRepository {
     const { rows, count } = await ResidentModel.findAndCountAll({
       offset,
       limit,
-      order: [["num_casela", "ASC"]],
+      order: [['num_casela', 'ASC']],
     });
 
     return {
@@ -39,14 +38,15 @@ export class ResidentRepository {
   }
 
   async deleteResidentById(casela: number): Promise<boolean> {
-    const count = await ResidentModel.destroy({ where: { num_casela: casela } });
+    const count = await ResidentModel.destroy({
+      where: { num_casela: casela },
+    });
     return count > 0;
   }
-  
+
   async countMedicationsByCasela(casela: number): Promise<number> {
     return MedicineStockModel.count({
       where: { casela_id: casela },
     });
   }
-
 }

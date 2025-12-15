@@ -1,8 +1,8 @@
-import { Cabinet } from "../../../core/domain/armario";
-import CabinetModel from "../models/armario.model";
-import CabinetCategoryModel from "../models/categorias-armario.model";
-import InputStockModel from "../models/estoque-insumo.model";
-import MedicineStockModel from "../models/estoque-medicamento.model";
+import { Cabinet } from '../../../core/domain/armario';
+import CabinetModel from '../models/armario.model';
+import CabinetCategoryModel from '../models/categorias-armario.model';
+import InputStockModel from '../models/estoque-insumo.model';
+import MedicineStockModel from '../models/estoque-medicamento.model';
 
 export class CabinetRepository {
   async createCabinet(data: Cabinet): Promise<Cabinet> {
@@ -18,11 +18,11 @@ export class CabinetRepository {
 
   async findAllCabinets() {
     const items = await CabinetModel.findAll({
-      order: [["num_armario", "ASC"]],
+      order: [['num_armario', 'ASC']],
       include: [
         {
           model: CabinetCategoryModel,
-          attributes: ["id", "nome"],
+          attributes: ['id', 'nome'],
         },
       ],
     });
@@ -54,7 +54,9 @@ export class CabinetRepository {
   }
 
   async delete(number: number): Promise<boolean> {
-    const deleted = await CabinetModel.destroy({ where: { num_armario: number } });
+    const deleted = await CabinetModel.destroy({
+      where: { num_armario: number },
+    });
     return deleted > 0;
   }
 

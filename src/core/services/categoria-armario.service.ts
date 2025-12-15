@@ -1,4 +1,4 @@
-import { CabinetCategoryRepository } from "../../infrastructure/database/repositories/categoria-armario.repository";
+import { CabinetCategoryRepository } from '../../infrastructure/database/repositories/categoria-armario.repository';
 
 export class CabinetCategoryService {
   constructor(private readonly repo: CabinetCategoryRepository) {}

@@ -1,5 +1,5 @@
-import { Request, Response } from "express";
-import { LoginService } from "../../../core/services/login.service";
+import { Request, Response } from 'express';
+import { LoginService } from '../../../core/services/login.service';
 
 export class LoginController {
   constructor(private readonly service: LoginService) {}
@@ -8,16 +8,16 @@ export class LoginController {
     const { login, password } = req.body;
 
     if (!login || !password)
-      return res.status(400).json({ error: "Login e senha obrigatórios" });
+      return res.status(400).json({ error: 'Login e senha obrigatórios' });
 
     try {
       const user = await this.service.create(login, password);
       return res.status(201).json(user);
     } catch (err: any) {
-      if (err.message === "duplicate key") {
-        return res.status(409).json({ error: "Login já cadastrado" });
+      if (err.message === 'duplicate key') {
+        return res.status(409).json({ error: 'Login já cadastrado' });
       }
-      return res.status(500).json({ error: "Erro ao criar usuário" });
+      return res.status(500).json({ error: 'Erro ao criar usuário' });
     }
   }
 
@@ -25,10 +25,10 @@ export class LoginController {
     const { login, password } = req.body;
 
     if (!login || !password)
-      return res.status(400).json({ error: "Login e senha obrigatórios" });
+      return res.status(400).json({ error: 'Login e senha obrigatórios' });
 
     const user = await this.service.authenticate(login, password);
-    if (!user) return res.status(401).json({ error: "Credenciais inválidas" });
+    if (!user) return res.status(401).json({ error: 'Credenciais inválidas' });
 
     return res.json(user);
   }
@@ -38,9 +38,7 @@ export class LoginController {
     const { currentLogin, currentPassword, login, password } = req.body;
 
     if (!currentLogin || !currentPassword || !login || !password)
-      return res
-        .status(400)
-        .json({ error: "Dados obrigatórios ausentes" });
+      return res.status(400).json({ error: 'Dados obrigatórios ausentes' });
 
     try {
       const updated = await this.service.updateUser(
@@ -48,24 +46,24 @@ export class LoginController {
         currentLogin,
         currentPassword,
         login,
-        password
+        password,
       );
 
       if (!updated)
-        return res.status(401).json({ error: "Credenciais atuais incorretas" });
+        return res.status(401).json({ error: 'Credenciais atuais incorretas' });
 
       return res.json(updated);
     } catch (err: any) {
-      if (err.message === "duplicate key") {
-        return res.status(409).json({ error: "Login já cadastrado" });
+      if (err.message === 'duplicate key') {
+        return res.status(409).json({ error: 'Login já cadastrado' });
       }
-      return res.status(500).json({ error: "Erro ao atualizar usuário" });
+      return res.status(500).json({ error: 'Erro ao atualizar usuário' });
     }
   }
 
   async delete(req: Request, res: Response) {
     const ok = await this.service.deleteUser(Number(req.params.id));
-    if (!ok) return res.status(404).json({ error: "Usuário não encontrado" });
+    if (!ok) return res.status(404).json({ error: 'Usuário não encontrado' });
 
     return res.status(204).send();
   }
@@ -74,14 +72,11 @@ export class LoginController {
     const { login, newPassword } = req.body;
 
     if (!login || !newPassword)
-      return res
-        .status(400)
-        .json({ error: "Login e nova senha obrigatórios" });
+      return res.status(400).json({ error: 'Login e nova senha obrigatórios' });
 
     const user = await this.service.resetPassword(login, newPassword);
 
-    if (!user)
-      return res.status(404).json({ error: "Usuário não encontrado" });
+    if (!user) return res.status(404).json({ error: 'Usuário não encontrado' });
 
     return res.json(user);
   }

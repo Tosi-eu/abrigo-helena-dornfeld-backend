@@ -1,5 +1,5 @@
-import { DataTypes, Model } from "sequelize";
-import { sequelize } from "../sequelize";
+import { DataTypes, Model } from 'sequelize';
+import { sequelize } from '../sequelize';
 
 export interface MedicineStockAttributes {
   medicamento_id: number;
@@ -32,13 +32,13 @@ MedicineStockModel.init(
     validade: { type: DataTypes.DATEONLY, allowNull: false },
     quantidade: { type: DataTypes.INTEGER, allowNull: false },
     origem: { type: DataTypes.STRING, allowNull: false },
-    tipo: { type: DataTypes.STRING, allowNull: false }, 
+    tipo: { type: DataTypes.STRING, allowNull: false },
   },
   {
     sequelize,
-    tableName: "estoque_medicamento",
+    tableName: 'estoque_medicamento',
     timestamps: true,
-  }
+  },
 );
 
 export default MedicineStockModel;

@@ -1,4 +1,4 @@
-import { NotificationEventRepository } from "../../infrastructure/database/repositories/notification-event.repository";
+import { NotificationEventRepository } from '../../infrastructure/database/repositories/notification-event.repository';
 
 export class NotificationEventService {
   constructor(private readonly repo: NotificationEventRepository) {}
@@ -6,10 +6,10 @@ export class NotificationEventService {
   async create(data: {
     medicamento_id: number;
     residente_id: number;
-    destino: "SUS" | "Família";
+    destino: 'SUS' | 'Família';
     data_prevista: Date;
     criado_por: number;
-    visto: boolean
+    visto: boolean;
   }) {
     return this.repo.create(data);
   }

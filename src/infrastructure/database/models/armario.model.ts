@@ -1,13 +1,15 @@
-import { DataTypes, Model, Optional } from "sequelize";
-import { sequelize } from "../sequelize";
+import { DataTypes, Model, Optional } from 'sequelize';
+import { sequelize } from '../sequelize';
 
 export interface CabinetAttributes {
   num_armario: number;
   categoria_id: number;
 }
 
-export interface CabinetCreationAttributes
-  extends Optional<CabinetAttributes, "num_armario"> {}
+export interface CabinetCreationAttributes extends Optional<
+  CabinetAttributes,
+  'num_armario'
+> {}
 
 export class CabinetModel
   extends Model<CabinetAttributes, CabinetCreationAttributes>
@@ -29,16 +31,16 @@ CabinetModel.init(
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: "categoria_armario",
-        key: "id",
+        model: 'categoria_armario',
+        key: 'id',
       },
     },
   },
   {
     sequelize,
-    tableName: "armario",
+    tableName: 'armario',
     timestamps: true,
-  }
+  },
 );
 
 export default CabinetModel;
