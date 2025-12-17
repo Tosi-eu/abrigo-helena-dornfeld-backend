@@ -15,8 +15,8 @@ export class CabinetService {
     return this.repo.createCabinet(data);
   }
 
-  async findAll() {
-    return this.repo.findAllCabinets();
+  async findAll(page: number, limit: number) {
+    return this.repo.findAllCabinets(page, limit);
   }
 
   async findCabinetByNumber(numero: number) {

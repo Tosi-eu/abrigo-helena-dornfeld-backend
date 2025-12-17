@@ -14,8 +14,12 @@ export class CabinetController {
   }
 
   async getAll(req: Request, res: Response) {
-    const cabinets = await this.service.findAll();
-    return res.json(cabinets);
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 50;
+
+    const result = await this.service.findAll(page, limit);
+
+    return res.json(result);
   }
 
   async getById(req: Request, res: Response) {

@@ -16,9 +16,13 @@ export class CabinetRepository {
     };
   }
 
-  async findAllCabinets() {
-    const items = await CabinetModel.findAll({
+  async findAllCabinets(page: number, limit: number) {
+    const offset = (page - 1) * limit;
+
+    const { rows, count } = await CabinetModel.findAndCountAll({
       order: [['num_armario', 'ASC']],
+      limit,
+      offset,
       include: [
         {
           model: CabinetCategoryModel,
@@ -27,11 +31,19 @@ export class CabinetRepository {
       ],
     });
 
-    return items.map(i => ({
+    const data = rows.map(i => ({
       numero: i.num_armario,
       categoria_id: i.categoria_id,
       categoria: i.CabinetCategoryModel.nome,
     }));
+
+    return {
+      data,
+      total: count,
+      page,
+      limit,
+      hasNext: offset + data.length < count,
+    };
   }
 
   async findByCabinetNumber(number: number): Promise<Cabinet | null> {
