@@ -1,7 +1,9 @@
 import CabinetModel from './armario.model';
 import CabinetCategoryModel from './categorias-armario.model';
+import DrawerCategoryModel from './categorias-gaveta.model';
 import StockInputAttrs from './estoque-insumo.model';
 import StockMedicineAttrs from './estoque-medicamento.model';
+import DrawerModel from './gaveta.model';
 import InputModel from './insumo.model';
 import LoginModel from './login.model';
 import MedicineModel from './medicamento.model';
@@ -10,6 +12,28 @@ import NotificationEventModel from './notification-event.model';
 import ResidentModel from './residente.model';
 
 export function setupAssociations() {
+  DrawerCategoryModel.hasMany(DrawerModel, {
+    foreignKey: 'categoria_id',
+    onDelete: 'RESTRICT',
+    onUpdate: 'CASCADE',
+  });
+
+  DrawerModel.belongsTo(DrawerCategoryModel, {
+    foreignKey: 'categoria_id',
+    onDelete: 'RESTRICT',
+    onUpdate: 'CASCADE',
+  });
+
+  DrawerModel.belongsTo(DrawerCategoryModel, {
+    foreignKey: 'categoria_id',
+    as: 'categoria',
+  });
+
+  DrawerCategoryModel.hasMany(DrawerModel, {
+    foreignKey: 'categoria_id',
+    as: 'gavetas',
+  });
+
   CabinetCategoryModel.hasMany(CabinetModel, {
     foreignKey: 'categoria_id',
     onDelete: 'RESTRICT',
