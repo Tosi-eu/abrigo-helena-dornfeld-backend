@@ -104,45 +104,45 @@ export function setupAssociations() {
 
   MedicineModel.hasMany(StockMedicineAttrs, {
     foreignKey: 'medicamento_id',
-    onDelete: 'RESTRICT',
+    onDelete: 'CASCADE',
     onUpdate: 'CASCADE',
   });
   StockMedicineAttrs.belongsTo(MedicineModel, {
     foreignKey: 'medicamento_id',
-    onDelete: 'RESTRICT',
+    onDelete: 'CASCADE',
     onUpdate: 'CASCADE',
   });
 
   MedicineModel.hasMany(MovementModel, {
     foreignKey: 'medicamento_id',
-    onDelete: 'RESTRICT',
+    onDelete: 'CASCADE',
     onUpdate: 'CASCADE',
   });
   MovementModel.belongsTo(MedicineModel, {
     foreignKey: 'medicamento_id',
-    onDelete: 'RESTRICT',
+    onDelete: 'CASCADE',
     onUpdate: 'CASCADE',
   });
 
   InputModel.hasMany(StockInputAttrs, {
     foreignKey: 'insumo_id',
-    onDelete: 'RESTRICT',
+    onDelete: 'CASCADE',
     onUpdate: 'CASCADE',
   });
   StockInputAttrs.belongsTo(InputModel, {
     foreignKey: 'insumo_id',
-    onDelete: 'RESTRICT',
+    onDelete: 'CASCADE',
     onUpdate: 'CASCADE',
   });
 
   InputModel.hasMany(MovementModel, {
     foreignKey: 'insumo_id',
-    onDelete: 'RESTRICT',
+    onDelete: 'CASCADE',
     onUpdate: 'CASCADE',
   });
   MovementModel.belongsTo(InputModel, {
     foreignKey: 'insumo_id',
-    onDelete: 'RESTRICT',
+    onDelete: 'CASCADE',
     onUpdate: 'CASCADE',
   });
 
