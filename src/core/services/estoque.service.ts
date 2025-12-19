@@ -6,7 +6,7 @@ export class StockService {
   constructor(private readonly repo: StockRepository) {}
 
   async medicineStockIn(data: MedicineStock) {
-    if (!data.medicamento_id || !data.armario_id || !data.quantidade)
+    if (!data.medicamento_id || !data.quantidade)
       throw new Error('Campos obrigatórios faltando.');
     return this.repo.createMedicineStockIn(data);
   }

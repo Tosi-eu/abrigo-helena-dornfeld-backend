@@ -4,7 +4,8 @@ import { sequelize } from '../sequelize';
 export interface MedicineStockAttributes {
   medicamento_id: number;
   casela_id?: number | null;
-  armario_id: number;
+  armario_id?: number | null;
+  gaveta_id?: number | null;
   validade?: Date | null;
   quantidade: number;
   origem?: string | null;
@@ -17,7 +18,8 @@ export class MedicineStockModel
 {
   declare medicamento_id: number;
   declare casela_id: number | null;
-  declare armario_id: number;
+  declare armario_id?: number | null;
+  declare gaveta_id?: number | null;
   declare validade: Date | null;
   declare quantidade: number;
   declare origem: string | null;
@@ -27,8 +29,22 @@ export class MedicineStockModel
 MedicineStockModel.init(
   {
     medicamento_id: { type: DataTypes.INTEGER, allowNull: false },
-    casela_id: { type: DataTypes.INTEGER, allowNull: true },
-    armario_id: { type: DataTypes.INTEGER, allowNull: false },
+
+    casela_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+
+    armario_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+
+    gaveta_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+
     validade: { type: DataTypes.DATEONLY, allowNull: false },
     quantidade: { type: DataTypes.INTEGER, allowNull: false },
     origem: { type: DataTypes.STRING, allowNull: false },

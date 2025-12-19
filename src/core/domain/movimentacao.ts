@@ -3,7 +3,8 @@ import { OperationType } from '../utils/utils';
 export interface Movement {
   tipo: OperationType;
   login_id: number;
-  armario_id: number;
+  armario_id?: number;
+  gaveta_id?: number;
   quantidade: number;
   insumo_id?: number | null;
   medicamento_id?: number | null;

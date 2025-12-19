@@ -14,7 +14,12 @@ export class MovementService {
   }
 
   async createMovement(data: any) {
-    if (!data.tipo || !data.quantidade || !data.armario_id || !data.login_id) {
+    if (
+      !data.tipo ||
+      !data.quantidade ||
+      (!data.armario_id && !data.gaveta_id) ||
+      !data.login_id
+    ) {
       throw new Error('Campos obrigatórios faltando.');
     }
 

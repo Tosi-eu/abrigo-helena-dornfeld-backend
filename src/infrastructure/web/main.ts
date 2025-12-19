@@ -3,7 +3,6 @@ import dotenv from 'dotenv';
 import routes from './routes/index.routes';
 import { sequelize } from '../database/sequelize';
 import { setupAssociations } from '../database/models/associations.models';
-import { seedCabinetCategories } from '../database/seed/categoria-armario.seed';
 
 dotenv.config();
 
@@ -35,8 +34,6 @@ void (async () => {
 
     await sequelize.sync({ alter: false });
     console.log('✓ Tabelas sincronizadas.');
-
-    await seedCabinetCategories();
 
     app.listen(port, () => {
       console.log(`🚀 Servidor rodando na porta ${port}`);
