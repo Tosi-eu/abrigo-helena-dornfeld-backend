@@ -1,6 +1,10 @@
 import { StockRepository } from '../../infrastructure/database/repositories/estoque.repository';
 import { MedicineStock, InputStock } from '../domain/estoque';
-import { ItemType, QueryPaginationParams } from '../utils/utils';
+import {
+  ItemType,
+  MedicineStatus,
+  QueryPaginationParams,
+} from '../utils/utils';
 
 export class StockService {
   constructor(private readonly repo: StockRepository) {}
@@ -59,5 +63,55 @@ export class StockService {
 
   async getProportion() {
     return this.repo.getStockProportion();
+  }
+
+  async removeIndividualMedicine(estoqueId: number) {
+    const stock = await this.repo.findMedicineStockById(estoqueId);
+
+    if (!stock) {
+      throw new Error('Medicamento não encontrado');
+    }
+
+    if (stock.tipo !== 'individual') {
+      throw new Error('Medicamento não é individual');
+    }
+
+    return this.repo.removeIndividualMedicine(estoqueId);
+  }
+
+  async suspendIndividualMedicine(estoqueId: number) {
+    const stock = await this.repo.findMedicineStockById(estoqueId);
+
+    if (!stock) {
+      throw new Error('Medicamento não encontrado');
+    }
+
+    if (stock.casela_id == null) {
+      throw new Error('Somente medicamentos individuais podem ser suspensos');
+    }
+
+    if (stock.status === MedicineStatus.SUSPENSO) {
+      throw new Error('Medicamento já está suspenso');
+    }
+
+    return this.repo.suspendIndividualMedicine(estoqueId);
+  }
+
+  async resumeIndividualMedicine(estoqueId: number) {
+    const stock = await this.repo.findMedicineStockById(estoqueId);
+
+    if (!stock) {
+      throw new Error('Medicamento não encontrado');
+    }
+
+    if (stock.casela_id == null) {
+      throw new Error('Somente medicamentos individuais podem ser retomados');
+    }
+
+    if (stock.status !== MedicineStatus.SUSPENSO) {
+      throw new Error('Medicamento não está suspenso');
+    }
+
+    return this.repo.resumeIndividualMedicine(estoqueId);
   }
 }

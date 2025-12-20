@@ -9,6 +9,7 @@ import {
 } from '../../helpers/expiry-status';
 import {
   ItemType,
+  MedicineStatus,
   OperationType,
   QueryPaginationParams,
   StockProportion,
@@ -85,9 +86,16 @@ export class StockRepository {
   ) {
     if (tipoItem === 'medicamento') {
       const register = await MedicineStockModel.findByPk(estoqueId);
+
       if (!register) throw new Error('register de medicamento não encontrado.');
+
       if (register.quantidade < quantidade)
         throw new Error('Quantidade insuficiente.');
+
+      if (register?.status === MedicineStatus.SUSPENSO) {
+        throw new Error('Medicamento suspenso não pode ser movimentado');
+      }
+
       register.quantidade -= quantidade;
       await register.save();
       return { message: 'Saída de medicamento realizada.' };
@@ -302,6 +310,58 @@ export class StockRepository {
       total_insumos: totalInputs,
       total_carrinho_medicamentos: totalEmergencyCarMedicines,
       total_carrinho_insumos: totalEmergencyCarInputs,
+    };
+  }
+
+  async findMedicineStockById(id: number) {
+    return MedicineStockModel.findByPk(id);
+  }
+
+  async removeIndividualMedicine(estoqueId: number) {
+    await MedicineStockModel.update(
+      {
+        casela_id: null,
+        tipo: 'geral',
+      },
+      {
+        where: { id: estoqueId },
+      },
+    );
+
+    return {
+      message: 'Medicamento removido do estoque individual',
+    };
+  }
+
+  async suspendIndividualMedicine(estoqueId: number) {
+    await MedicineStockModel.update(
+      {
+        status: MedicineStatus.SUSPENSO,
+        suspended_at: new Date(),
+      },
+      {
+        where: { id: estoqueId },
+      },
+    );
+
+    return {
+      message: 'Medicamento suspenso com sucesso',
+    };
+  }
+
+  async resumeIndividualMedicine(estoqueId: number) {
+    await MedicineStockModel.update(
+      {
+        status: MedicineStatus.ATIVO,
+        suspended_at: null,
+      },
+      {
+        where: { id: estoqueId },
+      },
+    );
+
+    return {
+      message: 'Medicamento retomado com sucesso',
     };
   }
 }

@@ -92,4 +92,58 @@ export class StockController {
       return res.status(500).json({ error: e.message });
     }
   }
+
+  async removeIndividualMedicine(req: Request, res: Response) {
+    try {
+      const { estoque_id } = req.params;
+
+      if (!estoque_id) {
+        return res.status(400).json({ error: 'Estoque inválido' });
+      }
+
+      const result = await this.service.removeIndividualMedicine(
+        Number(estoque_id),
+      );
+
+      return res.json(result);
+    } catch (e: any) {
+      return res.status(400).json({ error: e.message });
+    }
+  }
+
+  async suspendIndividualMedicine(req: Request, res: Response) {
+    try {
+      const { estoque_id } = req.params;
+
+      if (!estoque_id) {
+        return res.status(400).json({ error: 'Estoque inválido' });
+      }
+
+      const result = await this.service.suspendIndividualMedicine(
+        Number(estoque_id),
+      );
+
+      return res.json(result);
+    } catch (e: any) {
+      return res.status(400).json({ error: e.message });
+    }
+  }
+
+  async resumeIndividualMedicine(req: Request, res: Response) {
+    try {
+      const { estoqueId } = req.params;
+
+      if (!estoqueId) {
+        return res.status(400).json({ error: 'Estoque inválido' });
+      }
+
+      const result = await this.service.resumeIndividualMedicine(
+        Number(estoqueId),
+      );
+
+      return res.json(result);
+    } catch (e: any) {
+      return res.status(400).json({ error: e.message });
+    }
+  }
 }

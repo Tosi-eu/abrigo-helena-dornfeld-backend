@@ -14,6 +14,11 @@ export enum ItemType {
   INSUMO = 'insumo',
 }
 
+export enum MedicineStatus {
+  ATIVO = 'active',
+  SUSPENSO = 'suspended',
+}
+
 export interface StockRawResponse {
   tipo_item: string;
   estoque_id: number;

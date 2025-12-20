@@ -1,7 +1,9 @@
 import { DataTypes, Model } from 'sequelize';
 import { sequelize } from '../sequelize';
+import { MedicineStatus } from '../../../core/utils/utils';
 
 export interface MedicineStockAttributes {
+  id?: number;
   medicamento_id: number;
   casela_id?: number | null;
   armario_id?: number | null;
@@ -10,12 +12,15 @@ export interface MedicineStockAttributes {
   quantidade: number;
   origem?: string | null;
   tipo?: string | null;
+  status?: MedicineStatus;
+  suspended_at?: Date | null;
 }
 
 export class MedicineStockModel
   extends Model<MedicineStockAttributes>
   implements MedicineStockAttributes
 {
+  declare id: number;
   declare medicamento_id: number;
   declare casela_id: number | null;
   declare armario_id?: number | null;
@@ -24,10 +29,18 @@ export class MedicineStockModel
   declare quantidade: number;
   declare origem: string | null;
   declare tipo: string | null;
+  declare status: MedicineStatus;
+  declare suspended_at?: Date | null;
 }
 
 MedicineStockModel.init(
   {
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
+    },
+
     medicamento_id: { type: DataTypes.INTEGER, allowNull: false },
 
     casela_id: {
@@ -49,6 +62,16 @@ MedicineStockModel.init(
     quantidade: { type: DataTypes.INTEGER, allowNull: false },
     origem: { type: DataTypes.STRING, allowNull: false },
     tipo: { type: DataTypes.STRING, allowNull: false },
+    status: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      defaultValue: 'active',
+    },
+
+    suspended_at: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
   },
   {
     sequelize,
