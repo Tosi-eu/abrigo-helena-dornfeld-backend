@@ -137,8 +137,14 @@ export class StockRepository {
             'WHERE ei.quantidade > 0 AND ei.validade < CURRENT_DATE';
           break;
         case 'expiringSoon':
-          whereMedicamento = `WHERE em.quantidade > 0 AND em.validade BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '45 days'`;
-          whereInsumo = `WHERE ei.quantidade > 0 AND ei.validade BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '45 days'`;
+          whereMedicamento = `
+          WHERE em.quantidade > 0
+          AND em.validade BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '45 days'
+        `;
+          whereInsumo = `
+          WHERE ei.quantidade > 0
+          AND ei.validade BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '45 days'
+        `;
           break;
       }
     }
@@ -159,7 +165,9 @@ export class StockRepository {
         r.nome AS paciente,
         em.armario_id,
         em.gaveta_id,
-        em.casela_id
+        em.casela_id,
+        em.status,
+        em.suspended_at AS suspenso_em
       FROM estoque_medicamento em
       JOIN medicamento m ON m.id = em.medicamento_id
       LEFT JOIN residente r ON r.num_casela = em.casela_id
@@ -177,12 +185,14 @@ export class StockRepository {
           ei.validade,
           ei.quantidade,
           i.estoque_minimo AS minimo,
-          null AS origem,
+          NULL AS origem,
           ei.tipo,
-          null AS paciente,
+          NULL AS paciente,
           ei.armario_id,
           ei.gaveta_id,
-          null AS casela_id
+          NULL AS casela_id,
+          NULL AS status,
+          NULL AS suspenso_em
         FROM estoque_insumo ei
         JOIN insumo i ON i.id = ei.insumo_id
         ${whereInsumo}
@@ -214,10 +224,9 @@ export class StockRepository {
         a.num_armario AS armario_id,
         COALESCE((SELECT SUM(em.quantidade) FROM estoque_medicamento em WHERE em.armario_id = a.num_armario), 0) AS total_medicamentos,
         COALESCE((SELECT SUM(ei.quantidade) FROM estoque_insumo ei WHERE ei.armario_id = a.num_armario), 0) AS total_insumos,
-        COALESCE((SELECT SUM(em.quantidade) FROM estoque_medicamento em WHERE em.armario_id = a.num_armario),0)
-        + COALESCE((SELECT SUM(ei.quantidade) FROM estoque_insumo ei WHERE ei.armario_id = a.num_armario),0) AS total_geral
+        COALESCE((SELECT SUM(em.quantidade) FROM estoque_medicamento em WHERE em.armario_id = a.num_armario), 0)
+        + COALESCE((SELECT SUM(ei.quantidade) FROM estoque_insumo ei WHERE ei.armario_id = a.num_armario), 0) AS total_geral
       FROM armario a
-      ORDER BY a.num_armario
     `;
     } else if (type === 'gavetas') {
       baseQuery = `
@@ -225,10 +234,9 @@ export class StockRepository {
         g.num_gaveta AS gaveta_id,
         COALESCE((SELECT SUM(em.quantidade) FROM estoque_medicamento em WHERE em.gaveta_id = g.num_gaveta), 0) AS total_medicamentos,
         COALESCE((SELECT SUM(ei.quantidade) FROM estoque_insumo ei WHERE ei.gaveta_id = g.num_gaveta), 0) AS total_insumos,
-        COALESCE((SELECT SUM(em.quantidade) FROM estoque_medicamento em WHERE em.gaveta_id = g.num_gaveta),0)
-        + COALESCE((SELECT SUM(ei.quantidade) FROM estoque_insumo ei WHERE ei.gaveta_id = g.num_gaveta),0) AS total_geral
+        COALESCE((SELECT SUM(em.quantidade) FROM estoque_medicamento em WHERE em.gaveta_id = g.num_gaveta), 0)
+        + COALESCE((SELECT SUM(ei.quantidade) FROM estoque_insumo ei WHERE ei.gaveta_id = g.num_gaveta), 0) AS total_geral
       FROM gaveta g
-      ORDER BY g.num_gaveta
     `;
     } else {
       throw new Error(
@@ -236,23 +244,42 @@ export class StockRepository {
       );
     }
 
-    if (type !== 'armarios' && type !== 'gavetas') {
-      baseQuery += ` ORDER BY nome ASC LIMIT ${limit} OFFSET ${offset}`;
-    }
+    /* =========================
+     TOTAL REAL (SEM PAGINAÇÃO)
+     ========================= */
+    const countQuery = `
+    SELECT COUNT(*) AS total FROM (
+      ${baseQuery}
+    ) AS total_query
+  `;
 
-    const results = await sequelize.query(baseQuery, {
+    const countResult = await sequelize.query(countQuery, {
       type: QueryTypes.SELECT,
     });
-    const total = results.length;
+
+    const total = Number((countResult[0] as any).total);
+
+    /* =========================
+     QUERY PAGINADA
+     ========================= */
+    let paginatedQuery = baseQuery;
+
+    if (type !== 'armarios' && type !== 'gavetas') {
+      paginatedQuery += ` ORDER BY nome ASC LIMIT ${limit} OFFSET ${offset}`;
+    }
+
+    const results = await sequelize.query(paginatedQuery, {
+      type: QueryTypes.SELECT,
+    });
 
     const mapped = results.map((item: any) => {
       const isStorageType = type === 'armarios' || type === 'gavetas';
 
-      let expiryInfo: { status: string | null; message: string | null } = {
+      let expiryInfo: { status?: string | null; message?: string | null } = {
         status: null,
         message: null,
       };
-      let quantityInfo: { status: string | null; message: string | null } = {
+      let quantityInfo: { status?: string | null; message?: string | null } = {
         status: null,
         message: null,
       };
@@ -277,7 +304,7 @@ export class StockRepository {
       total,
       page,
       limit,
-      hasNext: total > page * limit,
+      hasNext: page * limit < total,
     };
   }
 
