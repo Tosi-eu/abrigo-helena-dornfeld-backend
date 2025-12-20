@@ -7,6 +7,7 @@ interface MovementAttrs {
   data: Date;
   login_id: number;
   insumo_id?: number | null;
+  gaveta_id?: number | null;
   medicamento_id?: number | null;
   armario_id: number;
   quantidade: number;
@@ -15,7 +16,12 @@ interface MovementAttrs {
 
 type MovementCreation = Optional<
   MovementAttrs,
-  'id' | 'insumo_id' | 'medicamento_id' | 'casela_id'
+  | 'id'
+  | 'insumo_id'
+  | 'medicamento_id'
+  | 'casela_id'
+  | 'gaveta_id'
+  | 'armario_id'
 >;
 
 export class MovementModel
@@ -31,6 +37,7 @@ export class MovementModel
   declare armario_id: number;
   declare quantidade: number;
   declare casela_id: number | null;
+  declare gaveta_id: number | null;
 }
 
 MovementModel.init(
@@ -41,7 +48,8 @@ MovementModel.init(
     login_id: { type: DataTypes.INTEGER, allowNull: false },
     insumo_id: { type: DataTypes.INTEGER, allowNull: true },
     medicamento_id: { type: DataTypes.INTEGER, allowNull: true },
-    armario_id: { type: DataTypes.INTEGER, allowNull: false },
+    armario_id: { type: DataTypes.INTEGER, allowNull: true },
+    gaveta_id: { type: DataTypes.INTEGER, allowNull: true },
     quantidade: { type: DataTypes.INTEGER, allowNull: false },
     casela_id: { type: DataTypes.INTEGER, allowNull: true },
   },

@@ -1,19 +1,17 @@
 module.exports = {
-  preset: "ts-jest",
-  testEnvironment: "node",
+  preset: 'ts-jest',
+  testEnvironment: 'node',
+  setupFiles: ['<rootDir>/jest.setup.ts'],
 
-  testMatch: [
-    "**/tests/**/*.test.ts",
-    "**/tests/**/*.spec.ts"
-  ],
+  testMatch: ['**/tests/**/*.test.ts', '**/tests/**/*.spec.ts'],
 
-  testPathIgnorePatterns: ["/node_modules/"],
+  testPathIgnorePatterns: ['/node_modules/'],
 
   collectCoverageFrom: [
-    "src/**/*.ts",
-    "!src/tests/**",
-    "!src/infrastructure/web/main.ts",
-    "!src/infrastructure/database/sequelize.ts",
+    'src/**/*.ts',
+    '!src/tests/**',
+    '!src/infrastructure/web/main.ts',
+    '!src/infrastructure/database/sequelize.ts',
   ],
 
   clearMocks: true,
@@ -21,7 +19,7 @@ module.exports = {
   verbose: true,
   maxWorkers: 1,
 
-  globalTeardown: "<rootDir>/jest.teardown.ts",
+  globalTeardown: '<rootDir>/jest.teardown.ts',
 
-  moduleFileExtensions: ["ts", "js", "json"]
+  moduleFileExtensions: ['ts', 'js', 'json'],
 };

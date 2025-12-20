@@ -107,201 +107,138 @@ export class StockRepository {
     const offset = (page - 1) * limit;
 
     let baseQuery = '';
+    let whereMedicamento = '';
+    let whereInsumo = '';
 
-    if (!type) {
-      let medicamentoQuery = `
-        SELECT 
-          'medicamento' AS tipo_item,
-          em.id as estoque_id,
-          m.id AS item_id,
-          m.nome,
-          m.principio_ativo,
-          MIN(em.validade) AS validade,
-          SUM(em.quantidade) AS quantidade,
-          m.estoque_minimo AS minimo,
-          em.origem,
-          em.tipo as tipo,
-          r.nome AS paciente,
-          em.armario_id,
-          em.casela_id
-        FROM estoque_medicamento em
-        JOIN medicamento m ON m.id = em.medicamento_id
-        LEFT JOIN residente r ON r.num_casela = em.casela_id
-        GROUP BY em.id, m.id, m.nome, m.principio_ativo, m.estoque_minimo, 
-                em.origem, em.tipo, r.nome, em.armario_id, em.casela_id
-      `;
+    if (filter) {
+      switch (filter) {
+        case 'noStock':
+          whereMedicamento = 'WHERE em.quantidade = 0';
+          whereInsumo = 'WHERE ei.quantidade = 0';
+          break;
+        case 'belowMin':
+          whereMedicamento =
+            'WHERE em.quantidade > 0 AND em.quantidade <= COALESCE(m.estoque_minimo,0)';
+          whereInsumo =
+            'WHERE ei.quantidade > 0 AND ei.quantidade <= COALESCE(i.estoque_minimo,0)';
+          break;
+        case 'expired':
+          whereMedicamento =
+            'WHERE em.quantidade > 0 AND em.validade < CURRENT_DATE';
+          whereInsumo =
+            'WHERE ei.quantidade > 0 AND ei.validade < CURRENT_DATE';
+          break;
+        case 'expiringSoon':
+          whereMedicamento = `WHERE em.quantidade > 0 AND em.validade BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '45 days'`;
+          whereInsumo = `WHERE ei.quantidade > 0 AND ei.validade BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '45 days'`;
+          break;
+      }
+    }
 
-      let insumoQuery = `
-        SELECT 
-          'insumo' as tipo_item,
-          ei.id as estoque_id,
+    if (!type || type === 'medicamento') {
+      const medicamentoQuery = `
+      SELECT
+        'medicamento' AS tipo_item,
+        em.id AS estoque_id,
+        m.id AS item_id,
+        m.nome,
+        m.principio_ativo,
+        em.validade,
+        em.quantidade,
+        m.estoque_minimo AS minimo,
+        em.origem,
+        em.tipo,
+        r.nome AS paciente,
+        em.armario_id,
+        em.gaveta_id,
+        em.casela_id
+      FROM estoque_medicamento em
+      JOIN medicamento m ON m.id = em.medicamento_id
+      LEFT JOIN residente r ON r.num_casela = em.casela_id
+      ${whereMedicamento}
+    `;
+
+      if (!type) {
+        const insumoQuery = `
+        SELECT
+          'insumo' AS tipo_item,
+          ei.id AS estoque_id,
           i.id AS item_id,
           i.nome,
           i.descricao AS descricao,
-          ei.validade AS validade,
-          SUM(ei.quantidade) AS quantidade,
+          ei.validade,
+          ei.quantidade,
           i.estoque_minimo AS minimo,
-          NULL AS origem,
-          ei.tipo AS tipo,
-          NULL AS paciente,
+          null AS origem,
+          ei.tipo,
+          null AS paciente,
           ei.armario_id,
-          NULL AS casela_id
+          ei.gaveta_id,
+          null AS casela_id
         FROM estoque_insumo ei
         JOIN insumo i ON i.id = ei.insumo_id
-        GROUP BY ei.id, i.id, i.nome, ei.armario_id
+        ${whereInsumo}
       `;
 
-      if (filter === 'noStock') {
-        insumoQuery += ' HAVING SUM(ei.quantidade) = 0';
-      }
-
-      if (['noStock', 'belowMin', 'expired', 'expiringSoon'].includes(filter)) {
-        switch (filter) {
-          case 'noStock':
-            medicamentoQuery += ' HAVING SUM(em.quantidade) = 0';
-            break;
-          case 'belowMin':
-            medicamentoQuery += `
-            HAVING SUM(em.quantidade) >= COALESCE(m.estoque_minimo, 0)
-              AND SUM(em.quantidade) <= COALESCE(m.estoque_minimo, 0) * 1.35
-          `;
-            break;
-          case 'expired':
-            medicamentoQuery +=
-              ' HAVING SUM(em.quantidade) > 0 AND MIN(em.validade) < CURRENT_DATE';
-            break;
-          case 'expiringSoon':
-            medicamentoQuery += `
-              HAVING SUM(em.quantidade) > 0
-              AND MIN(em.validade) IS NOT NULL
-              AND MIN(em.validade) BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '45 days'
-            `;
-            break;
-        }
-      }
-
-      const medicineFilters = ['expired', 'expiringSoon', 'belowMin'];
-      medicineFilters.includes(filter)
-        ? (baseQuery = medicamentoQuery)
-        : (baseQuery = `${medicamentoQuery} UNION ALL ${insumoQuery}`);
-    } else if (type === 'medicamento') {
-      baseQuery = `
-        SELECT 
-         'medicamento' AS tipo_item,
-          em.id as estoque_id,
-          m.id AS item_id,
-          m.nome,
-          m.principio_ativo,
-          MIN(em.validade) AS validade,
-          SUM(em.quantidade) AS quantidade,
-          m.estoque_minimo AS minimo,
-          em.origem,
-          em.tipo,
-          r.nome AS paciente,
-          em.armario_id,
-          em.casela_id
-        FROM estoque_medicamento em
-        JOIN medicamento m ON m.id = em.medicamento_id
-        LEFT JOIN residente r ON r.num_casela = em.casela_id
-        GROUP BY em.id, m.id, m.nome, m.principio_ativo, m.estoque_minimo, 
-                em.origem, em.tipo, r.nome, em.armario_id, em.casela_id
-      `;
-      switch (filter) {
-        case 'noStock':
-          baseQuery += ' HAVING SUM(em.quantidade) = 0';
-          break;
-        case 'belowMin':
-          baseQuery += `
-            HAVING SUM(em.quantidade) > 0
-            AND SUM(em.quantidade) <= COALESCE(m.estoque_minimo,0)
-          `;
-          break;
-        case 'expired':
-          baseQuery += ' HAVING MIN(em.validade) < CURRENT_DATE';
-          break;
-        case 'expiringSoon':
-          baseQuery += `
-            HAVING SUM(em.quantidade) > 0
-            AND MIN(em.validade) IS NOT NULL
-            AND MIN(em.validade) BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '60 days'
-          `;
-          break;
+        baseQuery = `${medicamentoQuery} UNION ALL ${insumoQuery}`;
+      } else {
+        baseQuery = medicamentoQuery;
       }
     } else if (type === 'insumo') {
       baseQuery = `
-        SELECT 
-          'insumo' AS tipo_item,
-          ei.id as estoque_id,
-          i.id AS item_id,
-          i.nome,
-          SUM(ei.quantidade) AS quantidade,
-          ei.armario_id,
-          i.estoque_minimo AS minimo,
-          ei.validade as validade
-        FROM estoque_insumo ei
-        JOIN insumo i ON i.id = ei.insumo_id
-        GROUP BY ei.id, i.id, i.nome, ei.armario_id, i.estoque_minimo ,ei.validade
-      `;
-      if (filter === 'noStock') {
-        baseQuery += ' HAVING SUM(ei.quantidade) = 0';
-      }
+      SELECT
+        'insumo' AS tipo_item,
+        ei.id AS estoque_id,
+        i.id AS item_id,
+        i.nome,
+        ei.validade,
+        ei.quantidade,
+        i.estoque_minimo AS minimo,
+        ei.armario_id,
+        ei.tipo
+      FROM estoque_insumo ei
+      JOIN insumo i ON i.id = ei.insumo_id
+      ${whereInsumo}
+    `;
     } else if (type === 'armarios') {
       baseQuery = `
-        SELECT 
-          a.num_armario AS armario_id,
-
-          COALESCE((
-            SELECT SUM(em.quantidade)
-            FROM estoque_medicamento em
-            WHERE em.armario_id = a.num_armario
-          ), 0) AS total_medicamentos,
-
-          COALESCE((
-            SELECT SUM(ei.quantidade)
-            FROM estoque_insumo ei
-            WHERE ei.armario_id = a.num_armario
-          ), 0) AS total_insumos,
-
-          COALESCE((
-            SELECT SUM(em.quantidade)
-            FROM estoque_medicamento em
-            WHERE em.armario_id = a.num_armario
-          ), 0)
-          +
-          COALESCE((
-            SELECT SUM(ei.quantidade)
-            FROM estoque_insumo ei
-            WHERE ei.armario_id = a.num_armario
-          ), 0) AS total_geral
-
-        FROM armario a
-        ORDER BY a.num_armario
-      `;
+      SELECT 
+        a.num_armario AS armario_id,
+        COALESCE((SELECT SUM(em.quantidade) FROM estoque_medicamento em WHERE em.armario_id = a.num_armario), 0) AS total_medicamentos,
+        COALESCE((SELECT SUM(ei.quantidade) FROM estoque_insumo ei WHERE ei.armario_id = a.num_armario), 0) AS total_insumos,
+        COALESCE((SELECT SUM(em.quantidade) FROM estoque_medicamento em WHERE em.armario_id = a.num_armario),0)
+        + COALESCE((SELECT SUM(ei.quantidade) FROM estoque_insumo ei WHERE ei.armario_id = a.num_armario),0) AS total_geral
+      FROM armario a
+      ORDER BY a.num_armario
+    `;
+    } else if (type === 'gavetas') {
+      baseQuery = `
+      SELECT 
+        g.num_gaveta AS gaveta_id,
+        COALESCE((SELECT SUM(em.quantidade) FROM estoque_medicamento em WHERE em.gaveta_id = g.num_gaveta), 0) AS total_medicamentos,
+        COALESCE((SELECT SUM(ei.quantidade) FROM estoque_insumo ei WHERE ei.gaveta_id = g.num_gaveta), 0) AS total_insumos,
+        COALESCE((SELECT SUM(em.quantidade) FROM estoque_medicamento em WHERE em.gaveta_id = g.num_gaveta),0)
+        + COALESCE((SELECT SUM(ei.quantidade) FROM estoque_insumo ei WHERE ei.gaveta_id = g.num_gaveta),0) AS total_geral
+      FROM gaveta g
+      ORDER BY g.num_gaveta
+    `;
     } else {
       throw new Error(
-        'Tipo inválido. Use medicamento, insumo, armarios ou deixe vazio.',
+        'Tipo inválido. Use medicamento, insumo, armarios, gavetas ou deixe vazio.',
       );
     }
 
-    if (type !== 'armarios') {
+    if (type !== 'armarios' && type !== 'gavetas') {
       baseQuery += ` ORDER BY nome ASC LIMIT ${limit} OFFSET ${offset}`;
     }
 
     const results = await sequelize.query(baseQuery, {
       type: QueryTypes.SELECT,
     });
-
-    let countQuery = baseQuery;
-
-    countQuery = countQuery.replace(/ORDER BY [\s\S]*?LIMIT.*OFFSET.*/i, '');
-
-    const countResults = await sequelize.query(countQuery, {
-      type: QueryTypes.SELECT,
-    });
-    const total = countResults.length;
+    const total = results.length;
 
     const mapped = results.map((item: any) => {
-      const isCabinetType = type === 'armarios';
+      const isStorageType = type === 'armarios' || type === 'gavetas';
 
       let expiryInfo: { status: string | null; message: string | null } = {
         status: null,
@@ -312,15 +249,14 @@ export class StockRepository {
         message: null,
       };
 
-      if (!isCabinetType) {
+      if (!isStorageType) {
         expiryInfo = computeExpiryStatus(item.validade);
         quantityInfo = computeQuantityStatus(item.quantidade, item.minimo);
       }
 
-      item.validade = formatDateToPtBr(item.validade);
-
       return {
         ...item,
+        validade: formatDateToPtBr(item.validade),
         st_expiracao: expiryInfo.status,
         msg_expiracao: expiryInfo.message,
         st_quantidade: quantityInfo.status,
