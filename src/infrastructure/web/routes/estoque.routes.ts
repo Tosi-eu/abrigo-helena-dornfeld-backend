@@ -13,5 +13,14 @@ router.post('/entrada', (req, res) => controller.stockIn(req, res));
 router.post('/saida', (req, res) => controller.stockOut(req, res));
 router.get('/', (req, res) => controller.list(req, res));
 router.get('/proporcao', (req, res) => controller.proportion(req, res));
+router.patch('/medicamento/:estoque_id/remover-individual', (req, res) =>
+  controller.removeIndividualMedicine(req, res),
+);
+router.patch('/medicamento/:estoque_id/suspender', (req, res) =>
+  controller.suspendIndividualMedicine(req, res),
+);
+router.patch('/medicamento/:estoqueId/retomar', (req, res) =>
+  controller.resumeIndividualMedicine(req, res),
+);
 
 export default router;
