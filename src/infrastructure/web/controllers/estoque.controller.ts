@@ -48,9 +48,11 @@ export class StockController {
     }
   }
 
-  async proportion(_req: Request, res: Response) {
+  async proportion(req: Request, res: Response) {
     try {
-      const data = await this.service.getProportion();
+      const { setor } = req.query as { setor?: 'farmacia' | 'enfermagem' };
+
+      const data = await this.service.getProportion(setor);
 
       const totalMedicineTypeGeral = Number(data.total_gerais || 0);
       const totalMedicineTypeIndividual = Number(data.total_individuais || 0);
@@ -72,6 +74,7 @@ export class StockController {
         totalGeral > 0 ? Number(((v / totalGeral) * 100).toFixed(2)) : 0;
 
       return res.json({
+        setor: setor ?? 'todos',
         percentuais: {
           medicamentos_geral: pct(totalMedicineTypeGeral),
           medicamentos_individual: pct(totalMedicineTypeIndividual),

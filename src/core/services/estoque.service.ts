@@ -61,8 +61,8 @@ export class StockService {
     };
   }
 
-  async getProportion() {
-    return this.repo.getStockProportion();
+  async getProportion(setor?: 'farmacia' | 'enfermagem') {
+    return this.repo.getStockProportion(setor);
   }
 
   async removeIndividualMedicine(estoqueId: number) {

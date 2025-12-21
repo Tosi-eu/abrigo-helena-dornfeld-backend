@@ -307,26 +307,51 @@ export class StockRepository {
     };
   }
 
-  async getStockProportion(): Promise<StockProportion> {
-    const totalMedicines = await MedicineStockModel.sum('quantidade');
+  async getStockProportion(
+    setor?: 'farmacia' | 'enfermagem',
+  ): Promise<StockProportion> {
+    const whereBase = setor ? { setor } : undefined;
+
+    const totalMedicines = await MedicineStockModel.sum('quantidade', {
+      where: whereBase,
+    });
+
     const totalIndividualType = await MedicineStockModel.sum('quantidade', {
-      where: { tipo: OperationType.INDIVIDUAL },
+      where: {
+        ...whereBase,
+        tipo: OperationType.INDIVIDUAL,
+      },
     });
+
     const totalGeralType = await MedicineStockModel.sum('quantidade', {
-      where: { tipo: OperationType.GERAL },
+      where: {
+        ...whereBase,
+        tipo: OperationType.GERAL,
+      },
     });
+
     const totalEmergencyCarMedicines = await MedicineStockModel.sum(
       'quantidade',
       {
-        where: { tipo: OperationType.CARRINHO },
+        where: {
+          ...whereBase,
+          tipo: OperationType.CARRINHO,
+        },
       },
     );
 
     const totalEmergencyCarInputs = await InputStockModel.sum('quantidade', {
-      where: { tipo: OperationType.CARRINHO },
+      where: {
+        ...whereBase,
+        tipo: OperationType.CARRINHO,
+      },
     });
+
     const totalInputs = await InputStockModel.sum('quantidade', {
-      where: { tipo: 'geral' },
+      where: {
+        ...whereBase,
+        tipo: 'geral',
+      },
     });
 
     return {
