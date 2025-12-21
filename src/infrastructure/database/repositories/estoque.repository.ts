@@ -24,6 +24,7 @@ export class StockRepository {
         where: {
           medicamento_id: data.medicamento_id,
           armario_id: data.armario_id,
+          gaveta_id: data.gaveta_id,
           validade: data.validade ?? null,
           tipo: data.tipo,
           casela_id: data.casela_id ?? null,
@@ -41,6 +42,7 @@ export class StockRepository {
         medicamento_id: data.medicamento_id,
         casela_id: data.casela_id ?? null,
         armario_id: data.armario_id,
+        gaveta_id: data.gaveta_id,
         validade: data.validade,
         quantidade: data.quantidade,
         origem: data.origem,
@@ -59,6 +61,7 @@ export class StockRepository {
       where: {
         insumo_id: data.insumo_id,
         armario_id: data.armario_id,
+        gaveta_id: data.gaveta_id,
         validade: data.validade ?? null,
         tipo: data.tipo,
       },
@@ -73,6 +76,7 @@ export class StockRepository {
     await InputStockModel.create({
       insumo_id: data.insumo_id,
       armario_id: data.armario_id,
+      gaveta_id: data.gaveta_id,
       quantidade: data.quantidade,
       validade: data.validade,
       tipo: data.tipo,
