@@ -25,6 +25,11 @@ export enum NotificationDestiny {
   PHARMACY = 'farmacia',
 }
 
+export enum SectorType {
+  FARMACIA = 'farmacia',
+  ENFERMAGEM = 'enfermagem',
+}
+
 export interface StockRawResponse {
   tipo_item: string;
   estoque_id: number;

@@ -12,6 +12,7 @@ import {
   MedicineStatus,
   OperationType,
   QueryPaginationParams,
+  SectorType,
   StockProportion,
 } from '../../../core/utils/utils';
 import { formatDateToPtBr } from '../../helpers/date.helper';
@@ -307,9 +308,7 @@ export class StockRepository {
     };
   }
 
-  async getStockProportion(
-    setor?: 'farmacia' | 'enfermagem',
-  ): Promise<StockProportion> {
+  async getStockProportion(setor?: SectorType): Promise<StockProportion> {
     const whereBase = setor ? { setor } : undefined;
 
     const totalMedicines = await MedicineStockModel.sum('quantidade', {

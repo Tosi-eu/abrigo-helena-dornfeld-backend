@@ -4,6 +4,7 @@ import {
   ItemType,
   MedicineStatus,
   QueryPaginationParams,
+  SectorType,
 } from '../utils/utils';
 
 export class StockService {
@@ -61,7 +62,7 @@ export class StockService {
     };
   }
 
-  async getProportion(setor?: 'farmacia' | 'enfermagem') {
+  async getProportion(setor?: SectorType) {
     return this.repo.getStockProportion(setor);
   }
 
@@ -134,7 +135,7 @@ export class StockService {
   async transferStock(
     estoqueId: number,
     tipo: 'medicamento' | 'insumo',
-    setor: 'farmacia' | 'enfermagem',
+    setor: SectorType,
   ) {
     if (!estoqueId) throw new Error('Estoque inválido');
 

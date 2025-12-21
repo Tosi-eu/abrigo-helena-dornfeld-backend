@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { StockService } from '../../../core/services/estoque.service';
+import { SectorType } from '../../../core/utils/utils';
 
 export class StockController {
   constructor(private readonly service: StockService) {}
@@ -50,7 +51,7 @@ export class StockController {
 
   async proportion(req: Request, res: Response) {
     try {
-      const { setor } = req.query as { setor?: 'farmacia' | 'enfermagem' };
+      const { setor } = req.query as { setor?: SectorType };
 
       const data = await this.service.getProportion(setor);
 
