@@ -146,4 +146,27 @@ export class StockController {
       return res.status(400).json({ error: e.message });
     }
   }
+
+  async deleteStockItem(req: Request, res: Response) {
+    try {
+      const { estoque_id, tipo } = req.params;
+
+      if (!estoque_id || !tipo) {
+        return res.status(400).json({ error: 'Parâmetros inválidos' });
+      }
+
+      if (tipo !== 'medicamento' && tipo !== 'insumo') {
+        return res.status(400).json({ error: 'Tipo inválido' });
+      }
+
+      const result = await this.service.deleteStockItem(
+        Number(estoque_id),
+        tipo,
+      );
+
+      return res.json(result);
+    } catch (e: any) {
+      return res.status(400).json({ error: e.message });
+    }
+  }
 }

@@ -391,4 +391,16 @@ export class StockRepository {
       message: 'Medicamento retomado com sucesso',
     };
   }
+
+  async deleteMedicineStock(estoqueId: number) {
+    await MedicineStockModel.destroy({ where: { id: estoqueId } });
+  }
+
+  async findInputStockById(id: number) {
+    return InputStockModel.findByPk(id);
+  }
+
+  async deleteInputStock(estoqueId: number) {
+    await InputStockModel.destroy({ where: { id: estoqueId } });
+  }
 }

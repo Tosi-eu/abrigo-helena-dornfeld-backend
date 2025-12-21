@@ -114,4 +114,20 @@ export class StockService {
 
     return this.repo.resumeIndividualMedicine(estoqueId);
   }
+
+  async deleteStockItem(estoqueId: number, type: 'medicamento' | 'insumo') {
+    if (!estoqueId) throw new Error('Estoque inválido');
+
+    if (type === 'medicamento') {
+      const stock = await this.repo.findMedicineStockById(estoqueId);
+      if (!stock) throw new Error('Medicamento não encontrado no estoque');
+      await this.repo.deleteMedicineStock(estoqueId);
+      return { message: 'Medicamento deletado do estoque' };
+    } else {
+      const stock = await this.repo.findInputStockById(estoqueId);
+      if (!stock) throw new Error('Insumo não encontrado no estoque');
+      await this.repo.deleteInputStock(estoqueId);
+      return { message: 'Insumo deletado do estoque' };
+    }
+  }
 }
