@@ -10,6 +10,7 @@ export interface Movement {
   medicamento_id?: number | null;
   casela_id?: number | null;
   validade: Date;
+  setor: string;
 }
 
 export default Movement;

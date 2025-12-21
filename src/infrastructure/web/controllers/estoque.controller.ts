@@ -176,7 +176,9 @@ export class StockController {
       const { setor } = req.body;
 
       if (!estoque_id || !tipo) {
-        return res.status(400).json({ error: 'Parâmetros inválidos' });
+        return res.status(400).json({
+          error: 'Parâmetros inválidos, faltando tipo e id do item no estoque',
+        });
       }
 
       if (!['medicamento', 'insumo'].includes(tipo)) {
@@ -184,7 +186,7 @@ export class StockController {
       }
 
       if (!['farmacia', 'enfermagem'].includes(setor)) {
-        return res.status(400).json({ error: 'Setor inválido' });
+        return res.status(400).json({ error: 'Este setor não existe' });
       }
 
       const result = await this.service.transferStock(

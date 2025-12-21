@@ -169,7 +169,8 @@ export class StockRepository {
         em.gaveta_id,
         em.casela_id,
         em.status,
-        em.suspended_at AS suspenso_em
+        em.suspended_at AS suspenso_em,
+        em.setor
       FROM estoque_medicamento em
       JOIN medicamento m ON m.id = em.medicamento_id
       LEFT JOIN residente r ON r.num_casela = em.casela_id
@@ -194,7 +195,8 @@ export class StockRepository {
           ei.gaveta_id,
           NULL AS casela_id,
           NULL AS status,
-          NULL AS suspenso_em
+          NULL AS suspenso_em,
+          ei.setor
         FROM estoque_insumo ei
         JOIN insumo i ON i.id = ei.insumo_id
         ${whereInsumo}
@@ -215,7 +217,8 @@ export class StockRepository {
         ei.quantidade,
         i.estoque_minimo AS minimo,
         ei.armario_id,
-        ei.tipo
+        ei.tipo,
+        ei.setor
       FROM estoque_insumo ei
       JOIN insumo i ON i.id = ei.insumo_id
       ${whereInsumo}
@@ -246,9 +249,6 @@ export class StockRepository {
       );
     }
 
-    /* =========================
-     TOTAL REAL (SEM PAGINAÇÃO)
-     ========================= */
     const countQuery = `
     SELECT COUNT(*) AS total FROM (
       ${baseQuery}
@@ -261,9 +261,6 @@ export class StockRepository {
 
     const total = Number((countResult[0] as any).total);
 
-    /* =========================
-     QUERY PAGINADA
-     ========================= */
     let paginatedQuery = baseQuery;
 
     if (type !== 'armarios' && type !== 'gavetas') {
