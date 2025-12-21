@@ -19,6 +19,12 @@ export enum MedicineStatus {
   SUSPENSO = 'suspended',
 }
 
+export enum NotificationDestiny {
+  SUS = 'sus',
+  FAMILY = 'familia',
+  PHARMACY = 'farmacia',
+}
+
 export interface StockRawResponse {
   tipo_item: string;
   estoque_id: number;
