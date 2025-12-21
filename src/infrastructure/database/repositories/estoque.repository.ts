@@ -44,6 +44,7 @@ export class StockRepository {
         quantidade: data.quantidade,
         origem: data.origem,
         tipo: data.tipo,
+        setor: data.setor,
       });
 
       return { message: 'Entrada de medicamento registrada.' };
@@ -74,6 +75,7 @@ export class StockRepository {
       quantidade: data.quantidade,
       validade: data.validade,
       tipo: data.tipo,
+      setor: data.setor,
     });
 
     return { message: 'Entrada de insumo registrada.' };
@@ -402,5 +404,23 @@ export class StockRepository {
 
   async deleteInputStock(estoqueId: number) {
     await InputStockModel.destroy({ where: { id: estoqueId } });
+  }
+
+  async transferMedicineStock(
+    estoqueId: number,
+    setor: 'farmacia' | 'enfermagem',
+  ) {
+    await MedicineStockModel.update({ setor }, { where: { id: estoqueId } });
+
+    return { message: 'Medicamento transferido de setor com sucesso' };
+  }
+
+  async transferInputStock(
+    estoqueId: number,
+    setor: 'farmacia' | 'enfermagem',
+  ) {
+    await InputStockModel.update({ setor }, { where: { id: estoqueId } });
+
+    return { message: 'Insumo transferido de setor com sucesso' };
   }
 }

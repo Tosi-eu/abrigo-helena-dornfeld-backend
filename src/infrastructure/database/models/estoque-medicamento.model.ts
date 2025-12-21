@@ -12,6 +12,7 @@ export interface MedicineStockAttributes {
   quantidade: number;
   origem?: string | null;
   tipo?: string | null;
+  setor: string;
   status?: MedicineStatus;
   suspended_at?: Date | null;
 }
@@ -29,6 +30,7 @@ export class MedicineStockModel
   declare quantidade: number;
   declare origem: string | null;
   declare tipo: string | null;
+  declare setor: string;
   declare status: MedicineStatus;
   declare suspended_at?: Date | null;
 }
@@ -62,6 +64,7 @@ MedicineStockModel.init(
     quantidade: { type: DataTypes.INTEGER, allowNull: false },
     origem: { type: DataTypes.STRING, allowNull: false },
     tipo: { type: DataTypes.STRING, allowNull: false },
+    setor: { type: DataTypes.STRING, allowNull: false },
     status: {
       type: DataTypes.STRING,
       allowNull: false,

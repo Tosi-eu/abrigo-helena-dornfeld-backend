@@ -9,6 +9,7 @@ export interface InputStockAttributes {
   quantidade: number;
   validade: Date;
   tipo: string;
+  setor: string;
 }
 
 export class InputStockModel
@@ -22,6 +23,7 @@ export class InputStockModel
   declare quantidade: number;
   declare validade: Date;
   declare tipo: string;
+  declare setor: string;
 }
 
 InputStockModel.init(
@@ -47,11 +49,12 @@ InputStockModel.init(
     quantidade: { type: DataTypes.INTEGER, allowNull: false },
     validade: { type: DataTypes.DATE, allowNull: false },
     tipo: { type: DataTypes.TEXT, allowNull: false },
+    setor: { type: DataTypes.TEXT, allowNull: false },
   },
   {
     sequelize,
     tableName: 'estoque_insumo',
-    timestamps: false,
+    timestamps: true,
   },
 );
 

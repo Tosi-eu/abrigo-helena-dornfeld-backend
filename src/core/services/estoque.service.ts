@@ -130,4 +130,38 @@ export class StockService {
       return { message: 'Insumo deletado do estoque' };
     }
   }
+
+  async transferStock(
+    estoqueId: number,
+    tipo: 'medicamento' | 'insumo',
+    setor: 'farmacia' | 'enfermagem',
+  ) {
+    if (!estoqueId) throw new Error('Estoque inválido');
+
+    if (tipo === 'medicamento') {
+      const stock = await this.repo.findMedicineStockById(estoqueId);
+
+      if (!stock) throw new Error('Medicamento não encontrado');
+
+      if (stock.setor === setor) {
+        throw new Error('Medicamento já está neste setor');
+      }
+
+      if (stock.status === MedicineStatus.SUSPENSO) {
+        throw new Error('Medicamento suspenso não pode ser transferido');
+      }
+
+      return this.repo.transferMedicineStock(estoqueId, setor);
+    }
+
+    const stock = await this.repo.findInputStockById(estoqueId);
+
+    if (!stock) throw new Error('Insumo não encontrado');
+
+    if (stock.setor === setor) {
+      throw new Error('Insumo já está neste setor');
+    }
+
+    return this.repo.transferInputStock(estoqueId, setor);
+  }
 }

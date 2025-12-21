@@ -169,4 +169,33 @@ export class StockController {
       return res.status(400).json({ error: e.message });
     }
   }
+
+  async transferStock(req: Request, res: Response) {
+    try {
+      const { estoque_id, tipo } = req.params;
+      const { setor } = req.body;
+
+      if (!estoque_id || !tipo) {
+        return res.status(400).json({ error: 'Parâmetros inválidos' });
+      }
+
+      if (!['medicamento', 'insumo'].includes(tipo)) {
+        return res.status(400).json({ error: 'Tipo inválido' });
+      }
+
+      if (!['farmacia', 'enfermagem'].includes(setor)) {
+        return res.status(400).json({ error: 'Setor inválido' });
+      }
+
+      const result = await this.service.transferStock(
+        Number(estoque_id),
+        tipo as 'medicamento' | 'insumo',
+        setor,
+      );
+
+      return res.json(result);
+    } catch (e: any) {
+      return res.status(400).json({ error: e.message });
+    }
+  }
 }
