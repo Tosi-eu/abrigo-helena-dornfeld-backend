@@ -427,19 +427,13 @@ export class StockRepository {
     await InputStockModel.destroy({ where: { id: estoqueId } });
   }
 
-  async transferMedicineStock(
-    estoqueId: number,
-    setor: 'farmacia' | 'enfermagem',
-  ) {
+  async transferMedicineStock(estoqueId: number, setor: SectorType) {
     await MedicineStockModel.update({ setor }, { where: { id: estoqueId } });
 
     return { message: 'Medicamento transferido de setor com sucesso' };
   }
 
-  async transferInputStock(
-    estoqueId: number,
-    setor: 'farmacia' | 'enfermagem',
-  ) {
+  async transferInputStock(estoqueId: number, setor: SectorType) {
     await InputStockModel.update({ setor }, { where: { id: estoqueId } });
 
     return { message: 'Insumo transferido de setor com sucesso' };
