@@ -53,44 +53,15 @@ export class StockController {
     try {
       const { setor } = req.query as { setor?: SectorType };
 
-      const data = await this.service.getProportion(setor);
+      if (!setor) {
+        return res.status(400).json({ error: 'Setor é obrigatório' });
+      }
 
-      const totalMedicineTypeGeral = Number(data.total_gerais || 0);
-      const totalMedicineTypeIndividual = Number(data.total_individuais || 0);
-      const totalInputs = Number(data.total_insumos || 0);
-
-      const totalCarrinhoMedicamentos = Number(
-        data.total_carrinho_medicamentos || 0,
-      );
-      const totalCarrinhoInsumos = Number(data.total_carrinho_insumos || 0);
-
-      const totalGeral =
-        totalMedicineTypeGeral +
-        totalMedicineTypeIndividual +
-        totalInputs +
-        totalCarrinhoMedicamentos +
-        totalCarrinhoInsumos;
-
-      const pct = (v: number) =>
-        totalGeral > 0 ? Number(((v / totalGeral) * 100).toFixed(2)) : 0;
+      const data = await this.service.getProportionBySector(setor);
 
       return res.json({
-        setor: setor ?? 'todos',
-        percentuais: {
-          medicamentos_geral: pct(totalMedicineTypeGeral),
-          medicamentos_individual: pct(totalMedicineTypeIndividual),
-          insumos: pct(totalInputs),
-          carrinho_medicamentos: pct(totalCarrinhoMedicamentos),
-          carrinho_insumos: pct(totalCarrinhoInsumos),
-        },
-        totais: {
-          medicamentos_geral: totalMedicineTypeGeral,
-          medicamentos_individual: totalMedicineTypeIndividual,
-          insumos: totalInputs,
-          carrinho_medicamentos: totalCarrinhoMedicamentos,
-          carrinho_insumos: totalCarrinhoInsumos,
-          total_geral: totalGeral,
-        },
+        setor,
+        ...data,
       });
     } catch (e: any) {
       return res.status(500).json({ error: e.message });

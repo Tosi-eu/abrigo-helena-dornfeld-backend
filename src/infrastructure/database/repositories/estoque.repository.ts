@@ -1,7 +1,7 @@
 import { MedicineStock, InputStock } from '../../../core/domain/estoque';
 import MedicineStockModel from '../models/estoque-medicamento.model';
 import InputStockModel from '../models/estoque-insumo.model';
-import { QueryTypes } from 'sequelize';
+import { Op, QueryTypes } from 'sequelize';
 import { sequelize } from '../sequelize';
 import {
   computeExpiryStatus,
@@ -13,11 +13,14 @@ import {
   OperationType,
   QueryPaginationParams,
   SectorType,
-  StockProportion,
 } from '../../../core/utils/utils';
 import { formatDateToPtBr } from '../../helpers/date.helper';
 
 export class StockRepository {
+  private pct(value: number, total: number) {
+    return total > 0 ? Number(((value / total) * 100).toFixed(2)) : 0;
+  }
+
   async createMedicineStockIn(data: MedicineStock) {
     try {
       const existing = await MedicineStockModel.findOne({
@@ -312,58 +315,86 @@ export class StockRepository {
     };
   }
 
-  async getStockProportion(setor?: SectorType): Promise<StockProportion> {
-    const whereBase = setor ? { setor } : undefined;
-
-    const totalMedicines = await MedicineStockModel.sum('quantidade', {
-      where: whereBase,
-    });
-
-    const totalIndividualType = await MedicineStockModel.sum('quantidade', {
+  async getPharmacyProportion() {
+    const generalMedicines = await MedicineStockModel.sum('quantidade', {
       where: {
-        ...whereBase,
-        tipo: OperationType.INDIVIDUAL,
-      },
-    });
-
-    const totalGeralType = await MedicineStockModel.sum('quantidade', {
-      where: {
-        ...whereBase,
+        setor: SectorType.FARMACIA,
         tipo: OperationType.GERAL,
       },
     });
 
-    const totalEmergencyCarMedicines = await MedicineStockModel.sum(
-      'quantidade',
-      {
-        where: {
-          ...whereBase,
-          tipo: OperationType.CARRINHO,
-        },
-      },
-    );
-
-    const totalEmergencyCarInputs = await InputStockModel.sum('quantidade', {
+    const individualMedicines = await MedicineStockModel.sum('quantidade', {
       where: {
-        ...whereBase,
-        tipo: OperationType.CARRINHO,
+        setor: SectorType.FARMACIA,
+        tipo: OperationType.INDIVIDUAL,
       },
     });
 
-    const totalInputs = await InputStockModel.sum('quantidade', {
+    const generalInputs = await InputStockModel.sum('quantidade', {
       where: {
-        ...whereBase,
-        tipo: 'geral',
+        setor: SectorType.FARMACIA,
       },
     });
+
+    const total =
+      Number(generalMedicines || 0) +
+      Number(individualMedicines || 0) +
+      Number(generalInputs || 0);
 
     return {
-      total_medicamentos: totalMedicines,
-      total_individuais: totalIndividualType,
-      total_gerais: totalGeralType,
-      total_insumos: totalInputs,
-      total_carrinho_medicamentos: totalEmergencyCarMedicines,
-      total_carrinho_insumos: totalEmergencyCarInputs,
+      percentuais: {
+        medicamentos_geral: this.pct(generalMedicines, total),
+        medicamentos_individual: this.pct(individualMedicines, total),
+        insumos_geral: this.pct(generalInputs, total),
+      },
+      totais: {
+        medicamentos_geral: Number(generalMedicines || 0),
+        medicamentos_individual: Number(individualMedicines || 0),
+        insumos_geral: Number(generalInputs || 0),
+        total,
+      },
+    };
+  }
+
+  async getNurseryProportion() {
+    const medicinesInEmergencyCar = await MedicineStockModel.sum('quantidade', {
+      where: {
+        setor: SectorType.ENFERMAGEM,
+        gaveta_id: { [Op.ne]: null },
+      },
+    });
+
+    const inputsInEmergencyCar = await InputStockModel.sum('quantidade', {
+      where: {
+        setor: SectorType.ENFERMAGEM,
+        gaveta_id: { [Op.ne]: null },
+      },
+    });
+
+    const medicinesInCasela = await MedicineStockModel.sum('quantidade', {
+      where: {
+        setor: SectorType.ENFERMAGEM,
+        casela_id: { [Op.ne]: null },
+      },
+    });
+
+    const total =
+      Number(medicinesInEmergencyCar || 0) +
+      Number(inputsInEmergencyCar || 0) +
+      Number(medicinesInCasela || 0);
+
+    return {
+      percentuais: {
+        carrinho_medicamentos: this.pct(medicinesInEmergencyCar, total),
+        carrinho_insumos: this.pct(inputsInEmergencyCar, total),
+        medicamentos_casela: this.pct(medicinesInCasela, total),
+      },
+      totais: {
+        carrinho_medicamentos: Number(medicinesInEmergencyCar || 0),
+        carrinho_insumos: Number(inputsInEmergencyCar || 0),
+        medicamentos_casela: Number(medicinesInCasela || 0),
+        total,
+      },
     };
   }
 

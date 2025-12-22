@@ -62,8 +62,12 @@ export class StockService {
     };
   }
 
-  async getProportion(setor?: SectorType) {
-    return this.repo.getStockProportion(setor);
+  async getProportionBySector(setor: SectorType) {
+    if (setor === SectorType.FARMACIA) {
+      return this.repo.getPharmacyProportion();
+    }
+
+    return this.repo.getNurseryProportion();
   }
 
   async removeIndividualMedicine(estoqueId: number) {
