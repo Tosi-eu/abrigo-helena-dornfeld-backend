@@ -23,6 +23,7 @@ export class StockRepository {
         where: {
           medicamento_id: data.medicamento_id,
           armario_id: data.armario_id,
+          gaveta_id: data.gaveta_id,
           validade: data.validade ?? null,
           tipo: data.tipo,
           casela_id: data.casela_id ?? null,
@@ -40,10 +41,12 @@ export class StockRepository {
         medicamento_id: data.medicamento_id,
         casela_id: data.casela_id ?? null,
         armario_id: data.armario_id,
+        gaveta_id: data.gaveta_id,
         validade: data.validade,
         quantidade: data.quantidade,
         origem: data.origem,
         tipo: data.tipo,
+        setor: data.setor,
       });
 
       return { message: 'Entrada de medicamento registrada.' };
@@ -57,6 +60,7 @@ export class StockRepository {
       where: {
         insumo_id: data.insumo_id,
         armario_id: data.armario_id,
+        gaveta_id: data.gaveta_id,
         validade: data.validade ?? null,
         tipo: data.tipo,
       },
@@ -71,9 +75,11 @@ export class StockRepository {
     await InputStockModel.create({
       insumo_id: data.insumo_id,
       armario_id: data.armario_id,
+      gaveta_id: data.gaveta_id,
       quantidade: data.quantidade,
       validade: data.validade,
       tipo: data.tipo,
+      setor: data.setor,
     });
 
     return { message: 'Entrada de insumo registrada.' };
@@ -159,7 +165,8 @@ export class StockRepository {
         r.nome AS paciente,
         em.armario_id,
         em.gaveta_id,
-        em.casela_id
+        em.casela_id,
+        em.setor
       FROM estoque_medicamento em
       JOIN medicamento m ON m.id = em.medicamento_id
       LEFT JOIN residente r ON r.num_casela = em.casela_id
@@ -182,7 +189,8 @@ export class StockRepository {
           null AS paciente,
           ei.armario_id,
           ei.gaveta_id,
-          null AS casela_id
+          null AS casela_id,
+          ei.setor
         FROM estoque_insumo ei
         JOIN insumo i ON i.id = ei.insumo_id
         ${whereInsumo}
