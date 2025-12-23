@@ -23,5 +23,11 @@ router.patch('/medicamento/:estoque_id/suspender', (req, res) =>
 router.patch('/medicamento/:estoqueId/retomar', (req, res) =>
   controller.resumeIndividualMedicine(req, res),
 );
+router.delete('/:tipo/:estoque_id', (req, res) =>
+  controller.deleteStockItem(req, res),
+);
+router.patch('/transferir/:tipo/:estoque_id', (req, res) =>
+  controller.transferStock(req, res),
+);
 
 export default router;

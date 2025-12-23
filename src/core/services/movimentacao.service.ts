@@ -35,7 +35,8 @@ export class MovementService {
       !data.tipo ||
       !data.quantidade ||
       (!data.armario_id && !data.gaveta_id) ||
-      !data.login_id
+      !data.login_id ||
+      !data.setor
     ) {
       throw new Error('Campos obrigatórios faltando.');
     }

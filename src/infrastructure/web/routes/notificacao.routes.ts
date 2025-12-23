@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import { NotificationEventService } from '../../../core/services/notification-event.service';
-import { NotificationEventController } from '../controllers/notification-event.controller';
-import { NotificationEventRepository } from '../../database/repositories/notification-event.repository';
+import { NotificationEventService } from '../../../core/services/notificacao.service';
+import { NotificationEventController } from '../controllers/notificacao.controller';
+import { NotificationEventRepository } from '../../database/repositories/notificacao.repository';
 
 const repo = new NotificationEventRepository();
 const service = new NotificationEventService(repo);

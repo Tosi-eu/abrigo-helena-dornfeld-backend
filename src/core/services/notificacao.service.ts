@@ -1,4 +1,4 @@
-import { NotificationEventRepository } from '../../infrastructure/database/repositories/notification-event.repository';
+import { NotificationEventRepository } from '../../infrastructure/database/repositories/notificacao.repository';
 
 export class NotificationEventService {
   constructor(private readonly repo: NotificationEventRepository) {}

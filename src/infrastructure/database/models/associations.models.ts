@@ -8,7 +8,7 @@ import InputModel from './insumo.model';
 import LoginModel from './login.model';
 import MedicineModel from './medicamento.model';
 import MovementModel from './movimentacao.model';
-import NotificationEventModel from './notification-event.model';
+import NotificationEventModel from './notificacao.model';
 import ResidentModel from './residente.model';
 
 export function setupAssociations() {

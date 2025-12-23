@@ -1,7 +1,7 @@
 import { formatDateToPtBr } from '../../helpers/date.helper';
 import LoginModel from '../models/login.model';
 import MedicineModel from '../models/medicamento.model';
-import NotificationEventModel from '../models/notification-event.model';
+import NotificationEventModel from '../models/notificacao.model';
 import ResidentModel from '../models/residente.model';
 
 export class NotificationEventRepository {

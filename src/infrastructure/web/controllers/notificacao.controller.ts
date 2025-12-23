@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { NotificationEventService } from '../../../core/services/notification-event.service';
+import { NotificationEventService } from '../../../core/services/notificacao.service';
 
 export class NotificationEventController {
   constructor(private readonly service: NotificationEventService) {}
