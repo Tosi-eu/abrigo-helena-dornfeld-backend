@@ -24,24 +24,12 @@ export async function setupTestApp() {
 }
 
 export function getDatabaseConfig() {
-  const env = process.env.NODE_ENV || 'development';
-
-  if (env === 'production') {
-    return {
-      name: process.env.PRD_DB_NAME,
-      user: process.env.PRD_DB_USER,
-      pass: process.env.PRD_DB_PASSWORD,
-      host: process.env.PRD_DB_HOST,
-      port: Number(process.env.PRD_DB_PORT) || 5432,
-    };
-  }
-
   return {
-    name: process.env.HML_DB_NAME,
-    user: process.env.HML_DB_USER,
-    pass: process.env.HML_DB_PASSWORD,
-    host: process.env.HML_DB_HOST,
-    port: Number(process.env.HML_DB_PORT) || 5432,
+    name: process.env.DB_NAME,
+    user: process.env.DB_USER,
+    pass: process.env.DB_PASSWORD,
+    host: process.env.DB_HOST,
+    port: Number(process.env.DB_PORT) || 5432,
   };
 }
 

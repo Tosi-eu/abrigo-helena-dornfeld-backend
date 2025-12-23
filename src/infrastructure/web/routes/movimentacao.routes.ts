@@ -2,11 +2,12 @@ import { Router } from 'express';
 import { MovementRepository } from '../../database/repositories/movimentacao.repository';
 import { MovementService } from '../../../core/services/movimentacao.service';
 import { MovementController } from '../controllers/movimentacao.controller';
+import { cacheService } from '../../database/redis/client.redis';
 
 const router = Router();
 
 const repo = new MovementRepository();
-const service = new MovementService(repo);
+const service = new MovementService(repo, cacheService);
 const controller = new MovementController(service);
 
 router.get('/produtos-parados', (req, res) =>

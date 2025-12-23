@@ -70,7 +70,7 @@ MedicineStockModel.init(
       allowNull: false,
       defaultValue: 'active',
     },
-
+    setor: { type: DataTypes.TEXT, allowNull: false },
     suspended_at: {
       type: DataTypes.DATE,
       allowNull: true,
