@@ -2,9 +2,10 @@ import { Router } from 'express';
 import { StockRepository } from '../../database/repositories/estoque.repository';
 import { StockService } from '../../../core/services/estoque.service';
 import { StockController } from '../controllers/estoque.controller';
+import { cacheService } from '../../database/redis/client.redis';
 
 const repo = new StockRepository();
-const service = new StockService(repo);
+const service = new StockService(repo, cacheService);
 const controller = new StockController(service);
 
 const router = Router();

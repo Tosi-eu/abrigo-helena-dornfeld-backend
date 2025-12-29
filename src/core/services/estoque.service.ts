@@ -1,4 +1,5 @@
 import { StockRepository } from '../../infrastructure/database/repositories/estoque.repository';
+import { CacheKeyHelper } from '../../infrastructure/helpers/redis.helper';
 import { MedicineStock, InputStock } from '../domain/estoque';
 import {
   ItemType,
@@ -6,18 +7,28 @@ import {
   QueryPaginationParams,
   SectorType,
 } from '../utils/utils';
+import { CacheService } from './redis.service';
 
 export class StockService {
-  constructor(private readonly repo: StockRepository) {}
+  constructor(
+    private readonly repo: StockRepository,
+    private readonly cache: CacheService,
+  ) {}
 
   async medicineStockIn(data: MedicineStock) {
     if (
       !data.medicamento_id ||
       (!data.armario_id && !data.gaveta_id) ||
       !data.quantidade
-    )
+    ) {
       throw new Error('Campos obrigatórios faltando.');
-    return this.repo.createMedicineStockIn(data);
+    }
+
+    const result = await this.repo.createMedicineStockIn(data);
+
+    await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
+
+    return result;
   }
 
   async inputStockIn(data: InputStock) {
@@ -26,9 +37,15 @@ export class StockService {
       (!data.armario_id && !data.gaveta_id) ||
       !data.quantidade ||
       !data.tipo
-    )
+    ) {
       throw new Error('Campos obrigatórios faltando.');
-    return this.repo.createInputStockIn(data);
+    }
+
+    const result = await this.repo.createInputStockIn(data);
+
+    await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
+
+    return result;
   }
 
   async stockOut(data: {
@@ -40,34 +57,41 @@ export class StockService {
 
     if (!estoqueId) throw new Error('Nenhum item foi selecionado');
     if (quantidade <= 0) throw new Error('Quantidade inválida.');
+    if (!tipo) throw new Error('Tipo de item inválido.');
 
-    if (tipo === ItemType.MEDICAMENTO || tipo === ItemType.INSUMO) {
-      return this.repo.createStockOut(estoqueId, tipo, quantidade);
-    }
+    const result = await this.repo.createStockOut(estoqueId, tipo, quantidade);
 
-    throw new Error('Tipo inválido.');
+    await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
+
+    return result;
   }
 
   async listStock(params: QueryPaginationParams) {
-    const data = await this.repo.listStockItems(params);
+    const cacheKey = CacheKeyHelper.stockList(params);
 
-    const mappedData = data.data.map(item => ({
-      ...item,
-      quantidade: Number(item.quantidade),
-    }));
+    return this.cache.getOrSet(
+      cacheKey,
+      async () => {
+        const data = await this.repo.listStockItems(params);
 
-    return {
-      ...data,
-      data: mappedData,
-    };
+        return {
+          ...data,
+          data: data.data.map(item => ({
+            ...item,
+            quantidade: Number(item.quantidade),
+          })),
+        };
+      },
+      30,
+    );
   }
 
-  async getProportionBySector(setor: SectorType) {
-    if (setor === SectorType.FARMACIA) {
-      return this.repo.getPharmacyProportion();
-    }
-
-    return this.repo.getNurseryProportion();
+  async getProportion(setor: 'farmacia' | 'enfermagem') {
+    return this.cache.getOrSet(
+      CacheKeyHelper.stockDashboard(setor),
+      () => this.repo.getStockProportionBySector(setor),
+      60,
+    );
   }
 
   async removeIndividualMedicine(estoqueId: number) {
@@ -81,7 +105,11 @@ export class StockService {
       throw new Error('Medicamento não é individual');
     }
 
-    return this.repo.removeIndividualMedicine(estoqueId);
+    const result = await this.repo.removeIndividualMedicine(estoqueId);
+
+    await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
+
+    return result;
   }
 
   async suspendIndividualMedicine(estoqueId: number) {
@@ -99,7 +127,11 @@ export class StockService {
       throw new Error('Medicamento já está suspenso');
     }
 
-    return this.repo.suspendIndividualMedicine(estoqueId);
+    const result = await this.repo.suspendIndividualMedicine(estoqueId);
+
+    await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
+
+    return result;
   }
 
   async resumeIndividualMedicine(estoqueId: number) {
@@ -117,7 +149,11 @@ export class StockService {
       throw new Error('Medicamento não está suspenso');
     }
 
-    return this.repo.resumeIndividualMedicine(estoqueId);
+    const result = await this.repo.resumeIndividualMedicine(estoqueId);
+
+    await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
+
+    return result;
   }
 
   async deleteStockItem(estoqueId: number, type: 'medicamento' | 'insumo') {

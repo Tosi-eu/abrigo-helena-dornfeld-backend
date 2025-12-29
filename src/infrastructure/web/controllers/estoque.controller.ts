@@ -51,17 +51,35 @@ export class StockController {
 
   async proportion(req: Request, res: Response) {
     try {
-      const { setor } = req.query as { setor?: SectorType };
+      const { setor } = req.query as { setor?: 'farmacia' | 'enfermagem' };
 
       if (!setor) {
-        return res.status(400).json({ error: 'Setor é obrigatório' });
+        return res.status(400).json({
+          error: 'Query param "setor" é obrigatório (farmacia ou enfermagem)',
+        });
       }
+
+      const data = await this.service.getProportion(setor);
+
+      const totalGeral = Object.values(data).reduce(
+        (acc, v) => acc + Number(v || 0),
+        0,
+      );
 
       const data = await this.service.getProportionBySector(setor);
 
       return res.json({
-        setor,
-        ...data,
+        percentuais: {
+          medicamentos_geral: pct(data.medicamentos_geral),
+          medicamentos_individual: pct(data.medicamentos_individual),
+          insumos: pct(data.insumos),
+          carrinho_medicamentos: pct(data.carrinho_medicamentos),
+          carrinho_insumos: pct(data.carrinho_insumos),
+        },
+        totais: {
+          ...data,
+          total_geral: totalGeral,
+        },
       });
     } catch (e: any) {
       return res.status(500).json({ error: e.message });

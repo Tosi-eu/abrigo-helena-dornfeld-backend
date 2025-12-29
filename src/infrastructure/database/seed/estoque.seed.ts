@@ -20,7 +20,7 @@ export async function seedDB(app: App): Promise<SeedResult> {
 
   const medRes = await request(app).post('/api/medicamentos').send({
     nome: 'Dipirona',
-    dosagem: 500,
+    dosagem: '500',
     unidade_medida: 'mg',
     estoque_minimo: 10,
     principio_ativo: 'Dipirona',

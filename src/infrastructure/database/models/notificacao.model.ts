@@ -3,13 +3,12 @@ import { sequelize } from '../sequelize';
 import ResidentModel from './residente.model';
 import MedicineModel from './medicamento.model';
 import LoginModel from './login.model';
-import { NotificationDestiny } from '../../../core/utils/utils';
 
 interface NotificationEventAttrs {
   id: number;
   medicamento_id: number;
   residente_id: number;
-  destino: NotificationDestiny;
+  destino: 'SUS' | 'Família';
   data_prevista: Date;
   criado_por: number;
   status: EventStatus;
@@ -34,7 +33,7 @@ export class NotificationEventModel
   declare id: number;
   declare medicamento_id: number;
   declare residente_id: number;
-  declare destino: NotificationDestiny;
+  declare destino: 'SUS' | 'Família';
   declare data_prevista: Date;
   declare criado_por: number;
   declare status: EventStatus;
@@ -52,7 +51,7 @@ NotificationEventModel.init(
     residente_id: { type: DataTypes.INTEGER, allowNull: false },
 
     destino: {
-      type: DataTypes.ENUM(...Object.values(NotificationDestiny)),
+      type: DataTypes.ENUM('SUS', 'Família'),
       allowNull: false,
     },
 

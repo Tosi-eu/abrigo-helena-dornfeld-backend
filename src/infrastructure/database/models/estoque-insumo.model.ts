@@ -10,6 +10,7 @@ export interface InputStockAttributes {
   validade: Date;
   tipo: string;
   setor: string;
+  lote?: string | null;
 }
 
 export class InputStockModel
@@ -24,6 +25,7 @@ export class InputStockModel
   declare validade: Date;
   declare tipo: string;
   declare setor: string;
+  declare lote?: string | null;
 }
 
 InputStockModel.init(
@@ -50,6 +52,7 @@ InputStockModel.init(
     validade: { type: DataTypes.DATE, allowNull: false },
     tipo: { type: DataTypes.TEXT, allowNull: false },
     setor: { type: DataTypes.TEXT, allowNull: false },
+    lote: { type: DataTypes.STRING, allowNull: true },
   },
   {
     sequelize,

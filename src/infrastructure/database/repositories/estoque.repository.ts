@@ -12,7 +12,6 @@ import {
   MedicineStatus,
   OperationType,
   QueryPaginationParams,
-  SectorType,
 } from '../../../core/utils/utils';
 import { formatDateToPtBr } from '../../helpers/date.helper';
 
@@ -51,6 +50,7 @@ export class StockRepository {
         origem: data.origem,
         tipo: data.tipo,
         setor: data.setor,
+        lote: data.lote ?? null,
       });
 
       return { message: 'Entrada de medicamento registrada.' };
@@ -76,6 +76,23 @@ export class StockRepository {
       return { message: 'Quantidade somada ao estoque existente.' };
     }
 
+    console.log(
+      JSON.stringify(
+        {
+          insumo_id: data.insumo_id,
+          armario_id: data.armario_id,
+          gaveta_id: data.gaveta_id,
+          quantidade: data.quantidade,
+          validade: data.validade,
+          tipo: data.tipo,
+          setor: data.setor,
+          lote: data.lote ?? null,
+        },
+        null,
+        2,
+      ),
+    );
+
     await InputStockModel.create({
       insumo_id: data.insumo_id,
       armario_id: data.armario_id,
@@ -84,6 +101,7 @@ export class StockRepository {
       validade: data.validade,
       tipo: data.tipo,
       setor: data.setor,
+      lote: data.lote ?? null,
     });
 
     return { message: 'Entrada de insumo registrada.' };
@@ -176,9 +194,10 @@ export class StockRepository {
         em.armario_id,
         em.gaveta_id,
         em.casela_id,
+        em.setor,
         em.status,
-        em.suspended_at AS suspenso_em,
-        em.setor
+        em.suspended_at as suspenso_em,
+        em.lote 
       FROM estoque_medicamento em
       JOIN medicamento m ON m.id = em.medicamento_id
       LEFT JOIN residente r ON r.num_casela = em.casela_id
@@ -201,10 +220,11 @@ export class StockRepository {
           NULL AS paciente,
           ei.armario_id,
           ei.gaveta_id,
-          NULL AS casela_id,
-          NULL AS status,
-          NULL AS suspenso_em,
-          ei.setor
+          null AS casela_id,
+          ei.setor,
+          null as status,
+          null as suspenso_em,
+          ei.lote
         FROM estoque_insumo ei
         JOIN insumo i ON i.id = ei.insumo_id
         ${whereInsumo}
@@ -315,66 +335,65 @@ export class StockRepository {
     };
   }
 
-  async getPharmacyProportion() {
-    const generalMedicines = await MedicineStockModel.sum('quantidade', {
+  async getStockProportionBySector(setor: 'farmacia' | 'enfermagem'): Promise<{
+    medicamentos_geral: number;
+    medicamentos_individual: number;
+    insumos: number;
+    carrinho_medicamentos: number;
+    carrinho_insumos: number;
+  }> {
+    if (setor === 'farmacia') {
+      const medicamentosGeral = await MedicineStockModel.sum('quantidade', {
+        where: {
+          tipo: OperationType.GERAL,
+          setor: 'farmacia',
+        },
+      });
+
+      const medicamentosIndividual = await MedicineStockModel.sum(
+        'quantidade',
+        {
+          where: {
+            tipo: OperationType.INDIVIDUAL,
+            setor: 'farmacia',
+          },
+        },
+      );
+
+      const insumos = await InputStockModel.sum('quantidade', {
+        where: {
+          tipo: OperationType.GERAL,
+          setor: 'farmacia',
+        },
+      });
+
+      return {
+        medicamentos_geral: Number(medicamentosGeral || 0),
+        medicamentos_individual: Number(medicamentosIndividual || 0),
+        insumos: Number(insumos || 0),
+        carrinho_medicamentos: 0,
+        carrinho_insumos: 0,
+      };
+    }
+
+    const carrinhoMedicamentos = await MedicineStockModel.sum('quantidade', {
       where: {
-        setor: SectorType.FARMACIA,
-        tipo: OperationType.GERAL,
+        tipo: OperationType.CARRINHO,
+        setor: 'enfermagem',
       },
     });
 
-    const individualMedicines = await MedicineStockModel.sum('quantidade', {
+    const medicamentosIndividual = await MedicineStockModel.sum('quantidade', {
       where: {
-        setor: SectorType.FARMACIA,
         tipo: OperationType.INDIVIDUAL,
+        setor: 'enfermagem',
       },
     });
 
-    const generalInputs = await InputStockModel.sum('quantidade', {
+    const carrinhoInsumos = await InputStockModel.sum('quantidade', {
       where: {
-        setor: SectorType.FARMACIA,
-      },
-    });
-
-    const total =
-      Number(generalMedicines || 0) +
-      Number(individualMedicines || 0) +
-      Number(generalInputs || 0);
-
-    return {
-      percentuais: {
-        medicamentos_geral: this.pct(generalMedicines, total),
-        medicamentos_individual: this.pct(individualMedicines, total),
-        insumos_geral: this.pct(generalInputs, total),
-      },
-      totais: {
-        medicamentos_geral: Number(generalMedicines || 0),
-        medicamentos_individual: Number(individualMedicines || 0),
-        insumos_geral: Number(generalInputs || 0),
-        total,
-      },
-    };
-  }
-
-  async getNurseryProportion() {
-    const medicinesInEmergencyCar = await MedicineStockModel.sum('quantidade', {
-      where: {
-        setor: SectorType.ENFERMAGEM,
-        gaveta_id: { [Op.ne]: null },
-      },
-    });
-
-    const inputsInEmergencyCar = await InputStockModel.sum('quantidade', {
-      where: {
-        setor: SectorType.ENFERMAGEM,
-        gaveta_id: { [Op.ne]: null },
-      },
-    });
-
-    const medicinesInCasela = await MedicineStockModel.sum('quantidade', {
-      where: {
-        setor: SectorType.ENFERMAGEM,
-        casela_id: { [Op.ne]: null },
+        tipo: OperationType.CARRINHO,
+        setor: 'enfermagem',
       },
     });
 
@@ -384,17 +403,11 @@ export class StockRepository {
       Number(medicinesInCasela || 0);
 
     return {
-      percentuais: {
-        carrinho_medicamentos: this.pct(medicinesInEmergencyCar, total),
-        carrinho_insumos: this.pct(inputsInEmergencyCar, total),
-        medicamentos_casela: this.pct(medicinesInCasela, total),
-      },
-      totais: {
-        carrinho_medicamentos: Number(medicinesInEmergencyCar || 0),
-        carrinho_insumos: Number(inputsInEmergencyCar || 0),
-        medicamentos_casela: Number(medicinesInCasela || 0),
-        total,
-      },
+      medicamentos_geral: 0,
+      medicamentos_individual: Number(medicamentosIndividual || 0),
+      insumos: 0,
+      carrinho_medicamentos: Number(carrinhoMedicamentos || 0),
+      carrinho_insumos: Number(carrinhoInsumos || 0),
     };
   }
 

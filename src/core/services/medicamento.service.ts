@@ -1,12 +1,14 @@
 import { Medicine } from '../domain/medicamento';
 import { MedicineRepository } from '../../infrastructure/database/repositories/medicamento.repository';
 
+const DOSAGE_REGEX = /^\d+(\.\d+)?(\/\d+(\.\d+)?)?$/;
+
 export class MedicineService {
   constructor(private readonly repo: MedicineRepository) {}
 
   async createMedicine(data: {
     nome: string;
-    dosagem: number;
+    dosagem: string;
     unidade_medida: string;
     principio_ativo: string;
     estoque_minimo?: number;
@@ -15,8 +17,14 @@ export class MedicineService {
       throw new Error('Nome, dosagem e unidade de medida são obrigatórios.');
     }
 
-    if (data.dosagem <= 0) {
-      throw new Error('A dosagem deve ser positiva.');
+    if (!DOSAGE_REGEX.test(data.dosagem)) {
+      throw new Error('Dosagem inválida.');
+    }
+
+    const [numerador] = data.dosagem.split('/');
+
+    if (Number(numerador) <= 0) {
+      throw new Error('Dosagem deve ser maior que zero.');
     }
 
     return this.repo.createMedicine(data);
@@ -30,13 +38,19 @@ export class MedicineService {
     return this.repo.findMedicineById(id);
   }
 
-  async updateMedicine(id: number, data: Partial<Omit<Medicine, 'id'>>) {
+  async updateMedicine(id: number, data: Omit<Medicine, 'id'>) {
     if (!data.nome || data.nome.trim() === '') {
       throw new Error('Nome é obrigatório.');
     }
 
-    if (data.dosagem != null && data.dosagem <= 0) {
+    const [numerador] = data.dosagem.split('/');
+
+    if (Number(numerador) <= 0) {
       throw new Error('Dosagem deve ser maior que zero.');
+    }
+
+    if (!DOSAGE_REGEX.test(data.dosagem)) {
+      throw new Error('Dosagem inválida.');
     }
 
     if (data.unidade_medida && data.unidade_medida.trim() === '') {
