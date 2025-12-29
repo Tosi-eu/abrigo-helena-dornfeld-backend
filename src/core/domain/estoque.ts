@@ -10,6 +10,7 @@ export interface MedicineStock {
   tipo: OperationType;
   casela_id: number | null;
   setor: string;
+  lote?: string | null;
 }
 
 export interface InputStock {
@@ -20,4 +21,5 @@ export interface InputStock {
   validade: Date;
   tipo: string;
   setor: string;
+  lote?: string | null;
 }

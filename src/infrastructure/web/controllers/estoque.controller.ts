@@ -48,43 +48,36 @@ export class StockController {
     }
   }
 
-  async proportion(_req: Request, res: Response) {
+  async proportion(req: Request, res: Response) {
     try {
-      const data = await this.service.getProportion();
+      const { setor } = req.query as { setor?: 'farmacia' | 'enfermagem' };
 
-      const totalMedicineTypeGeral = Number(data.total_gerais || 0);
-      const totalMedicineTypeIndividual = Number(data.total_individuais || 0);
-      const totalInputs = Number(data.total_insumos || 0);
+      if (!setor) {
+        return res.status(400).json({
+          error: 'Query param "setor" é obrigatório (farmacia ou enfermagem)',
+        });
+      }
 
-      const totalCarrinhoMedicamentos = Number(
-        data.total_carrinho_medicamentos || 0,
+      const data = await this.service.getProportion(setor);
+
+      const totalGeral = Object.values(data).reduce(
+        (acc, v) => acc + Number(v || 0),
+        0,
       );
-      const totalCarrinhoInsumos = Number(data.total_carrinho_insumos || 0);
-
-      const totalGeral =
-        totalMedicineTypeGeral +
-        totalMedicineTypeIndividual +
-        totalInputs +
-        totalCarrinhoMedicamentos +
-        totalCarrinhoInsumos;
 
       const pct = (v: number) =>
         totalGeral > 0 ? Number(((v / totalGeral) * 100).toFixed(2)) : 0;
 
       return res.json({
         percentuais: {
-          medicamentos_geral: pct(totalMedicineTypeGeral),
-          medicamentos_individual: pct(totalMedicineTypeIndividual),
-          insumos: pct(totalInputs),
-          carrinho_medicamentos: pct(totalCarrinhoMedicamentos),
-          carrinho_insumos: pct(totalCarrinhoInsumos),
+          medicamentos_geral: pct(data.medicamentos_geral),
+          medicamentos_individual: pct(data.medicamentos_individual),
+          insumos: pct(data.insumos),
+          carrinho_medicamentos: pct(data.carrinho_medicamentos),
+          carrinho_insumos: pct(data.carrinho_insumos),
         },
         totais: {
-          medicamentos_geral: totalMedicineTypeGeral,
-          medicamentos_individual: totalMedicineTypeIndividual,
-          insumos: totalInputs,
-          carrinho_medicamentos: totalCarrinhoMedicamentos,
-          carrinho_insumos: totalCarrinhoInsumos,
+          ...data,
           total_geral: totalGeral,
         },
       });

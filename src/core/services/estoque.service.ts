@@ -85,10 +85,10 @@ export class StockService {
     );
   }
 
-  async getProportion() {
+  async getProportion(setor: 'farmacia' | 'enfermagem') {
     return this.cache.getOrSet(
-      CacheKeyHelper.stockDashboard(),
-      () => this.repo.getStockProportion(),
+      CacheKeyHelper.stockDashboard(setor),
+      () => this.repo.getStockProportionBySector(setor),
       60,
     );
   }

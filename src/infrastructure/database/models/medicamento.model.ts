@@ -4,7 +4,7 @@ import { sequelize } from '../sequelize';
 export interface MedicineAttrs {
   id: number;
   nome: string;
-  dosagem: number;
+  dosagem: string;
   unidade_medida: string;
   principio_ativo: string;
   estoque_minimo: number;
@@ -21,7 +21,7 @@ export class MedicineModel
 {
   declare id: number;
   declare nome: string;
-  declare dosagem: number;
+  declare dosagem: string;
   declare unidade_medida: string;
   declare principio_ativo: string;
   declare estoque_minimo: number;
@@ -39,7 +39,7 @@ MedicineModel.init(
       allowNull: false,
     },
     dosagem: {
-      type: DataTypes.DECIMAL(10, 2),
+      type: DataTypes.STRING,
       allowNull: false,
     },
     unidade_medida: {

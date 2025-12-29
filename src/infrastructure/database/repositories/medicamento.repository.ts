@@ -15,7 +15,7 @@ export class MedicineRepository {
     return {
       id: record.id,
       nome: record.nome,
-      dosagem: Number(record.dosagem),
+      dosagem: record.dosagem,
       unidade_medida: record.unidade_medida,
       estoque_minimo: record.estoque_minimo,
       principio_ativo: record.principio_ativo,
@@ -35,7 +35,7 @@ export class MedicineRepository {
       data: rows.map(r => ({
         id: r.id,
         nome: r.nome,
-        dosagem: Number(r.dosagem),
+        dosagem: r.dosagem,
         unidade_medida: r.unidade_medida,
         estoque_minimo: r.estoque_minimo,
         principio_ativo: r.principio_ativo,
@@ -52,7 +52,7 @@ export class MedicineRepository {
     return row
       ? {
           nome: row.nome,
-          dosagem: Number(row.dosagem),
+          dosagem: row.dosagem,
           unidade_medida: row.unidade_medida,
           estoque_minimo: row.estoque_minimo,
           principio_ativo: row.principio_ativo,
@@ -74,7 +74,7 @@ export class MedicineRepository {
     return updated
       ? {
           nome: updated.nome,
-          dosagem: Number(updated.dosagem),
+          dosagem: updated.dosagem,
           unidade_medida: updated.unidade_medida,
           estoque_minimo: updated.estoque_minimo,
           principio_ativo: updated.principio_ativo,

@@ -11,7 +11,7 @@ import reportRoutes from './relatorio.routes';
 import residentRoutes from './residente.routes';
 import cabinetCategoryRoutes from './categoria-armario.routes';
 import drawerCategoryRoutes from './categoria-gaveta.routes';
-import notificationRoutes from './notification-event.routes';
+import notificationRoutes from './notificacao.routes';
 
 const router = Router();
 

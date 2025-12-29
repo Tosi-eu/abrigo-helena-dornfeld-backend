@@ -5,8 +5,8 @@ export class CacheKeyHelper {
     return `stock:list:${JSON.stringify(params)}`;
   }
 
-  static stockDashboard() {
-    return 'stock:dashboard';
+  static stockDashboard(setor: string) {
+    return `stock:dashboard:${setor}`;
   }
 
   static stockWildcard() {

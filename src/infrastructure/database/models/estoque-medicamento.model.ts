@@ -13,6 +13,7 @@ export interface MedicineStockAttributes {
   origem?: string | null;
   tipo?: string | null;
   setor: string;
+  lote?: string | null;
   status?: MedicineStatus;
   suspended_at?: Date | null;
 }
@@ -31,6 +32,7 @@ export class MedicineStockModel
   declare origem: string | null;
   declare tipo: string | null;
   declare setor: string;
+  declare lote?: string | null;
   declare status: MedicineStatus;
   declare suspended_at?: Date | null;
 }
@@ -65,10 +67,11 @@ MedicineStockModel.init(
     origem: { type: DataTypes.STRING, allowNull: false },
     tipo: { type: DataTypes.STRING, allowNull: false },
     status: {
-      type: DataTypes.STRING,
+      type: DataTypes.ENUM('active', 'cancelled', 'removed'),
       allowNull: false,
       defaultValue: 'active',
     },
+    lote: { type: DataTypes.STRING, allowNull: true },
     setor: { type: DataTypes.TEXT, allowNull: false },
     suspended_at: {
       type: DataTypes.DATE,
