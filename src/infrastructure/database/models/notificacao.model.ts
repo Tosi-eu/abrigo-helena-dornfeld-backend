@@ -8,7 +8,7 @@ interface NotificationEventAttrs {
   id: number;
   medicamento_id: number;
   residente_id: number;
-  destino: 'SUS' | 'Família';
+  destino: 'sus' | 'familia' | 'farmacia';
   data_prevista: Date;
   criado_por: number;
   status: EventStatus;
@@ -33,7 +33,7 @@ export class NotificationEventModel
   declare id: number;
   declare medicamento_id: number;
   declare residente_id: number;
-  declare destino: 'SUS' | 'Família';
+  declare destino: 'sus' | 'familia' | 'farmacia';
   declare data_prevista: Date;
   declare criado_por: number;
   declare status: EventStatus;
