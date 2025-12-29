@@ -37,6 +37,7 @@ export class MovementModel
   declare login_id: number;
   declare insumo_id: number | null;
   declare medicamento_id: number | null;
+  declare setor: string;
   declare armario_id: number;
   declare quantidade: number;
   declare casela_id: number | null;

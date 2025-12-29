@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { StockService } from '../../../core/services/estoque.service';
+import { SectorType } from '../../../core/utils/utils';
 
 export class StockController {
   constructor(private readonly service: StockService) {}
@@ -65,8 +66,7 @@ export class StockController {
         0,
       );
 
-      const pct = (v: number) =>
-        totalGeral > 0 ? Number(((v / totalGeral) * 100).toFixed(2)) : 0;
+      const data = await this.service.getProportionBySector(setor);
 
       return res.json({
         percentuais: {
@@ -132,6 +132,60 @@ export class StockController {
 
       const result = await this.service.resumeIndividualMedicine(
         Number(estoqueId),
+      );
+
+      return res.json(result);
+    } catch (e: any) {
+      return res.status(400).json({ error: e.message });
+    }
+  }
+
+  async deleteStockItem(req: Request, res: Response) {
+    try {
+      const { estoque_id, tipo } = req.params;
+
+      if (!estoque_id || !tipo) {
+        return res.status(400).json({ error: 'Parâmetros inválidos' });
+      }
+
+      if (tipo !== 'medicamento' && tipo !== 'insumo') {
+        return res.status(400).json({ error: 'Tipo inválido' });
+      }
+
+      const result = await this.service.deleteStockItem(
+        Number(estoque_id),
+        tipo,
+      );
+
+      return res.json(result);
+    } catch (e: any) {
+      return res.status(400).json({ error: e.message });
+    }
+  }
+
+  async transferStock(req: Request, res: Response) {
+    try {
+      const { estoque_id, tipo } = req.params;
+      const { setor } = req.body;
+
+      if (!estoque_id || !tipo) {
+        return res.status(400).json({
+          error: 'Parâmetros inválidos, faltando tipo e id do item no estoque',
+        });
+      }
+
+      if (!['medicamento', 'insumo'].includes(tipo)) {
+        return res.status(400).json({ error: 'Tipo inválido' });
+      }
+
+      if (!['farmacia', 'enfermagem'].includes(setor)) {
+        return res.status(400).json({ error: 'Este setor não existe' });
+      }
+
+      const result = await this.service.transferStock(
+        Number(estoque_id),
+        tipo as 'medicamento' | 'insumo',
+        setor,
       );
 
       return res.json(result);

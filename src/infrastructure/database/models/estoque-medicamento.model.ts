@@ -66,6 +66,7 @@ MedicineStockModel.init(
     quantidade: { type: DataTypes.INTEGER, allowNull: false },
     origem: { type: DataTypes.STRING, allowNull: false },
     tipo: { type: DataTypes.STRING, allowNull: false },
+    setor: { type: DataTypes.STRING, allowNull: false },
     status: {
       type: DataTypes.ENUM('active', 'cancelled', 'removed'),
       allowNull: false,

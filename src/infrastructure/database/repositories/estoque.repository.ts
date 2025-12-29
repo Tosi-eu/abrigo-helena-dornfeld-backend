@@ -1,7 +1,7 @@
 import { MedicineStock, InputStock } from '../../../core/domain/estoque';
 import MedicineStockModel from '../models/estoque-medicamento.model';
 import InputStockModel from '../models/estoque-insumo.model';
-import { QueryTypes } from 'sequelize';
+import { Op, QueryTypes } from 'sequelize';
 import { sequelize } from '../sequelize';
 import {
   computeExpiryStatus,
@@ -16,6 +16,10 @@ import {
 import { formatDateToPtBr } from '../../helpers/date.helper';
 
 export class StockRepository {
+  private pct(value: number, total: number) {
+    return total > 0 ? Number(((value / total) * 100).toFixed(2)) : 0;
+  }
+
   async createMedicineStockIn(data: MedicineStock) {
     try {
       const existing = await MedicineStockModel.findOne({
@@ -161,8 +165,14 @@ export class StockRepository {
             'WHERE ei.quantidade > 0 AND ei.validade < CURRENT_DATE';
           break;
         case 'expiringSoon':
-          whereMedicamento = `WHERE em.quantidade > 0 AND em.validade BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '45 days'`;
-          whereInsumo = `WHERE ei.quantidade > 0 AND ei.validade BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '45 days'`;
+          whereMedicamento = `
+          WHERE em.quantidade > 0
+          AND em.validade BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '45 days'
+        `;
+          whereInsumo = `
+          WHERE ei.quantidade > 0
+          AND ei.validade BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '45 days'
+        `;
           break;
       }
     }
@@ -205,9 +215,9 @@ export class StockRepository {
           ei.validade,
           ei.quantidade,
           i.estoque_minimo AS minimo,
-          null AS origem,
+          NULL AS origem,
           ei.tipo,
-          null AS paciente,
+          NULL AS paciente,
           ei.armario_id,
           ei.gaveta_id,
           null AS casela_id,
@@ -235,7 +245,8 @@ export class StockRepository {
         ei.quantidade,
         i.estoque_minimo AS minimo,
         ei.armario_id,
-        ei.tipo
+        ei.tipo,
+        ei.setor
       FROM estoque_insumo ei
       JOIN insumo i ON i.id = ei.insumo_id
       ${whereInsumo}
@@ -246,10 +257,9 @@ export class StockRepository {
         a.num_armario AS armario_id,
         COALESCE((SELECT SUM(em.quantidade) FROM estoque_medicamento em WHERE em.armario_id = a.num_armario), 0) AS total_medicamentos,
         COALESCE((SELECT SUM(ei.quantidade) FROM estoque_insumo ei WHERE ei.armario_id = a.num_armario), 0) AS total_insumos,
-        COALESCE((SELECT SUM(em.quantidade) FROM estoque_medicamento em WHERE em.armario_id = a.num_armario),0)
-        + COALESCE((SELECT SUM(ei.quantidade) FROM estoque_insumo ei WHERE ei.armario_id = a.num_armario),0) AS total_geral
+        COALESCE((SELECT SUM(em.quantidade) FROM estoque_medicamento em WHERE em.armario_id = a.num_armario), 0)
+        + COALESCE((SELECT SUM(ei.quantidade) FROM estoque_insumo ei WHERE ei.armario_id = a.num_armario), 0) AS total_geral
       FROM armario a
-      ORDER BY a.num_armario
     `;
     } else if (type === 'gavetas') {
       baseQuery = `
@@ -257,10 +267,9 @@ export class StockRepository {
         g.num_gaveta AS gaveta_id,
         COALESCE((SELECT SUM(em.quantidade) FROM estoque_medicamento em WHERE em.gaveta_id = g.num_gaveta), 0) AS total_medicamentos,
         COALESCE((SELECT SUM(ei.quantidade) FROM estoque_insumo ei WHERE ei.gaveta_id = g.num_gaveta), 0) AS total_insumos,
-        COALESCE((SELECT SUM(em.quantidade) FROM estoque_medicamento em WHERE em.gaveta_id = g.num_gaveta),0)
-        + COALESCE((SELECT SUM(ei.quantidade) FROM estoque_insumo ei WHERE ei.gaveta_id = g.num_gaveta),0) AS total_geral
+        COALESCE((SELECT SUM(em.quantidade) FROM estoque_medicamento em WHERE em.gaveta_id = g.num_gaveta), 0)
+        + COALESCE((SELECT SUM(ei.quantidade) FROM estoque_insumo ei WHERE ei.gaveta_id = g.num_gaveta), 0) AS total_geral
       FROM gaveta g
-      ORDER BY g.num_gaveta
     `;
     } else {
       throw new Error(
@@ -268,23 +277,36 @@ export class StockRepository {
       );
     }
 
-    if (type !== 'armarios' && type !== 'gavetas') {
-      baseQuery += ` ORDER BY nome ASC LIMIT ${limit} OFFSET ${offset}`;
-    }
+    const countQuery = `
+    SELECT COUNT(*) AS total FROM (
+      ${baseQuery}
+    ) AS total_query
+  `;
 
-    const results = await sequelize.query(baseQuery, {
+    const countResult = await sequelize.query(countQuery, {
       type: QueryTypes.SELECT,
     });
-    const total = results.length;
+
+    const total = Number((countResult[0] as any).total);
+
+    let paginatedQuery = baseQuery;
+
+    if (type !== 'armarios' && type !== 'gavetas') {
+      paginatedQuery += ` ORDER BY nome ASC LIMIT ${limit} OFFSET ${offset}`;
+    }
+
+    const results = await sequelize.query(paginatedQuery, {
+      type: QueryTypes.SELECT,
+    });
 
     const mapped = results.map((item: any) => {
       const isStorageType = type === 'armarios' || type === 'gavetas';
 
-      let expiryInfo: { status: string | null; message: string | null } = {
+      let expiryInfo: { status?: string | null; message?: string | null } = {
         status: null,
         message: null,
       };
-      let quantityInfo: { status: string | null; message: string | null } = {
+      let quantityInfo: { status?: string | null; message?: string | null } = {
         status: null,
         message: null,
       };
@@ -309,7 +331,7 @@ export class StockRepository {
       total,
       page,
       limit,
-      hasNext: total > page * limit,
+      hasNext: page * limit < total,
     };
   }
 
@@ -375,6 +397,11 @@ export class StockRepository {
       },
     });
 
+    const total =
+      Number(medicinesInEmergencyCar || 0) +
+      Number(inputsInEmergencyCar || 0) +
+      Number(medicinesInCasela || 0);
+
     return {
       medicamentos_geral: 0,
       medicamentos_individual: Number(medicamentosIndividual || 0),
@@ -434,5 +461,29 @@ export class StockRepository {
     return {
       message: 'Medicamento retomado com sucesso',
     };
+  }
+
+  async deleteMedicineStock(estoqueId: number) {
+    await MedicineStockModel.destroy({ where: { id: estoqueId } });
+  }
+
+  async findInputStockById(id: number) {
+    return InputStockModel.findByPk(id);
+  }
+
+  async deleteInputStock(estoqueId: number) {
+    await InputStockModel.destroy({ where: { id: estoqueId } });
+  }
+
+  async transferMedicineStock(estoqueId: number, setor: SectorType) {
+    await MedicineStockModel.update({ setor }, { where: { id: estoqueId } });
+
+    return { message: 'Medicamento transferido de setor com sucesso' };
+  }
+
+  async transferInputStock(estoqueId: number, setor: SectorType) {
+    await InputStockModel.update({ setor }, { where: { id: estoqueId } });
+
+    return { message: 'Insumo transferido de setor com sucesso' };
   }
 }
