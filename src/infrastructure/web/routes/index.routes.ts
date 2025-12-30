@@ -12,6 +12,7 @@ import residentRoutes from './residente.routes';
 import cabinetCategoryRoutes from './categoria-armario.routes';
 import drawerCategoryRoutes from './categoria-gaveta.routes';
 import notificationRoutes from './notificacao.routes';
+import appRoutes from './app.routes';
 
 const router = Router();
 
@@ -27,5 +28,6 @@ router.use('/residentes', residentRoutes);
 router.use('/categoria-armario', cabinetCategoryRoutes);
 router.use('/categoria-gaveta', drawerCategoryRoutes);
 router.use('/notificacao', notificationRoutes);
+router.use('/', appRoutes);
 
 export default router;

@@ -447,14 +447,14 @@ export class StockRepository {
     };
   }
 
-  async resumeIndividualMedicine(estoqueId: number) {
+  async resumeIndividualMedicine(estoque_id: number) {
     await MedicineStockModel.update(
       {
         status: MedicineStatus.ATIVO,
         suspended_at: null,
       },
       {
-        where: { id: estoqueId },
+        where: { id: estoque_id },
       },
     );
 
@@ -463,27 +463,14 @@ export class StockRepository {
     };
   }
 
-  async deleteMedicineStock(estoqueId: number) {
-    await MedicineStockModel.destroy({ where: { id: estoqueId } });
-  }
-
-  async findInputStockById(id: number) {
-    return InputStockModel.findByPk(id);
-  }
-
-  async deleteInputStock(estoqueId: number) {
-    await InputStockModel.destroy({ where: { id: estoqueId } });
-  }
-
-  async transferMedicineStock(estoqueId: number, setor: SectorType) {
+  async transferMedicineSector(
+    estoqueId: number,
+    setor: 'farmacia' | 'enfermagem',
+  ) {
     await MedicineStockModel.update({ setor }, { where: { id: estoqueId } });
 
-    return { message: 'Medicamento transferido de setor com sucesso' };
-  }
-
-  async transferInputStock(estoqueId: number, setor: SectorType) {
-    await InputStockModel.update({ setor }, { where: { id: estoqueId } });
-
-    return { message: 'Insumo transferido de setor com sucesso' };
+    return {
+      message: 'Medicamento transferido de setor com sucesso',
+    };
   }
 }

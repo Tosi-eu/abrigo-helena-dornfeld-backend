@@ -6,7 +6,7 @@ export class NotificationEventService {
   async create(data: {
     medicamento_id: number;
     residente_id: number;
-    destino: 'SUS' | 'Família';
+    destino: 'sus' | 'familia' | 'farmacia';
     data_prevista: Date;
     criado_por: number;
     visto: boolean;
