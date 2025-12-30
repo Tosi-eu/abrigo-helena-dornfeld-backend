@@ -124,14 +124,38 @@ export class StockController {
 
   async resumeIndividualMedicine(req: Request, res: Response) {
     try {
-      const { estoqueId } = req.params;
+      const { estoque_id } = req.params;
 
-      if (!estoqueId) {
+      if (!estoque_id) {
         return res.status(400).json({ error: 'Estoque inválido' });
       }
 
       const result = await this.service.resumeIndividualMedicine(
-        Number(estoqueId),
+        Number(estoque_id),
+      );
+
+      return res.json(result);
+    } catch (e: any) {
+      return res.status(400).json({ error: e.message });
+    }
+  }
+
+  async transferMedicineSector(req: Request, res: Response) {
+    try {
+      const { estoque_id } = req.params;
+      const { setor } = req.body as { setor: 'farmacia' | 'enfermagem' };
+
+      if (!estoque_id) {
+        return res.status(400).json({ error: 'Estoque inválido' });
+      }
+
+      if (!setor) {
+        return res.status(400).json({ error: 'Setor é obrigatório' });
+      }
+
+      const result = await this.service.transferMedicineSector(
+        Number(estoque_id),
+        setor,
       );
 
       return res.json(result);

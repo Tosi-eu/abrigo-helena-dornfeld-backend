@@ -133,8 +133,8 @@ export class StockService {
     return result;
   }
 
-  async resumeIndividualMedicine(estoqueId: number) {
-    const stock = await this.repo.findMedicineStockById(estoqueId);
+  async resumeIndividualMedicine(estoque_id: number) {
+    const stock = await this.repo.findMedicineStockById(estoque_id);
 
     if (!stock) {
       throw new Error('Medicamento não encontrado');
@@ -148,7 +148,36 @@ export class StockService {
       throw new Error('Medicamento não está suspenso');
     }
 
-    const result = await this.repo.resumeIndividualMedicine(estoqueId);
+    const result = await this.repo.resumeIndividualMedicine(estoque_id);
+
+    await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
+
+    return result;
+  }
+
+  async transferMedicineSector(
+    estoque_id: number,
+    setor: 'farmacia' | 'enfermagem',
+  ) {
+    const stock = await this.repo.findMedicineStockById(estoque_id);
+
+    if (!stock) {
+      throw new Error('Medicamento não encontrado');
+    }
+
+    if (stock.casela_id == null) {
+      throw new Error('Somente medicamentos com casela podem ser transferidos');
+    }
+
+    if (stock.status === MedicineStatus.SUSPENSO) {
+      throw new Error('Medicamento suspenso não pode ser transferido');
+    }
+
+    if (stock.setor === setor) {
+      throw new Error('Medicamento já está neste setor');
+    }
+
+    const result = await this.repo.transferMedicineSector(estoque_id, setor);
 
     await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
 

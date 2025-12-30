@@ -420,19 +420,30 @@ export class StockRepository {
     };
   }
 
-  async resumeIndividualMedicine(estoqueId: number) {
+  async resumeIndividualMedicine(estoque_id: number) {
     await MedicineStockModel.update(
       {
         status: MedicineStatus.ATIVO,
         suspended_at: null,
       },
       {
-        where: { id: estoqueId },
+        where: { id: estoque_id },
       },
     );
 
     return {
       message: 'Medicamento retomado com sucesso',
+    };
+  }
+
+  async transferMedicineSector(
+    estoqueId: number,
+    setor: 'farmacia' | 'enfermagem',
+  ) {
+    await MedicineStockModel.update({ setor }, { where: { id: estoqueId } });
+
+    return {
+      message: 'Medicamento transferido de setor com sucesso',
     };
   }
 }
