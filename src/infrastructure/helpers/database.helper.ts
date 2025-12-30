@@ -7,7 +7,7 @@ async function setupDatabase() {
     throw new Error('Sequelize Sync com force bloqueado em produção');
   }
 
-  await sequelize.sync({ force: false });
+  await sequelize.sync({ force: true });
 }
 
 export function createApp() {

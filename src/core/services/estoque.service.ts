@@ -5,6 +5,7 @@ import {
   ItemType,
   MedicineStatus,
   QueryPaginationParams,
+  SectorType,
 } from '../utils/utils';
 import { CacheService } from './redis.service';
 
@@ -182,5 +183,55 @@ export class StockService {
     await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
 
     return result;
+  }
+
+  async deleteStockItem(estoqueId: number, type: 'medicamento' | 'insumo') {
+    if (!estoqueId) throw new Error('Estoque inválido');
+
+    if (type === 'medicamento') {
+      const stock = await this.repo.findMedicineStockById(estoqueId);
+      if (!stock) throw new Error('Medicamento não encontrado no estoque');
+      await this.repo.deleteMedicineStock(estoqueId);
+      return { message: 'Medicamento deletado do estoque' };
+    } else {
+      const stock = await this.repo.findInputStockById(estoqueId);
+      if (!stock) throw new Error('Insumo não encontrado no estoque');
+      await this.repo.deleteInputStock(estoqueId);
+      return { message: 'Insumo deletado do estoque' };
+    }
+  }
+
+  async transferStock(
+    estoqueId: number,
+    tipo: 'medicamento' | 'insumo',
+    setor: SectorType,
+  ) {
+    if (!estoqueId) throw new Error('Estoque inválido');
+
+    if (tipo === 'medicamento') {
+      const stock = await this.repo.findMedicineStockById(estoqueId);
+
+      if (!stock) throw new Error('Medicamento não encontrado');
+
+      if (stock.setor === setor) {
+        throw new Error('Medicamento já está neste setor');
+      }
+
+      if (stock.status === MedicineStatus.SUSPENSO) {
+        throw new Error('Medicamento suspenso não pode ser transferido');
+      }
+
+      return this.repo.transferMedicineStock(estoqueId, setor);
+    }
+
+    const stock = await this.repo.findInputStockById(estoqueId);
+
+    if (!stock) throw new Error('Insumo não encontrado');
+
+    if (stock.setor === setor) {
+      throw new Error('Insumo já está neste setor');
+    }
+
+    return this.repo.transferInputStock(estoqueId, setor);
   }
 }
