@@ -1,10 +1,11 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { LoginService } from '../../../core/services/login.service';
+import { AuthRequest } from '../../../middleware/auth.middleware';
 
 export class LoginController {
   constructor(private readonly service: LoginService) {}
 
-  async create(req: Request, res: Response) {
+  async create(req: AuthRequest, res: Response) {
     const { login, password } = req.body;
 
     if (!login || !password)
@@ -21,20 +22,21 @@ export class LoginController {
     }
   }
 
-  async authenticate(req: Request, res: Response) {
+  async authenticate(req: AuthRequest, res: Response) {
     const { login, password } = req.body;
 
     if (!login || !password)
       return res.status(400).json({ error: 'Login e senha obrigatórios' });
 
-    const user = await this.service.authenticate(login, password);
-    if (!user) return res.status(401).json({ error: 'Credenciais inválidas' });
+    const result = await this.service.authenticate(login, password);
+    if (!result)
+      return res.status(401).json({ error: 'Credenciais inválidas' });
 
-    return res.json(user);
+    return res.json(result);
   }
 
-  async update(req: Request, res: Response) {
-    const { id } = req.params;
+  async update(req: AuthRequest, res: Response) {
+    const userId = req.user!.id;
     const { currentLogin, currentPassword, login, password } = req.body;
 
     if (!currentLogin || !currentPassword || !login || !password)
@@ -42,7 +44,7 @@ export class LoginController {
 
     try {
       const updated = await this.service.updateUser(
-        Number(id),
+        userId,
         currentLogin,
         currentPassword,
         login,
@@ -61,23 +63,27 @@ export class LoginController {
     }
   }
 
-  async delete(req: Request, res: Response) {
-    const ok = await this.service.deleteUser(Number(req.params.id));
+  async delete(req: AuthRequest, res: Response) {
+    const ok = await this.service.deleteUser(req.user!.id);
     if (!ok) return res.status(404).json({ error: 'Usuário não encontrado' });
 
     return res.status(204).send();
   }
 
-  async resetPassword(req: Request, res: Response) {
+  async resetPassword(req: AuthRequest, res: Response) {
     const { login, newPassword } = req.body;
 
     if (!login || !newPassword)
       return res.status(400).json({ error: 'Login e nova senha obrigatórios' });
 
     const user = await this.service.resetPassword(login, newPassword);
-
     if (!user) return res.status(404).json({ error: 'Usuário não encontrado' });
 
     return res.json(user);
+  }
+
+  async logout(req: AuthRequest, res: Response) {
+    await this.service.logout(req.user!.id);
+    return res.status(204).send();
   }
 }

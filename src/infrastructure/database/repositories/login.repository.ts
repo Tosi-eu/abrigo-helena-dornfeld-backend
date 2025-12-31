@@ -7,24 +7,32 @@ export class LoginRepository {
   }
 
   async findByLogin(login: string) {
-    return await LoginModel.findOne({
+    return LoginModel.findOne({
       where: { login },
-      attributes: ['id', 'login', 'password'],
+      attributes: ['id', 'login', 'password', 'refreshToken'],
     });
   }
 
   async findById(id: number) {
-    return await LoginModel.findByPk(id, {
-      attributes: ['id', 'login', 'password'],
+    return LoginModel.findByPk(id, {
+      attributes: ['id', 'login', 'password', 'refreshToken'],
     });
   }
 
-  async update(id: number, data: { login?: string; password?: string }) {
+  async update(id: number, data: Partial<LoginModel>) {
     await LoginModel.update(data, { where: { id } });
-    return await this.findById(id);
+    return this.findById(id);
   }
 
   async delete(id: number): Promise<boolean> {
     return (await LoginModel.destroy({ where: { id } })) > 0;
+  }
+
+  async clearToken(userId: number) {
+    await LoginModel.update({ refreshToken: null }, { where: { id: userId } });
+  }
+
+  async findByToken(token: string) {
+    return LoginModel.findOne({ where: { refreshToken: token } });
   }
 }
