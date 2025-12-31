@@ -1,7 +1,7 @@
 import { Medicine } from '../domain/medicamento';
 import { MedicineRepository } from '../../infrastructure/database/repositories/medicamento.repository';
 
-const DOSAGE_REGEX = /^\d+(\.\d+)?(\/\d+(\.\d+)?)?$/;
+const DOSAGE_REGEX = /^\d+([.,]\d+)?(\/\d+([,]\d+)?)?$/;
 
 export class MedicineService {
   constructor(private readonly repo: MedicineRepository) {}
@@ -21,9 +21,10 @@ export class MedicineService {
       throw new Error('Dosagem inválida.');
     }
 
-    const [numerador] = data.dosagem.split('/');
+    const [numeradorRaw] = data.dosagem.split('/');
+    const numerador = Number(numeradorRaw.replace(',', '.'));
 
-    if (Number(numerador) <= 0) {
+    if (isNaN(numerador) || numerador <= 0) {
       throw new Error('Dosagem deve ser maior que zero.');
     }
 
