@@ -1,5 +1,7 @@
 import bcrypt from 'bcrypt';
 import { LoginRepository } from '../../infrastructure/database/repositories/login.repository';
+import { jwtConfig } from '../../infrastructure/helpers/auth.helper';
+import jwt from 'jsonwebtoken';
 
 export class LoginService {
   constructor(private readonly repo: LoginRepository) {}
@@ -23,7 +25,21 @@ export class LoginService {
     const match = await bcrypt.compare(password, user.password);
     if (!match) return null;
 
-    return { id: user.id, login: user.login };
+    const token = jwt.sign(
+      { sub: user.id, login: user.login },
+      jwtConfig.secret,
+      { expiresIn: jwtConfig.expiresIn },
+    );
+
+    await this.repo.update(user.id, { refreshToken: token });
+
+    return {
+      token,
+      user: {
+        id: user.id,
+        login: user.login,
+      },
+    };
   }
 
   async updateUser(
@@ -58,8 +74,12 @@ export class LoginService {
     }
   }
 
-  deleteUser(id: number) {
+  async deleteUser(id: number) {
     return this.repo.delete(id);
+  }
+
+  async logout(userId: number) {
+    await this.repo.clearToken(userId);
   }
 
   async resetPassword(login: string, newPassword: string) {

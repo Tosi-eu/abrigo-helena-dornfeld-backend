@@ -5,6 +5,7 @@ export class LoginModel extends Model {
   declare id: number;
   declare login: string;
   declare password: string;
+  declare refreshToken?: string | null;
 }
 
 LoginModel.init(
@@ -22,6 +23,10 @@ LoginModel.init(
     password: {
       type: DataTypes.STRING(255),
       allowNull: false,
+    },
+    refreshToken: {
+      type: DataTypes.STRING,
+      allowNull: true,
     },
   },
   {
