@@ -14,8 +14,6 @@ describe('InsumoController', () => {
       .post('/api/insumos')
       .send({ nome: 'Seringa', descricao: '10ml', estoque_minimo: 5 });
 
-    console.log(res.body);
-
     expect(res.status).toBe(201);
     expect(res.body.nome).toBe('Seringa');
   });

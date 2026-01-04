@@ -72,23 +72,6 @@ export class StockRepository {
       return { message: 'Quantidade somada ao estoque existente.' };
     }
 
-    console.log(
-      JSON.stringify(
-        {
-          insumo_id: data.insumo_id,
-          armario_id: data.armario_id,
-          gaveta_id: data.gaveta_id,
-          quantidade: data.quantidade,
-          validade: data.validade,
-          tipo: data.tipo,
-          setor: data.setor,
-          lote: data.lote ?? null,
-        },
-        null,
-        2,
-      ),
-    );
-
     await InputStockModel.create({
       insumo_id: data.insumo_id,
       armario_id: data.armario_id,

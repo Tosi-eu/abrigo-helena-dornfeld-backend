@@ -51,7 +51,7 @@ NotificationEventModel.init(
     residente_id: { type: DataTypes.INTEGER, allowNull: false },
 
     destino: {
-      type: DataTypes.ENUM('SUS', 'Família'),
+      type: DataTypes.ENUM('sus', 'familia', 'farmacia'),
       allowNull: false,
     },
 
