@@ -97,7 +97,6 @@ export class LoginService {
     const user = await this.repo.findById(userId);
     if (!user) return null;
 
-    // Verify current password
     const match = await bcrypt.compare(currentPassword, user.password);
     if (!match) return null;
 

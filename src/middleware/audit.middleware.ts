@@ -1,14 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import { AuthRequest } from './auth.middleware';
 
-/**
- * Audit logging middleware
- * Logs sensitive operations for security and compliance
- */
 export function auditLog(req: AuthRequest, res: Response, next: NextFunction) {
   const startTime = Date.now();
 
-  // Override res.json to capture response
   const originalJson = res.json.bind(res);
   res.json = function (body: unknown) {
     const duration = Date.now() - startTime;
@@ -31,7 +26,6 @@ function logAuditEvent(
   const statusCode = res.statusCode;
   const ip = req.ip || req.socket.remoteAddress;
 
-  // Only log sensitive operations
   const sensitiveMethods = ['POST', 'PUT', 'DELETE', 'PATCH'];
   const sensitivePaths = [
     '/login',
@@ -59,7 +53,6 @@ function logAuditEvent(
       success: statusCode >= 200 && statusCode < 400,
     };
 
-    // Log to console (in production, this should go to a logging service)
     console.log('[AUDIT]', JSON.stringify(logEntry));
   }
 }

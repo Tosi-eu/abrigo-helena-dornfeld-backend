@@ -184,7 +184,7 @@ describe('MedicamentoController', () => {
     };
 
     controller = new MedicamentoController(mockService);
-    app.post('/api/medicamentos', (req, res) => controller.create(req, res));
+    app.post('/api/v1/medicamentos', (req, res) => controller.create(req, res));
   });
 
   it('deve retornar 201 quando medicamento é criado com sucesso', async () => {
@@ -205,7 +205,7 @@ describe('MedicamentoController', () => {
 
     // Act & Assert
     const response = await request(app)
-      .post('/api/medicamentos')
+      .post('/api/v1/medicamentos')
       .send(medicamentoData)
       .expect('Content-Type', /json/)
       .expect(201);
@@ -228,7 +228,7 @@ describe('MedicamentoController', () => {
 
     // Act & Assert
     const response = await request(app)
-      .post('/api/medicamentos')
+      .post('/api/v1/medicamentos')
       .send(medicamentoData)
       .expect(400);
 
@@ -318,7 +318,7 @@ describe('MeuController - Integração', () => {
     };
 
     controller = new MeuController(mockService);
-    app.post('/api/recurso', (req, res) => controller.create(req, res));
+    app.post('/api/v1/recurso', (req, res) => controller.create(req, res));
   });
 
   it('deve retornar status correto para requisição válida', async () => {
@@ -328,7 +328,7 @@ describe('MeuController - Integração', () => {
 
     // Act
     const response = await request(app)
-      .post('/api/recurso')
+      .post('/api/v1/recurso')
       .send(dados)
       .expect(201);
 

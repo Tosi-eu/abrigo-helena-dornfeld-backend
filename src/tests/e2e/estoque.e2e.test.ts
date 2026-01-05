@@ -24,7 +24,7 @@ describe('Input Stock E2E - CRUD', () => {
   let createdInputStockId: number;
 
   it('deve registrar entrada de insumo', async () => {
-    const res = await request(app).post('/api/estoque/entrada').send({
+    const res = await request(app).post('/api/v1/estoque/entrada').send({
       insumo_id: seed.inputId,
       armario_id: seed.cabinetId,
       validade: '2099-12-31',
@@ -37,7 +37,7 @@ describe('Input Stock E2E - CRUD', () => {
   });
 
   it('deve listar insumos no estoque', async () => {
-    const res = await request(app).get('/api/estoque');
+    const res = await request(app).get('/api/v1/estoque');
 
     expect(res.status).toBe(200);
 
@@ -51,7 +51,7 @@ describe('Input Stock E2E - CRUD', () => {
   });
 
   it('deve registrar saída de insumo', async () => {
-    const res = await request(app).post('/api/estoque/saida').send({
+    const res = await request(app).post('/api/v1/estoque/saida').send({
       estoqueId: createdInputStockId,
       tipo: ItemType.INSUMO,
       quantidade: 5,
@@ -62,7 +62,7 @@ describe('Input Stock E2E - CRUD', () => {
   });
 
   it('não deve permitir saída maior que o estoque de insumo', async () => {
-    const res = await request(app).post('/api/estoque/saida').send({
+    const res = await request(app).post('/api/v1/estoque/saida').send({
       estoqueId: createdInputStockId,
       tipo: ItemType.INSUMO,
       quantidade: 9999,

@@ -21,8 +21,6 @@ app.use(
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-
-// Input sanitization - sanitize all user inputs
 app.use(sanitizeInput);
 
 if (!process.env.ALLOWED_ORIGINS) {
@@ -77,14 +75,9 @@ const authLimiter = rateLimit({
   skip: req => req.method === 'OPTIONS',
 });
 
-app.use('/api/login', authLimiter);
 app.use(limiter);
 
-// API versioning - current version is v1
-// Future versions can be added as /api/v2, /api/v3, etc.
 app.use('/api/v1', routes);
-// Backward compatibility - also support /api without version
-app.use('/api', routes);
 
 app.use(errorHandler);
 

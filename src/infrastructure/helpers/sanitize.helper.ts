@@ -6,14 +6,11 @@ export function sanitizeString(input: string): string {
 
   return input
     .trim()
-    .replace(/[<>]/g, '') // Remove < and > to prevent HTML injection
-    .replace(/javascript:/gi, '') // Remove javascript: protocol
-    .replace(/on\w+=/gi, ''); // Remove event handlers like onclick=
+    .replace(/[<>]/g, '') 
+    .replace(/javascript:/gi, '') 
+    .replace(/on\w+=/gi, '');
 }
 
-/**
- * Sanitizes an object recursively
- */
 export function sanitizeObject<T>(obj: T): T {
   if (obj === null || obj === undefined) return obj;
 
@@ -38,9 +35,6 @@ export function sanitizeObject<T>(obj: T): T {
   return obj;
 }
 
-/**
- * Sanitizes error message for client response
- */
 export function sanitizeErrorMessage(
   error: unknown,
   isProduction: boolean,
@@ -49,9 +43,7 @@ export function sanitizeErrorMessage(
 
   const errorMessage = error instanceof Error ? error.message : String(error);
 
-  // In production, don't expose internal error details
   if (isProduction) {
-    // Only expose safe, user-friendly messages
     const safeMessages = [
       'Login e senha obrigatórios',
       'Credenciais inválidas',
@@ -64,10 +56,8 @@ export function sanitizeErrorMessage(
       return errorMessage;
     }
 
-    // Generic error for unknown issues
     return 'Erro ao processar solicitação';
   }
 
-  // In development, show more details
   return errorMessage;
 }

@@ -4,16 +4,12 @@ import { AppError, isAppError } from '../infrastructure/types/error.types';
 
 const isProduction = process.env.NODE_ENV === 'production';
 
-/**
- * Error handler middleware that sanitizes error messages in production
- */
 export function errorHandler(
   err: unknown,
   req: Request,
   res: Response,
   next: NextFunction,
 ) {
-  // Log full error details (server-side only)
   if (!isProduction) {
     console.error('Error details:', err);
   } else {
@@ -22,7 +18,6 @@ export function errorHandler(
     console.error('Error:', message);
   }
 
-  // Don't expose internal error details in production
   const statusCode = isAppError(err)
     ? err.statusCode || err.status || 500
     : 500;

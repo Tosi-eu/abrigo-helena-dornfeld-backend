@@ -180,11 +180,10 @@ export class MovementRepository {
     });
 
     const data = result.map(r => {
-      // Handle both Sequelize model instances and plain objects
       const row =
         r && typeof r === 'object' && 'get' in r && typeof r.get === 'function'
           ? (r as { get: (options: { plain: true }) => Record<string, unknown> }).get({ plain: true })
-          : (r as Record<string, unknown>);
+          : (r as unknown as Record<string, unknown>);
       
       const medicamento = row.MedicineModel
         ? {

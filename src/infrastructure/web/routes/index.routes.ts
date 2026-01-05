@@ -22,7 +22,6 @@ router.use('/login', loginRoutes);
 router.use('/', appRoutes);
 
 router.use(authMiddleware);
-// Audit logging for all authenticated routes
 router.use(auditLog);
 
 router.use('/gavetas', drawerRoutes);

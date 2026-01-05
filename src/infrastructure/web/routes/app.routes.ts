@@ -5,7 +5,6 @@ import { AppController } from '../controllers/app.controller';
 const appController = new AppController();
 const router = Router();
 
-// Rate limit status endpoint to prevent abuse
 const statusLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
   max: 50,
