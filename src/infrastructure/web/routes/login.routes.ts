@@ -23,7 +23,6 @@ router.post('/reset-password', (req, res) =>
   controller.resetPassword(req, res),
 );
 
-router.post('/authenticate', (req, res) => controller.authenticate(req, res));
 router.post('/logout', (req, res) => controller.logout(req, res));
 
 export default router;

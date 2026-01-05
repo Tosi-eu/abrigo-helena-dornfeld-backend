@@ -67,7 +67,7 @@ MedicineStockModel.init(
     origem: { type: DataTypes.STRING, allowNull: false },
     tipo: { type: DataTypes.STRING, allowNull: false },
     status: {
-      type: DataTypes.ENUM('active', 'cancelled', 'removed'),
+      type: DataTypes.ENUM('active', 'suspended'),
       allowNull: false,
       defaultValue: 'active',
     },

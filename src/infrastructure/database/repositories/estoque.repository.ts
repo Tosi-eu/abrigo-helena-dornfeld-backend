@@ -387,14 +387,14 @@ export class StockRepository {
     };
   }
 
-  async suspendIndividualMedicine(estoqueId: number) {
+  async suspendIndividualMedicine(estoque_id: number) {
     await MedicineStockModel.update(
       {
         status: MedicineStatus.SUSPENSO,
         suspended_at: new Date(),
       },
       {
-        where: { id: estoqueId },
+        where: { id: estoque_id },
       },
     );
 

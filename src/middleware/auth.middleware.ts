@@ -10,7 +10,7 @@ export interface AuthRequest extends Request {
   };
 }
 
-export function authMiddleware(
+export async function authMiddleware(
   req: AuthRequest,
   res: Response,
   next: NextFunction,
@@ -25,16 +25,15 @@ export function authMiddleware(
   try {
     const decoded = jwt.verify(token, jwtConfig.secret) as any;
 
-    LoginModel.findOne({ where: { refreshToken: token } }).then(user => {
-      if (!user) return res.status(401).json({ error: 'Sessão inválida' });
+    const user = await LoginModel.findOne({ where: { refreshToken: token } });
+    if (!user) return res.status(401).json({ error: 'Sessão inválida' });
 
-      req.user = {
-        id: Number(decoded.sub),
-        login: decoded.login,
-      };
+    req.user = {
+      id: Number(decoded.sub),
+      login: decoded.login,
+    };
 
-      next();
-    });
+    next();
   } catch {
     return res.status(401).json({ error: 'Token expirado ou inválido' });
   }

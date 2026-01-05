@@ -111,8 +111,8 @@ export class StockService {
     return result;
   }
 
-  async suspendIndividualMedicine(estoqueId: number) {
-    const stock = await this.repo.findMedicineStockById(estoqueId);
+  async suspendIndividualMedicine(estoque_id: number) {
+    const stock = await this.repo.findMedicineStockById(estoque_id);
 
     if (!stock) {
       throw new Error('Medicamento não encontrado');
@@ -126,7 +126,7 @@ export class StockService {
       throw new Error('Medicamento já está suspenso');
     }
 
-    const result = await this.repo.suspendIndividualMedicine(estoqueId);
+    const result = await this.repo.suspendIndividualMedicine(estoque_id);
 
     await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
 
