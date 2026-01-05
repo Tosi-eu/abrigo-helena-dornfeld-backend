@@ -1,4 +1,5 @@
 import { NotificationEventRepository } from '../../infrastructure/database/repositories/notificacao.repository';
+import { NotificationUpdateData } from '../../infrastructure/types/notificacao.types';
 
 export class NotificationEventService {
   constructor(private readonly repo: NotificationEventRepository) {}
@@ -22,7 +23,7 @@ export class NotificationEventService {
     return this.repo.findById(id);
   }
 
-  async update(id: number, updates: any) {
+  async update(id: number, updates: NotificationUpdateData) {
     return this.repo.update(id, updates);
   }
 

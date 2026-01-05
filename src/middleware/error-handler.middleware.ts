@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { sanitizeErrorMessage } from '../infrastructure/helpers/sanitize.helper';
+import { AppError, isAppError } from '../infrastructure/types/error.types';
 
 const isProduction = process.env.NODE_ENV === 'production';
 
@@ -7,7 +8,7 @@ const isProduction = process.env.NODE_ENV === 'production';
  * Error handler middleware that sanitizes error messages in production
  */
 export function errorHandler(
-  err: any,
+  err: unknown,
   req: Request,
   res: Response,
   next: NextFunction,
@@ -16,15 +17,20 @@ export function errorHandler(
   if (!isProduction) {
     console.error('Error details:', err);
   } else {
-    console.error('Error:', err.message || 'Internal server error');
+    const message =
+      err instanceof Error ? err.message : 'Internal server error';
+    console.error('Error:', message);
   }
 
   // Don't expose internal error details in production
-  const statusCode = err.statusCode || err.status || 500;
+  const statusCode = isAppError(err)
+    ? err.statusCode || err.status || 500
+    : 500;
   const message = sanitizeErrorMessage(err, isProduction);
+  const stack = err instanceof Error && !isProduction ? err.stack : undefined;
 
   res.status(statusCode).json({
     error: message,
-    ...(isProduction ? {} : { stack: err.stack }),
+    ...(stack ? { stack } : {}),
   });
 }

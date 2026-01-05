@@ -1,6 +1,6 @@
 import { Drawer } from '../../../core/domain/gaveta';
 import DrawerCategoryModel from '../models/categorias-gaveta.model';
-import DrawerModel from '../models/gaveta.model';
+import DrawerModel, { DrawerModel as DrawerModelType } from '../models/gaveta.model';
 
 export class DrawerRepository {
   async createDrawer(data: Drawer): Promise<Drawer> {
@@ -30,7 +30,7 @@ export class DrawerRepository {
       ],
     });
 
-    const data = rows.map((i: any) => ({
+    const data = rows.map((i: DrawerModelType) => ({
       numero: i.num_gaveta,
       categoria_id: i.categoria_id,
       categoria: i.DrawerCategoryModel?.nome ?? null,

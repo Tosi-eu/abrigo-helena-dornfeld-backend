@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { LoginService } from '../../../core/services/login.service';
 import { AuthRequest } from '../../../middleware/auth.middleware';
+import { getErrorMessage } from '../../types/error.types';
 
 export class LoginController {
   constructor(private readonly service: LoginService) {}
@@ -14,8 +15,9 @@ export class LoginController {
     try {
       const user = await this.service.create(login, password);
       return res.status(201).json(user);
-    } catch (err: any) {
-      if (err.message === 'duplicate key') {
+    } catch (error: unknown) {
+      const message = getErrorMessage(error);
+      if (message === 'duplicate key') {
         return res.status(409).json({ error: 'Login já cadastrado' });
       }
       return res.status(500).json({ error: 'Erro ao criar usuário' });
@@ -55,8 +57,9 @@ export class LoginController {
         return res.status(401).json({ error: 'Credenciais atuais incorretas' });
 
       return res.json(updated);
-    } catch (err: any) {
-      if (err.message === 'duplicate key') {
+    } catch (error: unknown) {
+      const message = getErrorMessage(error);
+      if (message === 'duplicate key') {
         return res.status(409).json({ error: 'Login já cadastrado' });
       }
       return res.status(500).json({ error: 'Erro ao atualizar usuário' });

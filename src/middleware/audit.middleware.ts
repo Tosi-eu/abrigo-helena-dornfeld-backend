@@ -10,7 +10,7 @@ export function auditLog(req: AuthRequest, res: Response, next: NextFunction) {
 
   // Override res.json to capture response
   const originalJson = res.json.bind(res);
-  res.json = function (body: any) {
+  res.json = function (body: unknown) {
     const duration = Date.now() - startTime;
     logAuditEvent(req, res, body, duration);
     return originalJson(body);
@@ -22,7 +22,7 @@ export function auditLog(req: AuthRequest, res: Response, next: NextFunction) {
 function logAuditEvent(
   req: AuthRequest,
   res: Response,
-  responseBody: any,
+  responseBody: unknown,
   duration: number,
 ) {
   const userId = (req as AuthRequest).user?.id || 'anonymous';

@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { ReportService } from '../../../core/services/relatorio.service';
+import { sendErrorResponse } from '../../helpers/error-response.helper';
 
 export class ReportController {
   constructor(private readonly service: ReportService) {}
@@ -12,17 +13,11 @@ export class ReportController {
       const data = await this.service.generateReport(type);
 
       return res.json(data);
-    } catch (e: any) {
+    } catch (error: unknown) {
       // Log full error details server-side only
-      console.error('Erro ao gerar relatório:', e);
+      console.error('Erro ao gerar relatório:', error);
       
-      // Don't expose internal error details
-      const isProduction = process.env.NODE_ENV === 'production';
-      const errorMessage = isProduction
-        ? 'Erro ao gerar relatório'
-        : e.message || 'Erro ao gerar relatório';
-      
-      return res.status(500).json({ error: errorMessage });
+      return sendErrorResponse(res, 500, error, 'Erro ao gerar relatório');
     }
   }
 }

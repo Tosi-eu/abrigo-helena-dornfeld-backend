@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { MedicineService } from '../../../core/services/medicamento.service';
 import { ValidatedRequest } from '../../../middleware/validation.middleware';
+import { sendErrorResponse } from '../../helpers/error-response.helper';
 
 export interface PaginationParams {
   page: number;
@@ -14,8 +15,8 @@ export class MedicineController {
     try {
       const data = await this.service.createMedicine(req.body);
       res.status(201).json(data);
-    } catch (e: any) {
-      res.status(400).json({ error: e.message });
+    } catch (error: unknown) {
+      return sendErrorResponse(res, 400, error, 'Erro ao criar medicamento');
     }
   }
 
@@ -32,8 +33,8 @@ export class MedicineController {
       const updated = await this.service.updateMedicine(id, req.body);
       if (!updated) return res.status(404).json({ error: 'Não encontrado' });
       res.json(updated);
-    } catch (e: any) {
-      res.status(400).json({ error: e.message });
+    } catch (error: unknown) {
+      return sendErrorResponse(res, 400, error, 'Erro ao atualizar medicamento');
     }
   }
 

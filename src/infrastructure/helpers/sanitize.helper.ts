@@ -26,13 +26,13 @@ export function sanitizeObject<T>(obj: T): T {
   }
 
   if (typeof obj === 'object') {
-    const sanitized = {} as T;
+    const sanitized = {} as Record<string, unknown>;
     for (const key in obj) {
       if (Object.prototype.hasOwnProperty.call(obj, key)) {
-        (sanitized as any)[key] = sanitizeObject((obj as any)[key]);
+        sanitized[key] = sanitizeObject((obj as Record<string, unknown>)[key]);
       }
     }
-    return sanitized;
+    return sanitized as T;
   }
 
   return obj;
@@ -42,10 +42,12 @@ export function sanitizeObject<T>(obj: T): T {
  * Sanitizes error message for client response
  */
 export function sanitizeErrorMessage(
-  error: any,
+  error: unknown,
   isProduction: boolean,
 ): string {
   if (!error) return 'Erro interno do servidor';
+
+  const errorMessage = error instanceof Error ? error.message : String(error);
 
   // In production, don't expose internal error details
   if (isProduction) {
@@ -58,9 +60,8 @@ export function sanitizeErrorMessage(
       'Login já cadastrado',
     ];
 
-    const message = error.message || String(error);
-    if (safeMessages.some(safe => message.includes(safe))) {
-      return message;
+    if (safeMessages.some(safe => errorMessage.includes(safe))) {
+      return errorMessage;
     }
 
     // Generic error for unknown issues
@@ -68,5 +69,5 @@ export function sanitizeErrorMessage(
   }
 
   // In development, show more details
-  return error.message || String(error);
+  return errorMessage;
 }

@@ -20,8 +20,8 @@ export class MovementController {
       });
 
       res.json(result);
-    } catch (e: any) {
-      return sendErrorResponse(res, 500, e, 'Erro ao buscar movimentações');
+    } catch (error: unknown) {
+      return sendErrorResponse(res, 500, error, 'Erro ao buscar movimentações');
     }
   }
 
@@ -39,8 +39,8 @@ export class MovementController {
       });
 
       res.json(result);
-    } catch (e: any) {
-      return sendErrorResponse(res, 500, e, 'Erro ao buscar movimentações');
+    } catch (error: unknown) {
+      return sendErrorResponse(res, 500, error, 'Erro ao buscar movimentações');
     }
   }
 
@@ -48,8 +48,8 @@ export class MovementController {
     try {
       const data = await this.service.createMovement(req.body);
       res.status(201).json(data);
-    } catch (e: any) {
-      return sendErrorResponse(res, 400, e, 'Erro ao criar movimentação');
+    } catch (error: unknown) {
+      return sendErrorResponse(res, 400, error, 'Erro ao criar movimentação');
     }
   }
 
@@ -65,8 +65,8 @@ export class MovementController {
       });
 
       res.json(result);
-    } catch (e: any) {
-      return sendErrorResponse(res, 500, e, 'Erro ao buscar ranking');
+    } catch (error: unknown) {
+      return sendErrorResponse(res, 500, error, 'Erro ao buscar ranking');
     }
   }
 
@@ -75,8 +75,8 @@ export class MovementController {
       const limit = Math.min(100, Number(req.query.limit) || 10);
       const result = await this.service.getNonMovementedMedicines(limit);
       return res.json(result);
-    } catch (e: any) {
-      return sendErrorResponse(res, 500, e, 'Erro ao buscar medicamentos');
+    } catch (error: unknown) {
+      return sendErrorResponse(res, 500, error, 'Erro ao buscar medicamentos');
     }
   }
 }

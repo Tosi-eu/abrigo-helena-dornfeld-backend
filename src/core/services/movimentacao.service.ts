@@ -3,6 +3,11 @@ import { formatDateToPtBr } from '../../infrastructure/helpers/date.helper';
 import { CacheKeyHelper } from '../../infrastructure/helpers/redis.helper';
 import { NonMovementedItem } from '../utils/utils';
 import { CacheService } from './redis.service';
+import {
+  MovementQueryParams,
+  MovementRankingParams,
+  CreateMovementData,
+} from '../types/movimentacao.types';
 
 export class MovementService {
   constructor(
@@ -10,7 +15,7 @@ export class MovementService {
     private readonly cache: CacheService,
   ) {}
 
-  async findMedicineMovements(params: any) {
+  async findMedicineMovements(params: MovementQueryParams) {
     const cacheKey = CacheKeyHelper.movementMedicineList(params);
 
     return this.cache.getOrSet(
@@ -20,7 +25,7 @@ export class MovementService {
     );
   }
 
-  async listInputMovements(params: any) {
+  async listInputMovements(params: MovementQueryParams) {
     const cacheKey = CacheKeyHelper.movementInputList(params);
 
     return this.cache.getOrSet(
@@ -30,7 +35,7 @@ export class MovementService {
     );
   }
 
-  async createMovement(data: any) {
+  async createMovement(data: CreateMovementData) {
     if (
       !data.tipo ||
       !data.quantidade ||
@@ -47,7 +52,7 @@ export class MovementService {
     return result;
   }
 
-  async getMedicineRanking(params: any) {
+  async getMedicineRanking(params: MovementRankingParams) {
     const cacheKey = CacheKeyHelper.movementRanking(params);
 
     return this.cache.getOrSet(

@@ -101,7 +101,7 @@ void (async () => {
     app.listen(port, () => {
       console.log(`🚀 Servidor rodando na porta ${port}`);
     });
-  } catch (err) {
+  } catch (err: unknown) {
     console.error('Erro ao iniciar:', err);
     process.exit(1);
   }

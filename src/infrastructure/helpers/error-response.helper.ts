@@ -9,7 +9,7 @@ const isProduction = process.env.NODE_ENV === 'production';
 export function sendErrorResponse(
   res: Response,
   statusCode: number,
-  error: any,
+  error: unknown,
   defaultMessage?: string,
 ) {
   const message = error

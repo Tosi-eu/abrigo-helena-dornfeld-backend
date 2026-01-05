@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { DrawerCategoryService } from '../../../core/services/categoria-gaveta.service';
+import { sendErrorResponse } from '../../helpers/error-response.helper';
 
 export class DrawerCategoryController {
   constructor(private readonly service: DrawerCategoryService) {}
@@ -9,8 +10,8 @@ export class DrawerCategoryController {
       const { nome } = req.body;
       const created = await this.service.create(nome);
       return res.status(201).json(created);
-    } catch (e: any) {
-      return res.status(400).json({ error: e.message });
+    } catch (error: unknown) {
+      return sendErrorResponse(res, 400, error, 'Erro ao criar categoria');
     }
   }
 
@@ -45,8 +46,8 @@ export class DrawerCategoryController {
       }
 
       return res.json(updated);
-    } catch (e: any) {
-      return res.status(400).json({ error: e.message });
+    } catch (error: unknown) {
+      return sendErrorResponse(res, 400, error, 'Erro ao atualizar categoria');
     }
   }
 
@@ -60,8 +61,8 @@ export class DrawerCategoryController {
       }
 
       return res.sendStatus(204);
-    } catch (e: any) {
-      return res.status(400).json({ error: e.message });
+    } catch (error: unknown) {
+      return sendErrorResponse(res, 400, error, 'Erro ao deletar categoria');
     }
   }
 }

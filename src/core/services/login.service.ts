@@ -2,6 +2,7 @@ import bcrypt from 'bcrypt';
 import { LoginRepository } from '../../infrastructure/database/repositories/login.repository';
 import { jwtConfig } from '../../infrastructure/helpers/auth.helper';
 import jwt from 'jsonwebtoken';
+import { BaseError } from 'sequelize';
 
 export class LoginService {
   constructor(private readonly repo: LoginRepository) {}
@@ -10,8 +11,11 @@ export class LoginService {
     const hashed = await bcrypt.hash(password, 10);
     try {
       return await this.repo.create({ login, password: hashed });
-    } catch (err: any) {
-      if (err.name === 'SequelizeUniqueConstraintError') {
+    } catch (err: unknown) {
+      if (
+        err instanceof BaseError &&
+        err.name === 'SequelizeUniqueConstraintError'
+      ) {
         throw new Error('duplicate key');
       }
       throw err;
@@ -66,8 +70,11 @@ export class LoginService {
       if (!updated) return null;
 
       return { id: updated.id, login: updated.login };
-    } catch (err: any) {
-      if (err.name === 'SequelizeUniqueConstraintError') {
+    } catch (err: unknown) {
+      if (
+        err instanceof BaseError &&
+        err.name === 'SequelizeUniqueConstraintError'
+      ) {
         throw new Error('duplicate key');
       }
       throw err;

@@ -12,7 +12,7 @@ export function sanitizeInput(req: Request, res: Response, next: NextFunction) {
 
   // Sanitize query parameters
   if (req.query && typeof req.query === 'object') {
-    req.query = sanitizeObject(req.query) as any;
+    req.query = sanitizeObject(req.query) as typeof req.query;
   }
 
   next();

@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { NotificationEventService } from '../../../core/services/notificacao.service';
+import { sendErrorResponse } from '../../helpers/error-response.helper';
 
 export class NotificationEventController {
   constructor(private readonly service: NotificationEventService) {}
@@ -9,8 +10,8 @@ export class NotificationEventController {
       const body = req.body;
       const created = await this.service.create(body);
       return res.status(201).json(created);
-    } catch (e: any) {
-      return res.status(400).json({ error: e.message });
+    } catch (error: unknown) {
+      return sendErrorResponse(res, 400, error, 'Erro ao criar notificação');
     }
   }
 
@@ -44,8 +45,8 @@ export class NotificationEventController {
       }
 
       return res.json(updated);
-    } catch (e: any) {
-      return res.status(400).json({ error: e.message });
+    } catch (error: unknown) {
+      return sendErrorResponse(res, 400, error, 'Erro ao atualizar notificação');
     }
   }
 
@@ -59,8 +60,8 @@ export class NotificationEventController {
       }
 
       return res.sendStatus(204);
-    } catch (e: any) {
-      return res.status(400).json({ error: e.message });
+    } catch (error: unknown) {
+      return sendErrorResponse(res, 400, error, 'Erro ao deletar notificação');
     }
   }
 
@@ -73,8 +74,8 @@ export class NotificationEventController {
         count: data.length,
         data,
       });
-    } catch (e: any) {
-      return res.status(500).json({ error: e.message });
+    } catch (error: unknown) {
+      return sendErrorResponse(res, 500, error, 'Erro ao buscar notificações');
     }
   }
 }

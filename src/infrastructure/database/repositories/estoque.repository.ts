@@ -14,6 +14,7 @@ import {
   QueryPaginationParams,
 } from '../../../core/utils/utils';
 import { formatDateToPtBr } from '../../helpers/date.helper';
+import { StockQueryResult } from '../../types/estoque.types';
 
 export class StockRepository {
   async createMedicineStockIn(data: MedicineStock) {
@@ -50,8 +51,9 @@ export class StockRepository {
       });
 
       return { message: 'Entrada de medicamento registrada.' };
-    } catch (error: any) {
-      throw new Error(error);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(message);
     }
   }
 
@@ -260,7 +262,7 @@ export class StockRepository {
     });
     const total = results.length;
 
-    const mapped = results.map((item: any) => {
+    const mapped = results.map((item: StockQueryResult) => {
       const isStorageType = type === 'armarios' || type === 'gavetas';
 
       let expiryInfo: { status: string | null; message: string | null } = {
@@ -272,14 +274,17 @@ export class StockRepository {
         message: null,
       };
 
-      if (!isStorageType) {
+      if (!isStorageType && item.validade) {
         expiryInfo = computeExpiryStatus(item.validade);
-        quantityInfo = computeQuantityStatus(item.quantidade, item.minimo);
+        quantityInfo = computeQuantityStatus(
+          item.quantidade ?? 0,
+          item.minimo ?? 0,
+        );
       }
 
       return {
         ...item,
-        validade: formatDateToPtBr(item.validade),
+        validade: item.validade ? formatDateToPtBr(item.validade) : null,
         st_expiracao: expiryInfo.status,
         msg_expiracao: expiryInfo.message,
         st_quantidade: quantityInfo.status,

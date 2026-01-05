@@ -1,6 +1,8 @@
 import { Response } from 'express';
 import { ResidentService } from '../../../core/services/residente.service';
 import { ValidatedRequest } from '../../../middleware/validation.middleware';
+import { sendErrorResponse } from '../../helpers/error-response.helper';
+import { getErrorMessage } from '../../types/error.types';
 
 export class ResidentController {
   constructor(private readonly service: ResidentService) {}
@@ -24,8 +26,8 @@ export class ResidentController {
     try {
       const residente = await this.service.findByCasela(casela);
       res.json(residente);
-    } catch (e: any) {
-      res.status(404).json({ error: e.message });
+    } catch (error: unknown) {
+      return sendErrorResponse(res, 404, error, 'Residente não encontrado');
     }
   }
 
@@ -33,9 +35,10 @@ export class ResidentController {
     try {
       const novo = await this.service.createResident(req.body);
       res.status(201).json(novo);
-    } catch (e: any) {
-      const status = e.message.includes('Já existe') ? 409 : 400;
-      res.status(status).json({ error: e.message });
+    } catch (error: unknown) {
+      const message = getErrorMessage(error);
+      const status = message.includes('Já existe') ? 409 : 400;
+      return sendErrorResponse(res, status, error, 'Erro ao criar residente');
     }
   }
 
@@ -47,9 +50,10 @@ export class ResidentController {
         nome: req.body.nome,
       });
       res.json(updated);
-    } catch (e: any) {
-      const status = e.message === 'Residente não encontrado' ? 404 : 400;
-      res.status(status).json({ error: e.message });
+    } catch (error: unknown) {
+      const message = getErrorMessage(error);
+      const status = message === 'Residente não encontrado' ? 404 : 400;
+      return sendErrorResponse(res, status, error, 'Erro ao atualizar residente');
     }
   }
 
@@ -63,8 +67,8 @@ export class ResidentController {
         return res.status(404).json({ error: 'Residente não encontrado' });
       }
       return res.status(204).end();
-    } catch (err: any) {
-      return res.status(400).json({ error: err.message });
+    } catch (error: unknown) {
+      return sendErrorResponse(res, 400, error, 'Erro ao deletar residente');
     }
   }
 }

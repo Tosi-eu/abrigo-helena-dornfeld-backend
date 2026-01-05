@@ -3,6 +3,8 @@ import LoginModel from '../models/login.model';
 import MedicineModel from '../models/medicamento.model';
 import NotificationEventModel from '../models/notificacao.model';
 import ResidentModel from '../models/residente.model';
+import { NotificationUpdateData } from '../../types/notificacao.types';
+import { NotificationWhereOptions } from '../../types/sequelize.types';
 
 export class NotificationEventRepository {
   async create(data: {
@@ -19,7 +21,7 @@ export class NotificationEventRepository {
   async list(page: number = 1, limit: number = 10, status?: string) {
     const offset = (page - 1) * limit;
 
-    const where: any = {};
+    const where: NotificationWhereOptions = {};
     if (status) where.status = status;
 
     const { rows, count } = await NotificationEventModel.findAndCountAll({
@@ -72,7 +74,7 @@ export class NotificationEventRepository {
     return NotificationEventModel.findByPk(id);
   }
 
-  async update(id: number, updates: any) {
+  async update(id: number, updates: NotificationUpdateData) {
     const event = await NotificationEventModel.findByPk(id);
     if (!event) return null;
 

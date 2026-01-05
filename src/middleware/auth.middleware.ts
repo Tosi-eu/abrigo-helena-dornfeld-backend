@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { jwtConfig } from '../infrastructure/helpers/auth.helper';
 import LoginModel from '../infrastructure/database/models/login.model';
+import { JWTPayload } from '../infrastructure/types/jwt.types';
 
 export interface AuthRequest extends Request {
   user?: {
@@ -23,7 +24,7 @@ export async function authMiddleware(
   if (!token) return res.status(401).json({ error: 'Token inválido' });
 
   try {
-    const decoded = jwt.verify(token, jwtConfig.secret) as any;
+    const decoded = jwt.verify(token, jwtConfig.secret) as JWTPayload;
 
     const user = await LoginModel.findOne({ where: { refreshToken: token } });
     if (!user) return res.status(401).json({ error: 'Sessão inválida' });

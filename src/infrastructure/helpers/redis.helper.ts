@@ -1,4 +1,8 @@
 import { QueryPaginationParams } from '../../core/utils/utils';
+import {
+  MovementQueryParams,
+  MovementRankingParams,
+} from '../../core/types/movimentacao.types';
 
 export class CacheKeyHelper {
   static stockList(params: QueryPaginationParams) {
@@ -13,15 +17,15 @@ export class CacheKeyHelper {
     return 'stock:*';
   }
 
-  static movementMedicineList(params: any) {
+  static movementMedicineList(params: MovementQueryParams) {
     return `movement:medicine:list:${JSON.stringify(params)}`;
   }
 
-  static movementInputList(params: any) {
+  static movementInputList(params: MovementQueryParams) {
     return `movement:input:list:${JSON.stringify(params)}`;
   }
 
-  static movementRanking(params: any) {
+  static movementRanking(params: MovementRankingParams) {
     return `movement:ranking:${JSON.stringify(params)}`;
   }
 

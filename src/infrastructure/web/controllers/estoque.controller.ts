@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { StockService } from '../../../core/services/estoque.service';
+import { sendErrorResponse } from '../../helpers/error-response.helper';
 
 export class StockController {
   constructor(private readonly service: StockService) {}
@@ -17,8 +18,8 @@ export class StockController {
         const result = await this.service.inputStockIn(req.body);
         return res.json(result);
       }
-    } catch (e: any) {
-      return res.status(400).json({ error: e.message });
+    } catch (error: unknown) {
+      return sendErrorResponse(res, 400, error, 'Erro ao registrar entrada');
     }
   }
 
@@ -26,8 +27,8 @@ export class StockController {
     try {
       const result = await this.service.stockOut(req.body);
       return res.json(result);
-    } catch (e: any) {
-      return res.status(400).json({ error: e.message });
+    } catch (error: unknown) {
+      return sendErrorResponse(res, 400, error, 'Erro ao registrar saída');
     }
   }
 
@@ -43,8 +44,8 @@ export class StockController {
       });
 
       return res.json(data);
-    } catch (e: any) {
-      return res.status(500).json({ error: e.message });
+    } catch (error: unknown) {
+      return sendErrorResponse(res, 500, error, 'Erro ao listar estoque');
     }
   }
 
@@ -81,8 +82,8 @@ export class StockController {
           total_geral: totalGeral,
         },
       });
-    } catch (e: any) {
-      return res.status(500).json({ error: e.message });
+    } catch (error: unknown) {
+      return sendErrorResponse(res, 500, error, 'Erro ao calcular proporção');
     }
   }
 
@@ -99,8 +100,8 @@ export class StockController {
       );
 
       return res.json(result);
-    } catch (e: any) {
-      return res.status(400).json({ error: e.message });
+    } catch (error: unknown) {
+      return sendErrorResponse(res, 400, error, 'Erro ao remover medicamento');
     }
   }
 
@@ -117,8 +118,8 @@ export class StockController {
       );
 
       return res.json(result);
-    } catch (e: any) {
-      return res.status(400).json({ error: e.message });
+    } catch (error: unknown) {
+      return sendErrorResponse(res, 400, error, 'Erro ao suspender medicamento');
     }
   }
 
@@ -135,8 +136,8 @@ export class StockController {
       );
 
       return res.json(result);
-    } catch (e: any) {
-      return res.status(400).json({ error: e.message });
+    } catch (error: unknown) {
+      return sendErrorResponse(res, 400, error, 'Erro ao retomar medicamento');
     }
   }
 
@@ -159,8 +160,8 @@ export class StockController {
       );
 
       return res.json(result);
-    } catch (e: any) {
-      return res.status(400).json({ error: e.message });
+    } catch (error: unknown) {
+      return sendErrorResponse(res, 400, error, 'Erro ao transferir medicamento');
     }
   }
 }

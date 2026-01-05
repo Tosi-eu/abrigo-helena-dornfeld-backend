@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { InputService } from '../../../core/services/insumo.service';
 import { ValidatedRequest } from '../../../middleware/validation.middleware';
+import { sendErrorResponse } from '../../helpers/error-response.helper';
 
 export class InsumoController {
   constructor(private readonly service: InputService) {}
@@ -9,8 +10,8 @@ export class InsumoController {
     try {
       const created = await this.service.createInput(req.body);
       return res.status(201).json(created);
-    } catch (e: any) {
-      return res.status(400).json({ error: e.message });
+    } catch (error: unknown) {
+      return sendErrorResponse(res, 400, error, 'Erro ao criar insumo');
     }
   }
 
@@ -31,8 +32,8 @@ export class InsumoController {
       }
 
       return res.json(updated);
-    } catch (e: any) {
-      return res.status(400).json({ error: e.message });
+    } catch (error: unknown) {
+      return sendErrorResponse(res, 400, error, 'Erro ao atualizar insumo');
     }
   }
 
