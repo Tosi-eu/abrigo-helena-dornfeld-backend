@@ -6,6 +6,7 @@ import routes from './routes/index.routes';
 import { sequelize } from '../database/sequelize';
 import { setupAssociations } from '../database/models/associations.models';
 import { errorHandler } from '../../middleware/error-handler.middleware';
+import { sanitizeInput } from '../../middleware/sanitize.middleware';
 
 dotenv.config();
 
@@ -20,6 +21,9 @@ app.use(
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Input sanitization - sanitize all user inputs
+app.use(sanitizeInput);
 
 if (!process.env.ALLOWED_ORIGINS) {
   throw new Error(
@@ -76,6 +80,10 @@ const authLimiter = rateLimit({
 app.use('/api/login', authLimiter);
 app.use(limiter);
 
+// API versioning - current version is v1
+// Future versions can be added as /api/v2, /api/v3, etc.
+app.use('/api/v1', routes);
+// Backward compatibility - also support /api without version
 app.use('/api', routes);
 
 app.use(errorHandler);
