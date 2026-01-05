@@ -71,13 +71,23 @@ export class LoginController {
   }
 
   async resetPassword(req: AuthRequest, res: Response) {
-    const { login, newPassword } = req.body;
+    const userId = req.user!.id;
+    const { currentPassword, newPassword } = req.body;
 
-    if (!login || !newPassword)
-      return res.status(400).json({ error: 'Login e nova senha obrigatórios' });
+    if (!currentPassword || !newPassword)
+      return res
+        .status(400)
+        .json({ error: 'Senha atual e nova senha são obrigatórias' });
 
-    const user = await this.service.resetPassword(login, newPassword);
-    if (!user) return res.status(404).json({ error: 'Usuário não encontrado' });
+    const user = await this.service.resetPassword(
+      userId,
+      currentPassword,
+      newPassword,
+    );
+    if (!user)
+      return res
+        .status(401)
+        .json({ error: 'Senha atual incorreta ou usuário não encontrado' });
 
     return res.json(user);
   }

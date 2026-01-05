@@ -1,12 +1,12 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { ResidentService } from '../../../core/services/residente.service';
+import { ValidatedRequest } from '../../../middleware/validation.middleware';
 
 export class ResidentController {
   constructor(private readonly service: ResidentService) {}
 
-  async findAll(req: Request, res: Response) {
-    const page = Number(req.query.page) || 1;
-    const limit = Number(req.query.limit) || 20;
+  async findAll(req: ValidatedRequest, res: Response) {
+    const { page, limit } = req.validated!;
 
     const result = await this.service.findAll(page, limit);
 
@@ -18,7 +18,7 @@ export class ResidentController {
     });
   }
 
-  async findByCasela(req: Request, res: Response) {
+  async findByCasela(req: ValidatedRequest, res: Response) {
     const casela = Number(req.params.casela);
 
     try {
@@ -29,7 +29,7 @@ export class ResidentController {
     }
   }
 
-  async create(req: Request, res: Response) {
+  async create(req: ValidatedRequest, res: Response) {
     try {
       const novo = await this.service.createResident(req.body);
       res.status(201).json(novo);
@@ -39,7 +39,7 @@ export class ResidentController {
     }
   }
 
-  async update(req: Request, res: Response) {
+  async update(req: ValidatedRequest, res: Response) {
     const casela = Number(req.params.casela);
     try {
       const updated = await this.service.updateResident({
@@ -53,7 +53,7 @@ export class ResidentController {
     }
   }
 
-  async delete(req: Request, res: Response) {
+  async delete(req: ValidatedRequest, res: Response) {
     const casela = Number(req.params.casela);
 
     try {

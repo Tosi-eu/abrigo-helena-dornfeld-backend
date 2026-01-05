@@ -82,12 +82,20 @@ export class LoginService {
     await this.repo.clearToken(userId);
   }
 
-  async resetPassword(login: string, newPassword: string) {
-    const user = await this.repo.findByLogin(login);
+  async resetPassword(
+    userId: number,
+    currentPassword: string,
+    newPassword: string,
+  ) {
+    const user = await this.repo.findById(userId);
     if (!user) return null;
 
+    // Verify current password
+    const match = await bcrypt.compare(currentPassword, user.password);
+    if (!match) return null;
+
     const hashed = await bcrypt.hash(newPassword, 10);
-    const updated = await this.repo.update(user.id, { password: hashed });
+    const updated = await this.repo.update(userId, { password: hashed });
 
     return { id: updated!.id, login: updated!.login };
   }

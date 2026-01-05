@@ -1,5 +1,6 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { MedicineService } from '../../../core/services/medicamento.service';
+import { ValidatedRequest } from '../../../middleware/validation.middleware';
 
 export interface PaginationParams {
   page: number;
@@ -9,7 +10,7 @@ export interface PaginationParams {
 export class MedicineController {
   constructor(private readonly service: MedicineService) {}
 
-  async create(req: Request, res: Response) {
+  async create(req: ValidatedRequest, res: Response) {
     try {
       const data = await this.service.createMedicine(req.body);
       res.status(201).json(data);
@@ -18,15 +19,14 @@ export class MedicineController {
     }
   }
 
-  async getAll(req: Request, res: Response) {
-    const page = Number(req.query.page) || 1;
-    const limit = Number(req.query.limit) || 10;
+  async getAll(req: ValidatedRequest, res: Response) {
+    const { page, limit } = req.validated!;
 
     const list = await this.service.findAll({ page, limit });
     res.json(list);
   }
 
-  async update(req: Request, res: Response) {
+  async update(req: ValidatedRequest, res: Response) {
     const id = Number(req.params.id);
     try {
       const updated = await this.service.updateMedicine(id, req.body);
@@ -37,7 +37,7 @@ export class MedicineController {
     }
   }
 
-  async delete(req: Request, res: Response) {
+  async delete(req: ValidatedRequest, res: Response) {
     const id = Number(req.params.id);
 
     const ok = await this.service.deleteMedicine(id);

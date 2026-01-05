@@ -13,8 +13,16 @@ export class ReportController {
 
       return res.json(data);
     } catch (e: any) {
+      // Log full error details server-side only
       console.error('Erro ao gerar relatório:', e);
-      return res.status(500).json({ error: e.message });
+      
+      // Don't expose internal error details
+      const isProduction = process.env.NODE_ENV === 'production';
+      const errorMessage = isProduction
+        ? 'Erro ao gerar relatório'
+        : e.message || 'Erro ao gerar relatório';
+      
+      return res.status(500).json({ error: errorMessage });
     }
   }
 }
