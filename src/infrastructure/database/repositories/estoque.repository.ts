@@ -160,6 +160,7 @@ export class StockRepository {
         m.id AS item_id,
         m.nome,
         m.principio_ativo,
+        null AS descricao,
         em.validade,
         em.quantidade,
         m.estoque_minimo AS minimo,
@@ -186,6 +187,7 @@ export class StockRepository {
           ei.id AS estoque_id,
           i.id AS item_id,
           i.nome,
+          null AS principio_ativo,
           i.descricao AS descricao,
           ei.validade,
           ei.quantidade,
@@ -262,7 +264,7 @@ export class StockRepository {
     });
     const total = results.length;
 
-    const mapped = results.map((item: StockQueryResult) => {
+    const mapped = (results as StockQueryResult[]).map((item: StockQueryResult) => {
       const isStorageType = type === 'armarios' || type === 'gavetas';
 
       let expiryInfo: { status: string | null; message: string | null } = {
@@ -275,7 +277,11 @@ export class StockRepository {
       };
 
       if (!isStorageType && item.validade) {
-        expiryInfo = computeExpiryStatus(item.validade);
+        const validadeDate =
+          item.validade instanceof Date
+            ? item.validade
+            : new Date(item.validade as string);
+        expiryInfo = computeExpiryStatus(validadeDate);
         quantityInfo = computeQuantityStatus(
           item.quantidade ?? 0,
           item.minimo ?? 0,

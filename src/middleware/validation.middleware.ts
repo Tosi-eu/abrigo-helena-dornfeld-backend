@@ -33,9 +33,6 @@ export function validatePagination(
   next();
 }
 
-/**
- * Validates numeric ID parameter
- */
 export function validateIdParam(
   req: ValidatedRequest,
   res: Response,
@@ -50,9 +47,20 @@ export function validateIdParam(
   next();
 }
 
-/**
- * Validates numeric numero parameter (for armarios/gavetas)
- */
+export function validateEstoqueIdParam(
+  req: ValidatedRequest,
+  res: Response,
+  next: NextFunction,
+) {
+  const estoque_id = Number(req.params.estoque_id);
+  if (Number.isNaN(estoque_id) || estoque_id <= 0 || !Number.isInteger(estoque_id)) {
+    return res.status(400).json({
+      error: 'Estoque ID inválido. Deve ser um número inteiro positivo.',
+    });
+  }
+  next();
+}
+
 export function validateNumeroParam(
   req: ValidatedRequest,
   res: Response,

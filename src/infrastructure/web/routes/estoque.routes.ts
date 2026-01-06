@@ -3,7 +3,7 @@ import { StockRepository } from '../../database/repositories/estoque.repository'
 import { StockService } from '../../../core/services/estoque.service';
 import { StockController } from '../controllers/estoque.controller';
 import { cacheService } from '../../database/redis/client.redis';
-import { validatePagination, validateIdParam } from '../../../middleware/validation.middleware';
+import { validatePagination, validateEstoqueIdParam } from '../../../middleware/validation.middleware';
 
 const repo = new StockRepository();
 const service = new StockService(repo, cacheService);
@@ -17,22 +17,22 @@ router.get('/', validatePagination, (req, res) => controller.list(req, res));
 router.get('/proporcao', (req, res) => controller.proportion(req, res));
 router.patch(
   '/medicamento/:estoque_id/remover-individual',
-  validateIdParam,
+  validateEstoqueIdParam,
   (req, res) => controller.removeIndividualMedicine(req, res),
 );
 router.patch(
   '/medicamento/:estoque_id/suspender',
-  validateIdParam,
+  validateEstoqueIdParam,
   (req, res) => controller.suspendIndividualMedicine(req, res),
 );
 router.patch(
   '/medicamento/:estoque_id/retomar',
-  validateIdParam,
+  validateEstoqueIdParam,
   (req, res) => controller.resumeIndividualMedicine(req, res),
 );
 router.patch(
   '/medicamento/:estoque_id/transferir-setor',
-  validateIdParam,
+  validateEstoqueIdParam,
   (req, res) => controller.transferMedicineSector(req, res),
 );
 
