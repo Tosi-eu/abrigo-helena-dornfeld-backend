@@ -75,9 +75,6 @@ export function validateNumeroParam(
   next();
 }
 
-/**
- * Validates numeric casela parameter
- */
 export function validateCaselaParam(
   req: ValidatedRequest,
   res: Response,

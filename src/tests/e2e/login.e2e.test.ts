@@ -80,6 +80,16 @@ describe('Login E2E - CRUD', () => {
     expect(res.body.login).toBe('joao2');
   });
 
+  it('não deve resetar senha com login inexistente', async () => {
+    const res = await request(app).post('/api/v1/login/reset-password').send({
+      login: 'usuario_inexistente',
+      newPassword: 'nova_senha',
+    });
+
+    expect(res.status).toBe(404);
+    expect(res.body.error).toBe('Login não encontrado');
+  });
+
   it('deve deletar o usuário', async () => {
     const res = await request(app).delete(`/api/v1/login/${userId}`);
     expect(res.status).toBe(204);

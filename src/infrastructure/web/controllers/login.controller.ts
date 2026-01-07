@@ -1,4 +1,4 @@
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { LoginService } from '../../../core/services/login.service';
 import { AuthRequest } from '../../../middleware/auth.middleware';
 import { getErrorMessage } from '../../types/error.types';
@@ -73,26 +73,29 @@ export class LoginController {
     return res.status(204).send();
   }
 
-  async resetPassword(req: AuthRequest, res: Response) {
-    const userId = req.user!.id;
-    const { currentPassword, newPassword } = req.body;
+  async resetPassword(req: Request, res: Response) {
+    const { login, newPassword } = req.body;
 
-    if (!currentPassword || !newPassword)
+    if (!login || !newPassword)
       return res
         .status(400)
-        .json({ error: 'Senha atual e nova senha são obrigatórias' });
+        .json({ error: 'Login e nova senha são obrigatórios' });
 
-    const user = await this.service.resetPassword(
-      userId,
-      currentPassword,
-      newPassword,
-    );
-    if (!user)
-      return res
-        .status(401)
-        .json({ error: 'Senha atual incorreta ou usuário não encontrado' });
+    try {
+      const user = await this.service.resetPassword(
+        login,
+        newPassword,
+      );
+      return res.json(user);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Erro ao redefinir senha';
+      
+      if (message === 'Login não encontrado') {
+        return res.status(404).json({ error: 'Login não encontrado' });
+      }
 
-    return res.json(user);
+      return res.status(400).json({ error: message });
+    }
   }
 
   async logout(req: AuthRequest, res: Response) {

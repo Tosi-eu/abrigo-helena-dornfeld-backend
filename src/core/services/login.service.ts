@@ -90,18 +90,16 @@ export class LoginService {
   }
 
   async resetPassword(
-    userId: number,
-    currentPassword: string,
+    login: string,
     newPassword: string,
   ) {
-    const user = await this.repo.findById(userId);
-    if (!user) return null;
-
-    const match = await bcrypt.compare(currentPassword, user.password);
-    if (!match) return null;
+    const user = await this.repo.findByLogin(login);
+    if (!user) {
+      throw new Error('Login não encontrado');
+    }
 
     const hashed = await bcrypt.hash(newPassword, 10);
-    const updated = await this.repo.update(userId, { password: hashed });
+    const updated = await this.repo.update(user.id, { password: hashed });
 
     return { id: updated!.id, login: updated!.login };
   }
