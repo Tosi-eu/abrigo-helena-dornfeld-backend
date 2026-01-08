@@ -1,8 +1,5 @@
-/**
- * JWT Token Payload Types
- */
 export interface JWTPayload {
-  sub: string | number; // User ID
+  sub: string | number;
   login: string;
   iat?: number;
   exp?: number;
