@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { StockService } from '../../../core/services/estoque.service';
 import { sendErrorResponse } from '../../helpers/error-response.helper';
+import { ItemType } from '../../../core/utils/utils';
 
 export class StockController {
   constructor(private readonly service: StockService) {}
@@ -162,6 +163,51 @@ export class StockController {
       return res.json(result);
     } catch (error: unknown) {
       return sendErrorResponse(res, 400, error, 'Erro ao transferir medicamento');
+    }
+  }
+
+  async updateStockItem(req: Request, res: Response) {
+    try {
+      const { estoque_id } = req.params;
+      const body = req.body as {
+        tipo: ItemType;
+        stockTipo?: string;
+        quantidade?: number;
+        armario_id?: number | null;
+        gaveta_id?: number | null;
+        validade?: string | null;
+        origem?: string | null;
+        setor?: string;
+        lote?: string | null;
+        casela_id?: number | null;
+      };
+      
+      const itemTipo = body.tipo;
+      const { tipo, stockTipo, ...updateData } = body;
+
+      if (!estoque_id) {
+        return res.status(400).json({ error: 'Estoque inválido' });
+      }
+
+      if (!itemTipo) {
+        return res.status(400).json({ error: 'Tipo é obrigatório' });
+      }
+
+      const processedData = {
+        ...updateData,
+        validade: updateData.validade ? new Date(updateData.validade) : undefined,
+        tipo: stockTipo,
+      };
+
+      const result = await this.service.updateStockItem(
+        Number(estoque_id),
+        itemTipo === 'medicamento' ? ItemType.MEDICAMENTO : ItemType.INSUMO,
+        processedData,
+      );
+
+      return res.json(result);
+    } catch (error: unknown) {
+      return sendErrorResponse(res, 400, error, 'Erro ao atualizar item de estoque');
     }
   }
 }

@@ -35,5 +35,10 @@ router.patch(
   validateEstoqueIdParam,
   (req, res) => controller.transferMedicineSector(req, res),
 );
+router.put(
+  '/:estoque_id',
+  validateEstoqueIdParam,
+  (req, res) => controller.updateStockItem(req, res),
+);
 
 export default router;

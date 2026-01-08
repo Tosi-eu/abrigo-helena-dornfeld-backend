@@ -1,6 +1,6 @@
 import { MedicineStock, InputStock } from '../../../core/domain/estoque';
-import MedicineStockModel from '../models/estoque-medicamento.model';
-import InputStockModel from '../models/estoque-insumo.model';
+import MedicineStockModel, { MedicineStockAttributes } from '../models/estoque-medicamento.model';
+import InputStockModel, { InputStockAttributes } from '../models/estoque-insumo.model';
 import { QueryTypes } from 'sequelize';
 import { sequelize } from '../sequelize';
 import {
@@ -438,6 +438,102 @@ export class StockRepository {
 
     return {
       message: 'Medicamento transferido de setor com sucesso',
+    };
+  }
+
+  async findInputStockById(id: number) {
+    return InputStockModel.findByPk(id);
+  }
+
+  async updateStockItem(
+    estoqueId: number,
+    tipo: ItemType,
+    data: {
+      quantidade?: number;
+      armario_id?: number | null;
+      gaveta_id?: number | null;
+      validade?: Date | null;
+      origem?: string | null;
+      setor?: string;
+      lote?: string | null;
+      casela_id?: number | null;
+      tipo?: string;
+    },
+  ) {
+    if (tipo === ItemType.MEDICAMENTO) {
+      const stock = await this.findMedicineStockById(estoqueId);
+      if (!stock) {
+        throw new Error('Item de estoque não encontrado');
+      }
+
+      const updateData: Partial<MedicineStockAttributes> = {};
+
+      if ('quantidade' in data) updateData.quantidade = data.quantidade;
+      if ('armario_id' in data) updateData.armario_id = data.armario_id ?? null;
+      if ('gaveta_id' in data) updateData.gaveta_id = data.gaveta_id ?? null;
+      if ('validade' in data) updateData.validade = data.validade;
+      if ('origem' in data) updateData.origem = data.origem;
+      if ('setor' in data) updateData.setor = data.setor;
+      if ('lote' in data) updateData.lote = data.lote ?? null;
+      if ('casela_id' in data) updateData.casela_id = data.casela_id ?? null;
+      if (data.tipo) updateData.tipo = data.tipo;      
+
+      if (updateData.armario_id != null && updateData.gaveta_id != null) {
+        throw new Error('Não é permitido preencher armário e gaveta ao mesmo tempo');
+      }    
+      
+      if (updateData.validade != null && updateData.validade < new Date()) {
+        throw new Error('A data de validade não pode ser anterior à data atual');
+      }
+
+      if(updateData.quantidade != null && updateData.quantidade < 1) {
+        throw new Error('A quantidade não pode ser menor que 0');
+      }
+
+      if(updateData.casela_id != null && updateData.tipo !== OperationType.INDIVIDUAL) {
+        throw new Error('A casela só pode ser preenchida para tipo individual');
+      }
+
+      if(updateData.validade == null) {
+        throw new Error('A data de validade é obrigatória');
+      }
+
+      if(updateData.origem != null && updateData.origem.trim() === '') {
+        throw new Error('A origem não pode ser vazia');
+      }
+
+      if(updateData.setor != null && updateData.setor.trim() === '') {
+        throw new Error('O setor não pode ser vazio');
+      }
+
+      if(updateData.tipo != null && updateData.tipo.trim() === '') {
+        throw new Error('O tipo não pode ser vazio');
+      }   
+
+      await MedicineStockModel.update(updateData, { where: { id: estoqueId } });
+    } else {
+      const stock = await this.findInputStockById(estoqueId);
+      if (!stock) {
+        throw new Error('Item de estoque não encontrado');
+      }
+
+      const updateData: Partial<InputStockAttributes> = {};
+      
+      if (data.quantidade != null) updateData.quantidade = data.quantidade;
+      if (data.armario_id != null) updateData.armario_id = data.armario_id;
+      if (data.gaveta_id != null) updateData.gaveta_id = data.gaveta_id;
+      if (data.validade != null) updateData.validade = data.validade as Date;
+      if (data.setor != null) updateData.setor = data.setor;
+      if (data.lote != null) updateData.lote = data.lote;
+      if (data.tipo != null && data.tipo !== "") {
+        updateData.tipo = data.tipo;
+      }
+
+      await InputStockModel.update(updateData, { where: { id: estoqueId } });
+    }
+
+    return {
+      message: 'Item de estoque atualizado com sucesso',
     };
   }
 }

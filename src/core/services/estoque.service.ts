@@ -183,4 +183,42 @@ export class StockService {
 
     return result;
   }
+
+  async updateStockItem(
+    estoqueId: number,
+    tipo: ItemType,
+    data: {
+      quantidade?: number;
+      armario_id?: number | null;
+      gaveta_id?: number | null;
+      validade?: Date | null;
+      origem?: string | null;
+      setor?: string;
+      lote?: string | null;
+      casela_id?: number | null;
+      tipo?: string;
+    },
+  ) {
+    if (tipo === ItemType.MEDICAMENTO) {
+      const stock = await this.repo.findMedicineStockById(estoqueId);
+      if (!stock) {
+        throw new Error('Item de estoque não encontrado');
+      }
+
+      if (stock.status === MedicineStatus.SUSPENSO) {
+        throw new Error('Não é possível editar um medicamento suspenso. Reative-o primeiro.');
+      }
+    } else {
+      const stock = await this.repo.findInputStockById(estoqueId);
+      if (!stock) {
+        throw new Error('Item de estoque não encontrado');
+      }
+    }
+
+    const result = await this.repo.updateStockItem(estoqueId, tipo, data);
+
+    await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
+
+    return result;
+  }
 }
