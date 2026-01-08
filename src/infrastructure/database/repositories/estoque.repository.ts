@@ -28,6 +28,7 @@ export class StockRepository {
           tipo: data.tipo,
           casela_id: data.casela_id ?? null,
           origem: data.origem,
+          lote: data.lote ?? null,
         },
       });
 
@@ -65,6 +66,7 @@ export class StockRepository {
         gaveta_id: data.gaveta_id,
         validade: data.validade ?? null,
         tipo: data.tipo,
+        lote: data.lote ?? null,
       },
     });
 
@@ -534,6 +536,28 @@ export class StockRepository {
 
     return {
       message: 'Item de estoque atualizado com sucesso',
+    };
+  }
+
+  async deleteStockItem(estoqueId: number, tipo: ItemType) {
+    if (tipo === ItemType.MEDICAMENTO) {
+      const stock = await this.findMedicineStockById(estoqueId);
+      if (!stock) {
+        throw new Error('Item de estoque não encontrado');
+      }
+
+      await MedicineStockModel.destroy({ where: { id: estoqueId } });
+    } else {
+      const stock = await this.findInputStockById(estoqueId);
+      if (!stock) {
+        throw new Error('Item de estoque não encontrado');
+      }
+
+      await InputStockModel.destroy({ where: { id: estoqueId } });
+    }
+
+    return {
+      message: 'Item de estoque removido com sucesso',
     };
   }
 }

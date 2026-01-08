@@ -210,4 +210,30 @@ export class StockController {
       return sendErrorResponse(res, 400, error, 'Erro ao atualizar item de estoque');
     }
   }
+
+  async deleteStockItem(req: Request, res: Response) {
+    try {
+      const { estoque_id, tipo } = req.params as {
+        estoque_id: string;
+        tipo: ItemType;
+      };
+
+      if (!estoque_id) {
+        return res.status(400).json({ error: 'Estoque inválido' });
+      }
+
+      if (!tipo || (tipo !== 'medicamento' && tipo !== 'insumo')) {
+        return res.status(400).json({ error: 'Tipo inválido' });
+      }
+
+      const result = await this.service.deleteStockItem(
+        Number(estoque_id),
+        tipo === 'medicamento' ? ItemType.MEDICAMENTO : ItemType.INSUMO,
+      );
+
+      return res.json(result);
+    } catch (error: unknown) {
+      return sendErrorResponse(res, 400, error, 'Erro ao remover item de estoque');
+    }
+  }
 }

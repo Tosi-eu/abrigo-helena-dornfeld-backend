@@ -40,5 +40,10 @@ router.put(
   validateEstoqueIdParam,
   (req, res) => controller.updateStockItem(req, res),
 );
+router.delete(
+  '/:tipo/:estoque_id',
+  validateEstoqueIdParam,
+  (req, res) => controller.deleteStockItem(req, res),
+);
 
 export default router;

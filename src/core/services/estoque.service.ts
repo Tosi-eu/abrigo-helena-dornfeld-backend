@@ -221,4 +221,12 @@ export class StockService {
 
     return result;
   }
+
+  async deleteStockItem(estoqueId: number, tipo: ItemType) {
+    const result = await this.repo.deleteStockItem(estoqueId, tipo);
+
+    await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
+
+    return result;
+  }
 }
