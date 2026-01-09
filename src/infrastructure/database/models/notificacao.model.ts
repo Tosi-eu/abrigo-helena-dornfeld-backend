@@ -20,7 +20,7 @@ type NotificationEventCreation = Optional<
   'id' | 'status'
 >;
 
-enum EventStatus {
+export enum EventStatus {
   PENDENTE = 'pending',
   ENVIADO = 'sent',
   CANCELADO = 'cancelled',

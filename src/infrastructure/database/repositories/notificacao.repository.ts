@@ -1,7 +1,7 @@
 import { formatDateToPtBr } from '../../helpers/date.helper';
 import LoginModel from '../models/login.model';
 import MedicineModel from '../models/medicamento.model';
-import NotificationEventModel from '../models/notificacao.model';
+import NotificationEventModel, { EventStatus } from '../models/notificacao.model';
 import ResidentModel from '../models/residente.model';
 import { NotificationUpdateData } from '../../types/notificacao.types';
 import { NotificationWhereOptions } from '../../types/sequelize.types';
@@ -78,7 +78,28 @@ export class NotificationEventRepository {
     const event = await NotificationEventModel.findByPk(id);
     if (!event) return null;
 
-    await event.update(updates);
+    const updateData: Partial<{
+      status?: EventStatus;
+      visto?: boolean;
+      data_prevista?: Date;
+      destino?: 'sus' | 'familia' | 'farmacia';
+    }> = {};
+    
+    if (updates.visto !== undefined) updateData.visto = updates.visto;
+    if (updates.data_prevista !== undefined) updateData.data_prevista = updates.data_prevista;
+    if (updates.destino !== undefined) updateData.destino = updates.destino;
+    
+    if (updates.status) {
+      const statusMap: Record<string, EventStatus> = {
+        'pending': EventStatus.PENDENTE,
+        'sent': EventStatus.ENVIADO,
+        'completed': EventStatus.ENVIADO, 
+        'cancelled': EventStatus.CANCELADO,
+      };
+      updateData.status = statusMap[updates.status] || EventStatus.PENDENTE;
+    }
+
+    await event.update(updateData);
     return event;
   }
 

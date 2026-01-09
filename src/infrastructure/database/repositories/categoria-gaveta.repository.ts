@@ -30,6 +30,10 @@ export class DrawerCategoryRepository {
     return DrawerCategoryModel.findByPk(id);
   }
 
+  async findByName(nome: string) {
+    return DrawerCategoryModel.findOne({ where: { nome } });
+  }
+
   async update(id: number, nome: string) {
     const item = await DrawerCategoryModel.findByPk(id);
     if (!item) return null;

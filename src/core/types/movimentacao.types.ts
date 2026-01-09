@@ -23,6 +23,7 @@ export interface CreateMovementData {
   medicamento_id?: number;
   insumo_id?: number;
   casela_id?: number;
+  validade?: string | Date;
   setor?: 'farmacia' | 'enfermagem';
 }
 

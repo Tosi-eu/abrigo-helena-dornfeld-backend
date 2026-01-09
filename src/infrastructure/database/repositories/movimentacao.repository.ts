@@ -12,7 +12,7 @@ import { NonMovementedItem } from '../../../core/utils/utils';
 import { MovementWhereOptions } from '../../types/sequelize.types';
 
 export interface MovementQueryParams {
-  days: number;
+  days?: number;
   page: number;
   limit: number;
   type?: string;
@@ -36,7 +36,7 @@ export class MovementRepository {
       medicamento_id: { [Op.not]: null },
     };
 
-    if (days > 0) {
+    if (days && days > 0) {
       where.data = { [Op.gte]: new Date(Date.now() - days * 86400000) };
     }
 
@@ -76,7 +76,7 @@ export class MovementRepository {
       insumo_id: { [Op.not]: null },
     };
 
-    if (days > 0) {
+    if (days && days > 0) {
       where.data = { [Op.gte]: new Date(Date.now() - days * 86400000) };
     }
 
@@ -113,7 +113,7 @@ export class MovementRepository {
     };
   }
 
-  async getMedicineRanking({ type, page, limit }: MovementQueryParams) {
+  async getMedicineRanking({ type, page, limit }: { type?: string; page: number; limit: number }) {
     const offset = (page - 1) * limit;
     const orderDirection = type === 'less' ? 'ASC' : 'DESC';
 

@@ -15,6 +15,10 @@ export class DrawerCategoryService {
     return this.repo.findById(id);
   }
 
+  async getByName(nome: string) {
+    return this.repo.findByName(nome);
+  }
+
   async update(id: number, nome: string) {
     return this.repo.update(id, nome);
   }
