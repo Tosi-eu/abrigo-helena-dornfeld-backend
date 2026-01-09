@@ -48,14 +48,18 @@ export class ReportRepository {
         i.nome AS insumo,
         ei.validade,
         SUM(ei.quantidade) AS quantidade,
-        ei.armario_id AS armario
+        ei.armario_id AS armario,
+        p.nome AS residente
       FROM ESTOQUE_INSUMO ei
       JOIN INSUMO i 
         ON i.id = ei.insumo_id
+      LEFT JOIN RESIDENTE p 
+        ON p.num_casela = ei.casela_id
       GROUP BY 
         i.nome,
         ei.validade,
-        ei.armario_id
+        ei.armario_id,
+        p.nome
       ORDER BY 
         i.nome,
         ei.validade;
@@ -175,10 +179,12 @@ export class ReportRepository {
       SELECT 
         i.nome AS insumo, 
         SUM(ei.quantidade) AS quantidade, 
-        ei.armario_id as armario
+        ei.armario_id as armario,
+        p.nome AS residente
       FROM ESTOQUE_INSUMO ei
       JOIN INSUMO i ON i.id = ei.insumo_id
-      GROUP BY i.nome, ei.armario_id
+      LEFT JOIN RESIDENTE p ON p.num_casela = ei.casela_id
+      GROUP BY i.nome, ei.armario_id, p.nome
     `;
 
     const medicines = await sequelize.query<MedicineReport>(medQuery, {

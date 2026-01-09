@@ -66,6 +66,7 @@ export class StockRepository {
         gaveta_id: data.gaveta_id,
         validade: data.validade ?? null,
         tipo: data.tipo,
+        casela_id: data.casela_id ?? null,
         lote: data.lote ?? null,
       },
     });
@@ -78,6 +79,7 @@ export class StockRepository {
 
     await InputStockModel.create({
       insumo_id: data.insumo_id,
+      casela_id: data.casela_id ?? null,
       armario_id: data.armario_id,
       gaveta_id: data.gaveta_id,
       quantidade: data.quantidade,
@@ -196,16 +198,17 @@ export class StockRepository {
           i.estoque_minimo AS minimo,
           null AS origem,
           ei.tipo,
-          null AS paciente,
+          r.nome AS paciente,
           ei.armario_id,
           ei.gaveta_id,
-          null AS casela_id,
+          ei.casela_id,
           ei.setor,
           null as status,
           null as suspenso_em,
           ei.lote
         FROM estoque_insumo ei
         JOIN insumo i ON i.id = ei.insumo_id
+        LEFT JOIN residente r ON r.num_casela = ei.casela_id
         ${whereInsumo}
       `;
 
@@ -220,13 +223,24 @@ export class StockRepository {
         ei.id AS estoque_id,
         i.id AS item_id,
         i.nome,
+        null AS principio_ativo,
+        i.descricao AS descricao,
         ei.validade,
         ei.quantidade,
         i.estoque_minimo AS minimo,
+        null AS origem,
+        ei.tipo,
+        r.nome AS paciente,
         ei.armario_id,
-        ei.tipo
+        ei.gaveta_id,
+        ei.casela_id,
+        ei.setor,
+        null as status,
+        null as suspenso_em,
+        ei.lote
       FROM estoque_insumo ei
       JOIN insumo i ON i.id = ei.insumo_id
+      LEFT JOIN residente r ON r.num_casela = ei.casela_id
       ${whereInsumo}
     `;
     } else if (type === 'armarios') {
@@ -521,14 +535,43 @@ export class StockRepository {
 
       const updateData: Partial<InputStockAttributes> = {};
       
-      if (data.quantidade != null) updateData.quantidade = data.quantidade;
-      if (data.armario_id != null) updateData.armario_id = data.armario_id;
-      if (data.gaveta_id != null) updateData.gaveta_id = data.gaveta_id;
-      if (data.validade != null) updateData.validade = data.validade as Date;
-      if (data.setor != null) updateData.setor = data.setor;
-      if (data.lote != null) updateData.lote = data.lote;
+      if ('quantidade' in data) updateData.quantidade = data.quantidade;
+      if ('armario_id' in data) updateData.armario_id = data.armario_id ?? null;
+      if ('gaveta_id' in data) updateData.gaveta_id = data.gaveta_id ?? null;
+      if ('validade' in data) updateData.validade = data.validade as Date;
+      if ('setor' in data) updateData.setor = data.setor;
+      if ('lote' in data) updateData.lote = data.lote ?? null;
+      if ('casela_id' in data) updateData.casela_id = data.casela_id ?? null;
       if (data.tipo != null && data.tipo !== "") {
         updateData.tipo = data.tipo;
+      }
+
+      if (updateData.armario_id != null && updateData.gaveta_id != null) {
+        throw new Error('Não é permitido preencher armário e gaveta ao mesmo tempo');
+      }    
+
+      if (updateData.validade != null && updateData.validade < new Date()) {
+        throw new Error('A data de validade não pode ser anterior à data atual');
+      }
+
+      if (updateData.quantidade != null && updateData.quantidade < 1) {
+        throw new Error('A quantidade não pode ser menor que 1');
+      }
+
+      if (updateData.casela_id != null && updateData.tipo !== OperationType.INDIVIDUAL) {
+        throw new Error('A casela só pode ser preenchida para tipo individual');
+      }
+
+      if (updateData.validade == null && !stock.validade) {
+        throw new Error('A data de validade é obrigatória');
+      }
+
+      if (updateData.setor != null && updateData.setor.trim() === '') {
+        throw new Error('O setor não pode ser vazio');
+      }
+
+      if (updateData.tipo != null && updateData.tipo.trim() === '') {
+        throw new Error('O tipo não pode ser vazio');
       }
 
       await InputStockModel.update(updateData, { where: { id: estoqueId } });

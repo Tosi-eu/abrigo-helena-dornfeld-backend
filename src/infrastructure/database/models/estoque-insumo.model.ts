@@ -4,6 +4,7 @@ import { sequelize } from '../sequelize';
 export interface InputStockAttributes {
   id?: number;
   insumo_id: number;
+  casela_id?: number | null;
   armario_id?: number | null;
   gaveta_id?: number | null;
   quantidade: number;
@@ -19,6 +20,7 @@ export class InputStockModel
 {
   declare id?: number;
   declare insumo_id: number;
+  declare casela_id?: number | null;
   declare armario_id?: number | null;
   declare gaveta_id?: number | null;
   declare quantidade: number;
@@ -36,6 +38,11 @@ InputStockModel.init(
       autoIncrement: true,
     },
     insumo_id: { type: DataTypes.INTEGER, allowNull: false },
+
+    casela_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
 
     armario_id: {
       type: DataTypes.INTEGER,

@@ -15,6 +15,7 @@ export interface MedicineStock {
 
 export interface InputStock {
   insumo_id: number;
+  casela_id?: number | null;
   armario_id?: number | null;
   gaveta_id?: number | null;
   quantidade: number;

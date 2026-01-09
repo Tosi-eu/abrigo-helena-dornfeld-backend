@@ -115,6 +115,17 @@ export function setupAssociations() {
     onUpdate: 'CASCADE',
   });
 
+  ResidentModel.hasMany(StockInputAttrs, {
+    foreignKey: 'casela_id',
+    onDelete: 'SET NULL',
+    onUpdate: 'CASCADE',
+  });
+  StockInputAttrs.belongsTo(ResidentModel, {
+    foreignKey: 'casela_id',
+    onDelete: 'SET NULL',
+    onUpdate: 'CASCADE',
+  });
+
   ResidentModel.hasMany(MovementModel, {
     foreignKey: 'casela_id',
     onDelete: 'SET NULL',

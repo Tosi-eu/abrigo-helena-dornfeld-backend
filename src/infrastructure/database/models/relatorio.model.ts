@@ -13,6 +13,7 @@ export interface InputReport {
   quantidade: number;
   armario: number;
   validade: Date;
+  residente: string | null;
 }
 
 export interface ResidentReport {
