@@ -46,7 +46,12 @@ export class NotificationEventController {
 
       return res.json(updated);
     } catch (error: unknown) {
-      return sendErrorResponse(res, 400, error, 'Erro ao atualizar notificação');
+      return sendErrorResponse(
+        res,
+        400,
+        error,
+        'Erro ao atualizar notificação',
+      );
     }
   }
 

@@ -1,4 +1,4 @@
-import { Op, QueryTypes, WhereOptions } from 'sequelize';
+import { Op, QueryTypes } from 'sequelize';
 import MovementModel from '../models/movimentacao.model';
 import Movement from '../../../core/domain/movimentacao';
 import MedicineModel from '../models/medicamento.model';
@@ -113,7 +113,15 @@ export class MovementRepository {
     };
   }
 
-  async getMedicineRanking({ type, page, limit }: { type?: string; page: number; limit: number }) {
+  async getMedicineRanking({
+    type,
+    page,
+    limit,
+  }: {
+    type?: string;
+    page: number;
+    limit: number;
+  }) {
     const offset = (page - 1) * limit;
     const orderDirection = type === 'less' ? 'ASC' : 'DESC';
 
@@ -182,14 +190,19 @@ export class MovementRepository {
     const data = result.map(r => {
       const row =
         r && typeof r === 'object' && 'get' in r && typeof r.get === 'function'
-          ? (r as { get: (options: { plain: true }) => Record<string, unknown> }).get({ plain: true })
+          ? (
+              r as {
+                get: (options: { plain: true }) => Record<string, unknown>;
+              }
+            ).get({ plain: true })
           : (r as unknown as Record<string, unknown>);
-      
+
       const medicamento = row.MedicineModel
         ? {
             id: (row.MedicineModel as { id: number }).id,
             nome: (row.MedicineModel as { nome: string }).nome,
-            principio_ativo: (row.MedicineModel as { principio_ativo: string }).principio_ativo,
+            principio_ativo: (row.MedicineModel as { principio_ativo: string })
+              .principio_ativo,
           }
         : null;
 

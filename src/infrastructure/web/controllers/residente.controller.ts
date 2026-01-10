@@ -53,7 +53,12 @@ export class ResidentController {
     } catch (error: unknown) {
       const message = getErrorMessage(error);
       const status = message === 'Residente não encontrado' ? 404 : 400;
-      return sendErrorResponse(res, status, error, 'Erro ao atualizar residente');
+      return sendErrorResponse(
+        res,
+        status,
+        error,
+        'Erro ao atualizar residente',
+      );
     }
   }
 

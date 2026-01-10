@@ -15,7 +15,7 @@ export class ReportController {
       return res.json(data);
     } catch (error: unknown) {
       console.error('Erro ao gerar relatório:', error);
-      
+
       return sendErrorResponse(res, 500, error, 'Erro ao gerar relatório');
     }
   }

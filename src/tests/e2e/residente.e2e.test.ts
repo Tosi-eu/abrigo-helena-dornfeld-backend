@@ -39,12 +39,16 @@ describe('Resident E2E - CRUD básico', () => {
   });
 
   it('deve remover um residente', async () => {
-    const res = await request(app).delete(`/api/v1/residentes/${createdCasela}`);
+    const res = await request(app).delete(
+      `/api/v1/residentes/${createdCasela}`,
+    );
     expect(res.status).toBe(204);
   });
 
   it('não deve remover novamente', async () => {
-    const res = await request(app).delete(`/api/v1/residentes/${createdCasela}`);
+    const res = await request(app).delete(
+      `/api/v1/residentes/${createdCasela}`,
+    );
     expect(res.status).toBe(404);
   });
 });

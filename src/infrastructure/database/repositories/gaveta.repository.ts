@@ -1,6 +1,8 @@
 import { Drawer } from '../../../core/domain/gaveta';
 import DrawerCategoryModel from '../models/categorias-gaveta.model';
-import DrawerModel, { DrawerModel as DrawerModelType } from '../models/gaveta.model';
+import DrawerModel, {
+  DrawerModel as DrawerModelType,
+} from '../models/gaveta.model';
 
 export class DrawerRepository {
   async createDrawer(data: Drawer): Promise<Drawer> {

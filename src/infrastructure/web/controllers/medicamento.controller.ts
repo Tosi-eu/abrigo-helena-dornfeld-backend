@@ -34,7 +34,12 @@ export class MedicineController {
       if (!updated) return res.status(404).json({ error: 'Não encontrado' });
       res.json(updated);
     } catch (error: unknown) {
-      return sendErrorResponse(res, 400, error, 'Erro ao atualizar medicamento');
+      return sendErrorResponse(
+        res,
+        400,
+        error,
+        'Erro ao atualizar medicamento',
+      );
     }
   }
 

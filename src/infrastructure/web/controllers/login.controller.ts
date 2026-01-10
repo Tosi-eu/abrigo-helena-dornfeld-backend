@@ -82,14 +82,12 @@ export class LoginController {
         .json({ error: 'Login e nova senha são obrigatórios' });
 
     try {
-      const user = await this.service.resetPassword(
-        login,
-        newPassword,
-      );
+      const user = await this.service.resetPassword(login, newPassword);
       return res.json(user);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Erro ao redefinir senha';
-      
+      const message =
+        error instanceof Error ? error.message : 'Erro ao redefinir senha';
+
       if (message === 'Login não encontrado') {
         return res.status(404).json({ error: 'Login não encontrado' });
       }

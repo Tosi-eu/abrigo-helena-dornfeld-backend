@@ -155,4 +155,3 @@ module.exports = {
     // Note: We don't drop stock_item_status enum as it might be used elsewhere
   },
 };
-

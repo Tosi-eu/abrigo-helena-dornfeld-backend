@@ -1,15 +1,10 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response } from 'express';
 import { sanitizeErrorMessage } from '../infrastructure/helpers/sanitize.helper';
-import { AppError, isAppError } from '../infrastructure/types/error.types';
+import { isAppError } from '../infrastructure/types/error.types';
 
 const isProduction = process.env.NODE_ENV === 'production';
 
-export function errorHandler(
-  err: unknown,
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) {
+export function errorHandler(err: unknown, req: Request, res: Response) {
   if (!isProduction) {
     console.error('Error details:', err);
   } else {

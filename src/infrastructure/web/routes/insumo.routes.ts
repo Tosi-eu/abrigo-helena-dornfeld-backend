@@ -16,10 +16,8 @@ const router = Router();
 router.post('/', (req, res) => controller.create(req, res));
 router.get('/', validatePagination, (req, res) => controller.list(req, res));
 router.put('/:id', validateIdParam, (req, res) => controller.update(req, res));
-router.delete(
-  '/:id',
-  validateIdParam,
-  (req, res) => controller.delete(req, res),
+router.delete('/:id', validateIdParam, (req, res) =>
+  controller.delete(req, res),
 );
 
 export default router;

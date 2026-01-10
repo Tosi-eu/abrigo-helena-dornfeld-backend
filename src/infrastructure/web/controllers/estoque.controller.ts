@@ -193,7 +193,7 @@ export class StockController {
       };
 
       const itemTipo = body.tipo;
-      const { tipo, stockTipo, ...updateData } = body;
+      const { stockTipo, ...updateData } = body;
 
       if (!estoque_id) {
         return res.status(400).json({ error: 'Estoque inválido' });

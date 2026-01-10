@@ -1,7 +1,11 @@
 import { StockRepository } from '../../infrastructure/database/repositories/estoque.repository';
 import { CacheKeyHelper } from '../../infrastructure/helpers/redis.helper';
 import { MedicineStock, InputStock } from '../domain/estoque';
-import { ItemType, StockItemStatus, QueryPaginationParams } from '../utils/utils';
+import {
+  ItemType,
+  StockItemStatus,
+  QueryPaginationParams,
+} from '../utils/utils';
 import { CacheService } from './redis.service';
 
 export class StockService {

@@ -89,10 +89,7 @@ export class LoginService {
     await this.repo.clearToken(userId);
   }
 
-  async resetPassword(
-    login: string,
-    newPassword: string,
-  ) {
+  async resetPassword(login: string, newPassword: string) {
     const user = await this.repo.findByLogin(login);
     if (!user) {
       throw new Error('Login não encontrado');

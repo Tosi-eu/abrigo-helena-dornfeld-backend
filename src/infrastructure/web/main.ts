@@ -69,15 +69,6 @@ const limiter = rateLimit({
   skip: req => req.method === 'OPTIONS',
 });
 
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: Number(process.env.RATE_LIMIT_AUTH_MAX) || 100,
-  message: 'Too many authentication attempts, please try again later.',
-  standardHeaders: true,
-  legacyHeaders: false,
-  skip: req => req.method === 'OPTIONS',
-});
-
 app.use(limiter);
 
 app.use('/api/v1', routes);
@@ -85,7 +76,7 @@ app.use('/api/v1', routes);
 app.use(errorHandler);
 
 async function runSeeders(): Promise<void> {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     const sequelizeCliPath = join(
       process.cwd(),
       'node_modules',
@@ -106,7 +97,7 @@ async function runSeeders(): Promise<void> {
       env,
     });
 
-    seedProcess.on('close', (code) => {
+    seedProcess.on('close', code => {
       if (code === 0) {
         console.log('✅ Seeders executados com sucesso!');
         resolve();
@@ -118,7 +109,7 @@ async function runSeeders(): Promise<void> {
       }
     });
 
-    seedProcess.on('error', (error) => {
+    seedProcess.on('error', error => {
       console.error('❌ Erro ao executar seeders:', error);
       resolve();
     });
