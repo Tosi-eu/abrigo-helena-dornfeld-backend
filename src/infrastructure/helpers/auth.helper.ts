@@ -6,13 +6,6 @@ if (!process.env.JWT_SECRET) {
   );
 }
 
-/**
- * JWT Configuration
- * - Default expiration: 6 hours
- * - Can be customized via JWT_EXPIRES_IN environment variable
- * - Examples: '1h', '30m', '24h', '7d'
- * - For sensitive operations, consider shorter expiration (e.g., '1h') with refresh tokens
- */
 export const jwtConfig: {
   secret: string;
   expiresIn: SignOptions['expiresIn'];

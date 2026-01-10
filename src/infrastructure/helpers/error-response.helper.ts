@@ -3,9 +3,6 @@ import { sanitizeErrorMessage } from './sanitize.helper';
 
 const isProduction = process.env.NODE_ENV === 'production';
 
-/**
- * Helper to send sanitized error responses
- */
 export function sendErrorResponse(
   res: Response,
   statusCode: number,
@@ -18,4 +15,3 @@ export function sendErrorResponse(
 
   return res.status(statusCode).json({ error: message });
 }
-

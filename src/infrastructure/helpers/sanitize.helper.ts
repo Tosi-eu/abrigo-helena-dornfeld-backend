@@ -1,13 +1,10 @@
-/**
- * Sanitizes user input to prevent XSS attacks
- */
 export function sanitizeString(input: string): string {
   if (typeof input !== 'string') return '';
 
   return input
     .trim()
-    .replace(/[<>]/g, '') 
-    .replace(/javascript:/gi, '') 
+    .replace(/[<>]/g, '')
+    .replace(/javascript:/gi, '')
     .replace(/on\w+=/gi, '');
 }
 

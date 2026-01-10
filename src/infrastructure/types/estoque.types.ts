@@ -1,6 +1,3 @@
-/**
- * Stock Query Result Types
- */
 export interface StockQueryResult {
   id?: number;
   nome?: string;

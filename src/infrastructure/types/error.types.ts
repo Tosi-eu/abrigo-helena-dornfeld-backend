@@ -1,6 +1,3 @@
-/**
- * Error Types
- */
 export interface AppError extends Error {
   statusCode?: number;
   status?: number;
@@ -24,5 +21,3 @@ export function getErrorMessage(error: unknown): string {
   }
   return String(error);
 }
-
-

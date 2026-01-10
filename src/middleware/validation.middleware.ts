@@ -11,9 +11,6 @@ export interface ValidatedRequest extends Request {
   };
 }
 
-/**
- * Validates and sanitizes pagination parameters
- */
 export function validatePagination(
   req: ValidatedRequest,
   res: Response,
@@ -53,7 +50,11 @@ export function validateEstoqueIdParam(
   next: NextFunction,
 ) {
   const estoque_id = Number(req.params.estoque_id);
-  if (Number.isNaN(estoque_id) || estoque_id <= 0 || !Number.isInteger(estoque_id)) {
+  if (
+    Number.isNaN(estoque_id) ||
+    estoque_id <= 0 ||
+    !Number.isInteger(estoque_id)
+  ) {
     return res.status(400).json({
       error: 'Estoque ID inválido. Deve ser um número inteiro positivo.',
     });

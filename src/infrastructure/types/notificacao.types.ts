@@ -1,6 +1,3 @@
-/**
- * Notification Types
- */
 export interface NotificationUpdateData {
   status?: 'pending' | 'completed' | 'cancelled';
   visto?: boolean;

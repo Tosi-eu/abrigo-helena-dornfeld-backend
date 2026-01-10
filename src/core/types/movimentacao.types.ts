@@ -1,6 +1,3 @@
-/**
- * Movement Service Types
- */
 export interface MovementQueryParams {
   days?: number;
   type?: string;
@@ -26,5 +23,3 @@ export interface CreateMovementData {
   validade?: string | Date;
   setor?: 'farmacia' | 'enfermagem';
 }
-
-
