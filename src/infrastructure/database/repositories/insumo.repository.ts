@@ -9,6 +9,7 @@ export class InputRepository {
       nome: input.nome,
       descricao: input.descricao ?? '',
       estoque_minimo: input.estoque_minimo,
+      preco: input.preco ? Number(input.preco) : null,
     };
   }
 
@@ -36,6 +37,7 @@ export class InputRepository {
         nome: r.nome,
         descricao: r.descricao ?? '',
         estoque_minimo: r.estoque_minimo,
+        preco: r.preco ? Number(r.preco) : null,
       })),
       total: count,
       page,
@@ -58,10 +60,19 @@ export class InputRepository {
       nome: updated.nome,
       descricao: updated.descricao ?? '',
       estoque_minimo: updated.estoque_minimo,
+      preco: updated.preco ? Number(updated.preco) : null,
     };
   }
 
   async deleteInputById(id: number): Promise<boolean> {
     return (await InputModel.destroy({ where: { id } })) > 0;
+  }
+
+  async updatePriceById(id: number, preco: number | null): Promise<boolean> {
+    const [affectedRows] = await InputModel.update(
+      { preco },
+      { where: { id } }
+    );
+    return affectedRows > 0;
   }
 }

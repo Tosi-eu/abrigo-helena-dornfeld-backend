@@ -8,6 +8,7 @@ export interface MedicineAttrs {
   unidade_medida: string;
   principio_ativo: string;
   estoque_minimo: number;
+  preco?: number | null;
 }
 
 export interface MedicineCreationAttrs extends Optional<
@@ -25,6 +26,7 @@ export class MedicineModel
   declare unidade_medida: string;
   declare principio_ativo: string;
   declare estoque_minimo: number;
+  declare preco?: number | null;
 }
 
 MedicineModel.init(
@@ -52,6 +54,10 @@ MedicineModel.init(
     },
     estoque_minimo: {
       type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+    preco: {
+      type: DataTypes.DECIMAL(10, 2),
       allowNull: true,
     },
   },

@@ -12,6 +12,7 @@ export class MedicineService {
     unidade_medida: string;
     principio_ativo: string;
     estoque_minimo?: number;
+    preco?: number | null;
   }): Promise<Medicine> {
     if (!data.nome || !data.unidade_medida || data.dosagem == null) {
       throw new Error('Nome, dosagem e unidade de medida são obrigatórios.');
@@ -66,5 +67,12 @@ export class MedicineService {
 
   async deleteMedicine(id: number) {
     return this.repo.deleteMedicineById(id);
+  }
+
+  async updatePrice(id: number, preco: number | null): Promise<boolean> {
+    if (preco !== null && preco < 0) {
+      throw new Error('Preço não pode ser negativo.');
+    }
+    return this.repo.updatePriceById(id, preco);
   }
 }
