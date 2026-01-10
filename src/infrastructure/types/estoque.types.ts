@@ -12,4 +12,3 @@ export interface StockQueryResult {
   tipo?: string;
   [key: string]: unknown;
 }
-

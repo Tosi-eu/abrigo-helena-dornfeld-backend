@@ -1,6 +1,10 @@
 import { MedicineStock, InputStock } from '../../../core/domain/estoque';
-import MedicineStockModel, { MedicineStockAttributes } from '../models/estoque-medicamento.model';
-import InputStockModel, { InputStockAttributes } from '../models/estoque-insumo.model';
+import MedicineStockModel, {
+  MedicineStockAttributes,
+} from '../models/estoque-medicamento.model';
+import InputStockModel, {
+  InputStockAttributes,
+} from '../models/estoque-insumo.model';
 import { QueryTypes } from 'sequelize';
 import { sequelize } from '../sequelize';
 import {
@@ -70,6 +74,10 @@ export class StockRepository {
         lote: data.lote ?? null,
       },
     });
+
+    if (data.casela_id && data.tipo !== OperationType.INDIVIDUAL) {
+      throw new Error('Casela só pode ser usada para insumo individual');
+    }
 
     if (existing) {
       existing.quantidade += data.quantidade;
@@ -280,39 +288,41 @@ export class StockRepository {
     });
     const total = results.length;
 
-    const mapped = (results as StockQueryResult[]).map((item: StockQueryResult) => {
-      const isStorageType = type === 'armarios' || type === 'gavetas';
+    const mapped = (results as StockQueryResult[]).map(
+      (item: StockQueryResult) => {
+        const isStorageType = type === 'armarios' || type === 'gavetas';
 
-      let expiryInfo: { status: string | null; message: string | null } = {
-        status: null,
-        message: null,
-      };
-      let quantityInfo: { status: string | null; message: string | null } = {
-        status: null,
-        message: null,
-      };
+        let expiryInfo: { status: string | null; message: string | null } = {
+          status: null,
+          message: null,
+        };
+        let quantityInfo: { status: string | null; message: string | null } = {
+          status: null,
+          message: null,
+        };
 
-      if (!isStorageType && item.validade) {
-        const validadeDate =
-          item.validade instanceof Date
-            ? item.validade
-            : new Date(item.validade as string);
-        expiryInfo = computeExpiryStatus(validadeDate);
-        quantityInfo = computeQuantityStatus(
-          item.quantidade ?? 0,
-          item.minimo ?? 0,
-        );
-      }
+        if (!isStorageType && item.validade) {
+          const validadeDate =
+            item.validade instanceof Date
+              ? item.validade
+              : new Date(item.validade as string);
+          expiryInfo = computeExpiryStatus(validadeDate);
+          quantityInfo = computeQuantityStatus(
+            item.quantidade ?? 0,
+            item.minimo ?? 0,
+          );
+        }
 
-      return {
-        ...item,
-        validade: item.validade ? formatDateToPtBr(item.validade) : null,
-        st_expiracao: expiryInfo.status,
-        msg_expiracao: expiryInfo.message,
-        st_quantidade: quantityInfo.status,
-        msg_quantidade: quantityInfo.message,
-      };
-    });
+        return {
+          ...item,
+          validade: item.validade ? formatDateToPtBr(item.validade) : null,
+          st_expiracao: expiryInfo.status,
+          msg_expiracao: expiryInfo.message,
+          st_quantidade: quantityInfo.status,
+          msg_quantidade: quantityInfo.message,
+        };
+      },
+    );
 
     return {
       data: mapped,
@@ -492,39 +502,46 @@ export class StockRepository {
       if ('setor' in data) updateData.setor = data.setor;
       if ('lote' in data) updateData.lote = data.lote ?? null;
       if ('casela_id' in data) updateData.casela_id = data.casela_id ?? null;
-      if (data.tipo) updateData.tipo = data.tipo;      
+      if (data.tipo) updateData.tipo = data.tipo;
 
       if (updateData.armario_id != null && updateData.gaveta_id != null) {
-        throw new Error('Não é permitido preencher armário e gaveta ao mesmo tempo');
-      }    
-      
-      if (updateData.validade != null && updateData.validade < new Date()) {
-        throw new Error('A data de validade não pode ser anterior à data atual');
+        throw new Error(
+          'Não é permitido preencher armário e gaveta ao mesmo tempo',
+        );
       }
 
-      if(updateData.quantidade != null && updateData.quantidade < 1) {
+      if (updateData.validade != null && updateData.validade < new Date()) {
+        throw new Error(
+          'A data de validade não pode ser anterior à data atual',
+        );
+      }
+
+      if (updateData.quantidade != null && updateData.quantidade < 1) {
         throw new Error('A quantidade não pode ser menor que 0');
       }
 
-      if(updateData.casela_id != null && updateData.tipo !== OperationType.INDIVIDUAL) {
+      if (
+        updateData.casela_id != null &&
+        updateData.tipo !== OperationType.INDIVIDUAL
+      ) {
         throw new Error('A casela só pode ser preenchida para tipo individual');
       }
 
-      if(updateData.validade == null) {
+      if (updateData.validade == null) {
         throw new Error('A data de validade é obrigatória');
       }
 
-      if(updateData.origem != null && updateData.origem.trim() === '') {
+      if (updateData.origem != null && updateData.origem.trim() === '') {
         throw new Error('A origem não pode ser vazia');
       }
 
-      if(updateData.setor != null && updateData.setor.trim() === '') {
+      if (updateData.setor != null && updateData.setor.trim() === '') {
         throw new Error('O setor não pode ser vazio');
       }
 
-      if(updateData.tipo != null && updateData.tipo.trim() === '') {
+      if (updateData.tipo != null && updateData.tipo.trim() === '') {
         throw new Error('O tipo não pode ser vazio');
-      }   
+      }
 
       await MedicineStockModel.update(updateData, { where: { id: estoqueId } });
     } else {
@@ -534,7 +551,7 @@ export class StockRepository {
       }
 
       const updateData: Partial<InputStockAttributes> = {};
-      
+
       if ('quantidade' in data) updateData.quantidade = data.quantidade;
       if ('armario_id' in data) updateData.armario_id = data.armario_id ?? null;
       if ('gaveta_id' in data) updateData.gaveta_id = data.gaveta_id ?? null;
@@ -542,23 +559,30 @@ export class StockRepository {
       if ('setor' in data) updateData.setor = data.setor;
       if ('lote' in data) updateData.lote = data.lote ?? null;
       if ('casela_id' in data) updateData.casela_id = data.casela_id ?? null;
-      if (data.tipo != null && data.tipo !== "") {
+      if (data.tipo != null && data.tipo !== '') {
         updateData.tipo = data.tipo;
       }
 
       if (updateData.armario_id != null && updateData.gaveta_id != null) {
-        throw new Error('Não é permitido preencher armário e gaveta ao mesmo tempo');
-      }    
+        throw new Error(
+          'Não é permitido preencher armário e gaveta ao mesmo tempo',
+        );
+      }
 
       if (updateData.validade != null && updateData.validade < new Date()) {
-        throw new Error('A data de validade não pode ser anterior à data atual');
+        throw new Error(
+          'A data de validade não pode ser anterior à data atual',
+        );
       }
 
       if (updateData.quantidade != null && updateData.quantidade < 1) {
         throw new Error('A quantidade não pode ser menor que 1');
       }
 
-      if (updateData.casela_id != null && updateData.tipo !== OperationType.INDIVIDUAL) {
+      if (
+        updateData.casela_id != null &&
+        updateData.tipo !== OperationType.INDIVIDUAL
+      ) {
         throw new Error('A casela só pode ser preenchida para tipo individual');
       }
 

@@ -7,4 +7,3 @@ export interface NotificationUpdateData {
   data_prevista?: Date;
   destino?: 'sus' | 'familia' | 'farmacia';
 }
-
