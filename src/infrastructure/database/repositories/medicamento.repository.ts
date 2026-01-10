@@ -4,7 +4,6 @@ import { Medicine } from '../../../core/domain/medicamento';
 export class MedicineRepository {
   async createMedicine(data: Medicine): Promise<Medicine> {
     const record = await MedicineModel.create({
-      id: data.id,
       nome: data.nome,
       dosagem: data.dosagem,
       unidade_medida: data.unidade_medida,

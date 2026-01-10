@@ -1,7 +1,7 @@
 import { StockRepository } from '../../infrastructure/database/repositories/estoque.repository';
 import { CacheKeyHelper } from '../../infrastructure/helpers/redis.helper';
 import { MedicineStock, InputStock } from '../domain/estoque';
-import { ItemType, StockStatus, QueryPaginationParams } from '../utils/utils';
+import { ItemType, StockItemStatus, QueryPaginationParams } from '../utils/utils';
 import { CacheService } from './redis.service';
 
 export class StockService {
@@ -118,7 +118,7 @@ export class StockService {
       throw new Error('Somente medicamentos individuais podem ser suspensos');
     }
 
-    if (stock.status === StockStatus.SUSPENSO) {
+    if (stock.status === StockItemStatus.SUSPENSO) {
       throw new Error('Medicamento já está suspenso');
     }
 
@@ -140,7 +140,7 @@ export class StockService {
       throw new Error('Somente medicamentos individuais podem ser retomados');
     }
 
-    if (stock.status !== StockStatus.SUSPENSO) {
+    if (stock.status !== StockItemStatus.SUSPENSO) {
       throw new Error('Medicamento não está suspenso');
     }
 
@@ -165,7 +165,7 @@ export class StockService {
       throw new Error('Somente medicamentos com casela podem ser transferidos');
     }
 
-    if (stock.status === StockStatus.SUSPENSO) {
+    if (stock.status === StockItemStatus.SUSPENSO) {
       throw new Error('Medicamento suspenso não pode ser transferido');
     }
 
@@ -201,7 +201,7 @@ export class StockService {
         throw new Error('Item de estoque não encontrado');
       }
 
-      if (stock.status === StockStatus.SUSPENSO) {
+      if (stock.status === StockItemStatus.SUSPENSO) {
         throw new Error(
           'Não é possível editar um medicamento suspenso. Reative-o primeiro.',
         );
@@ -212,7 +212,7 @@ export class StockService {
         throw new Error('Item de estoque não encontrado');
       }
 
-      if (stock.status === StockStatus.SUSPENSO) {
+      if (stock.status === StockItemStatus.SUSPENSO) {
         throw new Error(
           'Não é possível editar um insumo suspenso. Reative-o primeiro.',
         );
@@ -263,7 +263,7 @@ export class StockService {
       throw new Error('Somente insumos individuais podem ser suspensos');
     }
 
-    if (stock.status === StockStatus.SUSPENSO) {
+    if (stock.status === StockItemStatus.SUSPENSO) {
       throw new Error('Insumo já está suspenso');
     }
 
@@ -285,7 +285,7 @@ export class StockService {
       throw new Error('Somente insumos individuais podem ser retomados');
     }
 
-    if (stock.status !== StockStatus.SUSPENSO) {
+    if (stock.status !== StockItemStatus.SUSPENSO) {
       throw new Error('Insumo não está suspenso');
     }
 
@@ -310,7 +310,7 @@ export class StockService {
       throw new Error('Somente insumos com casela podem ser transferidos');
     }
 
-    if (stock.status === StockStatus.SUSPENSO) {
+    if (stock.status === StockItemStatus.SUSPENSO) {
       throw new Error('Insumo suspenso não pode ser transferido');
     }
 

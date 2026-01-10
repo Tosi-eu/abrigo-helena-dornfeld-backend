@@ -13,7 +13,7 @@ import {
 } from '../../helpers/expiry-status';
 import {
   ItemType,
-  StockStatus,
+  StockItemStatus,
   OperationType,
   QueryPaginationParams,
 } from '../../../core/utils/utils';
@@ -95,7 +95,7 @@ export class StockRepository {
       tipo: data.tipo,
       setor: data.setor,
       lote: data.lote ?? null,
-      status: data.status ?? StockStatus.ATIVO,
+      status: data.status ?? StockItemStatus.ATIVO,
       suspended_at: data.suspended_at ?? null,
     });
 
@@ -115,7 +115,7 @@ export class StockRepository {
       if (register.quantidade < quantidade)
         throw new Error('Quantidade insuficiente.');
 
-      if (register?.status === StockStatus.SUSPENSO) {
+      if (register?.status === StockItemStatus.SUSPENSO) {
         throw new Error('Medicamento suspenso não pode ser movimentado');
       }
 
@@ -128,7 +128,7 @@ export class StockRepository {
       if (register.quantidade < quantidade)
         throw new Error('Quantidade insuficiente.');
 
-      if (register?.status === StockStatus.SUSPENSO) {
+      if (register?.status === StockItemStatus.SUSPENSO) {
         throw new Error('Insumo suspenso não pode ser movimentado');
       }
 
@@ -190,7 +190,7 @@ export class StockRepository {
         em.gaveta_id,
         em.casela_id,
         em.setor,
-        em.status,
+        em.status::text as status,
         em.suspended_at as suspenso_em,
         em.lote 
       FROM estoque_medicamento em
@@ -218,8 +218,8 @@ export class StockRepository {
           ei.gaveta_id,
           ei.casela_id,
           ei.setor,
-          null as status,
-          null as suspenso_em,
+          ei.status::text as status,
+          ei.suspended_at as suspenso_em,
           ei.lote
         FROM estoque_insumo ei
         JOIN insumo i ON i.id = ei.insumo_id
@@ -250,8 +250,8 @@ export class StockRepository {
         ei.gaveta_id,
         ei.casela_id,
         ei.setor,
-        null as status,
-        null as suspenso_em,
+        ei.status as status,
+        ei.suspended_at as suspenso_em,
         ei.lote
       FROM estoque_insumo ei
       JOIN insumo i ON i.id = ei.insumo_id
@@ -434,7 +434,7 @@ export class StockRepository {
   async suspendIndividualMedicine(estoque_id: number) {
     await MedicineStockModel.update(
       {
-        status: StockStatus.SUSPENSO,
+        status: StockItemStatus.SUSPENSO,
         suspended_at: new Date(),
       },
       {
@@ -450,7 +450,7 @@ export class StockRepository {
   async resumeIndividualMedicine(estoque_id: number) {
     await MedicineStockModel.update(
       {
-        status: StockStatus.ATIVO,
+        status: StockItemStatus.ATIVO,
         suspended_at: null,
       },
       {
@@ -638,7 +638,7 @@ export class StockRepository {
   async suspendIndividualInput(estoque_id: number) {
     await InputStockModel.update(
       {
-        status: StockStatus.SUSPENSO,
+        status: StockItemStatus.SUSPENSO,
         suspended_at: new Date(),
       },
       {
@@ -654,7 +654,7 @@ export class StockRepository {
   async resumeIndividualInput(estoque_id: number) {
     await InputStockModel.update(
       {
-        status: StockStatus.ATIVO,
+        status: StockItemStatus.ATIVO,
         suspended_at: null,
       },
       {

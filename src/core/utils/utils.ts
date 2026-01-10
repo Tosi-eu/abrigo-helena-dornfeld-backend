@@ -14,7 +14,7 @@ export enum ItemType {
   INSUMO = 'insumo',
 }
 
-export enum StockStatus {
+export enum StockItemStatus {
   ATIVO = 'active',
   SUSPENSO = 'suspended',
 }
