@@ -3,7 +3,10 @@ import { StockRepository } from '../../database/repositories/estoque.repository'
 import { StockService } from '../../../core/services/estoque.service';
 import { StockController } from '../controllers/estoque.controller';
 import { cacheService } from '../../database/redis/client.redis';
-import { validatePagination, validateEstoqueIdParam } from '../../../middleware/validation.middleware';
+import {
+  validatePagination,
+  validateEstoqueIdParam,
+} from '../../../middleware/validation.middleware';
 
 const repo = new StockRepository();
 const service = new StockService(repo, cacheService);
@@ -35,15 +38,31 @@ router.patch(
   validateEstoqueIdParam,
   (req, res) => controller.transferMedicineSector(req, res),
 );
-router.put(
-  '/:estoque_id',
+router.patch(
+  '/insumo/:estoque_id/remover-individual',
   validateEstoqueIdParam,
-  (req, res) => controller.updateStockItem(req, res),
+  (req, res) => controller.removeIndividualInput(req, res),
 );
-router.delete(
-  '/:tipo/:estoque_id',
+router.patch(
+  '/insumo/:estoque_id/suspender',
   validateEstoqueIdParam,
-  (req, res) => controller.deleteStockItem(req, res),
+  (req, res) => controller.suspendIndividualInput(req, res),
+);
+router.patch(
+  '/insumo/:estoque_id/retomar',
+  validateEstoqueIdParam,
+  (req, res) => controller.resumeIndividualInput(req, res),
+);
+router.patch(
+  '/insumo/:estoque_id/transferir-setor',
+  validateEstoqueIdParam,
+  (req, res) => controller.transferInputSector(req, res),
+);
+router.put('/:estoque_id', validateEstoqueIdParam, (req, res) =>
+  controller.updateStockItem(req, res),
+);
+router.delete('/:tipo/:estoque_id', validateEstoqueIdParam, (req, res) =>
+  controller.deleteStockItem(req, res),
 );
 
 export default router;

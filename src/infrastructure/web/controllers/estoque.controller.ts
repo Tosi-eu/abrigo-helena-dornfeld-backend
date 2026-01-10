@@ -120,7 +120,12 @@ export class StockController {
 
       return res.json(result);
     } catch (error: unknown) {
-      return sendErrorResponse(res, 400, error, 'Erro ao suspender medicamento');
+      return sendErrorResponse(
+        res,
+        400,
+        error,
+        'Erro ao suspender medicamento',
+      );
     }
   }
 
@@ -162,7 +167,12 @@ export class StockController {
 
       return res.json(result);
     } catch (error: unknown) {
-      return sendErrorResponse(res, 400, error, 'Erro ao transferir medicamento');
+      return sendErrorResponse(
+        res,
+        400,
+        error,
+        'Erro ao transferir medicamento',
+      );
     }
   }
 
@@ -181,7 +191,7 @@ export class StockController {
         lote?: string | null;
         casela_id?: number | null;
       };
-      
+
       const itemTipo = body.tipo;
       const { tipo, stockTipo, ...updateData } = body;
 
@@ -195,7 +205,9 @@ export class StockController {
 
       const processedData = {
         ...updateData,
-        validade: updateData.validade ? new Date(updateData.validade) : undefined,
+        validade: updateData.validade
+          ? new Date(updateData.validade)
+          : undefined,
         tipo: stockTipo,
       };
 
@@ -207,7 +219,12 @@ export class StockController {
 
       return res.json(result);
     } catch (error: unknown) {
-      return sendErrorResponse(res, 400, error, 'Erro ao atualizar item de estoque');
+      return sendErrorResponse(
+        res,
+        400,
+        error,
+        'Erro ao atualizar item de estoque',
+      );
     }
   }
 
@@ -233,7 +250,95 @@ export class StockController {
 
       return res.json(result);
     } catch (error: unknown) {
-      return sendErrorResponse(res, 400, error, 'Erro ao remover item de estoque');
+      return sendErrorResponse(
+        res,
+        400,
+        error,
+        'Erro ao remover item de estoque',
+      );
+    }
+  }
+
+  async removeIndividualInput(req: Request, res: Response) {
+    try {
+      const { estoque_id } = req.params;
+
+      if (!estoque_id) {
+        return res.status(400).json({ error: 'Estoque inválido' });
+      }
+
+      const result = await this.service.removeIndividualInput(
+        Number(estoque_id),
+      );
+
+      return res.json(result);
+    } catch (error: unknown) {
+      return sendErrorResponse(
+        res,
+        400,
+        error,
+        'Erro ao remover insumo individual',
+      );
+    }
+  }
+
+  async suspendIndividualInput(req: Request, res: Response) {
+    try {
+      const { estoque_id } = req.params;
+
+      if (!estoque_id) {
+        return res.status(400).json({ error: 'Estoque inválido' });
+      }
+
+      const result = await this.service.suspendIndividualInput(
+        Number(estoque_id),
+      );
+
+      return res.json(result);
+    } catch (error: unknown) {
+      return sendErrorResponse(res, 400, error, 'Erro ao suspender insumo');
+    }
+  }
+
+  async resumeIndividualInput(req: Request, res: Response) {
+    try {
+      const { estoque_id } = req.params;
+
+      if (!estoque_id) {
+        return res.status(400).json({ error: 'Estoque inválido' });
+      }
+
+      const result = await this.service.resumeIndividualInput(
+        Number(estoque_id),
+      );
+
+      return res.json(result);
+    } catch (error: unknown) {
+      return sendErrorResponse(res, 400, error, 'Erro ao retomar insumo');
+    }
+  }
+
+  async transferInputSector(req: Request, res: Response) {
+    try {
+      const { estoque_id } = req.params;
+      const { setor } = req.body as { setor: 'farmacia' | 'enfermagem' };
+
+      if (!estoque_id) {
+        return res.status(400).json({ error: 'Estoque inválido' });
+      }
+
+      if (!setor) {
+        return res.status(400).json({ error: 'Setor é obrigatório' });
+      }
+
+      const result = await this.service.transferInputSector(
+        Number(estoque_id),
+        setor,
+      );
+
+      return res.json(result);
+    } catch (error: unknown) {
+      return sendErrorResponse(res, 400, error, 'Erro ao transferir insumo');
     }
   }
 }

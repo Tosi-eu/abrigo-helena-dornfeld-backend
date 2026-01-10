@@ -14,7 +14,7 @@ export enum ItemType {
   INSUMO = 'insumo',
 }
 
-export enum MedicineStatus {
+export enum StockStatus {
   ATIVO = 'active',
   SUSPENSO = 'suspended',
 }

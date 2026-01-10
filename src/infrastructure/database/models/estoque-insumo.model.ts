@@ -1,5 +1,6 @@
 import { DataTypes, Model } from 'sequelize';
 import { sequelize } from '../sequelize';
+import { StockStatus } from '../../../core/utils/utils';
 
 export interface InputStockAttributes {
   id?: number;
@@ -12,6 +13,8 @@ export interface InputStockAttributes {
   tipo: string;
   setor: string;
   lote?: string | null;
+  status?: StockStatus;
+  suspended_at?: Date | null;
 }
 
 export class InputStockModel
@@ -28,6 +31,8 @@ export class InputStockModel
   declare tipo: string;
   declare setor: string;
   declare lote?: string | null;
+  declare status: StockStatus;
+  declare suspended_at?: Date | null;
 }
 
 InputStockModel.init(
@@ -59,6 +64,15 @@ InputStockModel.init(
     tipo: { type: DataTypes.TEXT, allowNull: false },
     setor: { type: DataTypes.TEXT, allowNull: false },
     lote: { type: DataTypes.STRING, allowNull: true },
+    status: {
+      type: DataTypes.ENUM('active', 'suspended'),
+      allowNull: false,
+      defaultValue: 'active',
+    },
+    suspended_at: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
   },
   {
     sequelize,

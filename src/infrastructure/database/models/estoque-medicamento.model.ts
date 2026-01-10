@@ -1,6 +1,6 @@
 import { DataTypes, Model } from 'sequelize';
 import { sequelize } from '../sequelize';
-import { MedicineStatus } from '../../../core/utils/utils';
+import { StockStatus } from '../../../core/utils/utils';
 
 export interface MedicineStockAttributes {
   id?: number;
@@ -14,7 +14,7 @@ export interface MedicineStockAttributes {
   tipo?: string | null;
   setor: string;
   lote?: string | null;
-  status?: MedicineStatus;
+  status?: StockStatus;
   suspended_at?: Date | null;
 }
 
@@ -33,7 +33,7 @@ export class MedicineStockModel
   declare tipo: string | null;
   declare setor: string;
   declare lote?: string | null;
-  declare status: MedicineStatus;
+  declare status: StockStatus;
   declare suspended_at?: Date | null;
 }
 

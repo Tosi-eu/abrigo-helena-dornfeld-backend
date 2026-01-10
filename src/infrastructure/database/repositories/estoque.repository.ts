@@ -13,7 +13,7 @@ import {
 } from '../../helpers/expiry-status';
 import {
   ItemType,
-  MedicineStatus,
+  StockStatus,
   OperationType,
   QueryPaginationParams,
 } from '../../../core/utils/utils';
@@ -95,6 +95,8 @@ export class StockRepository {
       tipo: data.tipo,
       setor: data.setor,
       lote: data.lote ?? null,
+      status: data.status ?? StockStatus.ATIVO,
+      suspended_at: data.suspended_at ?? null,
     });
 
     return { message: 'Entrada de insumo registrada.' };
@@ -113,7 +115,7 @@ export class StockRepository {
       if (register.quantidade < quantidade)
         throw new Error('Quantidade insuficiente.');
 
-      if (register?.status === MedicineStatus.SUSPENSO) {
+      if (register?.status === StockStatus.SUSPENSO) {
         throw new Error('Medicamento suspenso não pode ser movimentado');
       }
 
@@ -125,6 +127,11 @@ export class StockRepository {
       if (!register) throw new Error('register de insumo não encontrado.');
       if (register.quantidade < quantidade)
         throw new Error('Quantidade insuficiente.');
+
+      if (register?.status === StockStatus.SUSPENSO) {
+        throw new Error('Insumo suspenso não pode ser movimentado');
+      }
+
       register.quantidade -= quantidade;
       await register.save();
       return { message: 'Saída de insumo realizada.' };
@@ -427,7 +434,7 @@ export class StockRepository {
   async suspendIndividualMedicine(estoque_id: number) {
     await MedicineStockModel.update(
       {
-        status: MedicineStatus.SUSPENSO,
+        status: StockStatus.SUSPENSO,
         suspended_at: new Date(),
       },
       {
@@ -443,7 +450,7 @@ export class StockRepository {
   async resumeIndividualMedicine(estoque_id: number) {
     await MedicineStockModel.update(
       {
-        status: MedicineStatus.ATIVO,
+        status: StockStatus.ATIVO,
         suspended_at: null,
       },
       {
@@ -625,6 +632,65 @@ export class StockRepository {
 
     return {
       message: 'Item de estoque removido com sucesso',
+    };
+  }
+
+  async suspendIndividualInput(estoque_id: number) {
+    await InputStockModel.update(
+      {
+        status: StockStatus.SUSPENSO,
+        suspended_at: new Date(),
+      },
+      {
+        where: { id: estoque_id },
+      },
+    );
+
+    return {
+      message: 'Insumo suspenso com sucesso',
+    };
+  }
+
+  async resumeIndividualInput(estoque_id: number) {
+    await InputStockModel.update(
+      {
+        status: StockStatus.ATIVO,
+        suspended_at: null,
+      },
+      {
+        where: { id: estoque_id },
+      },
+    );
+
+    return {
+      message: 'Insumo retomado com sucesso',
+    };
+  }
+
+  async transferInputSector(
+    estoqueId: number,
+    setor: 'farmacia' | 'enfermagem',
+  ) {
+    await InputStockModel.update({ setor }, { where: { id: estoqueId } });
+
+    return {
+      message: 'Insumo transferido de setor com sucesso',
+    };
+  }
+
+  async removeIndividualInput(estoqueId: number) {
+    await InputStockModel.update(
+      {
+        casela_id: null,
+        tipo: 'geral',
+      },
+      {
+        where: { id: estoqueId },
+      },
+    );
+
+    return {
+      message: 'Insumo removido do estoque individual',
     };
   }
 }

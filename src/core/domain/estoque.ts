@@ -1,4 +1,4 @@
-import { OperationType } from '../utils/utils';
+import { OperationType, StockStatus } from '../utils/utils';
 
 export interface MedicineStock {
   medicamento_id: number;
@@ -11,6 +11,8 @@ export interface MedicineStock {
   casela_id: number | null;
   setor: string;
   lote?: string | null;
+  status?: StockStatus;
+  suspended_at?: Date | null;
 }
 
 export interface InputStock {
@@ -23,4 +25,6 @@ export interface InputStock {
   tipo: string;
   setor: string;
   lote?: string | null;
+  status?: StockStatus;
+  suspended_at?: Date | null;
 }

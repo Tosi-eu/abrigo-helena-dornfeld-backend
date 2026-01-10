@@ -1,11 +1,7 @@
 import { StockRepository } from '../../infrastructure/database/repositories/estoque.repository';
 import { CacheKeyHelper } from '../../infrastructure/helpers/redis.helper';
 import { MedicineStock, InputStock } from '../domain/estoque';
-import {
-  ItemType,
-  MedicineStatus,
-  QueryPaginationParams,
-} from '../utils/utils';
+import { ItemType, StockStatus, QueryPaginationParams } from '../utils/utils';
 import { CacheService } from './redis.service';
 
 export class StockService {
@@ -122,7 +118,7 @@ export class StockService {
       throw new Error('Somente medicamentos individuais podem ser suspensos');
     }
 
-    if (stock.status === MedicineStatus.SUSPENSO) {
+    if (stock.status === StockStatus.SUSPENSO) {
       throw new Error('Medicamento já está suspenso');
     }
 
@@ -144,7 +140,7 @@ export class StockService {
       throw new Error('Somente medicamentos individuais podem ser retomados');
     }
 
-    if (stock.status !== MedicineStatus.SUSPENSO) {
+    if (stock.status !== StockStatus.SUSPENSO) {
       throw new Error('Medicamento não está suspenso');
     }
 
@@ -169,7 +165,7 @@ export class StockService {
       throw new Error('Somente medicamentos com casela podem ser transferidos');
     }
 
-    if (stock.status === MedicineStatus.SUSPENSO) {
+    if (stock.status === StockStatus.SUSPENSO) {
       throw new Error('Medicamento suspenso não pode ser transferido');
     }
 
@@ -205,13 +201,21 @@ export class StockService {
         throw new Error('Item de estoque não encontrado');
       }
 
-      if (stock.status === MedicineStatus.SUSPENSO) {
-        throw new Error('Não é possível editar um medicamento suspenso. Reative-o primeiro.');
+      if (stock.status === StockStatus.SUSPENSO) {
+        throw new Error(
+          'Não é possível editar um medicamento suspenso. Reative-o primeiro.',
+        );
       }
     } else {
       const stock = await this.repo.findInputStockById(estoqueId);
       if (!stock) {
         throw new Error('Item de estoque não encontrado');
+      }
+
+      if (stock.status === StockStatus.SUSPENSO) {
+        throw new Error(
+          'Não é possível editar um insumo suspenso. Reative-o primeiro.',
+        );
       }
     }
 
@@ -224,6 +228,97 @@ export class StockService {
 
   async deleteStockItem(estoqueId: number, tipo: ItemType) {
     const result = await this.repo.deleteStockItem(estoqueId, tipo);
+
+    await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
+
+    return result;
+  }
+
+  async removeIndividualInput(estoqueId: number) {
+    const stock = await this.repo.findInputStockById(estoqueId);
+
+    if (!stock) {
+      throw new Error('Insumo não encontrado');
+    }
+
+    if (stock.tipo !== 'individual') {
+      throw new Error('Insumo não é individual');
+    }
+
+    const result = await this.repo.removeIndividualInput(estoqueId);
+
+    await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
+
+    return result;
+  }
+
+  async suspendIndividualInput(estoque_id: number) {
+    const stock = await this.repo.findInputStockById(estoque_id);
+
+    if (!stock) {
+      throw new Error('Insumo não encontrado');
+    }
+
+    if (stock.casela_id == null) {
+      throw new Error('Somente insumos individuais podem ser suspensos');
+    }
+
+    if (stock.status === StockStatus.SUSPENSO) {
+      throw new Error('Insumo já está suspenso');
+    }
+
+    const result = await this.repo.suspendIndividualInput(estoque_id);
+
+    await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
+
+    return result;
+  }
+
+  async resumeIndividualInput(estoque_id: number) {
+    const stock = await this.repo.findInputStockById(estoque_id);
+
+    if (!stock) {
+      throw new Error('Insumo não encontrado');
+    }
+
+    if (stock.casela_id == null) {
+      throw new Error('Somente insumos individuais podem ser retomados');
+    }
+
+    if (stock.status !== StockStatus.SUSPENSO) {
+      throw new Error('Insumo não está suspenso');
+    }
+
+    const result = await this.repo.resumeIndividualInput(estoque_id);
+
+    await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
+
+    return result;
+  }
+
+  async transferInputSector(
+    estoque_id: number,
+    setor: 'farmacia' | 'enfermagem',
+  ) {
+    const stock = await this.repo.findInputStockById(estoque_id);
+
+    if (!stock) {
+      throw new Error('Insumo não encontrado');
+    }
+
+    if (stock.casela_id == null) {
+      throw new Error('Somente insumos com casela podem ser transferidos');
+    }
+
+    if (stock.status === StockStatus.SUSPENSO) {
+      throw new Error('Insumo suspenso não pode ser transferido');
+    }
+
+    if (stock.setor === setor) {
+      throw new Error('Insumo já está neste setor');
+    }
+
+    const result = await this.repo.transferInputSector(estoque_id, setor);
 
     await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
 
