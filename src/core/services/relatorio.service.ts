@@ -4,7 +4,7 @@ import { formatDateToPtBr } from '../../infrastructure/helpers/date.helper';
 export class ReportService {
   constructor(private readonly repo: ReportRepository) {}
 
-  async generateReport(type: string) {
+  async generateReport(type: string, casela?: number) {
     switch (type) {
       case 'medicamentos': {
         const data = await this.repo.getMedicinesData();
@@ -41,6 +41,17 @@ export class ReportService {
 
       case 'psicotropicos':
         return this.repo.getPsicotropicosData();
+
+      case 'residente_consumo': {
+        if (!casela || isNaN(casela)) {
+          throw new Error('Casela do residente é obrigatória');
+        }
+        const report = await this.repo.getResidentConsumptionReport(casela);
+        if (!report) {
+          throw new Error('Residente não encontrado');
+        }
+        return report;
+      }
 
       default:
         throw new Error('Tipo inválido');

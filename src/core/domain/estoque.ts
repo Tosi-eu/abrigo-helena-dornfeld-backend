@@ -13,6 +13,7 @@ export interface MedicineStock {
   lote?: string | null;
   status?: StockItemStatus;
   suspended_at?: Date | null;
+  observacao?: string | null;
 }
 
 export interface InputStock {

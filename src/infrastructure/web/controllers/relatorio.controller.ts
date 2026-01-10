@@ -10,7 +10,8 @@ export class ReportController {
       const type = req.query.type as string;
       if (!type) return res.status(400).json({ error: 'Tipo obrigatório' });
 
-      const data = await this.service.generateReport(type);
+      const casela = req.query.casela ? parseInt(req.query.casela as string) : undefined;
+      const data = await this.service.generateReport(type, casela);
 
       return res.json(data);
     } catch (error: unknown) {

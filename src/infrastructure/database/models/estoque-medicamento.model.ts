@@ -16,6 +16,7 @@ export interface MedicineStockAttributes {
   lote?: string | null;
   status?: StockItemStatus;
   suspended_at?: Date | null;
+  observacao?: string | null;
 }
 
 export class MedicineStockModel
@@ -35,6 +36,7 @@ export class MedicineStockModel
   declare lote?: string | null;
   declare status: StockItemStatus;
   declare suspended_at?: Date | null;
+  declare observacao?: string | null;
 }
 
 MedicineStockModel.init(
@@ -75,6 +77,10 @@ MedicineStockModel.init(
     setor: { type: DataTypes.TEXT, allowNull: false },
     suspended_at: {
       type: DataTypes.DATE,
+      allowNull: true,
+    },
+    observacao: {
+      type: DataTypes.TEXT,
       allowNull: true,
     },
   },

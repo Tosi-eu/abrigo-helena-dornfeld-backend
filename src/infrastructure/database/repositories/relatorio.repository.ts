@@ -6,6 +6,9 @@ import {
   MedicineReport,
   PsicotropicoData,
   PsicotropicosReport,
+  ResidentConsumptionReport,
+  ResidentConsumptionMedicine,
+  ResidentConsumptionInput,
   ResidentReport,
 } from '../models/relatorio.model';
 import { ResidentMonthlyUsage } from '../../../core/utils/utils';
@@ -196,5 +199,146 @@ export class ReportRepository {
     });
 
     return { medicamentos: medicines, insumos: inputs };
+  }
+
+  async getResidentConsumptionReport(casela: number): Promise<ResidentConsumptionReport | null> {
+    const residentQuery = `
+      SELECT num_casela, nome
+      FROM RESIDENTE
+      WHERE num_casela = :casela;
+    `;
+
+    const residentResult = await sequelize.query<{ num_casela: number; nome: string }>(
+      residentQuery,
+      {
+        replacements: { casela },
+        type: QueryTypes.SELECT,
+      },
+    );
+
+    if (residentResult.length === 0) {
+      return null;
+    }
+
+    const resident = residentResult[0];
+
+    const medicinesQuery = `
+      SELECT
+        m.id,
+        m.nome,
+        m.dosagem,
+        m.unidade_medida,
+        m.principio_ativo,
+        m.preco,
+        COALESCE(SUM(em.quantidade), 0) AS quantidade_estoque,
+        STRING_AGG(DISTINCT em.observacao, '; ') FILTER (WHERE em.observacao IS NOT NULL AND em.observacao != '') AS observacao
+      FROM ESTOQUE_MEDICAMENTO em
+      JOIN MEDICAMENTO m ON m.id = em.medicamento_id
+      WHERE em.casela_id = :casela
+      GROUP BY m.id, m.nome, m.dosagem, m.unidade_medida, m.principio_ativo, m.preco
+      ORDER BY m.nome;
+    `;
+
+    const medicinesRows = await sequelize.query<{
+      id: number;
+      nome: string;
+      dosagem: string;
+      unidade_medida: string;
+      principio_ativo: string;
+      preco: number | null;
+      quantidade_estoque: string | number;
+      observacao: string | null;
+    }>(
+      medicinesQuery,
+      {
+        replacements: { casela },
+        type: QueryTypes.SELECT,
+      },
+    );
+
+    const inputsQuery = `
+      SELECT
+        i.id,
+        i.nome,
+        i.descricao,
+        i.preco,
+        COALESCE(SUM(ei.quantidade), 0) AS quantidade_estoque
+      FROM ESTOQUE_INSUMO ei
+      JOIN INSUMO i ON i.id = ei.insumo_id
+      WHERE ei.casela_id = :casela
+      GROUP BY i.id, i.nome, i.descricao, i.preco
+      ORDER BY i.nome;
+    `;
+
+    const inputsRows = await sequelize.query<{
+      id: number;
+      nome: string;
+      descricao: string | null;
+      preco: number | null;
+      quantidade_estoque: string | number;
+    }>(
+      inputsQuery,
+      {
+        replacements: { casela },
+        type: QueryTypes.SELECT,
+      },
+    );
+
+    const medicines: ResidentConsumptionMedicine[] = medicinesRows.map(med => ({
+      nome: med.nome,
+      dosagem: med.dosagem,
+      unidade_medida: med.unidade_medida,
+      principio_ativo: med.principio_ativo,
+      preco: med.preco ? parseFloat(String(med.preco)) : null,
+      quantidade_estoque: Number(med.quantidade_estoque),
+      observacao: med.observacao || null,
+    }));
+
+    const inputs: ResidentConsumptionInput[] = inputsRows.map(input => ({
+      nome: input.nome,
+      descricao: input.descricao,
+      preco: input.preco ? parseFloat(String(input.preco)) : null,
+      quantidade_estoque: Number(input.quantidade_estoque),
+    }));
+
+    const custosMedicamentos = medicines.map((med) => {
+      const preco = med.preco || 0;
+      const custoMensal = preco;
+      const custoAnual = custoMensal * 12;
+
+      return {
+        item: 'Medicamento',
+        nome: med.nome,
+        custo_mensal: Math.round(custoMensal * 100) / 100,
+        custo_anual: Math.round(custoAnual * 100) / 100,
+      };
+    });
+
+    const custosInsumos = inputs.map((input) => {
+      const preco = input.preco || 0;
+      const custoMensal = preco;
+      const custoAnual = custoMensal * 12;
+
+      return {
+        item: 'Insumo',
+        nome: input.nome,
+        custo_mensal: Math.round(custoMensal * 100) / 100,
+        custo_anual: Math.round(custoAnual * 100) / 100,
+      };
+    });
+
+    const totalEstimado = 
+      custosMedicamentos.reduce((sum, c) => sum + c.custo_anual, 0) +
+      custosInsumos.reduce((sum, c) => sum + c.custo_anual, 0);
+
+    return {
+      residente: resident.nome,
+      casela: resident.num_casela,
+      medicamentos: medicines,
+      insumos: inputs,
+      custos_medicamentos: custosMedicamentos,
+      custos_insumos: custosInsumos,
+      total_estimado: Math.round(totalEstimado * 100) / 100,
+    };
   }
 }

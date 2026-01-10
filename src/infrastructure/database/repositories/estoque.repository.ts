@@ -53,6 +53,7 @@ export class StockRepository {
         tipo: data.tipo,
         setor: data.setor,
         lote: data.lote ?? null,
+        observacao: data.observacao ?? null,
       });
 
       return { message: 'Entrada de medicamento registrada.' };
@@ -192,7 +193,8 @@ export class StockRepository {
         em.setor,
         em.status::text as status,
         em.suspended_at as suspenso_em,
-        em.lote 
+        em.lote,
+        em.observacao
       FROM estoque_medicamento em
       JOIN medicamento m ON m.id = em.medicamento_id
       LEFT JOIN residente r ON r.num_casela = em.casela_id
@@ -220,7 +222,8 @@ export class StockRepository {
           ei.setor,
           ei.status::text as status,
           ei.suspended_at as suspenso_em,
-          ei.lote
+          ei.lote,
+          null AS observacao
         FROM estoque_insumo ei
         JOIN insumo i ON i.id = ei.insumo_id
         LEFT JOIN residente r ON r.num_casela = ei.casela_id
