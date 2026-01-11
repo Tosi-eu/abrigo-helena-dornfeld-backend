@@ -54,6 +54,7 @@ export class StockRepository {
         setor: data.setor,
         lote: data.lote ?? null,
         observacao: data.observacao ?? null,
+        preco: data.preco ?? null,
       });
 
       return { message: 'Entrada de medicamento registrada.' };
@@ -98,6 +99,7 @@ export class StockRepository {
       lote: data.lote ?? null,
       status: data.status ?? StockItemStatus.ATIVO,
       suspended_at: data.suspended_at ?? null,
+      preco: data.preco ?? null,
     });
 
     return { message: 'Entrada de insumo registrada.' };
@@ -194,7 +196,8 @@ export class StockRepository {
         em.status::text as status,
         em.suspended_at as suspenso_em,
         em.lote,
-        em.observacao
+        em.observacao,
+        em.preco
       FROM estoque_medicamento em
       JOIN medicamento m ON m.id = em.medicamento_id
       LEFT JOIN residente r ON r.num_casela = em.casela_id
@@ -223,7 +226,8 @@ export class StockRepository {
           ei.status::text as status,
           ei.suspended_at as suspenso_em,
           ei.lote,
-          null AS observacao
+          null AS observacao,
+          ei.preco
         FROM estoque_insumo ei
         JOIN insumo i ON i.id = ei.insumo_id
         LEFT JOIN residente r ON r.num_casela = ei.casela_id
@@ -255,7 +259,8 @@ export class StockRepository {
         ei.setor,
         ei.status as status,
         ei.suspended_at as suspenso_em,
-        ei.lote
+        ei.lote,
+        ei.preco
       FROM estoque_insumo ei
       JOIN insumo i ON i.id = ei.insumo_id
       LEFT JOIN residente r ON r.num_casela = ei.casela_id
@@ -494,6 +499,7 @@ export class StockRepository {
       lote?: string | null;
       casela_id?: number | null;
       tipo?: string;
+      preco?: number | null;
     },
   ) {
     if (tipo === ItemType.MEDICAMENTO) {
@@ -512,6 +518,7 @@ export class StockRepository {
       if ('setor' in data) updateData.setor = data.setor;
       if ('lote' in data) updateData.lote = data.lote ?? null;
       if ('casela_id' in data) updateData.casela_id = data.casela_id ?? null;
+      if ('preco' in data) updateData.preco = data.preco ?? null;
       if (data.tipo) updateData.tipo = data.tipo;
 
       if (updateData.armario_id != null && updateData.gaveta_id != null) {
@@ -569,6 +576,7 @@ export class StockRepository {
       if ('setor' in data) updateData.setor = data.setor;
       if ('lote' in data) updateData.lote = data.lote ?? null;
       if ('casela_id' in data) updateData.casela_id = data.casela_id ?? null;
+      if ('preco' in data) updateData.preco = data.preco ?? null;
       if (data.tipo != null && data.tipo !== '') {
         updateData.tipo = data.tipo;
       }

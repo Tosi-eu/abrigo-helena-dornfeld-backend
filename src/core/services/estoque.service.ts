@@ -7,14 +7,24 @@ import {
   QueryPaginationParams,
 } from '../utils/utils';
 import { CacheService } from './redis.service';
+import { PriceSearchService } from './price-search.service';
+import { MedicineRepository } from '../../infrastructure/database/repositories/medicamento.repository';
+import { InputRepository } from '../../infrastructure/database/repositories/insumo.repository';
 
 export class StockService {
+  private medicineRepo: MedicineRepository;
+  private inputRepo: InputRepository;
+
   constructor(
     private readonly repo: StockRepository,
     private readonly cache: CacheService,
-  ) {}
+    private readonly priceSearchService?: PriceSearchService,
+  ) {
+    this.medicineRepo = new MedicineRepository();
+    this.inputRepo = new InputRepository();
+  }
 
-  async medicineStockIn(data: MedicineStock) {
+  async medicineStockIn(data: MedicineStock): Promise<{ message: string; priceSearchResult?: { found: boolean; price: number | null } }> {
     if (
       !data.medicamento_id ||
       (!data.armario_id && !data.gaveta_id) ||
@@ -23,14 +33,61 @@ export class StockService {
       throw new Error('Campos obrigatórios faltando.');
     }
 
+    let priceSearchResult: { found: boolean; price: number | null } | undefined;
+
+    // Se o preço não foi informado, tentar buscar automaticamente
+    if (!data.preco && this.priceSearchService) {
+      console.log(`[STOCK IN] Preço não informado, iniciando busca automática para medicamento ID ${data.medicamento_id}`);
+      
+      try {
+        const medicine = await this.medicineRepo.findMedicineById(data.medicamento_id);
+        if (medicine) {
+          console.log(`[STOCK IN] Medicamento encontrado: ${medicine.nome} (${medicine.dosagem}${medicine.unidade_medida})`);
+          
+          const searchResult = await this.priceSearchService.searchPrice(
+            medicine.nome,
+            'medicine',
+            medicine.dosagem,
+            'São Carlos',
+            'São Paulo',
+            medicine.unidade_medida,
+          );
+
+          if (searchResult && searchResult.averagePrice !== null && searchResult.averagePrice > 0) {
+            const precoUnitario = searchResult.averagePrice;
+            const precoTotal = precoUnitario * data.quantidade;
+            console.log(`[STOCK IN] Preço unitário encontrado: R$ ${precoUnitario.toFixed(2)} (fonte: ${searchResult.source})`);
+            console.log(`[STOCK IN] Preço total (unitário × quantidade): R$ ${precoTotal.toFixed(2)} (${precoUnitario.toFixed(2)} × ${data.quantidade})`);
+            data.preco = precoTotal;
+            priceSearchResult = { found: true, price: precoUnitario };
+          } else {
+            console.log(`[STOCK IN] Nenhum preço encontrado para medicamento ID ${data.medicamento_id}`);
+            priceSearchResult = { found: false, price: null };
+          }
+        } else {
+          console.log(`[STOCK IN] Medicamento ID ${data.medicamento_id} não encontrado`);
+          priceSearchResult = { found: false, price: null };
+        }
+      } catch (error) {
+        console.error(`[STOCK IN] Erro ao buscar preço para medicamento ID ${data.medicamento_id}:`, error);
+        priceSearchResult = { found: false, price: null };
+      }
+    }
+
+    // Se o preço foi informado manualmente, multiplicar pela quantidade
+    if (data.preco && !priceSearchResult) {
+      data.preco = data.preco * data.quantidade;
+      console.log(`[STOCK IN] Preço manual informado multiplicado pela quantidade: R$ ${data.preco.toFixed(2)}`);
+    }
+
     const result = await this.repo.createMedicineStockIn(data);
 
     await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
 
-    return result;
+    return { ...result, priceSearchResult };
   }
 
-  async inputStockIn(data: InputStock) {
+  async inputStockIn(data: InputStock): Promise<{ message: string; priceSearchResult?: { found: boolean; price: number | null } }> {
     if (
       !data.insumo_id ||
       (!data.armario_id && !data.gaveta_id) ||
@@ -40,11 +97,57 @@ export class StockService {
       throw new Error('Campos obrigatórios faltando.');
     }
 
+    let priceSearchResult: { found: boolean; price: number | null } | undefined;
+
+    // Se o preço não foi informado, tentar buscar automaticamente
+    if (!data.preco && this.priceSearchService) {
+      console.log(`[STOCK IN] Preço não informado, iniciando busca automática para insumo ID ${data.insumo_id}`);
+      
+      try {
+        const input = await this.inputRepo.findInputById(data.insumo_id);
+        if (input) {
+          console.log(`[STOCK IN] Insumo encontrado: ${input.nome}`);
+          
+          const searchResult = await this.priceSearchService.searchPrice(
+            input.nome,
+            'input',
+            undefined,
+            'São Carlos',
+            'São Paulo',
+          );
+
+          if (searchResult && searchResult.averagePrice !== null && searchResult.averagePrice > 0) {
+            const precoUnitario = searchResult.averagePrice;
+            const precoTotal = precoUnitario * data.quantidade;
+            console.log(`[STOCK IN] Preço unitário encontrado: R$ ${precoUnitario.toFixed(2)} (fonte: ${searchResult.source})`);
+            console.log(`[STOCK IN] Preço total (unitário × quantidade): R$ ${precoTotal.toFixed(2)} (${precoUnitario.toFixed(2)} × ${data.quantidade})`);
+            data.preco = precoTotal;
+            priceSearchResult = { found: true, price: precoUnitario };
+          } else {
+            console.log(`[STOCK IN] Nenhum preço encontrado para insumo ID ${data.insumo_id}`);
+            priceSearchResult = { found: false, price: null };
+          }
+        } else {
+          console.log(`[STOCK IN] Insumo ID ${data.insumo_id} não encontrado`);
+          priceSearchResult = { found: false, price: null };
+        }
+      } catch (error) {
+        console.error(`[STOCK IN] Erro ao buscar preço para insumo ID ${data.insumo_id}:`, error);
+        priceSearchResult = { found: false, price: null };
+      }
+    }
+
+    // Se o preço foi informado manualmente, multiplicar pela quantidade
+    if (data.preco && !priceSearchResult) {
+      data.preco = data.preco * data.quantidade;
+      console.log(`[STOCK IN] Preço manual informado multiplicado pela quantidade: R$ ${data.preco.toFixed(2)}`);
+    }
+
     const result = await this.repo.createInputStockIn(data);
 
     await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
 
-    return result;
+    return { ...result, priceSearchResult };
   }
 
   async stockOut(data: {
@@ -197,6 +300,7 @@ export class StockService {
       lote?: string | null;
       casela_id?: number | null;
       tipo?: string;
+      preco?: number | null;
     },
   ) {
     if (tipo === ItemType.MEDICAMENTO) {

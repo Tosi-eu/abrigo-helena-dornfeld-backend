@@ -54,7 +54,7 @@ export class PriceSearchService {
     itemType: 'medicine' | 'input',
     dosage?: string,
     measurementUnit?: string,
-  ): Promise<void> {
+  ): Promise<{ found: boolean; price: number | null }> {
     try {
       console.log(`[PRICE SEARCH] Iniciando busca de preço para ${itemType} ID ${itemId}: "${itemName}" ${dosage || ''} ${measurementUnit || ''}`);
       
@@ -63,18 +63,14 @@ export class PriceSearchService {
       if (priceSearchResult && priceSearchResult.averagePrice !== null && priceSearchResult.averagePrice > 0) {
         console.log(`[PRICE SEARCH] Preço encontrado: R$ ${priceSearchResult.averagePrice.toFixed(2)} (fonte: ${priceSearchResult.source})`);
         
-        if (itemType === 'medicine') {
-          await this.medicineRepo.updatePriceById(itemId, priceSearchResult.averagePrice);
-          console.log(`[PRICE SEARCH] Preço atualizado no banco para medicamento ID ${itemId}`);
-        } else {
-          await this.inputRepo.updatePriceById(itemId, priceSearchResult.averagePrice);
-          console.log(`[PRICE SEARCH] Preço atualizado no banco para insumo ID ${itemId}`);
-        }
+        return { found: true, price: priceSearchResult.averagePrice };
       } else {
         console.log(`[PRICE SEARCH] Nenhum preço encontrado para ${itemType} ID ${itemId}`);
+        return { found: false, price: null };
       }
     } catch (error) {
       console.error(`[PRICE SEARCH] Erro ao buscar preço para ${itemType} ID ${itemId}:`, error);
+      return { found: false, price: null };
     }
   }
 

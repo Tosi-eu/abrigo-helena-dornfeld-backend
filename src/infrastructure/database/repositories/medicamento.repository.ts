@@ -9,7 +9,6 @@ export class MedicineRepository {
       unidade_medida: data.unidade_medida,
       principio_ativo: data.principio_ativo ?? null,
       estoque_minimo: data.estoque_minimo ?? 0,
-      preco: data.preco ?? null,
     });
 
     return {
@@ -19,7 +18,6 @@ export class MedicineRepository {
       unidade_medida: record.unidade_medida,
       estoque_minimo: record.estoque_minimo,
       principio_ativo: record.principio_ativo,
-      preco: record.preco ? Number(record.preco) : null,
     };
   }
 
@@ -40,7 +38,6 @@ export class MedicineRepository {
         unidade_medida: r.unidade_medida,
         estoque_minimo: r.estoque_minimo,
         principio_ativo: r.principio_ativo,
-        preco: r.preco ? Number(r.preco) : null,
       })),
       total: count,
       page,
@@ -58,7 +55,6 @@ export class MedicineRepository {
           unidade_medida: row.unidade_medida,
           estoque_minimo: row.estoque_minimo,
           principio_ativo: row.principio_ativo,
-          preco: row.preco ? Number(row.preco) : null,
         }
       : null;
   }
@@ -81,7 +77,6 @@ export class MedicineRepository {
           unidade_medida: updated.unidade_medida,
           estoque_minimo: updated.estoque_minimo,
           principio_ativo: updated.principio_ativo,
-          preco: updated.preco ? Number(updated.preco) : null,
         }
       : null;
   }
@@ -91,11 +86,4 @@ export class MedicineRepository {
     return count > 0;
   }
 
-  async updatePriceById(id: number, preco: number | null): Promise<boolean> {
-    const [affectedRows] = await MedicineModel.update(
-      { preco },
-      { where: { id } }
-    );
-    return affectedRows > 0;
-  }
 }

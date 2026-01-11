@@ -17,6 +17,7 @@ export interface MedicineStockAttributes {
   status?: StockItemStatus;
   suspended_at?: Date | null;
   observacao?: string | null;
+  preco?: number | null;
 }
 
 export class MedicineStockModel
@@ -37,6 +38,7 @@ export class MedicineStockModel
   declare status: StockItemStatus;
   declare suspended_at?: Date | null;
   declare observacao?: string | null;
+  declare preco?: number | null;
 }
 
 MedicineStockModel.init(
@@ -81,6 +83,10 @@ MedicineStockModel.init(
     },
     observacao: {
       type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    preco: {
+      type: DataTypes.DECIMAL(10, 2),
       allowNull: true,
     },
   },

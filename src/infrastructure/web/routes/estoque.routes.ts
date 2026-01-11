@@ -3,13 +3,19 @@ import { StockRepository } from '../../database/repositories/estoque.repository'
 import { StockService } from '../../../core/services/estoque.service';
 import { StockController } from '../controllers/estoque.controller';
 import { cacheService } from '../../database/redis/client.redis';
+import { PriceSearchService } from '../../../core/services/price-search.service';
+import { MedicineRepository } from '../../database/repositories/medicamento.repository';
+import { InputRepository } from '../../database/repositories/insumo.repository';
 import {
   validatePagination,
   validateEstoqueIdParam,
 } from '../../../middleware/validation.middleware';
 
 const repo = new StockRepository();
-const service = new StockService(repo, cacheService);
+const medicineRepo = new MedicineRepository();
+const inputRepo = new InputRepository();
+const priceSearchService = new PriceSearchService(cacheService, medicineRepo, inputRepo);
+const service = new StockService(repo, cacheService, priceSearchService);
 const controller = new StockController(service);
 
 const router = Router();

@@ -9,7 +9,6 @@ export class InputRepository {
       nome: input.nome,
       descricao: input.descricao ?? '',
       estoque_minimo: input.estoque_minimo,
-      preco: input.preco ? Number(input.preco) : null,
     };
   }
 
@@ -37,12 +36,23 @@ export class InputRepository {
         nome: r.nome,
         descricao: r.descricao ?? '',
         estoque_minimo: r.estoque_minimo,
-        preco: r.preco ? Number(r.preco) : null,
       })),
       total: count,
       page,
       limit,
       hasNext: offset + rows.length < count,
+    };
+  }
+
+  async findInputById(id: number): Promise<Input | null> {
+    const insumo = await InputModel.findByPk(id);
+    if (!insumo) return null;
+
+    return {
+      id: insumo.id,
+      nome: insumo.nome,
+      descricao: insumo.descricao ?? '',
+      estoque_minimo: insumo.estoque_minimo,
     };
   }
 
@@ -60,7 +70,6 @@ export class InputRepository {
       nome: updated.nome,
       descricao: updated.descricao ?? '',
       estoque_minimo: updated.estoque_minimo,
-      preco: updated.preco ? Number(updated.preco) : null,
     };
   }
 
@@ -68,11 +77,4 @@ export class InputRepository {
     return (await InputModel.destroy({ where: { id } })) > 0;
   }
 
-  async updatePriceById(id: number, preco: number | null): Promise<boolean> {
-    const [affectedRows] = await InputModel.update(
-      { preco },
-      { where: { id } }
-    );
-    return affectedRows > 0;
-  }
 }

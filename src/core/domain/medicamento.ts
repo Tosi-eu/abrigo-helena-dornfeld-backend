@@ -5,5 +5,4 @@ export interface Medicine {
   unidade_medida: string;
   estoque_minimo?: number;
   principio_ativo: string;
-  preco?: number | null;
 }

@@ -21,11 +21,4 @@ export class InputService {
   deleteInput(id: number) {
     return this.repo.deleteInputById(id);
   }
-
-  async updatePrice(id: number, preco: number | null): Promise<boolean> {
-    if (preco !== null && preco < 0) {
-      throw new Error('Preço não pode ser negativo.');
-    }
-    return this.repo.updatePriceById(id, preco);
-  }
 }

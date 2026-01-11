@@ -16,7 +16,6 @@ const router = Router();
 router.post('/', (req, res) => controller.create(req, res));
 router.get('/', validatePagination, (req, res) => controller.getAll(req, res));
 router.put('/:id', validateIdParam, (req, res) => controller.update(req, res));
-router.patch('/:id/preco', validateIdParam, (req, res) => controller.updatePrice(req, res));
 router.delete('/:id', validateIdParam, (req, res) =>
   controller.delete(req, res),
 );

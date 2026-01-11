@@ -229,13 +229,13 @@ export class ReportRepository {
         m.dosagem,
         m.unidade_medida,
         m.principio_ativo,
-        m.preco,
+        AVG(em.preco) AS preco,
         COALESCE(SUM(em.quantidade), 0) AS quantidade_estoque,
         STRING_AGG(DISTINCT em.observacao, '; ') FILTER (WHERE em.observacao IS NOT NULL AND em.observacao != '') AS observacao
       FROM ESTOQUE_MEDICAMENTO em
       JOIN MEDICAMENTO m ON m.id = em.medicamento_id
       WHERE em.casela_id = :casela
-      GROUP BY m.id, m.nome, m.dosagem, m.unidade_medida, m.principio_ativo, m.preco
+      GROUP BY m.id, m.nome, m.dosagem, m.unidade_medida, m.principio_ativo
       ORDER BY m.nome;
     `;
 
@@ -261,12 +261,12 @@ export class ReportRepository {
         i.id,
         i.nome,
         i.descricao,
-        i.preco,
+        AVG(ei.preco) AS preco,
         COALESCE(SUM(ei.quantidade), 0) AS quantidade_estoque
       FROM ESTOQUE_INSUMO ei
       JOIN INSUMO i ON i.id = ei.insumo_id
       WHERE ei.casela_id = :casela
-      GROUP BY i.id, i.nome, i.descricao, i.preco
+      GROUP BY i.id, i.nome, i.descricao
       ORDER BY i.nome;
     `;
 

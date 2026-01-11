@@ -6,7 +6,6 @@ export interface InputAttrs {
   nome: string;
   descricao?: string | null;
   estoque_minimo?: number;
-  preco?: number | null;
 }
 
 export interface InsumoCreationAttributes extends Optional<InputAttrs, 'id'> {}
@@ -19,7 +18,6 @@ export class InputModel
   declare nome: string;
   declare descricao?: string | null;
   declare estoque_minimo?: number;
-  declare preco?: number | null;
 }
 
 InputModel.init(
@@ -39,10 +37,6 @@ InputModel.init(
     },
     estoque_minimo: {
       type: DataTypes.INTEGER,
-      allowNull: true,
-    },
-    preco: {
-      type: DataTypes.DECIMAL(10, 2),
       allowNull: true,
     },
   },

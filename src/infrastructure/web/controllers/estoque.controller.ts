@@ -190,6 +190,7 @@ export class StockController {
         setor?: string;
         lote?: string | null;
         casela_id?: number | null;
+        preco?: number | null;
       };
 
       const itemTipo = body.tipo;
