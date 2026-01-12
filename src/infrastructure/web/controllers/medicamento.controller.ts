@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { MedicineService } from '../../../core/services/medicamento.service';
 import { ValidatedRequest } from '../../../middleware/validation.middleware';
 import { sendErrorResponse } from '../../helpers/error-response.helper';
+import { handleETagResponse } from '../../helpers/etag.helper';
 
 export interface PaginationParams {
   page: number;
@@ -24,6 +25,11 @@ export class MedicineController {
     const { page, limit } = req.validated!;
 
     const list = await this.service.findAll({ page, limit });
+
+    if (handleETagResponse(req, res, list)) {
+      return; 
+    }
+    
     res.json(list);
   }
 

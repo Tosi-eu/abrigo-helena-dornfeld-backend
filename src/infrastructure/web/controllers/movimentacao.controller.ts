@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { MovementService } from '../../../core/services/movimentacao.service';
 import { ValidatedRequest } from '../../../middleware/validation.middleware';
 import { sendErrorResponse } from '../../helpers/error-response.helper';
+import { handleETagResponse } from '../../helpers/etag.helper';
 
 export class MovementController {
   constructor(private readonly service: MovementService) {}
@@ -18,6 +19,10 @@ export class MovementController {
         page,
         limit,
       });
+
+      if (handleETagResponse(req, res, result)) {
+        return; 
+      }
 
       res.json(result);
     } catch (error: unknown) {
@@ -37,6 +42,10 @@ export class MovementController {
         page,
         limit,
       });
+
+      if (handleETagResponse(req, res, result)) {
+        return; 
+      }
 
       res.json(result);
     } catch (error: unknown) {
@@ -64,6 +73,10 @@ export class MovementController {
         limit,
       });
 
+      if (handleETagResponse(req, res, result)) {
+        return;
+      }
+
       res.json(result);
     } catch (error: unknown) {
       return sendErrorResponse(res, 500, error, 'Erro ao buscar ranking');
@@ -74,6 +87,11 @@ export class MovementController {
     try {
       const limit = Math.min(100, Number(req.query.limit) || 10);
       const result = await this.service.getNonMovementedMedicines(limit);
+      
+      if (handleETagResponse(req, res, result)) {
+        return; 
+      }
+      
       return res.json(result);
     } catch (error: unknown) {
       return sendErrorResponse(res, 500, error, 'Erro ao buscar medicamentos');

@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { InputService } from '../../../core/services/insumo.service';
 import { ValidatedRequest } from '../../../middleware/validation.middleware';
 import { sendErrorResponse } from '../../helpers/error-response.helper';
+import { handleETagResponse } from '../../helpers/etag.helper';
 
 export class InsumoController {
   constructor(private readonly service: InputService) {}
@@ -19,6 +20,11 @@ export class InsumoController {
     const { page, limit } = req.validated!;
 
     const list = await this.service.listPaginated(page, limit);
+    
+    if (handleETagResponse(req, res, list)) {
+      return; 
+    }
+    
     return res.json(list);
   }
 

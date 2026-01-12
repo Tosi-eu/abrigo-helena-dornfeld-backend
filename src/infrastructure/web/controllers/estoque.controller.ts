@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { StockService } from '../../../core/services/estoque.service';
 import { sendErrorResponse } from '../../helpers/error-response.helper';
+import { handleETagResponse } from '../../helpers/etag.helper';
 import { ItemType } from '../../../core/utils/utils';
 
 export class StockController {
@@ -44,6 +45,10 @@ export class StockController {
         limit: Number(limit) || 10,
       });
 
+      if (handleETagResponse(req, res, data)) {
+        return; 
+      }
+
       return res.json(data);
     } catch (error: unknown) {
       return sendErrorResponse(res, 500, error, 'Erro ao listar estoque');
@@ -70,7 +75,7 @@ export class StockController {
       const pct = (v: number) =>
         totalGeral > 0 ? Number(((v / totalGeral) * 100).toFixed(2)) : 0;
 
-      return res.json({
+      const responseData = {
         percentuais: {
           medicamentos_geral: pct(data.medicamentos_geral),
           medicamentos_individual: pct(data.medicamentos_individual),
@@ -82,7 +87,13 @@ export class StockController {
           ...data,
           total_geral: totalGeral,
         },
-      });
+      };
+
+      if (handleETagResponse(req, res, responseData)) {
+        return; 
+      }
+
+      return res.json(responseData);
     } catch (error: unknown) {
       return sendErrorResponse(res, 500, error, 'Erro ao calcular proporção');
     }
