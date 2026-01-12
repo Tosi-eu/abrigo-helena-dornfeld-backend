@@ -130,8 +130,8 @@ export class PriceSearchService {
         console.log(`[PRICE SEARCH] Mercado Livre encontrou ${mercadoLivrePrices.length} preços`);
         allFoundPrices.push(...mercadoLivrePrices);
       }
-    } catch (error: any) {
-      const errorMessage = error.message || String(error);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       console.error(`[PRICE SEARCH] Erro ao buscar no Mercado Livre: ${errorMessage}`);
     }
 
@@ -141,8 +141,8 @@ export class PriceSearchService {
         console.log(`[PRICE SEARCH] Buscapé encontrou ${buscapePrices.length} preços`);
         allFoundPrices.push(...buscapePrices);
       }
-    } catch (error: any) {
-      const errorMessage = error.message || String(error);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       console.error(`[PRICE SEARCH] Erro ao buscar no Buscapé: ${errorMessage}`);
     }
 
@@ -222,9 +222,11 @@ export class PriceSearchService {
               console.log(`[PRICE SEARCH] HTML recebido mas nenhum preço encontrado`);
             }
           }
-        } catch (urlRequestError: any) {
-          const errorCode = urlRequestError.code;
-          const errorMessage = urlRequestError.message || String(urlRequestError);
+        } catch (urlRequestError: unknown) {
+          const errorCode = urlRequestError && typeof urlRequestError === 'object' && 'code' in urlRequestError 
+            ? (urlRequestError as { code?: string }).code 
+            : undefined;
+          const errorMessage = urlRequestError instanceof Error ? urlRequestError.message : String(urlRequestError);
           
           if (errorCode === 'EAI_AGAIN' || errorCode === 'ENOTFOUND' || errorMessage.includes('getaddrinfo')) {
             console.error(`[PRICE SEARCH] Erro de DNS/conectividade na URL ${searchUrl}. Pulando para próxima URL...`);
@@ -346,8 +348,8 @@ export class PriceSearchService {
       }
 
       return null;
-    } catch (error: any) {
-      const errorMessage = error.message || String(error);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       console.error(`[PRICE SEARCH] Erro ao buscar no Mercado Livre: ${errorMessage}`);
       return null;
     }
@@ -399,8 +401,8 @@ export class PriceSearchService {
       }
 
       return null;
-    } catch (error: any) {
-      const errorMessage = error.message || String(error);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       console.error(`[PRICE SEARCH] Erro ao buscar no Buscapé: ${errorMessage}`);
       return null;
     }
@@ -687,36 +689,40 @@ export class PriceSearchService {
     return finalFiltered;
   }
 
-  private async retryRequest(
-    requestFn: () => Promise<any>,
+  private async retryRequest<T>(
+    requestFn: () => Promise<T>,
     maxRetries: number = 3,
     delayMs: number = 1000,
-  ): Promise<any> {
-    let lastError: any = null;
+  ): Promise<T> {
+    let lastError: unknown = null;
     
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         return await requestFn();
-      } catch (error: any) {
+      } catch (error: unknown) {
         lastError = error;
-        const isNetworkError = error.code === 'EAI_AGAIN' || 
-                              error.code === 'ECONNREFUSED' || 
-                              error.code === 'ETIMEDOUT' ||
-                              error.code === 'ENOTFOUND' ||
-                              error.code === 'ECONNRESET' ||
-                              error.message?.includes('getaddrinfo') ||
-                              error.message?.includes('network') ||
-                              error.message?.includes('timeout');
+        const errorCode = error && typeof error === 'object' && 'code' in error 
+          ? (error as { code?: string }).code 
+          : undefined;
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        const isNetworkError = errorCode === 'EAI_AGAIN' || 
+                              errorCode === 'ECONNREFUSED' || 
+                              errorCode === 'ETIMEDOUT' ||
+                              errorCode === 'ENOTFOUND' ||
+                              errorCode === 'ECONNRESET' ||
+                              errorMessage.includes('getaddrinfo') ||
+                              errorMessage.includes('network') ||
+                              errorMessage.includes('timeout');
         
         if (isNetworkError && attempt < maxRetries) {
           const waitTime = delayMs * Math.pow(2, attempt - 1);
-          console.log(`[PRICE SEARCH] Erro de rede (tentativa ${attempt}/${maxRetries}). Código: ${error.code}. Aguardando ${waitTime}ms antes de tentar novamente...`);
+          console.log(`[PRICE SEARCH] Erro de rede (tentativa ${attempt}/${maxRetries}). Código: ${errorCode || 'N/A'}. Aguardando ${waitTime}ms antes de tentar novamente...`);
           await new Promise(resolve => setTimeout(resolve, waitTime));
           continue;
         }
         
         if (attempt === maxRetries) {
-          console.error(`[PRICE SEARCH] Todas as tentativas falharam após ${maxRetries} tentativas. Erro: ${error.message || error.code || error}`);
+          console.error(`[PRICE SEARCH] Todas as tentativas falharam após ${maxRetries} tentativas. Erro: ${errorMessage || errorCode || String(error)}`);
           throw error;
         }
       }

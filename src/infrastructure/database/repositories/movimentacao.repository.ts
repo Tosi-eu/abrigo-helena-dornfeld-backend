@@ -10,6 +10,7 @@ import { formatDateToPtBr } from '../../helpers/date.helper';
 import { sequelize } from '../sequelize';
 import { NonMovementedItem } from '../../../core/utils/utils';
 import { MovementWhereOptions } from '../../types/sequelize.types';
+import { MovementRowWithAssociations } from '../../types/movimentacao.types';
 
 export interface MovementQueryParams {
   days?: number;
@@ -188,21 +189,20 @@ export class MovementRepository {
     });
 
     const data = result.map(r => {
-      const row =
+      const row: MovementRowWithAssociations =
         r && typeof r === 'object' && 'get' in r && typeof r.get === 'function'
           ? (
               r as {
-                get: (options: { plain: true }) => Record<string, unknown>;
+                get: (options: { plain: true }) => MovementRowWithAssociations;
               }
             ).get({ plain: true })
-          : (r as unknown as Record<string, unknown>);
+          : (r as unknown as MovementRowWithAssociations);
 
       const medicamento = row.MedicineModel
         ? {
-            id: (row.MedicineModel as { id: number }).id,
-            nome: (row.MedicineModel as { nome: string }).nome,
-            principio_ativo: (row.MedicineModel as { principio_ativo: string })
-              .principio_ativo,
+            id: row.MedicineModel.id,
+            nome: row.MedicineModel.nome,
+            principio_ativo: row.MedicineModel.principio_ativo,
           }
         : null;
 
