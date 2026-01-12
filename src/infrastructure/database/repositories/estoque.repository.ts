@@ -5,7 +5,7 @@ import MedicineStockModel, {
 import InputStockModel, {
   InputStockAttributes,
 } from '../models/estoque-insumo.model';
-import { Op } from 'sequelize';
+import { Op, fn, col } from 'sequelize';
 import MedicineModel from '../models/medicamento.model';
 import InputModel from '../models/insumo.model';
 import ResidentModel from '../models/residente.model';
@@ -155,27 +155,59 @@ export class StockRepository {
     if (type === 'armarios') {
       const cabinets = await CabinetModel.findAll({
         order: [['num_armario', 'ASC']],
+        attributes: ['num_armario'],
       });
 
-      const results = await Promise.all(
-        cabinets.map(async (cabinet) => {
-          const totalMedicamentos = await MedicineStockModel.sum('quantidade', {
-            where: { armario_id: cabinet.num_armario },
-          });
+      const cabinetIds = cabinets.map(c => c.num_armario);
 
-          const totalInsumos = await InputStockModel.sum('quantidade', {
-            where: { armario_id: cabinet.num_armario },
-          });
+      const medicineTotals = await MedicineStockModel.findAll({
+        attributes: [
+          'armario_id',
+          [fn('SUM', col('quantidade')), 'total'],
+        ],
+        where: {
+          armario_id: { [Op.in]: cabinetIds },
+        },
+        group: ['armario_id'],
+        raw: true,
+      });
 
-          return {
-            armario_id: cabinet.num_armario,
-            total_medicamentos: Number(totalMedicamentos || 0),
-            total_insumos: Number(totalInsumos || 0),
-            total_geral:
-              Number(totalMedicamentos || 0) + Number(totalInsumos || 0),
-          };
-        }),
+      const inputTotals = await InputStockModel.findAll({
+        attributes: [
+          'armario_id',
+          [fn('SUM', col('quantidade')), 'total'],
+        ],
+        where: {
+          armario_id: { [Op.in]: cabinetIds },
+        },
+        group: ['armario_id'],
+        raw: true,
+      });
+
+      const medicineMap = new Map(
+        medicineTotals.map((item: any) => [
+          item.armario_id,
+          Number(item.total || 0),
+        ]),
       );
+      const inputMap = new Map(
+        inputTotals.map((item: any) => [
+          item.armario_id,
+          Number(item.total || 0),
+        ]),
+      );
+
+      const results = cabinets.map(cabinet => {
+        const totalMedicamentos = medicineMap.get(cabinet.num_armario) || 0;
+        const totalInsumos = inputMap.get(cabinet.num_armario) || 0;
+
+        return {
+          armario_id: cabinet.num_armario,
+          total_medicamentos: totalMedicamentos,
+          total_insumos: totalInsumos,
+          total_geral: totalMedicamentos + totalInsumos,
+        };
+      });
 
       return {
         data: results,
@@ -189,27 +221,59 @@ export class StockRepository {
     if (type === StockQueryType.GAVETAS) {
       const drawers = await DrawerModel.findAll({
         order: [['num_gaveta', 'ASC']],
+        attributes: ['num_gaveta'],
       });
 
-      const results = await Promise.all(
-        drawers.map(async (drawer) => {
-          const totalMedicamentos = await MedicineStockModel.sum('quantidade', {
-            where: { gaveta_id: drawer.num_gaveta },
-          });
+      const drawerIds = drawers.map(d => d.num_gaveta);
 
-          const totalInsumos = await InputStockModel.sum('quantidade', {
-            where: { gaveta_id: drawer.num_gaveta },
-          });
+      const medicineTotals = await MedicineStockModel.findAll({
+        attributes: [
+          'gaveta_id',
+          [fn('SUM', col('quantidade')), 'total'],
+        ],
+        where: {
+          gaveta_id: { [Op.in]: drawerIds },
+        },
+        group: ['gaveta_id'],
+        raw: true,
+      });
 
-          return {
-            gaveta_id: drawer.num_gaveta,
-            total_medicamentos: Number(totalMedicamentos || 0),
-            total_insumos: Number(totalInsumos || 0),
-            total_geral:
-              Number(totalMedicamentos || 0) + Number(totalInsumos || 0),
-          };
-        }),
+      const inputTotals = await InputStockModel.findAll({
+        attributes: [
+          'gaveta_id',
+          [fn('SUM', col('quantidade')), 'total'],
+        ],
+        where: {
+          gaveta_id: { [Op.in]: drawerIds },
+        },
+        group: ['gaveta_id'],
+        raw: true,
+      });
+
+      const medicineMap = new Map(
+        medicineTotals.map((item: any) => [
+          item.gaveta_id,
+          Number(item.total || 0),
+        ]),
       );
+      const inputMap = new Map(
+        inputTotals.map((item: any) => [
+          item.gaveta_id,
+          Number(item.total || 0),
+        ]),
+      );
+
+      const results = drawers.map(drawer => {
+        const totalMedicamentos = medicineMap.get(drawer.num_gaveta) || 0;
+        const totalInsumos = inputMap.get(drawer.num_gaveta) || 0;
+
+        return {
+          gaveta_id: drawer.num_gaveta,
+          total_medicamentos: totalMedicamentos,
+          total_insumos: totalInsumos,
+          total_geral: totalMedicamentos + totalInsumos,
+        };
+      });
 
       return {
         data: results,
@@ -342,7 +406,6 @@ export class StockRepository {
         const input = plainStock.InputModel as InputModel | undefined;
         const resident = plainStock.ResidentModel as ResidentModel | undefined;
 
-        // Apply belowMin filter after fetching
         if (filter === StockFilterType.BELOW_MIN) {
           const estoqueMinimo = input?.estoque_minimo || 0;
           if (stock.quantidade > estoqueMinimo) continue;
@@ -374,7 +437,6 @@ export class StockRepository {
       }
     }
 
-    // Sort by nome and apply pagination if needed
     results.sort((a, b) => {
       const nomeA = (a.nome || '').toLowerCase();
       const nomeB = (b.nome || '').toLowerCase();

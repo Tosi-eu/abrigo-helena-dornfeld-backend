@@ -1,5 +1,6 @@
 import { Response, NextFunction } from 'express';
 import { AuthRequest } from './auth.middleware';
+import { logger } from '../infrastructure/helpers/logger.helper';
 
 export function auditLog(req: AuthRequest, res: Response, next: NextFunction) {
   const startTime = Date.now();
@@ -53,6 +54,9 @@ function logAuditEvent(
       success: statusCode >= 200 && statusCode < 400,
     };
 
-    console.log('[AUDIT]', JSON.stringify(logEntry));
+    logger.logSecurity('Audit log', {
+      ...logEntry,
+      operation: 'audit',
+    });
   }
 }

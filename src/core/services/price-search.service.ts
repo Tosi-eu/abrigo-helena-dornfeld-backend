@@ -3,6 +3,7 @@ import { load } from 'cheerio';
 import { CacheService } from './redis.service';
 import { MedicineRepository } from '../../infrastructure/database/repositories/medicamento.repository';
 import { InputRepository } from '../../infrastructure/database/repositories/insumo.repository';
+import { logger } from '../../infrastructure/helpers/logger.helper';
 
 export interface PriceSearchResult {
   averagePrice: number | null;
@@ -56,20 +57,41 @@ export class PriceSearchService {
     measurementUnit?: string,
   ): Promise<{ found: boolean; price: number | null }> {
     try {
-      console.log(`[PRICE SEARCH] Iniciando busca de preço para ${itemType} ID ${itemId}: "${itemName}" ${dosage || ''} ${measurementUnit || ''}`);
+      logger.debug('Iniciando busca de preço', {
+        operation: 'price_search',
+        itemType,
+        itemId,
+        itemName,
+        dosage,
+        measurementUnit,
+      });
       
       const priceSearchResult = await this.searchPrice(itemName, itemType, dosage, 'São Carlos', 'São Paulo', measurementUnit);
 
       if (priceSearchResult && priceSearchResult.averagePrice !== null && priceSearchResult.averagePrice > 0) {
-        console.log(`[PRICE SEARCH] Preço encontrado: R$ ${priceSearchResult.averagePrice.toFixed(2)} (fonte: ${priceSearchResult.source})`);
+        logger.info('Preço encontrado', {
+          operation: 'price_search',
+          itemType,
+          itemId,
+          preco: priceSearchResult.averagePrice.toFixed(2),
+          fonte: priceSearchResult.source,
+        });
         
         return { found: true, price: priceSearchResult.averagePrice };
       } else {
-        console.log(`[PRICE SEARCH] Nenhum preço encontrado para ${itemType} ID ${itemId}`);
+        logger.info('Nenhum preço encontrado', {
+          operation: 'price_search',
+          itemType,
+          itemId,
+        });
         return { found: false, price: null };
       }
     } catch (error) {
-      console.error(`[PRICE SEARCH] Erro ao buscar preço para ${itemType} ID ${itemId}:`, error);
+      logger.error('Erro ao buscar preço', {
+        operation: 'price_search',
+        itemType,
+        itemId,
+      }, error as Error);
       return { found: false, price: null };
     }
   }
@@ -102,7 +124,7 @@ export class PriceSearchService {
         foundPrices.push(consultaRemediosPrice);
       }
     } catch (error) {
-      console.error('Erro ao buscar no Consulta Remédios:', error);
+      logger.error('Erro ao buscar no Consulta Remédios', { operation: 'price_search', source: 'consulta_remedios' }, error as Error);
     }
 
     if (foundPrices.length > 0) {
@@ -127,43 +149,71 @@ export class PriceSearchService {
     try {
       const mercadoLivrePrices = await this.searchMercadoLivreAllPrices(inputName, city, state);
       if (mercadoLivrePrices && mercadoLivrePrices.length > 0) {
-        console.log(`[PRICE SEARCH] Mercado Livre encontrou ${mercadoLivrePrices.length} preços`);
+        logger.debug('Mercado Livre encontrou preços', {
+          operation: 'price_search',
+          source: 'mercado_livre',
+          quantidade: mercadoLivrePrices.length,
+        });
         allFoundPrices.push(...mercadoLivrePrices);
       }
     } catch (error: any) {
       const errorMessage = error.message || String(error);
-      console.error(`[PRICE SEARCH] Erro ao buscar no Mercado Livre: ${errorMessage}`);
+      logger.error('Erro ao buscar no Mercado Livre', {
+        operation: 'price_search',
+        source: 'mercado_livre',
+        errorMessage,
+      });
     }
 
     try {
       const buscapePrices = await this.searchBuscapeAllPrices(inputName);
       if (buscapePrices && buscapePrices.length > 0) {
-        console.log(`[PRICE SEARCH] Buscapé encontrou ${buscapePrices.length} preços`);
+        logger.debug('Buscapé encontrou preços', {
+          operation: 'price_search',
+          source: 'buscape',
+          quantidade: buscapePrices.length,
+        });
         allFoundPrices.push(...buscapePrices);
       }
     } catch (error: any) {
       const errorMessage = error.message || String(error);
-      console.error(`[PRICE SEARCH] Erro ao buscar no Buscapé: ${errorMessage}`);
+      logger.error('Erro ao buscar no Buscapé', {
+        operation: 'price_search',
+        source: 'buscape',
+        errorMessage,
+      });
     }
 
     if (allFoundPrices.length === 0) {
       return null;
     }
 
-    console.log(`[PRICE SEARCH] Total de preços coletados de todas as fontes: ${allFoundPrices.length}`);
-    console.log(`[PRICE SEARCH] Preços encontrados (antes de filtrar outliers): ${allFoundPrices.sort((a, b) => a - b).join(', ')}`);
+    logger.debug('Total de preços coletados', {
+      operation: 'price_search',
+      totalPrecos: allFoundPrices.length,
+      precos: allFoundPrices.sort((a, b) => a - b).map(p => p.toFixed(2)),
+    });
 
     const pricesWithoutOutliers = this.removeOutliersUsingIQR(allFoundPrices);
 
     if (pricesWithoutOutliers.length === 0) {
-      console.log(`[PRICE SEARCH] Todos os preços foram considerados outliers`);
+      logger.warn('Todos os preços foram considerados outliers', {
+        operation: 'price_search',
+      });
       return null;
     }
 
-    console.log(`[PRICE SEARCH] Preços após remoção de outliers: ${pricesWithoutOutliers.sort((a, b) => a - b).join(', ')}`);
+    logger.debug('Preços após remoção de outliers', {
+      operation: 'price_search',
+      precos: pricesWithoutOutliers.sort((a, b) => a - b).map(p => p.toFixed(2)),
+    });
 
     const averagePrice = pricesWithoutOutliers.reduce((sum, price) => sum + price, 0) / pricesWithoutOutliers.length;
-    console.log(`[PRICE SEARCH] Preço médio calculado: R$ ${averagePrice.toFixed(2)} (de ${pricesWithoutOutliers.length} preços válidos)`);
+    logger.debug('Preço médio calculado', {
+      operation: 'price_search',
+      precoMedio: averagePrice.toFixed(2),
+      quantidadeValidos: pricesWithoutOutliers.length,
+    });
     
     return {
       averagePrice: Math.round(averagePrice * 100) / 100,
@@ -180,8 +230,14 @@ export class PriceSearchService {
     try {
       const normalizedUrlPath = this.normalizeForConsultaRemediosUrl(medicineName, dosage, measurementUnit);
       
-      console.log(`[PRICE SEARCH] Buscando: "${medicineName}" ${dosage || ''} ${measurementUnit || ''}`);
-      console.log(`[PRICE SEARCH] URL normalizada: ${normalizedUrlPath}`);
+      logger.debug('Buscando no Consulta Remédios', {
+        operation: 'price_search',
+        source: 'consulta_remedios',
+        medicineName,
+        dosage,
+        measurementUnit,
+        normalizedUrlPath,
+      });
       
       const searchUrlOptions = [
         `https://www.consultaremedios.com.br/b/${normalizedUrlPath}`,
@@ -190,7 +246,11 @@ export class PriceSearchService {
 
       for (const searchUrl of searchUrlOptions) {
         try {
-          console.log(`[PRICE SEARCH] Tentando URL: ${searchUrl}`);
+          logger.debug('Tentando URL', {
+            operation: 'price_search',
+            source: 'consulta_remedios',
+            url: searchUrl,
+          });
           
           const httpResponse = await this.retryRequest(async () => {
             return await axios.get(searchUrl, {
@@ -211,15 +271,26 @@ export class PriceSearchService {
             });
           }, 3, 2000);
 
-          console.log(`[PRICE SEARCH] Resposta recebida: Status ${httpResponse.status}`);
+          logger.debug('Resposta recebida', {
+            operation: 'price_search',
+            source: 'consulta_remedios',
+            statusCode: httpResponse.status,
+          });
 
           if (httpResponse.status === 200 && httpResponse.data) {
             const extractedPrice = this.parsePriceFromHtml(httpResponse.data, normalizedUrlPath);
             if (extractedPrice) {
-              console.log(`[PRICE SEARCH] Preço extraído: R$ ${extractedPrice.toFixed(2)}`);
+              logger.info('Preço extraído', {
+                operation: 'price_search',
+                source: 'consulta_remedios',
+                preco: extractedPrice.toFixed(2),
+              });
               return extractedPrice;
             } else {
-              console.log(`[PRICE SEARCH] HTML recebido mas nenhum preço encontrado`);
+              logger.debug('HTML recebido mas nenhum preço encontrado', {
+                operation: 'price_search',
+                source: 'consulta_remedios',
+              });
             }
           }
         } catch (urlRequestError: any) {
@@ -227,19 +298,35 @@ export class PriceSearchService {
           const errorMessage = urlRequestError.message || String(urlRequestError);
           
           if (errorCode === 'EAI_AGAIN' || errorCode === 'ENOTFOUND' || errorMessage.includes('getaddrinfo')) {
-            console.error(`[PRICE SEARCH] Erro de DNS/conectividade na URL ${searchUrl}. Pulando para próxima URL...`);
+            logger.error('Erro de DNS/conectividade', {
+              operation: 'price_search',
+              source: 'consulta_remedios',
+              url: searchUrl,
+            });
           } else {
-            console.error(`[PRICE SEARCH] Erro na URL ${searchUrl}: ${errorMessage} (código: ${errorCode || 'N/A'})`);
+            logger.error('Erro na URL', {
+              operation: 'price_search',
+              source: 'consulta_remedios',
+              url: searchUrl,
+              errorMessage,
+              errorCode: errorCode || 'N/A',
+            });
           }
           continue;
         }
       }
 
-      console.log(`[PRICE SEARCH] Nenhum preço encontrado após todas as tentativas`);
+      logger.info('Nenhum preço encontrado após todas as tentativas', {
+        operation: 'price_search',
+        source: 'consulta_remedios',
+      });
       return null;
 
     } catch (error) {
-      console.error('[PRICE SEARCH] Erro ao buscar no Consulta Remédios:', error);
+      logger.error('Erro ao buscar no Consulta Remédios', {
+        operation: 'price_search',
+        source: 'consulta_remedios',
+      }, error as Error);
       return null;
     }
   }
@@ -348,7 +435,11 @@ export class PriceSearchService {
       return null;
     } catch (error: any) {
       const errorMessage = error.message || String(error);
-      console.error(`[PRICE SEARCH] Erro ao buscar no Mercado Livre: ${errorMessage}`);
+      logger.error('Erro ao buscar no Mercado Livre', {
+        operation: 'price_search',
+        source: 'mercado_livre',
+        errorMessage,
+      });
       return null;
     }
   }
@@ -401,7 +492,11 @@ export class PriceSearchService {
       return null;
     } catch (error: any) {
       const errorMessage = error.message || String(error);
-      console.error(`[PRICE SEARCH] Erro ao buscar no Buscapé: ${errorMessage}`);
+      logger.error('Erro ao buscar no Buscapé', {
+        operation: 'price_search',
+        source: 'buscape',
+        errorMessage,
+      });
       return null;
     }
   }
@@ -468,7 +563,9 @@ export class PriceSearchService {
       return validPrices;
 
     } catch (error) {
-      console.error('[PRICE SEARCH] Erro ao extrair preços do HTML:', error);
+      logger.error('Erro ao extrair preços do HTML', {
+        operation: 'price_search',
+      }, error as Error);
       return [];
     }
   }
@@ -477,23 +574,37 @@ export class PriceSearchService {
     const validPrices = this.extractAllPricesFromHtml(htmlContent, searchTerm);
 
     if (validPrices.length === 0) {
-      console.log(`[PRICE SEARCH] Nenhum preço válido encontrado no HTML`);
+      logger.debug('Nenhum preço válido encontrado no HTML', {
+        operation: 'price_search',
+      });
       return null;
     }
 
-    console.log(`[PRICE SEARCH] Preços encontrados (antes de filtrar outliers): ${validPrices.sort((a, b) => a - b).join(', ')}`);
+    logger.debug('Preços encontrados (antes de filtrar outliers)', {
+      operation: 'price_search',
+      precos: validPrices.sort((a, b) => a - b).map(p => p.toFixed(2)),
+    });
 
     const pricesWithoutOutliers = this.removeOutliersUsingIQR(validPrices);
 
     if (pricesWithoutOutliers.length === 0) {
-      console.log(`[PRICE SEARCH] Todos os preços foram considerados outliers`);
+      logger.warn('Todos os preços foram considerados outliers', {
+        operation: 'price_search',
+      });
       return null;
     }
 
-    console.log(`[PRICE SEARCH] Preços após remoção de outliers: ${pricesWithoutOutliers.sort((a, b) => a - b).join(', ')}`);
+    logger.debug('Preços após remoção de outliers', {
+      operation: 'price_search',
+      precos: pricesWithoutOutliers.sort((a, b) => a - b).map(p => p.toFixed(2)),
+    });
 
     const averagePrice = pricesWithoutOutliers.reduce((sum, price) => sum + price, 0) / pricesWithoutOutliers.length;
-    console.log(`[PRICE SEARCH] Preço médio calculado: R$ ${averagePrice.toFixed(2)} (de ${pricesWithoutOutliers.length} preços válidos)`);
+    logger.debug('Preço médio calculado', {
+      operation: 'price_search',
+      precoMedio: averagePrice.toFixed(2),
+      quantidadeValidos: pricesWithoutOutliers.length,
+    });
     return Math.round(averagePrice * 100) / 100;
   }
 
@@ -588,15 +699,23 @@ export class PriceSearchService {
     const medianIndex = Math.floor(sortedPrices.length * 0.5);
     const median = sortedPrices[medianIndex];
     
-    console.log(`[PRICE SEARCH] Análise de outliers - Preços: [${sortedPrices.map(p => p.toFixed(2)).join(', ')}]`);
-    console.log(`[PRICE SEARCH] Estatísticas: Min=${minPrice.toFixed(2)} | Max=${maxPrice.toFixed(2)} | Mediana=${median.toFixed(2)}`);
+    logger.debug('Análise de outliers', {
+      operation: 'price_search',
+      precos: sortedPrices.map(p => p.toFixed(2)),
+      min: minPrice.toFixed(2),
+      max: maxPrice.toFixed(2),
+      mediana: median.toFixed(2),
+    });
     
     if (prices.length === 2) {
       const diff = Math.abs(sortedPrices[1] - sortedPrices[0]);
       const maxDiff = sortedPrices[0] * 3;
       
       if (diff > maxDiff) {
-        console.log(`[PRICE SEARCH] Diferença muito grande entre preços. Usando menor: R$ ${minPrice.toFixed(2)}`);
+        logger.debug('Diferença muito grande entre preços, usando menor', {
+          operation: 'price_search',
+          preco: minPrice.toFixed(2),
+        });
         return [minPrice];
       }
       return sortedPrices;
@@ -608,7 +727,11 @@ export class PriceSearchService {
       const averageOfLowerHalf = sortedPrices.slice(0, Math.ceil(sortedPrices.length / 2)).reduce((sum, p) => sum + p, 0) / Math.ceil(sortedPrices.length / 2);
       const maxPriceRatio = maxPrice / median;
       
-      console.log(`[PRICE SEARCH] Média da metade inferior: ${averageOfLowerHalf.toFixed(2)} | Ratio máximo/mediana: ${maxPriceRatio.toFixed(2)}x`);
+      logger.debug('Análise de outliers - estatísticas', {
+        operation: 'price_search',
+        mediaMetadeInferior: averageOfLowerHalf.toFixed(2),
+        ratioMaximoMediana: maxPriceRatio.toFixed(2),
+      });
       
       if (maxPriceRatio > 2.5) {
         filteredPrices = filteredPrices.filter(price => {
@@ -618,32 +741,50 @@ export class PriceSearchService {
           const isOutlier = ratioToMedian > 3.0 || ratioToLowerAvg > 3.5;
           
           if (isOutlier) {
-            console.log(`[PRICE SEARCH] Preço ${price.toFixed(2)} removido: ratioMediana=${ratioToMedian.toFixed(2)}x, ratioLowerAvg=${ratioToLowerAvg.toFixed(2)}x`);
+            logger.debug('Preço removido como outlier', {
+              operation: 'price_search',
+              preco: price.toFixed(2),
+              ratioMediana: ratioToMedian.toFixed(2),
+              ratioLowerAvg: ratioToLowerAvg.toFixed(2),
+            });
             return false;
           }
           return true;
         });
         
         if (filteredPrices.length === 0) {
-          console.log(`[PRICE SEARCH] Todos os preços foram removidos no primeiro filtro. Aplicando filtro mais permissivo...`);
+          logger.debug('Todos os preços foram removidos no primeiro filtro, aplicando filtro mais permissivo', {
+            operation: 'price_search',
+          });
           filteredPrices = sortedPrices.filter(price => {
             const ratioToLowerAvg = price / averageOfLowerHalf;
             const keep = ratioToLowerAvg <= 4.0;
             if (!keep) {
-              console.log(`[PRICE SEARCH] Preço ${price.toFixed(2)} ainda muito alto (${ratioToLowerAvg.toFixed(2)}x a média inferior)`);
+              logger.debug('Preço ainda muito alto', {
+                operation: 'price_search',
+                preco: price.toFixed(2),
+                ratioToLowerAvg: ratioToLowerAvg.toFixed(2),
+              });
             }
             return keep;
           });
         }
         
         if (filteredPrices.length === 0) {
-          console.log(`[PRICE SEARCH] Todos os preços foram removidos. Usando média da metade inferior: R$ ${averageOfLowerHalf.toFixed(2)}`);
+          logger.warn('Todos os preços foram removidos, usando média da metade inferior', {
+            operation: 'price_search',
+            preco: averageOfLowerHalf.toFixed(2),
+          });
           return [averageOfLowerHalf];
         }
         
         if (filteredPrices.length < sortedPrices.length) {
           const removed = sortedPrices.filter(p => !filteredPrices.includes(p));
-          console.log(`[PRICE SEARCH] Removidos ${removed.length} outliers por razão: [${removed.map(p => p.toFixed(2)).join(', ')}]`);
+          logger.debug('Outliers removidos', {
+            operation: 'price_search',
+            quantidadeRemovidos: removed.length,
+            precosRemovidos: removed.map(p => p.toFixed(2)),
+          });
         }
       }
     }
@@ -666,13 +807,23 @@ export class PriceSearchService {
     const lowerBound = Math.max(0, q1 - 1.5 * iqr);
     const upperBound = q3 + 1.5 * iqr;
     
-    console.log(`[PRICE SEARCH] Q1=${q1.toFixed(2)} | Q3=${q3.toFixed(2)} | IQR=${iqr.toFixed(2)} | Limites=[${lowerBound.toFixed(2)}, ${upperBound.toFixed(2)}]`);
+    logger.debug('Análise IQR', {
+      operation: 'price_search',
+      q1: q1.toFixed(2),
+      q3: q3.toFixed(2),
+      iqr: iqr.toFixed(2),
+      limiteInferior: lowerBound.toFixed(2),
+      limiteSuperior: upperBound.toFixed(2),
+    });
     
     const finalFiltered = filteredPrices.filter(price => price >= lowerBound && price <= upperBound);
     
     if (finalFiltered.length === 0) {
       const newMedian = filteredPrices[Math.floor(filteredPrices.length * 0.5)];
-      console.log(`[PRICE SEARCH] IQR removeu todos. Usando mediana: R$ ${newMedian.toFixed(2)}`);
+      logger.warn('IQR removeu todos, usando mediana', {
+        operation: 'price_search',
+        mediana: newMedian.toFixed(2),
+      });
       return [newMedian];
     }
     
@@ -680,8 +831,12 @@ export class PriceSearchService {
     
     if (totalRemoved > 0) {
       const removedAll = sortedPrices.filter(p => !finalFiltered.includes(p));
-      console.log(`[PRICE SEARCH] Total removido: ${totalRemoved} outliers [${removedAll.map(p => p.toFixed(2)).join(', ')}]`);
-      console.log(`[PRICE SEARCH] Preços válidos: [${finalFiltered.map(p => p.toFixed(2)).join(', ')}]`);
+      logger.debug('Outliers removidos - resumo final', {
+        operation: 'price_search',
+        totalRemovidos: totalRemoved,
+        precosRemovidos: removedAll.map(p => p.toFixed(2)),
+        precosValidos: finalFiltered.map(p => p.toFixed(2)),
+      });
     }
     
     return finalFiltered;
@@ -710,13 +865,23 @@ export class PriceSearchService {
         
         if (isNetworkError && attempt < maxRetries) {
           const waitTime = delayMs * Math.pow(2, attempt - 1);
-          console.log(`[PRICE SEARCH] Erro de rede (tentativa ${attempt}/${maxRetries}). Código: ${error.code}. Aguardando ${waitTime}ms antes de tentar novamente...`);
+          logger.warn('Erro de rede, tentando novamente', {
+            operation: 'price_search',
+            tentativa: attempt,
+            maxTentativas: maxRetries,
+            errorCode: error.code,
+            waitTime: `${waitTime}ms`,
+          });
           await new Promise(resolve => setTimeout(resolve, waitTime));
           continue;
         }
         
         if (attempt === maxRetries) {
-          console.error(`[PRICE SEARCH] Todas as tentativas falharam após ${maxRetries} tentativas. Erro: ${error.message || error.code || error}`);
+          logger.error('Todas as tentativas falharam', {
+            operation: 'price_search',
+            maxTentativas: maxRetries,
+            errorMessage: error.message || String(error.code) || String(error),
+          });
           throw error;
         }
       }

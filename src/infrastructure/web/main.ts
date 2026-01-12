@@ -2,6 +2,7 @@ import express from 'express';
 import dotenv from 'dotenv';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import cookieParser from 'cookie-parser';
 import { spawn } from 'child_process';
 import { join } from 'path';
 import routes from './routes/index.routes';
@@ -10,6 +11,7 @@ import '../database/models/index.models';
 import { setupAssociations } from '../database/models/associations.models';
 import { errorHandler } from '../../middleware/error-handler.middleware';
 import { sanitizeInput } from '../../middleware/sanitize.middleware';
+import { logger } from '../helpers/logger.helper';
 
 dotenv.config();
 
@@ -22,6 +24,7 @@ app.use(
   }),
 );
 
+app.use(cookieParser());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(sanitizeInput);
@@ -84,7 +87,7 @@ async function runSeeders(): Promise<void> {
       'sequelize-cli',
     );
 
-    console.log('🌱 Executando seeders...');
+    logger.info('Executando seeders...', { operation: 'seeders' });
 
     const env = {
       ...process.env,
@@ -99,18 +102,20 @@ async function runSeeders(): Promise<void> {
 
     seedProcess.on('close', code => {
       if (code === 0) {
-        console.log('✅ Seeders executados com sucesso!');
+        logger.info('Seeders executados com sucesso', { operation: 'seeders', status: 'success' });
         resolve();
       } else {
-        console.warn(
-          `⚠️ Seeders finalizaram com código ${code} (pode ser normal se já foram executados)`,
-        );
+        logger.warn('Seeders finalizaram com código não-zero', {
+          operation: 'seeders',
+          exitCode: code,
+          note: 'Pode ser normal se já foram executados',
+        });
         resolve();
       }
     });
 
     seedProcess.on('error', error => {
-      console.error('❌ Erro ao executar seeders:', error);
+      logger.error('Erro ao executar seeders', { operation: 'seeders' }, error as Error);
       resolve();
     });
   });
@@ -119,21 +124,21 @@ async function runSeeders(): Promise<void> {
 void (async () => {
   try {
     await sequelize.authenticate();
-    console.log('✓ Conexão com o banco estabelecida.');
+    logger.info('Conexão com o banco estabelecida', { operation: 'database', status: 'connected' });
 
     setupAssociations();
 
     await sequelize.sync({ alter: false });
-    console.log('✓ Tabelas sincronizadas.');
+    logger.info('Tabelas sincronizadas', { operation: 'database', status: 'synced' });
 
     // Executar seeders após sincronização
     await runSeeders();
 
     app.listen(port, () => {
-      console.log(`🚀 Servidor rodando na porta ${port}`);
+      logger.info('Servidor iniciado', { operation: 'server', port, status: 'running' });
     });
   } catch (err: unknown) {
-    console.error('Erro ao iniciar:', err);
+    logger.error('Erro ao iniciar servidor', { operation: 'server' }, err as Error);
     process.exit(1);
   }
 })();

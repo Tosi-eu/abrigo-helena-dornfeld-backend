@@ -9,13 +9,13 @@ export class LoginRepository {
   async findByLogin(login: string) {
     return LoginModel.findOne({
       where: { login },
-      attributes: ['id', 'login', 'password', 'refreshToken'],
+      attributes: ['id', 'login', 'password', 'refresh_token'],
     });
   }
 
   async findById(id: number) {
     return LoginModel.findByPk(id, {
-      attributes: ['id', 'login', 'password', 'refreshToken'],
+      attributes: ['id', 'login', 'password', 'refresh_token'],
     });
   }
 
@@ -29,10 +29,10 @@ export class LoginRepository {
   }
 
   async clearToken(userId: number) {
-    await LoginModel.update({ refreshToken: null }, { where: { id: userId } });
+    await LoginModel.update({ refresh_token: null }, { where: { id: userId } });
   }
 
   async findByToken(token: string) {
-    return LoginModel.findOne({ where: { refreshToken: token } });
+    return LoginModel.findOne({ where: { refresh_token: token } });
   }
 }

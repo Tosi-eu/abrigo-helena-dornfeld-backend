@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { ReportService } from '../../../core/services/relatorio.service';
 import { sendErrorResponse } from '../../helpers/error-response.helper';
 import { handleETagResponse } from '../../helpers/etag.helper';
+import { logger } from '../../helpers/logger.helper';
 
 export class ReportController {
   constructor(private readonly service: ReportService) {}
@@ -20,7 +21,8 @@ export class ReportController {
 
       return res.json(data);
     } catch (error: unknown) {
-      console.error('Erro ao gerar relatório:', error);
+      const type = req.query.type as string;
+      logger.error('Erro ao gerar relatório', { operation: 'report', reportType: type }, error as Error);
 
       return sendErrorResponse(res, 500, error, 'Erro ao gerar relatório');
     }

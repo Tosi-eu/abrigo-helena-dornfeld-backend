@@ -10,6 +10,7 @@ import { CacheService } from './redis.service';
 import { PriceSearchService } from './price-search.service';
 import { MedicineRepository } from '../../infrastructure/database/repositories/medicamento.repository';
 import { InputRepository } from '../../infrastructure/database/repositories/insumo.repository';
+import { logger } from '../../infrastructure/helpers/logger.helper';
 
 export class StockService {
   private medicineRepo: MedicineRepository;
@@ -35,16 +36,31 @@ export class StockService {
 
     let priceSearchResult: { found: boolean; price: number | null } | undefined;
 
-    // Se o preço não foi informado, tentar buscar automaticamente
+    // Se o preço não foi informado, tentar buscar automaticamente com timeout
     if (!data.preco && this.priceSearchService) {
-      console.log(`[STOCK IN] Preço não informado, iniciando busca automática para medicamento ID ${data.medicamento_id}`);
+      logger.debug('Preço não informado, iniciando busca automática', {
+        operation: 'stock_in',
+        itemType: 'medicamento',
+        itemId: data.medicamento_id,
+      });
       
       try {
         const medicine = await this.medicineRepo.findMedicineById(data.medicamento_id);
         if (medicine) {
-          console.log(`[STOCK IN] Medicamento encontrado: ${medicine.nome} (${medicine.dosagem}${medicine.unidade_medida})`);
+          logger.debug('Medicamento encontrado', {
+            operation: 'stock_in',
+            itemType: 'medicamento',
+            itemId: data.medicamento_id,
+            nome: medicine.nome,
+            dosagem: `${medicine.dosagem}${medicine.unidade_medida}`,
+          });
           
-          const searchResult = await this.priceSearchService.searchPrice(
+          // Timeout de 500ms para não bloquear o registro
+          const timeoutPromise = new Promise<null>((resolve) => {
+            setTimeout(() => resolve(null), 500);
+          });
+
+          const searchPromise = this.priceSearchService.searchPrice(
             medicine.nome,
             'medicine',
             medicine.dosagem,
@@ -53,23 +69,44 @@ export class StockService {
             medicine.unidade_medida,
           );
 
+          const searchResult = await Promise.race([searchPromise, timeoutPromise]);
+
           if (searchResult && searchResult.averagePrice !== null && searchResult.averagePrice > 0) {
             const precoUnitario = searchResult.averagePrice;
             const precoTotal = precoUnitario * data.quantidade;
-            console.log(`[STOCK IN] Preço unitário encontrado: R$ ${precoUnitario.toFixed(2)} (fonte: ${searchResult.source})`);
-            console.log(`[STOCK IN] Preço total (unitário × quantidade): R$ ${precoTotal.toFixed(2)} (${precoUnitario.toFixed(2)} × ${data.quantidade})`);
+            logger.info('Preço encontrado automaticamente', {
+              operation: 'stock_in',
+              itemType: 'medicamento',
+              itemId: data.medicamento_id,
+              precoUnitario: precoUnitario.toFixed(2),
+              precoTotal: precoTotal.toFixed(2),
+              quantidade: data.quantidade,
+              fonte: searchResult.source,
+            });
             data.preco = precoTotal;
             priceSearchResult = { found: true, price: precoUnitario };
           } else {
-            console.log(`[STOCK IN] Nenhum preço encontrado para medicamento ID ${data.medicamento_id}`);
+            logger.info('Nenhum preço encontrado ou timeout na busca', {
+              operation: 'stock_in',
+              itemType: 'medicamento',
+              itemId: data.medicamento_id,
+            });
             priceSearchResult = { found: false, price: null };
           }
         } else {
-          console.log(`[STOCK IN] Medicamento ID ${data.medicamento_id} não encontrado`);
+          logger.warn('Medicamento não encontrado', {
+            operation: 'stock_in',
+            itemType: 'medicamento',
+            itemId: data.medicamento_id,
+          });
           priceSearchResult = { found: false, price: null };
         }
       } catch (error) {
-        console.error(`[STOCK IN] Erro ao buscar preço para medicamento ID ${data.medicamento_id}:`, error);
+        logger.error('Erro ao buscar preço', {
+          operation: 'stock_in',
+          itemType: 'medicamento',
+          itemId: data.medicamento_id,
+        }, error as Error);
         priceSearchResult = { found: false, price: null };
       }
     }
@@ -77,7 +114,12 @@ export class StockService {
     // Se o preço foi informado manualmente, multiplicar pela quantidade
     if (data.preco && !priceSearchResult) {
       data.preco = data.preco * data.quantidade;
-      console.log(`[STOCK IN] Preço manual informado multiplicado pela quantidade: R$ ${data.preco.toFixed(2)}`);
+      logger.debug('Preço manual informado multiplicado pela quantidade', {
+        operation: 'stock_in',
+        itemType: 'medicamento',
+        itemId: data.medicamento_id,
+        precoTotal: data.preco.toFixed(2),
+      });
     }
 
     const result = await this.repo.createMedicineStockIn(data);
@@ -99,16 +141,28 @@ export class StockService {
 
     let priceSearchResult: { found: boolean; price: number | null } | undefined;
 
-    // Se o preço não foi informado, tentar buscar automaticamente
     if (!data.preco && this.priceSearchService) {
-      console.log(`[STOCK IN] Preço não informado, iniciando busca automática para insumo ID ${data.insumo_id}`);
+      logger.debug('Preço não informado, iniciando busca automática', {
+        operation: 'stock_in',
+        itemType: 'insumo',
+        itemId: data.insumo_id,
+      });
       
       try {
         const input = await this.inputRepo.findInputById(data.insumo_id);
         if (input) {
-          console.log(`[STOCK IN] Insumo encontrado: ${input.nome}`);
+          logger.debug('Insumo encontrado', {
+            operation: 'stock_in',
+            itemType: 'insumo',
+            itemId: data.insumo_id,
+            nome: input.nome,
+          });
           
-          const searchResult = await this.priceSearchService.searchPrice(
+          const timeoutPromise = new Promise<null>((resolve) => {
+            setTimeout(() => resolve(null), 500);
+          });
+
+          const searchPromise = this.priceSearchService.searchPrice(
             input.nome,
             'input',
             undefined,
@@ -116,23 +170,44 @@ export class StockService {
             'São Paulo',
           );
 
+          const searchResult = await Promise.race([searchPromise, timeoutPromise]);
+
           if (searchResult && searchResult.averagePrice !== null && searchResult.averagePrice > 0) {
             const precoUnitario = searchResult.averagePrice;
             const precoTotal = precoUnitario * data.quantidade;
-            console.log(`[STOCK IN] Preço unitário encontrado: R$ ${precoUnitario.toFixed(2)} (fonte: ${searchResult.source})`);
-            console.log(`[STOCK IN] Preço total (unitário × quantidade): R$ ${precoTotal.toFixed(2)} (${precoUnitario.toFixed(2)} × ${data.quantidade})`);
+            logger.info('Preço encontrado automaticamente', {
+              operation: 'stock_in',
+              itemType: 'insumo',
+              itemId: data.insumo_id,
+              precoUnitario: precoUnitario.toFixed(2),
+              precoTotal: precoTotal.toFixed(2),
+              quantidade: data.quantidade,
+              fonte: searchResult.source,
+            });
             data.preco = precoTotal;
             priceSearchResult = { found: true, price: precoUnitario };
           } else {
-            console.log(`[STOCK IN] Nenhum preço encontrado para insumo ID ${data.insumo_id}`);
+            logger.info('Nenhum preço encontrado ou timeout na busca', {
+              operation: 'stock_in',
+              itemType: 'insumo',
+              itemId: data.insumo_id,
+            });
             priceSearchResult = { found: false, price: null };
           }
         } else {
-          console.log(`[STOCK IN] Insumo ID ${data.insumo_id} não encontrado`);
+          logger.warn('Insumo não encontrado', {
+            operation: 'stock_in',
+            itemType: 'insumo',
+            itemId: data.insumo_id,
+          });
           priceSearchResult = { found: false, price: null };
         }
       } catch (error) {
-        console.error(`[STOCK IN] Erro ao buscar preço para insumo ID ${data.insumo_id}:`, error);
+        logger.error('Erro ao buscar preço', {
+          operation: 'stock_in',
+          itemType: 'insumo',
+          itemId: data.insumo_id,
+        }, error as Error);
         priceSearchResult = { found: false, price: null };
       }
     }
@@ -140,7 +215,12 @@ export class StockService {
     // Se o preço foi informado manualmente, multiplicar pela quantidade
     if (data.preco && !priceSearchResult) {
       data.preco = data.preco * data.quantidade;
-      console.log(`[STOCK IN] Preço manual informado multiplicado pela quantidade: R$ ${data.preco.toFixed(2)}`);
+      logger.debug('Preço manual informado multiplicado pela quantidade', {
+        operation: 'stock_in',
+        itemType: 'insumo',
+        itemId: data.insumo_id,
+        precoTotal: data.preco.toFixed(2),
+      });
     }
 
     const result = await this.repo.createInputStockIn(data);

@@ -64,6 +64,29 @@ MovementModel.init(
     sequelize,
     tableName: 'movimentacao',
     timestamps: true,
+    indexes: [
+      { fields: ['medicamento_id'], name: 'idx_movimentacao_medicamento_id' },
+      { fields: ['insumo_id'], name: 'idx_movimentacao_insumo_id' },
+      { fields: ['armario_id'], name: 'idx_movimentacao_armario_id' },
+      { fields: ['gaveta_id'], name: 'idx_movimentacao_gaveta_id' },
+      { fields: ['casela_id'], name: 'idx_movimentacao_casela_id' },
+      { fields: ['login_id'], name: 'idx_movimentacao_login_id' },
+      { fields: ['tipo'], name: 'idx_movimentacao_tipo' },
+      { fields: ['setor'], name: 'idx_movimentacao_setor' },
+      { fields: ['data'], name: 'idx_movimentacao_data' },
+      {
+        fields: ['tipo', 'data'],
+        name: 'idx_movimentacao_tipo_data',
+      },
+      {
+        fields: ['medicamento_id', 'data'],
+        name: 'idx_movimentacao_medicamento_data',
+      },
+      {
+        fields: ['insumo_id', 'data'],
+        name: 'idx_movimentacao_insumo_data',
+      },
+    ],
   },
 );
 

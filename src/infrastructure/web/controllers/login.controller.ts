@@ -34,7 +34,18 @@ export class LoginController {
     if (!result)
       return res.status(401).json({ error: 'Credenciais inválidas' });
 
-    return res.json(result);
+    const cookieOptions = {
+      httpOnly: true,
+      sameSite: 'lax' as const,
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours in milliseconds
+      path: '/',
+    };
+
+    res.cookie('authToken', result.token, cookieOptions);
+
+    return res.json({
+      user: result.user,
+    });
   }
 
   async update(req: AuthRequest, res: Response) {
@@ -98,6 +109,13 @@ export class LoginController {
 
   async logout(req: AuthRequest, res: Response) {
     await this.service.logout(req.user!.id);
+    
+    res.clearCookie('authToken', {
+      httpOnly: true,
+      sameSite: 'lax',
+      path: '/',
+    });
+    
     return res.status(204).send();
   }
 }

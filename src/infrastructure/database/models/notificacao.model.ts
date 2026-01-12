@@ -85,6 +85,18 @@ NotificationEventModel.init(
     sequelize,
     tableName: 'notificacao',
     timestamps: true,
+    indexes: [
+      { fields: ['medicamento_id'], name: 'idx_notificacao_medicamento_id' },
+      { fields: ['residente_id'], name: 'idx_notificacao_residente_id' },
+      { fields: ['criado_por'], name: 'idx_notificacao_criado_por' },
+      { fields: ['status'], name: 'idx_notificacao_status' },
+      { fields: ['data_prevista'], name: 'idx_notificacao_data_prevista' },
+      { fields: ['visto'], name: 'idx_notificacao_visto' },
+      {
+        fields: ['status', 'data_prevista'],
+        name: 'idx_notificacao_status_data_prevista',
+      },
+    ],
   },
 );
 

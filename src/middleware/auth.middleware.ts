@@ -16,17 +16,28 @@ export async function authMiddleware(
   res: Response,
   next: NextFunction,
 ) {
-  const authHeader = req.headers.authorization;
-  if (!authHeader)
-    return res.status(401).json({ error: 'Token não fornecido' });
+  let token: string | undefined;
 
-  const [, token] = authHeader.split(' ');
-  if (!token) return res.status(401).json({ error: 'Token inválido' });
+  if (req.cookies && req.cookies.authToken) {
+    token = req.cookies.authToken;
+  } else {
+    const authHeader = req.headers.authorization;
+    if (authHeader) {
+      const [, headerToken] = authHeader.split(' ');
+      if (headerToken) {
+        token = headerToken;
+      }
+    }
+  }
+
+  if (!token) {
+    return res.status(401).json({ error: 'Token não fornecido' });
+  }
 
   try {
     const decoded = jwt.verify(token, jwtConfig.secret) as JWTPayload;
 
-    const user = await LoginModel.findOne({ where: { refreshToken: token } });
+    const user = await LoginModel.findOne({ where: { refresh_token: token } });
     if (!user) return res.status(401).json({ error: 'Sessão inválida' });
 
     req.user = {

@@ -94,6 +94,33 @@ MedicineStockModel.init(
     sequelize,
     tableName: 'estoque_medicamento',
     timestamps: true,
+    indexes: [
+      { fields: ['medicamento_id'], name: 'idx_estoque_medicamento_medicamento_id' },
+      { fields: ['armario_id'], name: 'idx_estoque_medicamento_armario_id' },
+      { fields: ['gaveta_id'], name: 'idx_estoque_medicamento_gaveta_id' },
+      { fields: ['casela_id'], name: 'idx_estoque_medicamento_casela_id' },
+      { fields: ['status'], name: 'idx_estoque_medicamento_status' },
+      { fields: ['tipo'], name: 'idx_estoque_medicamento_tipo' },
+      { fields: ['setor'], name: 'idx_estoque_medicamento_setor' },
+      { fields: ['validade'], name: 'idx_estoque_medicamento_validade' },
+      {
+        fields: ['tipo', 'setor'],
+        name: 'idx_estoque_medicamento_tipo_setor',
+      },
+      {
+        fields: [
+          'medicamento_id',
+          'armario_id',
+          'gaveta_id',
+          'validade',
+          'tipo',
+          'casela_id',
+          'origem',
+          'lote',
+        ],
+        name: 'idx_estoque_medicamento_composite_lookup',
+      },
+    ],
   },
 );
 

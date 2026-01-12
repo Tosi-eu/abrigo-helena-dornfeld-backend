@@ -35,7 +35,7 @@ export class LoginService {
       { expiresIn: jwtConfig.expiresIn },
     );
 
-    await this.repo.update(user.id, { refreshToken: token });
+    await this.repo.update(user.id, { refresh_token: token });
 
     return {
       token,

@@ -84,6 +84,32 @@ InputStockModel.init(
     sequelize,
     tableName: 'estoque_insumo',
     timestamps: true,
+    indexes: [
+      { fields: ['insumo_id'], name: 'idx_estoque_insumo_insumo_id' },
+      { fields: ['armario_id'], name: 'idx_estoque_insumo_armario_id' },
+      { fields: ['gaveta_id'], name: 'idx_estoque_insumo_gaveta_id' },
+      { fields: ['casela_id'], name: 'idx_estoque_insumo_casela_id' },
+      { fields: ['status'], name: 'idx_estoque_insumo_status' },
+      { fields: ['tipo'], name: 'idx_estoque_insumo_tipo' },
+      { fields: ['setor'], name: 'idx_estoque_insumo_setor' },
+      { fields: ['validade'], name: 'idx_estoque_insumo_validade' },
+      {
+        fields: ['tipo', 'setor'],
+        name: 'idx_estoque_insumo_tipo_setor',
+      },
+      {
+        fields: [
+          'insumo_id',
+          'armario_id',
+          'gaveta_id',
+          'validade',
+          'tipo',
+          'casela_id',
+          'lote',
+        ],
+        name: 'idx_estoque_insumo_composite_lookup',
+      },
+    ],
   },
 );
 
