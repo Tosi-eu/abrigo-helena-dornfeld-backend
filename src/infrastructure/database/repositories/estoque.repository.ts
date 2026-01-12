@@ -389,9 +389,9 @@ export class StockRepository {
       };
     }
 
-    const carrinhoMedicamentos = await MedicineStockModel.sum('quantidade', {
+    const medicamentosGeral = await MedicineStockModel.sum('quantidade', {
       where: {
-        tipo: OperationType.CARRINHO,
+        tipo: OperationType.GERAL,
         setor: 'enfermagem',
       },
     });
@@ -399,6 +399,20 @@ export class StockRepository {
     const medicamentosIndividual = await MedicineStockModel.sum('quantidade', {
       where: {
         tipo: OperationType.INDIVIDUAL,
+        setor: 'enfermagem',
+      },
+    });
+
+    const carrinhoMedicamentos = await MedicineStockModel.sum('quantidade', {
+      where: {
+        tipo: OperationType.CARRINHO,
+        setor: 'enfermagem',
+      },
+    });
+
+    const insumos = await InputStockModel.sum('quantidade', {
+      where: {
+        tipo: OperationType.GERAL,
         setor: 'enfermagem',
       },
     });
@@ -411,9 +425,9 @@ export class StockRepository {
     });
 
     return {
-      medicamentos_geral: 0,
+      medicamentos_geral: Number(medicamentosGeral || 0),
       medicamentos_individual: Number(medicamentosIndividual || 0),
-      insumos: 0,
+      insumos: Number(insumos || 0),
       carrinho_medicamentos: Number(carrinhoMedicamentos || 0),
       carrinho_insumos: Number(carrinhoInsumos || 0),
     };
