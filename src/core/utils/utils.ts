@@ -19,6 +19,25 @@ export enum StockItemStatus {
   SUSPENSO = 'suspended',
 }
 
+export enum SectorType {
+  FARMACIA = 'farmacia',
+  ENFERMAGEM = 'enfermagem',
+}
+
+export enum StockFilterType {
+  NO_STOCK = 'noStock',
+  BELOW_MIN = 'belowMin',
+  EXPIRED = 'expired',
+  EXPIRING_SOON = 'expiringSoon',
+}
+
+export enum StockQueryType {
+  MEDICAMENTO = 'medicamento',
+  INSUMO = 'insumo',
+  ARMARIOS = 'armarios',
+  GAVETAS = 'gavetas',
+}
+
 export interface StockRawResponse {
   tipo_item: string;
   estoque_id: number;

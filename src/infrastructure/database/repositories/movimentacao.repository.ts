@@ -1,4 +1,4 @@
-import { Op, QueryTypes } from 'sequelize';
+import { Op } from 'sequelize';
 import MovementModel from '../models/movimentacao.model';
 import Movement from '../../../core/domain/movimentacao';
 import MedicineModel from '../models/medicamento.model';
@@ -8,7 +8,7 @@ import LoginModel from '../models/login.model';
 import InputModel from '../models/insumo.model';
 import { formatDateToPtBr } from '../../helpers/date.helper';
 import { sequelize } from '../sequelize';
-import { NonMovementedItem } from '../../../core/utils/utils';
+import { NonMovementedItem, ItemType } from '../../../core/utils/utils';
 import { MovementWhereOptions } from '../../types/sequelize.types';
 
 export interface MovementQueryParams {
@@ -227,38 +227,109 @@ export class MovementRepository {
   }
 
   async getNonMovementedMedicines(limit = 10) {
-    const query = `
-        SELECT 
-          'medicamento' AS tipo_item,
-          m.id AS item_id,
-          m.nome,
-          m.principio_ativo AS detalhe,
-          MAX(mov.data) AS ultima_movimentacao,
-          DATE_PART('day', CURRENT_DATE - COALESCE(MAX(mov.data), '1900-01-01')) AS dias_parados
-        FROM medicamento m
-        JOIN movimentacao mov ON mov.medicamento_id = m.id
-        GROUP BY m.id, m.nome, m.principio_ativo
+    const now = new Date();
+    const results: NonMovementedItem[] = [];
 
-        UNION ALL
+    // Query medicines with movements
+    const medicineMovements = await MovementModel.findAll({
+      attributes: [
+        'medicamento_id',
+        [
+          sequelize.literal('MAX("MovementModel"."data")'),
+          'ultima_movimentacao',
+        ],
+      ],
+      where: {
+        medicamento_id: { [Op.not]: null },
+      },
+      include: [
+        {
+          model: MedicineModel,
+          attributes: ['id', 'nome', 'principio_ativo'],
+          required: true,
+        },
+      ],
+      group: [
+        'medicamento_id',
+        'MedicineModel.id',
+        'MedicineModel.nome',
+        'MedicineModel.principio_ativo',
+      ],
+      raw: false,
+      subQuery: false,
+    });
 
-        SELECT 
-          'insumo' AS tipo_item,
-          i.id AS item_id,
-          i.nome,
-          i.descricao AS detalhe,
-          MAX(mov.data) AS ultima_movimentacao,
-          DATE_PART('day', CURRENT_DATE - COALESCE(MAX(mov.data), '1900-01-01')) AS dias_parados
-        FROM insumo i
-        JOIN movimentacao mov ON mov.insumo_id = i.id
-        GROUP BY i.id, i.nome, i.descricao
+    for (const movement of medicineMovements) {
+      const plain = movement.get({ plain: true }) as any;
+      const medicine = plain.MedicineModel;
+      const ultimaMovimentacao = plain.ultima_movimentacao
+        ? new Date(plain.ultima_movimentacao)
+        : new Date('1900-01-01');
+      const diasParados = Math.floor(
+        (now.getTime() - ultimaMovimentacao.getTime()) / (1000 * 60 * 60 * 24),
+      );
 
-        ORDER BY dias_parados DESC
-        LIMIT :limit
-      `;
+      results.push({
+        tipo_item: ItemType.MEDICAMENTO,
+        item_id: medicine.id,
+        nome: medicine.nome,
+        detalhe: medicine.principio_ativo,
+        ultima_movimentacao: formatDateToPtBr(ultimaMovimentacao),
+        dias_parados: diasParados,
+      });
+    }
 
-    return sequelize.query(query, {
-      type: QueryTypes.SELECT,
-      replacements: { limit },
-    }) as Promise<NonMovementedItem[]>;
+    // Query inputs with movements
+    const inputMovements = await MovementModel.findAll({
+      attributes: [
+        'insumo_id',
+        [
+          sequelize.literal('MAX("MovementModel"."data")'),
+          'ultima_movimentacao',
+        ],
+      ],
+      where: {
+        insumo_id: { [Op.not]: null },
+      },
+      include: [
+        {
+          model: InputModel,
+          attributes: ['id', 'nome', 'descricao'],
+          required: true,
+        },
+      ],
+      group: [
+        'insumo_id',
+        'InputModel.id',
+        'InputModel.nome',
+        'InputModel.descricao',
+      ],
+      raw: false,
+      subQuery: false,
+    });
+
+    for (const movement of inputMovements) {
+      const plain = movement.get({ plain: true }) as any;
+      const input = plain.InputModel;
+      const ultimaMovimentacao = plain.ultima_movimentacao
+        ? new Date(plain.ultima_movimentacao)
+        : new Date('1900-01-01');
+      const diasParados = Math.floor(
+        (now.getTime() - ultimaMovimentacao.getTime()) / (1000 * 60 * 60 * 24),
+      );
+
+      results.push({
+        tipo_item: ItemType.INSUMO,
+        item_id: input.id,
+        nome: input.nome,
+        detalhe: input.descricao || null,
+        ultima_movimentacao: formatDateToPtBr(ultimaMovimentacao),
+        dias_parados: diasParados,
+      });
+    }
+
+    // Sort by dias_parados DESC and limit
+    results.sort((a, b) => b.dias_parados - a.dias_parados);
+    return results.slice(0, limit);
   }
 }

@@ -3,6 +3,7 @@ import LoginModel from '../models/login.model';
 import MedicineModel from '../models/medicamento.model';
 import NotificationEventModel, {
   EventStatus,
+  NotificationDestinoType,
 } from '../models/notificacao.model';
 import ResidentModel from '../models/residente.model';
 import { NotificationUpdateData } from '../../types/notificacao.types';
@@ -12,7 +13,7 @@ export class NotificationEventRepository {
   async create(data: {
     medicamento_id: number;
     residente_id: number;
-    destino: 'sus' | 'familia' | 'farmacia';
+    destino: NotificationDestinoType;
     data_prevista: Date;
     criado_por: number;
     visto: boolean;
@@ -84,7 +85,7 @@ export class NotificationEventRepository {
       status?: EventStatus;
       visto?: boolean;
       data_prevista?: Date;
-      destino?: 'sus' | 'familia' | 'farmacia';
+      destino?: NotificationDestinoType;
     }> = {};
 
     if (updates.visto !== undefined) updateData.visto = updates.visto;

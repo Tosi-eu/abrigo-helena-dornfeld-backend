@@ -1,5 +1,6 @@
 import { NotificationEventRepository } from '../../infrastructure/database/repositories/notificacao.repository';
 import { NotificationUpdateData } from '../../infrastructure/types/notificacao.types';
+import { NotificationDestinoType } from '../../infrastructure/database/models/notificacao.model';
 
 export class NotificationEventService {
   constructor(private readonly repo: NotificationEventRepository) {}
@@ -7,7 +8,7 @@ export class NotificationEventService {
   async create(data: {
     medicamento_id: number;
     residente_id: number;
-    destino: 'sus' | 'familia' | 'farmacia';
+    destino: NotificationDestinoType;
     data_prevista: Date;
     criado_por: number;
     visto: boolean;

@@ -5,8 +5,12 @@ import MedicineStockModel, {
 import InputStockModel, {
   InputStockAttributes,
 } from '../models/estoque-insumo.model';
-import { QueryTypes } from 'sequelize';
-import { sequelize } from '../sequelize';
+import { Op } from 'sequelize';
+import MedicineModel from '../models/medicamento.model';
+import InputModel from '../models/insumo.model';
+import ResidentModel from '../models/residente.model';
+import CabinetModel from '../models/armario.model';
+import DrawerModel from '../models/gaveta.model';
 import {
   computeExpiryStatus,
   computeQuantityStatus,
@@ -16,6 +20,9 @@ import {
   StockItemStatus,
   OperationType,
   QueryPaginationParams,
+  SectorType,
+  StockFilterType,
+  StockQueryType,
 } from '../../../core/utils/utils';
 import { formatDateToPtBr } from '../../helpers/date.helper';
 import { StockQueryResult } from '../../types/estoque.types';
@@ -145,199 +152,271 @@ export class StockRepository {
     const { filter, type, page = 1, limit = 20 } = params;
     const offset = (page - 1) * limit;
 
-    let baseQuery = '';
-    let whereMedicamento = '';
-    let whereInsumo = '';
+    if (type === 'armarios') {
+      const cabinets = await CabinetModel.findAll({
+        order: [['num_armario', 'ASC']],
+      });
 
-    if (filter) {
+      const results = await Promise.all(
+        cabinets.map(async (cabinet) => {
+          const totalMedicamentos = await MedicineStockModel.sum('quantidade', {
+            where: { armario_id: cabinet.num_armario },
+          });
+
+          const totalInsumos = await InputStockModel.sum('quantidade', {
+            where: { armario_id: cabinet.num_armario },
+          });
+
+          return {
+            armario_id: cabinet.num_armario,
+            total_medicamentos: Number(totalMedicamentos || 0),
+            total_insumos: Number(totalInsumos || 0),
+            total_geral:
+              Number(totalMedicamentos || 0) + Number(totalInsumos || 0),
+          };
+        }),
+      );
+
+      return {
+        data: results,
+        total: results.length,
+        page,
+        limit,
+        hasNext: false,
+      };
+    }
+
+    if (type === StockQueryType.GAVETAS) {
+      const drawers = await DrawerModel.findAll({
+        order: [['num_gaveta', 'ASC']],
+      });
+
+      const results = await Promise.all(
+        drawers.map(async (drawer) => {
+          const totalMedicamentos = await MedicineStockModel.sum('quantidade', {
+            where: { gaveta_id: drawer.num_gaveta },
+          });
+
+          const totalInsumos = await InputStockModel.sum('quantidade', {
+            where: { gaveta_id: drawer.num_gaveta },
+          });
+
+          return {
+            gaveta_id: drawer.num_gaveta,
+            total_medicamentos: Number(totalMedicamentos || 0),
+            total_insumos: Number(totalInsumos || 0),
+            total_geral:
+              Number(totalMedicamentos || 0) + Number(totalInsumos || 0),
+          };
+        }),
+      );
+
+      return {
+        data: results,
+        total: results.length,
+        page,
+        limit,
+        hasNext: false,
+      };
+    }
+
+    const buildWhereCondition = () => {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const in45Days = new Date(today);
+      in45Days.setDate(in45Days.getDate() + 45);
+
       switch (filter) {
         case 'noStock':
-          whereMedicamento = 'WHERE em.quantidade = 0';
-          whereInsumo = 'WHERE ei.quantidade = 0';
-          break;
+          return { quantidade: 0 };
         case 'belowMin':
-          whereMedicamento =
-            'WHERE em.quantidade > 0 AND em.quantidade <= COALESCE(m.estoque_minimo,0)';
-          whereInsumo =
-            'WHERE ei.quantidade > 0 AND ei.quantidade <= COALESCE(i.estoque_minimo,0)';
-          break;
+          return { quantidade: { [Op.gt]: 0 } };
         case 'expired':
-          whereMedicamento =
-            'WHERE em.quantidade > 0 AND em.validade < CURRENT_DATE';
-          whereInsumo =
-            'WHERE ei.quantidade > 0 AND ei.validade < CURRENT_DATE';
-          break;
+          return {
+            quantidade: { [Op.gt]: 0 },
+            validade: { [Op.lt]: today },
+          };
         case 'expiringSoon':
-          whereMedicamento = `WHERE em.quantidade > 0 AND em.validade BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '45 days'`;
-          whereInsumo = `WHERE ei.quantidade > 0 AND ei.validade BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '45 days'`;
-          break;
+          return {
+            quantidade: { [Op.gt]: 0 },
+            validade: { [Op.between]: [today, in45Days] },
+          };
+        default:
+          return {};
       }
-    }
+    };
+
+    const whereCondition = buildWhereCondition();
+    const results: StockQueryResult[] = [];
 
     if (!type || type === 'medicamento') {
-      const medicamentoQuery = `
-      SELECT
-        'medicamento' AS tipo_item,
-        em.id AS estoque_id,
-        m.id AS item_id,
-        m.nome,
-        m.principio_ativo,
-        null AS descricao,
-        em.validade,
-        em.quantidade,
-        m.estoque_minimo AS minimo,
-        em.origem,
-        em.tipo,
-        r.nome AS paciente,
-        em.armario_id,
-        em.gaveta_id,
-        em.casela_id,
-        em.setor,
-        em.status::text as status,
-        em.suspended_at as suspenso_em,
-        em.lote,
-        em.observacao,
-        em.preco
-      FROM estoque_medicamento em
-      JOIN medicamento m ON m.id = em.medicamento_id
-      LEFT JOIN residente r ON r.num_casela = em.casela_id
-      ${whereMedicamento}
-    `;
-
-      if (!type) {
-        const insumoQuery = `
-        SELECT
-          'insumo' AS tipo_item,
-          ei.id AS estoque_id,
-          i.id AS item_id,
-          i.nome,
-          null AS principio_ativo,
-          i.descricao AS descricao,
-          ei.validade,
-          ei.quantidade,
-          i.estoque_minimo AS minimo,
-          null AS origem,
-          ei.tipo,
-          r.nome AS paciente,
-          ei.armario_id,
-          ei.gaveta_id,
-          ei.casela_id,
-          ei.setor,
-          ei.status::text as status,
-          ei.suspended_at as suspenso_em,
-          ei.lote,
-          null AS observacao,
-          ei.preco
-        FROM estoque_insumo ei
-        JOIN insumo i ON i.id = ei.insumo_id
-        LEFT JOIN residente r ON r.num_casela = ei.casela_id
-        ${whereInsumo}
-      `;
-
-        baseQuery = `${medicamentoQuery} UNION ALL ${insumoQuery}`;
-      } else {
-        baseQuery = medicamentoQuery;
+      const medicineWhere: any = { ...whereCondition };
+      
+      if (filter === 'belowMin') {
+        medicineWhere.quantidade = { [Op.gt]: 0 };
       }
-    } else if (type === 'insumo') {
-      baseQuery = `
-      SELECT
-        'insumo' AS tipo_item,
-        ei.id AS estoque_id,
-        i.id AS item_id,
-        i.nome,
-        null AS principio_ativo,
-        i.descricao AS descricao,
-        ei.validade,
-        ei.quantidade,
-        i.estoque_minimo AS minimo,
-        null AS origem,
-        ei.tipo,
-        r.nome AS paciente,
-        ei.armario_id,
-        ei.gaveta_id,
-        ei.casela_id,
-        ei.setor,
-        ei.status as status,
-        ei.suspended_at as suspenso_em,
-        ei.lote,
-        ei.preco
-      FROM estoque_insumo ei
-      JOIN insumo i ON i.id = ei.insumo_id
-      LEFT JOIN residente r ON r.num_casela = ei.casela_id
-      ${whereInsumo}
-    `;
-    } else if (type === 'armarios') {
-      baseQuery = `
-      SELECT 
-        a.num_armario AS armario_id,
-        COALESCE((SELECT SUM(em.quantidade) FROM estoque_medicamento em WHERE em.armario_id = a.num_armario), 0) AS total_medicamentos,
-        COALESCE((SELECT SUM(ei.quantidade) FROM estoque_insumo ei WHERE ei.armario_id = a.num_armario), 0) AS total_insumos,
-        COALESCE((SELECT SUM(em.quantidade) FROM estoque_medicamento em WHERE em.armario_id = a.num_armario),0)
-        + COALESCE((SELECT SUM(ei.quantidade) FROM estoque_insumo ei WHERE ei.armario_id = a.num_armario),0) AS total_geral
-      FROM armario a
-      ORDER BY a.num_armario
-    `;
-    } else if (type === 'gavetas') {
-      baseQuery = `
-      SELECT 
-        g.num_gaveta AS gaveta_id,
-        COALESCE((SELECT SUM(em.quantidade) FROM estoque_medicamento em WHERE em.gaveta_id = g.num_gaveta), 0) AS total_medicamentos,
-        COALESCE((SELECT SUM(ei.quantidade) FROM estoque_insumo ei WHERE ei.gaveta_id = g.num_gaveta), 0) AS total_insumos,
-        COALESCE((SELECT SUM(em.quantidade) FROM estoque_medicamento em WHERE em.gaveta_id = g.num_gaveta),0)
-        + COALESCE((SELECT SUM(ei.quantidade) FROM estoque_insumo ei WHERE ei.gaveta_id = g.num_gaveta),0) AS total_geral
-      FROM gaveta g
-      ORDER BY g.num_gaveta
-    `;
-    } else {
-      throw new Error(
-        'Tipo inválido. Use medicamento, insumo, armarios, gavetas ou deixe vazio.',
-      );
-    }
 
-    if (type !== 'armarios' && type !== 'gavetas') {
-      baseQuery += ` ORDER BY nome ASC LIMIT ${limit} OFFSET ${offset}`;
-    }
+      const medicineStocks = await MedicineStockModel.findAll({
+        where: medicineWhere,
+        include: [
+          {
+            model: MedicineModel,
+            attributes: ['id', 'nome', 'principio_ativo', 'estoque_minimo'],
+            required: true,
+          },
+          {
+            model: ResidentModel,
+            attributes: ['nome'],
+            required: false,
+          },
+        ],
+        order: [['id', 'ASC']],
+        limit: !type ? undefined : limit,
+        offset: !type ? undefined : offset,
+      });
 
-    const results = await sequelize.query(baseQuery, {
-      type: QueryTypes.SELECT,
-    });
-    const total = results.length;
+      for (const stock of medicineStocks) {
+        const plainStock = stock.get({ plain: true }) as any;
+        const medicine = plainStock.MedicineModel as MedicineModel | undefined;
+        const resident = plainStock.ResidentModel as ResidentModel | undefined;
 
-    const mapped = (results as StockQueryResult[]).map(
-      (item: StockQueryResult) => {
-        const isStorageType = type === 'armarios' || type === 'gavetas';
-
-        let expiryInfo: { status: string | null; message: string | null } = {
-          status: null,
-          message: null,
-        };
-        let quantityInfo: { status: string | null; message: string | null } = {
-          status: null,
-          message: null,
-        };
-
-        if (!isStorageType && item.validade) {
-          const validadeDate =
-            item.validade instanceof Date
-              ? item.validade
-              : new Date(item.validade as string);
-          expiryInfo = computeExpiryStatus(validadeDate);
-          quantityInfo = computeQuantityStatus(
-            item.quantidade ?? 0,
-            item.minimo ?? 0,
-          );
+        if (filter === 'belowMin') {
+          const estoqueMinimo = medicine?.estoque_minimo || 0;
+          if (stock.quantidade > estoqueMinimo) continue;
         }
 
-        return {
-          ...item,
-          validade: item.validade ? formatDateToPtBr(item.validade) : null,
-          st_expiracao: expiryInfo.status,
-          msg_expiracao: expiryInfo.message,
-          st_quantidade: quantityInfo.status,
-          msg_quantidade: quantityInfo.message,
-        };
-      },
-    );
+        results.push({
+          tipo_item: 'medicamento',
+          estoque_id: stock.id,
+          item_id: medicine?.id,
+          nome: medicine?.nome,
+          principio_ativo: medicine?.principio_ativo || null,
+          descricao: null,
+          validade: stock.validade,
+          quantidade: stock.quantidade,
+          minimo: medicine?.estoque_minimo || 0,
+          origem: stock.origem || null,
+          tipo: stock.tipo || null,
+          paciente: resident?.nome || null,
+          armario_id: stock.armario_id || null,
+          gaveta_id: stock.gaveta_id || null,
+          casela_id: stock.casela_id || null,
+          setor: stock.setor,
+          status: stock.status || null,
+          suspenso_em: stock.suspended_at || null,
+          lote: stock.lote || null,
+          observacao: stock.observacao || null,
+          preco: stock.preco || null,
+        } as StockQueryResult);
+      }
+    }
+
+    if (!type || type === 'insumo') {
+      const inputWhere: any = { ...whereCondition };
+      
+      if (filter === 'belowMin') {
+        inputWhere.quantidade = { [Op.gt]: 0 };
+      }
+
+      const inputStocks = await InputStockModel.findAll({
+        where: inputWhere,
+        include: [
+          {
+            model: InputModel,
+            attributes: ['id', 'nome', 'descricao', 'estoque_minimo'],
+            required: true,
+          },
+          {
+            model: ResidentModel,
+            attributes: ['nome'],
+            required: false,
+          },
+        ],
+        order: [['id', 'ASC']],
+        limit: !type ? undefined : limit,
+        offset: !type ? undefined : offset,
+      });
+
+      for (const stock of inputStocks) {
+        const plainStock = stock.get({ plain: true }) as any;
+        const input = plainStock.InputModel as InputModel | undefined;
+        const resident = plainStock.ResidentModel as ResidentModel | undefined;
+
+        // Apply belowMin filter after fetching
+        if (filter === StockFilterType.BELOW_MIN) {
+          const estoqueMinimo = input?.estoque_minimo || 0;
+          if (stock.quantidade > estoqueMinimo) continue;
+        }
+
+        results.push({
+          tipo_item: 'insumo',
+          estoque_id: stock.id,
+          item_id: input?.id,
+          nome: input?.nome,
+          principio_ativo: null,
+          descricao: input?.descricao || null,
+          validade: stock.validade,
+          quantidade: stock.quantidade,
+          minimo: input?.estoque_minimo || 0,
+          origem: null,
+          tipo: stock.tipo,
+          paciente: resident?.nome || null,
+          armario_id: stock.armario_id || null,
+          gaveta_id: stock.gaveta_id || null,
+          casela_id: stock.casela_id || null,
+          setor: stock.setor,
+          status: stock.status || null,
+          suspenso_em: stock.suspended_at || null,
+          lote: stock.lote || null,
+          observacao: null,
+          preco: stock.preco || null,
+        } as StockQueryResult);
+      }
+    }
+
+    // Sort by nome and apply pagination if needed
+    results.sort((a, b) => {
+      const nomeA = (a.nome || '').toLowerCase();
+      const nomeB = (b.nome || '').toLowerCase();
+      return nomeA.localeCompare(nomeB);
+    });
+
+    const total = results.length;
+    const paginatedResults = !type
+      ? results.slice(offset, offset + limit)
+      : results;
+
+    const mapped = paginatedResults.map((item: StockQueryResult) => {
+      let expiryInfo: { status: string | null; message: string | null } = {
+        status: null,
+        message: null,
+      };
+      let quantityInfo: { status: string | null; message: string | null } = {
+        status: null,
+        message: null,
+      };
+
+      if (item.validade) {
+        const validadeDate =
+          item.validade instanceof Date
+            ? item.validade
+            : new Date(item.validade as string);
+        expiryInfo = computeExpiryStatus(validadeDate);
+        quantityInfo = computeQuantityStatus(
+          item.quantidade ?? 0,
+          item.minimo ?? 0,
+        );
+      }
+
+      return {
+        ...item,
+        validade: item.validade ? formatDateToPtBr(item.validade) : null,
+        st_expiracao: expiryInfo.status,
+        msg_expiracao: expiryInfo.message,
+        st_quantidade: quantityInfo.status,
+        msg_quantidade: quantityInfo.message,
+      };
+    });
 
     return {
       data: mapped,
@@ -355,11 +434,11 @@ export class StockRepository {
     carrinho_medicamentos: number;
     carrinho_insumos: number;
   }> {
-    if (setor === 'farmacia') {
+    if (setor === SectorType.FARMACIA) {
       const medicamentosGeral = await MedicineStockModel.sum('quantidade', {
         where: {
           tipo: OperationType.GERAL,
-          setor: 'farmacia',
+          setor: SectorType.FARMACIA,
         },
       });
 
@@ -368,7 +447,7 @@ export class StockRepository {
         {
           where: {
             tipo: OperationType.INDIVIDUAL,
-            setor: 'farmacia',
+            setor: SectorType.FARMACIA,
           },
         },
       );
@@ -376,7 +455,7 @@ export class StockRepository {
       const insumos = await InputStockModel.sum('quantidade', {
         where: {
           tipo: OperationType.GERAL,
-          setor: 'farmacia',
+          setor: SectorType.FARMACIA,
         },
       });
 
@@ -392,35 +471,35 @@ export class StockRepository {
     const medicamentosGeral = await MedicineStockModel.sum('quantidade', {
       where: {
         tipo: OperationType.GERAL,
-        setor: 'enfermagem',
+          setor: SectorType.ENFERMAGEM,
       },
     });
 
     const medicamentosIndividual = await MedicineStockModel.sum('quantidade', {
       where: {
         tipo: OperationType.INDIVIDUAL,
-        setor: 'enfermagem',
+          setor: SectorType.ENFERMAGEM,
       },
     });
 
     const carrinhoMedicamentos = await MedicineStockModel.sum('quantidade', {
       where: {
         tipo: OperationType.CARRINHO,
-        setor: 'enfermagem',
+          setor: SectorType.ENFERMAGEM,
       },
     });
 
     const insumos = await InputStockModel.sum('quantidade', {
       where: {
         tipo: OperationType.GERAL,
-        setor: 'enfermagem',
+          setor: SectorType.ENFERMAGEM,
       },
     });
 
     const carrinhoInsumos = await InputStockModel.sum('quantidade', {
       where: {
         tipo: OperationType.CARRINHO,
-        setor: 'enfermagem',
+          setor: SectorType.ENFERMAGEM,
       },
     });
 

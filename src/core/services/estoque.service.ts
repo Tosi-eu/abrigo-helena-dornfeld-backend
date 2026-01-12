@@ -176,12 +176,18 @@ export class StockService {
       async () => {
         const data = await this.repo.listStockItems(params);
 
+        // Only transform quantidade if it exists (armarios/gavetas types don't have it)
         return {
           ...data,
-          data: data.data.map(item => ({
-            ...item,
-            quantidade: Number(item.quantidade),
-          })),
+          data: data.data.map(item => {
+            if ('quantidade' in item) {
+              return {
+                ...item,
+                quantidade: Number(item.quantidade),
+              };
+            }
+            return item;
+          }),
         };
       },
       30,
