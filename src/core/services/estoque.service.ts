@@ -5,7 +5,10 @@ import {
   ItemType,
   StockItemStatus,
   QueryPaginationParams,
+  OperationType,
 } from '../utils/utils';
+import Movement from '../domain/movimentacao';
+import { MovementRepository } from '../../infrastructure/database/repositories/movimentacao.repository';
 import { CacheService } from './redis.service';
 import { PriceSearchService } from './price-search.service';
 import { MedicineRepository } from '../../infrastructure/database/repositories/medicamento.repository';
@@ -25,7 +28,7 @@ export class StockService {
     this.inputRepo = new InputRepository();
   }
 
-  async medicineStockIn(data: MedicineStock): Promise<{ message: string; priceSearchResult?: { found: boolean; price: number | null } }> {
+  async medicineStockIn(data: MedicineStock): Promise<{ message: string }> {
     if (
       !data.medicamento_id ||
       (!data.armario_id && !data.gaveta_id) ||
@@ -34,102 +37,15 @@ export class StockService {
       throw new Error('Campos obrigatórios faltando.');
     }
 
-    let priceSearchResult: { found: boolean; price: number | null } | undefined;
-
-    // Se o preço não foi informado, tentar buscar automaticamente com timeout
-    if (!data.preco && this.priceSearchService) {
-      logger.debug('Preço não informado, iniciando busca automática', {
-        operation: 'stock_in',
-        itemType: 'medicamento',
-        itemId: data.medicamento_id,
-      });
-      
-      try {
-        const medicine = await this.medicineRepo.findMedicineById(data.medicamento_id);
-        if (medicine) {
-          logger.debug('Medicamento encontrado', {
-            operation: 'stock_in',
-            itemType: 'medicamento',
-            itemId: data.medicamento_id,
-            nome: medicine.nome,
-            dosagem: `${medicine.dosagem}${medicine.unidade_medida}`,
-          });
-          
-          // Timeout de 500ms para não bloquear o registro
-          const timeoutPromise = new Promise<null>((resolve) => {
-            setTimeout(() => resolve(null), 500);
-          });
-
-          const searchPromise = this.priceSearchService.searchPrice(
-            medicine.nome,
-            'medicine',
-            medicine.dosagem,
-            'São Carlos',
-            'São Paulo',
-            medicine.unidade_medida,
-          );
-
-          const searchResult = await Promise.race([searchPromise, timeoutPromise]);
-
-          if (searchResult && searchResult.averagePrice !== null && searchResult.averagePrice > 0) {
-            const precoUnitario = searchResult.averagePrice;
-            const precoTotal = precoUnitario * data.quantidade;
-            logger.info('Preço encontrado automaticamente', {
-              operation: 'stock_in',
-              itemType: 'medicamento',
-              itemId: data.medicamento_id,
-              precoUnitario: precoUnitario.toFixed(2),
-              precoTotal: precoTotal.toFixed(2),
-              quantidade: data.quantidade,
-              fonte: searchResult.source,
-            });
-            data.preco = precoTotal;
-            priceSearchResult = { found: true, price: precoUnitario };
-          } else {
-            logger.info('Nenhum preço encontrado ou timeout na busca', {
-              operation: 'stock_in',
-              itemType: 'medicamento',
-              itemId: data.medicamento_id,
-            });
-            priceSearchResult = { found: false, price: null };
-          }
-        } else {
-          logger.warn('Medicamento não encontrado', {
-            operation: 'stock_in',
-            itemType: 'medicamento',
-            itemId: data.medicamento_id,
-          });
-          priceSearchResult = { found: false, price: null };
-        }
-      } catch (error) {
-        logger.error('Erro ao buscar preço', {
-          operation: 'stock_in',
-          itemType: 'medicamento',
-          itemId: data.medicamento_id,
-        }, error as Error);
-        priceSearchResult = { found: false, price: null };
-      }
-    }
-
-    // Se o preço foi informado manualmente, multiplicar pela quantidade
-    if (data.preco && !priceSearchResult) {
-      data.preco = data.preco * data.quantidade;
-      logger.debug('Preço manual informado multiplicado pela quantidade', {
-        operation: 'stock_in',
-        itemType: 'medicamento',
-        itemId: data.medicamento_id,
-        precoTotal: data.preco.toFixed(2),
-      });
-    }
 
     const result = await this.repo.createMedicineStockIn(data);
 
     await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
 
-    return { ...result, priceSearchResult };
+    return result;
   }
 
-  async inputStockIn(data: InputStock): Promise<{ message: string; priceSearchResult?: { found: boolean; price: number | null } }> {
+  async inputStockIn(data: InputStock): Promise<{ message: string }> {
     if (
       !data.insumo_id ||
       (!data.armario_id && !data.gaveta_id) ||
@@ -139,95 +55,12 @@ export class StockService {
       throw new Error('Campos obrigatórios faltando.');
     }
 
-    let priceSearchResult: { found: boolean; price: number | null } | undefined;
-
-    if (!data.preco && this.priceSearchService) {
-      logger.debug('Preço não informado, iniciando busca automática', {
-        operation: 'stock_in',
-        itemType: 'insumo',
-        itemId: data.insumo_id,
-      });
-      
-      try {
-        const input = await this.inputRepo.findInputById(data.insumo_id);
-        if (input) {
-          logger.debug('Insumo encontrado', {
-            operation: 'stock_in',
-            itemType: 'insumo',
-            itemId: data.insumo_id,
-            nome: input.nome,
-          });
-          
-          const timeoutPromise = new Promise<null>((resolve) => {
-            setTimeout(() => resolve(null), 500);
-          });
-
-          const searchPromise = this.priceSearchService.searchPrice(
-            input.nome,
-            'input',
-            undefined,
-            'São Carlos',
-            'São Paulo',
-          );
-
-          const searchResult = await Promise.race([searchPromise, timeoutPromise]);
-
-          if (searchResult && searchResult.averagePrice !== null && searchResult.averagePrice > 0) {
-            const precoUnitario = searchResult.averagePrice;
-            const precoTotal = precoUnitario * data.quantidade;
-            logger.info('Preço encontrado automaticamente', {
-              operation: 'stock_in',
-              itemType: 'insumo',
-              itemId: data.insumo_id,
-              precoUnitario: precoUnitario.toFixed(2),
-              precoTotal: precoTotal.toFixed(2),
-              quantidade: data.quantidade,
-              fonte: searchResult.source,
-            });
-            data.preco = precoTotal;
-            priceSearchResult = { found: true, price: precoUnitario };
-          } else {
-            logger.info('Nenhum preço encontrado ou timeout na busca', {
-              operation: 'stock_in',
-              itemType: 'insumo',
-              itemId: data.insumo_id,
-            });
-            priceSearchResult = { found: false, price: null };
-          }
-        } else {
-          logger.warn('Insumo não encontrado', {
-            operation: 'stock_in',
-            itemType: 'insumo',
-            itemId: data.insumo_id,
-          });
-          priceSearchResult = { found: false, price: null };
-        }
-      } catch (error) {
-        logger.error('Erro ao buscar preço', {
-          operation: 'stock_in',
-          itemType: 'insumo',
-          itemId: data.insumo_id,
-        }, error as Error);
-        priceSearchResult = { found: false, price: null };
-      }
-    }
-
-    // Se o preço foi informado manualmente, multiplicar pela quantidade
-    if (data.preco && !priceSearchResult) {
-      data.preco = data.preco * data.quantidade;
-      logger.debug('Preço manual informado multiplicado pela quantidade', {
-        operation: 'stock_in',
-        itemType: 'insumo',
-        itemId: data.insumo_id,
-        precoTotal: data.preco.toFixed(2),
-      });
-    }
 
     const result = await this.repo.createInputStockIn(data);
 
     await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
 
-    return { ...result, priceSearchResult };
+    return result;
   }
 
   async stockOut(data: {
@@ -347,6 +180,10 @@ export class StockService {
   async transferMedicineSector(
     estoque_id: number,
     setor: 'farmacia' | 'enfermagem',
+    login_id: number,
+    quantidade?: number,
+    casela_id?: number,
+    tipo?: string,
   ) {
     const stock = await this.repo.findMedicineStockById(estoque_id);
 
@@ -354,9 +191,7 @@ export class StockService {
       throw new Error('Medicamento não encontrado');
     }
 
-    if (stock.casela_id == null) {
-      throw new Error('Somente medicamentos com casela podem ser transferidos');
-    }
+    // Permitir transferência de medicamentos gerais informando casela_id
 
     if (stock.status === StockItemStatus.SUSPENSO) {
       throw new Error('Medicamento suspenso não pode ser transferido');
@@ -366,7 +201,43 @@ export class StockService {
       throw new Error('Medicamento já está neste setor');
     }
 
-    const result = await this.repo.transferMedicineSector(estoque_id, setor);
+    if (quantidade !== undefined) {
+      if (quantidade <= 0) {
+        throw new Error('Quantidade deve ser maior que zero');
+      }
+      if (quantidade > stock.quantidade) {
+        throw new Error(`Quantidade não pode ser maior que ${stock.quantidade}`);
+      }
+    }
+
+    const setorOrigem = stock.setor;
+    const quantidadeTransferida = quantidade || stock.quantidade;
+    const result = await this.repo.transferMedicineSector(
+      estoque_id,
+      setor,
+      quantidade,
+      casela_id,
+      tipo,
+    );
+
+    if (setorOrigem === 'farmacia' && setor === 'enfermagem') {
+      const movementRepo = new MovementRepository();
+      
+      const movement: Movement = {
+        tipo: OperationType.INDIVIDUAL,
+        login_id,
+        armario_id: stock.armario_id ?? undefined,
+        gaveta_id: stock.gaveta_id ?? undefined,
+        quantidade: quantidadeTransferida,
+        medicamento_id: stock.medicamento_id,
+        insumo_id: null,
+        casela_id: casela_id ?? stock.casela_id,
+        validade: stock.validade ?? new Date(),
+        setor: 'farmacia', 
+      };
+      
+      await movementRepo.create(movement);
+    }
 
     await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
 
@@ -493,6 +364,9 @@ export class StockService {
   async transferInputSector(
     estoque_id: number,
     setor: 'farmacia' | 'enfermagem',
+    quantidade?: number,
+    casela_id?: number,
+    tipo?: string,
   ) {
     const stock = await this.repo.findInputStockById(estoque_id);
 
@@ -500,9 +374,7 @@ export class StockService {
       throw new Error('Insumo não encontrado');
     }
 
-    if (stock.casela_id == null) {
-      throw new Error('Somente insumos com casela podem ser transferidos');
-    }
+    // Permitir transferência de insumos gerais informando casela_id
 
     if (stock.status === StockItemStatus.SUSPENSO) {
       throw new Error('Insumo suspenso não pode ser transferido');
@@ -512,7 +384,22 @@ export class StockService {
       throw new Error('Insumo já está neste setor');
     }
 
-    const result = await this.repo.transferInputSector(estoque_id, setor);
+    if (quantidade !== undefined) {
+      if (quantidade <= 0) {
+        throw new Error('Quantidade deve ser maior que zero');
+      }
+      if (quantidade > stock.quantidade) {
+        throw new Error(`Quantidade não pode ser maior que ${stock.quantidade}`);
+      }
+    }
+
+    const result = await this.repo.transferInputSector(
+      estoque_id,
+      setor,
+      quantidade,
+      casela_id,
+      tipo,
+    );
 
     await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
 

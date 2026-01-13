@@ -3,6 +3,7 @@ import { StockService } from '../../../core/services/estoque.service';
 import { sendErrorResponse } from '../../helpers/error-response.helper';
 import { handleETagResponse } from '../../helpers/etag.helper';
 import { ItemType } from '../../../core/utils/utils';
+import { ValidatedRequest } from '../../../middleware/validation.middleware';
 
 export class StockController {
   constructor(private readonly service: StockService) {}
@@ -158,13 +159,23 @@ export class StockController {
     }
   }
 
-  async transferMedicineSector(req: Request, res: Response) {
+  async transferMedicineSector(req: ValidatedRequest, res: Response) {
     try {
       const { estoque_id } = req.params;
-      const { setor } = req.body as { setor: 'farmacia' | 'enfermagem' };
+      const { setor, quantidade, casela_id, tipo } = req.body as {
+        setor: 'farmacia' | 'enfermagem';
+        quantidade?: number;
+        casela_id?: number;
+        tipo?: string;
+      };
+      const login_id = req.user?.id;
 
       if (!estoque_id) {
         return res.status(400).json({ error: 'Estoque inválido' });
+      }
+
+      if (!login_id) {
+        return res.status(401).json({ error: 'Usuário não autenticado' });
       }
 
       if (!setor) {
@@ -174,6 +185,10 @@ export class StockController {
       const result = await this.service.transferMedicineSector(
         Number(estoque_id),
         setor,
+        login_id,
+        quantidade,
+        casela_id,
+        tipo,
       );
 
       return res.json(result);
@@ -333,7 +348,12 @@ export class StockController {
   async transferInputSector(req: Request, res: Response) {
     try {
       const { estoque_id } = req.params;
-      const { setor } = req.body as { setor: 'farmacia' | 'enfermagem' };
+      const { setor, quantidade, casela_id, tipo } = req.body as {
+        setor: 'farmacia' | 'enfermagem';
+        quantidade?: number;
+        casela_id?: number;
+        tipo?: string;
+      };
 
       if (!estoque_id) {
         return res.status(400).json({ error: 'Estoque inválido' });
@@ -346,6 +366,9 @@ export class StockController {
       const result = await this.service.transferInputSector(
         Number(estoque_id),
         setor,
+        quantidade,
+        casela_id,
+        tipo,
       );
 
       return res.json(result);

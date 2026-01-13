@@ -101,4 +101,21 @@ export class MovementService {
       120,
     );
   }
+
+  async getPharmacyToNursingTransfers(params: {
+    startDate?: string;
+    endDate?: string;
+    page: number;
+    limit: number;
+  }) {
+    const startDate = params.startDate ? new Date(params.startDate) : undefined;
+    const endDate = params.endDate ? new Date(params.endDate) : undefined;
+
+    return this.repo.listPharmacyToNursingTransfers({
+      startDate,
+      endDate,
+      page: params.page,
+      limit: params.limit,
+    });
+  }
 }

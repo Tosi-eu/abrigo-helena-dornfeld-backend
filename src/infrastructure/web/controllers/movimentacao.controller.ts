@@ -97,4 +97,32 @@ export class MovementController {
       return sendErrorResponse(res, 500, error, 'Erro ao buscar medicamentos');
     }
   }
+
+  async getPharmacyToNursingTransfers(req: ValidatedRequest, res: Response) {
+    try {
+      const startDate = req.query.startDate as string | undefined;
+      const endDate = req.query.endDate as string | undefined;
+      const { page, limit } = req.validated || { page: 1, limit: 10 };
+
+      const result = await this.service.getPharmacyToNursingTransfers({
+        startDate,
+        endDate,
+        page,
+        limit,
+      });
+
+      if (handleETagResponse(req, res, result)) {
+        return;
+      }
+
+      return res.json(result);
+    } catch (error: unknown) {
+      return sendErrorResponse(
+        res,
+        500,
+        error,
+        'Erro ao buscar transferências',
+      );
+    }
+  }
 }

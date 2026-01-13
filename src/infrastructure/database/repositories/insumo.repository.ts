@@ -3,12 +3,16 @@ import { Input } from '../../../core/domain/insumo';
 
 export class InputRepository {
   async createInput(data: Omit<Input, 'id'>): Promise<Input> {
-    const input = await InputModel.create(data);
+    const input = await InputModel.create({
+      ...data,
+      preco: data.preco ?? null,
+    });
     return {
       id: input.id,
       nome: input.nome,
       descricao: input.descricao ?? '',
       estoque_minimo: input.estoque_minimo,
+      preco: input.preco ?? null,
     };
   }
 
@@ -36,6 +40,7 @@ export class InputRepository {
         nome: r.nome,
         descricao: r.descricao ?? '',
         estoque_minimo: r.estoque_minimo,
+        preco: r.preco ?? null,
       })),
       total: count,
       page,
@@ -53,6 +58,7 @@ export class InputRepository {
       nome: insumo.nome,
       descricao: insumo.descricao ?? '',
       estoque_minimo: insumo.estoque_minimo,
+      preco: insumo.preco ?? null,
     };
   }
 
@@ -70,6 +76,7 @@ export class InputRepository {
       nome: updated.nome,
       descricao: updated.descricao ?? '',
       estoque_minimo: updated.estoque_minimo,
+      preco: updated.preco ?? null,
     };
   }
 

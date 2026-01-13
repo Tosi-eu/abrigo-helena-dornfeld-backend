@@ -15,7 +15,6 @@ export interface InputStockAttributes {
   lote?: string | null;
   status?: StockItemStatus;
   suspended_at?: Date | null;
-  preco?: number | null;
 }
 
 export class InputStockModel
@@ -34,7 +33,6 @@ export class InputStockModel
   declare lote?: string | null;
   declare status: StockItemStatus;
   declare suspended_at?: Date | null;
-  declare preco?: number | null;
 }
 
 InputStockModel.init(
@@ -73,10 +71,6 @@ InputStockModel.init(
     },
     suspended_at: {
       type: DataTypes.DATE,
-      allowNull: true,
-    },
-    preco: {
-      type: DataTypes.DECIMAL(10, 2),
       allowNull: true,
     },
   },
