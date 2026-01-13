@@ -1,5 +1,6 @@
 import { DataTypes, Model, Optional } from 'sequelize';
 import { sequelize } from '../sequelize';
+import DrawerCategoryModel from './categorias-gaveta.model';
 
 export interface DrawerAttributes {
   num_gaveta: number;
@@ -17,8 +18,7 @@ export class DrawerModel
 {
   declare num_gaveta: number;
   declare categoria_id: number;
-
-  DrawerCategoryModel: any;
+  declare DrawerCategoryModel?: DrawerCategoryModel;
 }
 
 DrawerModel.init(
@@ -41,6 +41,9 @@ DrawerModel.init(
     sequelize,
     tableName: 'gaveta',
     timestamps: true,
+    indexes: [
+      { fields: ['categoria_id'], name: 'idx_gaveta_categoria_id' },
+    ],
   },
 );
 

@@ -11,7 +11,7 @@ describe('Medicines E2E - CRUD básico', () => {
   });
 
   it('deve criar um medicamento', async () => {
-    const response = await request(app).post('/api/medicamentos').send({
+    const response = await request(app).post('/api/v1/medicamentos').send({
       nome: 'Dipirona Sódica',
       dosagem: 500,
       unidade_medida: 'mg',
@@ -26,7 +26,7 @@ describe('Medicines E2E - CRUD básico', () => {
 
   it('deve atualizar um medicamento', async () => {
     const response = await request(app)
-      .put(`/api/medicamentos/${createdId}`)
+      .put(`/api/v1/medicamentos/${createdId}`)
       .send({
         nome: 'Dipirona Atualizada',
         dosagem: 500,
@@ -41,7 +41,7 @@ describe('Medicines E2E - CRUD básico', () => {
 
   it('não deve atualizar com campos inválidos', async () => {
     const response = await request(app)
-      .put(`/api/medicamentos/${createdId}`)
+      .put(`/api/v1/medicamentos/${createdId}`)
       .send({
         nome: '',
         dosagem: -10,
@@ -52,7 +52,7 @@ describe('Medicines E2E - CRUD básico', () => {
 
   it('deve remover um medicamento', async () => {
     const response = await request(app).delete(
-      `/api/medicamentos/${createdId}`,
+      `/api/v1/medicamentos/${createdId}`,
     );
 
     expect(response.status).toBe(204);
@@ -60,7 +60,7 @@ describe('Medicines E2E - CRUD básico', () => {
 
   it('deve retornar erro ao tentar remover novamente', async () => {
     const response = await request(app).delete(
-      `/api/medicamentos/${createdId}`,
+      `/api/v1/medicamentos/${createdId}`,
     );
 
     expect(response.status).toBe(404);

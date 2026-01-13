@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { jwtConfig } from '../infrastructure/helpers/auth.helper';
 import LoginModel from '../infrastructure/database/models/login.model';
+import { JWTPayload } from '../infrastructure/types/jwt.types';
 
 export interface AuthRequest extends Request {
   user?: {
@@ -10,31 +11,41 @@ export interface AuthRequest extends Request {
   };
 }
 
-export function authMiddleware(
+export async function authMiddleware(
   req: AuthRequest,
   res: Response,
   next: NextFunction,
 ) {
-  const authHeader = req.headers.authorization;
-  if (!authHeader)
-    return res.status(401).json({ error: 'Token não fornecido' });
+  let token: string | undefined;
 
-  const [, token] = authHeader.split(' ');
-  if (!token) return res.status(401).json({ error: 'Token inválido' });
+  if (req.cookies && req.cookies.authToken) {
+    token = req.cookies.authToken;
+  } else {
+    const authHeader = req.headers.authorization;
+    if (authHeader) {
+      const [, headerToken] = authHeader.split(' ');
+      if (headerToken) {
+        token = headerToken;
+      }
+    }
+  }
+
+  if (!token) {
+    return res.status(401).json({ error: 'Token não fornecido' });
+  }
 
   try {
-    const decoded = jwt.verify(token, jwtConfig.secret) as any;
+    const decoded = jwt.verify(token, jwtConfig.secret) as JWTPayload;
 
-    LoginModel.findOne({ where: { refreshToken: token } }).then(user => {
-      if (!user) return res.status(401).json({ error: 'Sessão inválida' });
+    const user = await LoginModel.findOne({ where: { refresh_token: token } });
+    if (!user) return res.status(401).json({ error: 'Sessão inválida' });
 
-      req.user = {
-        id: Number(decoded.sub),
-        login: decoded.login,
-      };
+    req.user = {
+      id: Number(decoded.sub),
+      login: decoded.login,
+    };
 
-      next();
-    });
+    next();
   } catch {
     return res.status(401).json({ error: 'Token expirado ou inválido' });
   }

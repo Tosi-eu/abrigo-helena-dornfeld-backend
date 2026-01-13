@@ -1,5 +1,6 @@
 import { DataTypes, Model, Optional } from 'sequelize';
 import { sequelize } from '../sequelize';
+import CabinetCategoryModel from './categorias-armario.model';
 
 export interface CabinetAttributes {
   num_armario: number;
@@ -17,7 +18,7 @@ export class CabinetModel
 {
   declare num_armario: number;
   declare categoria_id: number;
-  CabinetCategoryModel: any;
+  declare CabinetCategoryModel?: CabinetCategoryModel;
 }
 
 CabinetModel.init(
@@ -40,6 +41,9 @@ CabinetModel.init(
     sequelize,
     tableName: 'armario',
     timestamps: true,
+    indexes: [
+      { fields: ['categoria_id'], name: 'idx_armario_categoria_id' },
+    ],
   },
 );
 

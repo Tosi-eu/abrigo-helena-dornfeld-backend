@@ -14,6 +14,7 @@ import drawerCategoryRoutes from './categoria-gaveta.routes';
 import notificationRoutes from './notificacao.routes';
 import appRoutes from './app.routes';
 import { authMiddleware } from '../../../middleware/auth.middleware';
+import { auditLog } from '../../../middleware/audit.middleware';
 
 const router = Router();
 
@@ -21,6 +22,7 @@ router.use('/login', loginRoutes);
 router.use('/', appRoutes);
 
 router.use(authMiddleware);
+router.use(auditLog);
 
 router.use('/gavetas', drawerRoutes);
 router.use('/armarios', cabinetRoutes);

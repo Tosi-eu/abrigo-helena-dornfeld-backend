@@ -1,6 +1,7 @@
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { LoginService } from '../../../core/services/login.service';
 import { AuthRequest } from '../../../middleware/auth.middleware';
+import { getErrorMessage } from '../../types/error.types';
 
 export class LoginController {
   constructor(private readonly service: LoginService) {}
@@ -14,8 +15,9 @@ export class LoginController {
     try {
       const user = await this.service.create(login, password);
       return res.status(201).json(user);
-    } catch (err: any) {
-      if (err.message === 'duplicate key') {
+    } catch (error: unknown) {
+      const message = getErrorMessage(error);
+      if (message === 'duplicate key') {
         return res.status(409).json({ error: 'Login já cadastrado' });
       }
       return res.status(500).json({ error: 'Erro ao criar usuário' });
@@ -32,7 +34,18 @@ export class LoginController {
     if (!result)
       return res.status(401).json({ error: 'Credenciais inválidas' });
 
-    return res.json(result);
+    const cookieOptions = {
+      httpOnly: true,
+      sameSite: 'lax' as const,
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours in milliseconds
+      path: '/',
+    };
+
+    res.cookie('authToken', result.token, cookieOptions);
+
+    return res.json({
+      user: result.user,
+    });
   }
 
   async update(req: AuthRequest, res: Response) {
@@ -55,8 +68,9 @@ export class LoginController {
         return res.status(401).json({ error: 'Credenciais atuais incorretas' });
 
       return res.json(updated);
-    } catch (err: any) {
-      if (err.message === 'duplicate key') {
+    } catch (error: unknown) {
+      const message = getErrorMessage(error);
+      if (message === 'duplicate key') {
         return res.status(409).json({ error: 'Login já cadastrado' });
       }
       return res.status(500).json({ error: 'Erro ao atualizar usuário' });
@@ -70,20 +84,38 @@ export class LoginController {
     return res.status(204).send();
   }
 
-  async resetPassword(req: AuthRequest, res: Response) {
+  async resetPassword(req: Request, res: Response) {
     const { login, newPassword } = req.body;
 
     if (!login || !newPassword)
-      return res.status(400).json({ error: 'Login e nova senha obrigatórios' });
+      return res
+        .status(400)
+        .json({ error: 'Login e nova senha são obrigatórios' });
 
-    const user = await this.service.resetPassword(login, newPassword);
-    if (!user) return res.status(404).json({ error: 'Usuário não encontrado' });
+    try {
+      const user = await this.service.resetPassword(login, newPassword);
+      return res.json(user);
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : 'Erro ao redefinir senha';
 
-    return res.json(user);
+      if (message === 'Login não encontrado') {
+        return res.status(404).json({ error: 'Login não encontrado' });
+      }
+
+      return res.status(400).json({ error: message });
+    }
   }
 
   async logout(req: AuthRequest, res: Response) {
     await this.service.logout(req.user!.id);
+    
+    res.clearCookie('authToken', {
+      httpOnly: true,
+      sameSite: 'lax',
+      path: '/',
+    });
+    
     return res.status(204).send();
   }
 }

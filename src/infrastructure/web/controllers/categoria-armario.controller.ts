@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { CabinetCategoryService } from '../../../core/services/categoria-armario.service';
+import { sendErrorResponse } from '../../helpers/error-response.helper';
 
 export class CabinetCategoryController {
   constructor(private readonly service: CabinetCategoryService) {}
@@ -9,8 +10,8 @@ export class CabinetCategoryController {
       const { nome } = req.body;
       const created = await this.service.create(nome);
       return res.status(201).json(created);
-    } catch (e: any) {
-      return res.status(400).json({ error: e.message });
+    } catch (error: unknown) {
+      return sendErrorResponse(res, 400, error, 'Erro ao criar categoria');
     }
   }
 
@@ -45,8 +46,8 @@ export class CabinetCategoryController {
       }
 
       return res.json(updated);
-    } catch (e: any) {
-      return res.status(400).json({ error: e.message });
+    } catch (error: unknown) {
+      return sendErrorResponse(res, 400, error, 'Erro ao atualizar categoria');
     }
   }
 
@@ -60,8 +61,8 @@ export class CabinetCategoryController {
       }
 
       return res.sendStatus(204);
-    } catch (e: any) {
-      return res.status(400).json({ error: e.message });
+    } catch (error: unknown) {
+      return sendErrorResponse(res, 400, error, 'Erro ao deletar categoria');
     }
   }
 }

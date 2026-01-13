@@ -1,6 +1,6 @@
 import { DataTypes, Model } from 'sequelize';
 import { sequelize } from '../sequelize';
-import { MedicineStatus } from '../../../core/utils/utils';
+import { StockItemStatus } from '../../../core/utils/utils';
 
 export interface MedicineStockAttributes {
   id?: number;
@@ -14,8 +14,10 @@ export interface MedicineStockAttributes {
   tipo?: string | null;
   setor: string;
   lote?: string | null;
-  status?: MedicineStatus;
+  status?: StockItemStatus;
   suspended_at?: Date | null;
+  observacao?: string | null;
+  preco?: number | null;
 }
 
 export class MedicineStockModel
@@ -33,8 +35,10 @@ export class MedicineStockModel
   declare tipo: string | null;
   declare setor: string;
   declare lote?: string | null;
-  declare status: MedicineStatus;
+  declare status: StockItemStatus;
   declare suspended_at?: Date | null;
+  declare observacao?: string | null;
+  declare preco?: number | null;
 }
 
 MedicineStockModel.init(
@@ -67,9 +71,9 @@ MedicineStockModel.init(
     origem: { type: DataTypes.STRING, allowNull: false },
     tipo: { type: DataTypes.STRING, allowNull: false },
     status: {
-      type: DataTypes.ENUM('active', 'cancelled', 'removed'),
+      type: DataTypes.ENUM(...Object.values(StockItemStatus)),
       allowNull: false,
-      defaultValue: 'active',
+      defaultValue: StockItemStatus.ATIVO,
     },
     lote: { type: DataTypes.STRING, allowNull: true },
     setor: { type: DataTypes.TEXT, allowNull: false },
@@ -77,11 +81,46 @@ MedicineStockModel.init(
       type: DataTypes.DATE,
       allowNull: true,
     },
+    observacao: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    preco: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: true,
+    },
   },
   {
     sequelize,
     tableName: 'estoque_medicamento',
     timestamps: true,
+    indexes: [
+      { fields: ['medicamento_id'], name: 'idx_estoque_medicamento_medicamento_id' },
+      { fields: ['armario_id'], name: 'idx_estoque_medicamento_armario_id' },
+      { fields: ['gaveta_id'], name: 'idx_estoque_medicamento_gaveta_id' },
+      { fields: ['casela_id'], name: 'idx_estoque_medicamento_casela_id' },
+      { fields: ['status'], name: 'idx_estoque_medicamento_status' },
+      { fields: ['tipo'], name: 'idx_estoque_medicamento_tipo' },
+      { fields: ['setor'], name: 'idx_estoque_medicamento_setor' },
+      { fields: ['validade'], name: 'idx_estoque_medicamento_validade' },
+      {
+        fields: ['tipo', 'setor'],
+        name: 'idx_estoque_medicamento_tipo_setor',
+      },
+      {
+        fields: [
+          'medicamento_id',
+          'armario_id',
+          'gaveta_id',
+          'validade',
+          'tipo',
+          'casela_id',
+          'origem',
+          'lote',
+        ],
+        name: 'idx_estoque_medicamento_composite_lookup',
+      },
+    ],
   },
 );
 

@@ -1,5 +1,8 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { MedicineService } from '../../../core/services/medicamento.service';
+import { ValidatedRequest } from '../../../middleware/validation.middleware';
+import { sendErrorResponse } from '../../helpers/error-response.helper';
+import { handleETagResponse } from '../../helpers/etag.helper';
 
 export interface PaginationParams {
   page: number;
@@ -9,35 +12,44 @@ export interface PaginationParams {
 export class MedicineController {
   constructor(private readonly service: MedicineService) {}
 
-  async create(req: Request, res: Response) {
+  async create(req: ValidatedRequest, res: Response) {
     try {
       const data = await this.service.createMedicine(req.body);
       res.status(201).json(data);
-    } catch (e: any) {
-      res.status(400).json({ error: e.message });
+    } catch (error: unknown) {
+      return sendErrorResponse(res, 400, error, 'Erro ao criar medicamento');
     }
   }
 
-  async getAll(req: Request, res: Response) {
-    const page = Number(req.query.page) || 1;
-    const limit = Number(req.query.limit) || 10;
+  async getAll(req: ValidatedRequest, res: Response) {
+    const { page, limit } = req.validated!;
 
     const list = await this.service.findAll({ page, limit });
+
+    if (handleETagResponse(req, res, list)) {
+      return; 
+    }
+    
     res.json(list);
   }
 
-  async update(req: Request, res: Response) {
+  async update(req: ValidatedRequest, res: Response) {
     const id = Number(req.params.id);
     try {
       const updated = await this.service.updateMedicine(id, req.body);
       if (!updated) return res.status(404).json({ error: 'Não encontrado' });
       res.json(updated);
-    } catch (e: any) {
-      res.status(400).json({ error: e.message });
+    } catch (error: unknown) {
+      return sendErrorResponse(
+        res,
+        400,
+        error,
+        'Erro ao atualizar medicamento',
+      );
     }
   }
 
-  async delete(req: Request, res: Response) {
+  async delete(req: ValidatedRequest, res: Response) {
     const id = Number(req.params.id);
 
     const ok = await this.service.deleteMedicine(id);

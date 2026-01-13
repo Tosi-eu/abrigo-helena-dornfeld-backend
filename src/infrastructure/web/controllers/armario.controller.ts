@@ -1,5 +1,6 @@
 import { CabinetService } from '../../../core/services/armario.service';
 import { Request, Response } from 'express';
+import { sendErrorResponse } from '../../helpers/error-response.helper';
 
 export class CabinetController {
   constructor(private readonly service: CabinetService) {}
@@ -8,8 +9,8 @@ export class CabinetController {
     try {
       const data = await this.service.createCabinet(req.body);
       return res.status(201).json(data);
-    } catch (e: any) {
-      return res.status(400).json({ error: e.message });
+    } catch (error: unknown) {
+      return sendErrorResponse(res, 400, error, 'Erro ao criar armário');
     }
   }
 
@@ -45,8 +46,8 @@ export class CabinetController {
       }
 
       return res.json(updated);
-    } catch (e: any) {
-      return res.status(400).json({ error: e.message });
+    } catch (error: unknown) {
+      return sendErrorResponse(res, 400, error, 'Erro ao atualizar armário');
     }
   }
 
@@ -61,8 +62,8 @@ export class CabinetController {
       }
 
       return res.status(204).end();
-    } catch (e: any) {
-      return res.status(400).json({ error: e.message });
+    } catch (error: unknown) {
+      return sendErrorResponse(res, 400, error, 'Erro ao deletar armário');
     }
   }
 }

@@ -1,8 +1,14 @@
 import { MovementRepository } from '../../infrastructure/database/repositories/movimentacao.repository';
 import { formatDateToPtBr } from '../../infrastructure/helpers/date.helper';
 import { CacheKeyHelper } from '../../infrastructure/helpers/redis.helper';
-import { NonMovementedItem } from '../utils/utils';
+import { NonMovementedItem, OperationType } from '../utils/utils';
 import { CacheService } from './redis.service';
+import Movement from '../domain/movimentacao';
+import {
+  MovementQueryParams,
+  MovementRankingParams,
+  CreateMovementData,
+} from '../types/movimentacao.types';
 
 export class MovementService {
   constructor(
@@ -10,7 +16,7 @@ export class MovementService {
     private readonly cache: CacheService,
   ) {}
 
-  async findMedicineMovements(params: any) {
+  async findMedicineMovements(params: MovementQueryParams) {
     const cacheKey = CacheKeyHelper.movementMedicineList(params);
 
     return this.cache.getOrSet(
@@ -20,7 +26,7 @@ export class MovementService {
     );
   }
 
-  async listInputMovements(params: any) {
+  async listInputMovements(params: MovementQueryParams) {
     const cacheKey = CacheKeyHelper.movementInputList(params);
 
     return this.cache.getOrSet(
@@ -30,24 +36,42 @@ export class MovementService {
     );
   }
 
-  async createMovement(data: any) {
+  async createMovement(data: CreateMovementData) {
     if (
       !data.tipo ||
       !data.quantidade ||
       (!data.armario_id && !data.gaveta_id) ||
-      !data.login_id
+      !data.login_id ||
+      !data.setor
     ) {
       throw new Error('Campos obrigatórios faltando.');
     }
 
-    const result = await this.repo.create(data);
+    const movement: Movement = {
+      tipo: data.tipo as OperationType,
+      login_id: data.login_id,
+      armario_id: data.armario_id,
+      gaveta_id: data.gaveta_id,
+      quantidade: data.quantidade,
+      insumo_id: data.insumo_id ?? null,
+      medicamento_id: data.medicamento_id ?? null,
+      casela_id: data.casela_id ?? null,
+      validade: data.validade
+        ? typeof data.validade === 'string'
+          ? new Date(data.validade)
+          : data.validade
+        : new Date(),
+      setor: data.setor,
+    };
+
+    const result = await this.repo.create(movement);
 
     await this.cache.invalidateByPattern(CacheKeyHelper.movementWildcard());
 
     return result;
   }
 
-  async getMedicineRanking(params: any) {
+  async getMedicineRanking(params: MovementRankingParams) {
     const cacheKey = CacheKeyHelper.movementRanking(params);
 
     return this.cache.getOrSet(

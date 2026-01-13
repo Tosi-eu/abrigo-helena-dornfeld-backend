@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { DrawerService } from '../../../core/services/gaveta.service';
+import { sendErrorResponse } from '../../helpers/error-response.helper';
 
 export class DrawerController {
   constructor(private readonly service: DrawerService) {}
@@ -8,8 +9,8 @@ export class DrawerController {
     try {
       const created = await this.service.createDrawer(req.body);
       return res.status(201).json(created);
-    } catch (e: any) {
-      return res.status(400).json({ error: e.message });
+    } catch (error: unknown) {
+      return sendErrorResponse(res, 400, error, 'Erro ao criar gaveta');
     }
   }
 
@@ -44,8 +45,8 @@ export class DrawerController {
       }
 
       return res.json(updated);
-    } catch (e: any) {
-      return res.status(400).json({ error: e.message });
+    } catch (error: unknown) {
+      return sendErrorResponse(res, 400, error, 'Erro ao atualizar gaveta');
     }
   }
 
@@ -60,8 +61,8 @@ export class DrawerController {
       }
 
       return res.sendStatus(204);
-    } catch (e: any) {
-      return res.status(400).json({ error: e.message });
+    } catch (error: unknown) {
+      return sendErrorResponse(res, 400, error, 'Erro ao deletar gaveta');
     }
   }
 }

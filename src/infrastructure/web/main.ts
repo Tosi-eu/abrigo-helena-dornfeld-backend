@@ -1,18 +1,52 @@
 import express from 'express';
 import dotenv from 'dotenv';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+import cookieParser from 'cookie-parser';
+import { spawn } from 'child_process';
+import { join } from 'path';
 import routes from './routes/index.routes';
 import { sequelize } from '../database/sequelize';
+import '../database/models/index.models';
 import { setupAssociations } from '../database/models/associations.models';
+import { errorHandler } from '../../middleware/error-handler.middleware';
+import { sanitizeInput } from '../../middleware/sanitize.middleware';
+import { logger } from '../helpers/logger.helper';
 
 dotenv.config();
 
 const app = express();
 const port = Number(process.env.PORT) || 3001;
 
-app.use(express.json());
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  }),
+);
+
+app.use(cookieParser());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(sanitizeInput);
+
+if (!process.env.ALLOWED_ORIGINS) {
+  throw new Error(
+    'ALLOWED_ORIGINS environment variable is required. Please set it in your .env file.',
+  );
+}
+
+const allowedOrigins = process.env.ALLOWED_ORIGINS.split(',').map(origin =>
+  origin.trim(),
+);
 
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
+  const origin = req.headers.origin;
+
+  if (origin && allowedOrigins.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Access-Control-Allow-Credentials', 'true');
+  }
+
   res.header(
     'Access-Control-Allow-Methods',
     'GET, POST, PUT, DELETE, PATCH, OPTIONS',
@@ -22,27 +56,89 @@ app.use((req, res, next) => {
     'Origin, X-Requested-With, Content-Type, Accept, Authorization',
   );
 
-  if (req.method === 'OPTIONS') return res.sendStatus(200);
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+
   next();
 });
 
-app.use('/api', routes);
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: Number(process.env.RATE_LIMIT_MAX) || 1000,
+  message: 'Too many requests from this IP, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: req => req.method === 'OPTIONS',
+});
+
+app.use(limiter);
+
+app.use('/api/v1', routes);
+
+app.use(errorHandler);
+
+async function runSeeders(): Promise<void> {
+  return new Promise(resolve => {
+    const sequelizeCliPath = join(
+      process.cwd(),
+      'node_modules',
+      '.bin',
+      'sequelize-cli',
+    );
+
+    logger.info('Executando seeders...', { operation: 'seeders' });
+
+    const env = {
+      ...process.env,
+      NODE_ENV: process.env.NODE_ENV || 'development',
+    };
+
+    const seedProcess = spawn('node', [sequelizeCliPath, 'db:seed:all'], {
+      cwd: process.cwd(),
+      stdio: 'inherit',
+      env,
+    });
+
+    seedProcess.on('close', code => {
+      if (code === 0) {
+        logger.info('Seeders executados com sucesso', { operation: 'seeders', status: 'success' });
+        resolve();
+      } else {
+        logger.warn('Seeders finalizaram com código não-zero', {
+          operation: 'seeders',
+          exitCode: code,
+          note: 'Pode ser normal se já foram executados',
+        });
+        resolve();
+      }
+    });
+
+    seedProcess.on('error', error => {
+      logger.error('Erro ao executar seeders', { operation: 'seeders' }, error as Error);
+      resolve();
+    });
+  });
+}
 
 void (async () => {
   try {
     await sequelize.authenticate();
-    console.log('✓ Conexão com o banco estabelecida.');
+    logger.info('Conexão com o banco estabelecida', { operation: 'database', status: 'connected' });
 
     setupAssociations();
 
     await sequelize.sync({ alter: false });
-    console.log('✓ Tabelas sincronizadas.');
+    logger.info('Tabelas sincronizadas', { operation: 'database', status: 'synced' });
+
+    // Executar seeders após sincronização
+    await runSeeders();
 
     app.listen(port, () => {
-      console.log(`🚀 Servidor rodando na porta ${port}`);
+      logger.info('Servidor iniciado', { operation: 'server', port, status: 'running' });
     });
-  } catch (err) {
-    console.error('Erro ao iniciar:', err);
+  } catch (err: unknown) {
+    logger.error('Erro ao iniciar servidor', { operation: 'server' }, err as Error);
     process.exit(1);
   }
 })();

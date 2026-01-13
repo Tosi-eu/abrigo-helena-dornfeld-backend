@@ -30,6 +30,10 @@ export class CabinetCategoryRepository {
     return CabinetCategoryModel.findByPk(id);
   }
 
+  async findByName(nome: string) {
+    return CabinetCategoryModel.findOne({ where: { nome } });
+  }
+
   async update(id: number, nome: string) {
     const item = await CabinetCategoryModel.findByPk(id);
     if (!item) return null;

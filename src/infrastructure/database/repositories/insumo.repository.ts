@@ -44,6 +44,18 @@ export class InputRepository {
     };
   }
 
+  async findInputById(id: number): Promise<Input | null> {
+    const insumo = await InputModel.findByPk(id);
+    if (!insumo) return null;
+
+    return {
+      id: insumo.id,
+      nome: insumo.nome,
+      descricao: insumo.descricao ?? '',
+      estoque_minimo: insumo.estoque_minimo,
+    };
+  }
+
   async updateInputById(
     id: number,
     data: Omit<Input, 'id'>,
@@ -64,4 +76,5 @@ export class InputRepository {
   async deleteInputById(id: number): Promise<boolean> {
     return (await InputModel.destroy({ where: { id } })) > 0;
   }
+
 }

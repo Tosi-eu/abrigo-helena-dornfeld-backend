@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Gerenciamento de Estoque do Abrigo</title>
+
+    <style>
+      #close-btn {
+        position: absolute;
+        top: 12px;
+        right: 16px;
+        background: transparent;
+        border: none;
+        font-size: 28px;
+        color: #0369a1;
+        cursor: pointer;
+      }
+
+      #close-btn:hover {
+        color: #0c4a6e;
+      }
+      body {
+        margin: 0;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        background: linear-gradient(180deg, #e0f2fe, #f0f9ff);
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+        transition: opacity 0.6s ease-out;
+        opacity: 1;
+      }
+
+      body.fade-out {
+        opacity: 0;
+      }
+
+      img {
+        width: 220px;
+        margin-bottom: 24px;
+        animation: fadeIn 1s ease forwards;
+      }
+
+      h1 {
+        color: #0c4a6e;
+        font-size: 32px;
+        margin-bottom: 16px;
+        animation: fadeIn 1.2s ease forwards;
+      }
+
+      .bar {
+        width: 280px;
+        height: 6px;
+        background: #bae6fd;
+        overflow: hidden;
+        border-radius: 999px;
+        margin-bottom: 16px;
+      }
+
+      .bar::after {
+        content: "";
+        display: block;
+        width: 35%;
+        height: 100%;
+        background: #0369a1;
+        animation: move 1.3s infinite ease-in-out;
+      }
+
+      .subtitle {
+        position: relative;
+        height: 20px;
+        width: 100%;
+        text-align: center;
+        color: #0369a1;
+        font-size: 16px;
+      }
+
+      .subtitle span {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        opacity: 0;
+        animation: wordCycle 6s infinite;
+      }
+
+      .subtitle span:nth-child(1) { animation-delay: 0s; }
+      .subtitle span:nth-child(2) { animation-delay: 2s; }
+      .subtitle span:nth-child(3) { animation-delay: 4s; }
+
+      @keyframes move {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(260%); }
+      }
+
+      @keyframes wordCycle {
+        0% { opacity: 0; }
+        10% { opacity: 1; }
+        30% { opacity: 1; }
+        40% { opacity: 0; }
+        100% { opacity: 0; }
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(8px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <img src="./frontend/public/logo.png" alt="Logo Abrigo" onerror="this.style.display='none'" />
+
+    <h1>Gerenciamento de Estoque</h1>
+
+    <div class="bar"></div>
+
+    <div class="subtitle">
+      <span>Carregando aplicação…</span>
+      <span>Inicializando serviços…</span>
+      <span>Preparando ambiente…</span>
+    </div>
+
+    <button id="close-btn" onclick="window.close()">×</button>
+  </body>
+  <script>
+    const FRONTEND_URL = "http://localhost:8081";
+    const CHECK_INTERVAL = 2000; // 2 segundos
+    const MAX_ATTEMPTS = 60; // 2 minutos máximo
+
+    // Função para verificar se o frontend está pronto
+    function checkFrontendReadyXHR() {
+      return new Promise((resolve) => {
+        const xhr = new XMLHttpRequest();
+        xhr.timeout = 2000;
+        xhr.onload = () => resolve(xhr.status === 200 || xhr.status === 0);
+        xhr.onerror = () => resolve(false);
+        xhr.ontimeout = () => resolve(false);
+        try {
+          xhr.open("GET", FRONTEND_URL, true);
+          xhr.send();
+        } catch (e) {
+          resolve(false);
+        }
+      });
+    }
+
+    // Função para fazer transição e redirecionar
+    function transitionToApp() {
+      const body = document.body;
+      
+      // Adiciona fade-out
+      body.classList.add("fade-out");
+      
+      // Aguarda animação completar e redireciona
+      setTimeout(() => {
+        window.location.href = FRONTEND_URL;
+      }, 600); // Tempo da animação
+    }
+
+    // Função principal
+    async function waitForApp() {
+      let attempts = 0;
+      
+      while (attempts < MAX_ATTEMPTS) {
+        const isReady = await checkFrontendReadyXHR();
+        
+        if (isReady) {
+          console.log("Aplicação pronta! Redirecionando...");
+          transitionToApp();
+          return;
+        }
+        
+        attempts++;
+        await new Promise((resolve) => setTimeout(resolve, CHECK_INTERVAL));
+      }
+      
+      // Se chegou aqui, timeout - tenta redirecionar mesmo assim
+      console.warn("Timeout aguardando aplicação. Redirecionando mesmo assim...");
+      transitionToApp();
+    }
+
+    // Botão de fechar
+    const closeBtn = document.getElementById("close-btn");
+    if (closeBtn) {
+      closeBtn.addEventListener("click", () => {
+        window.close();
+      });
+    }
+
+    // Iniciar verificação quando a página carregar
+    window.addEventListener("DOMContentLoaded", () => {
+      waitForApp();
+    });
+  </script>
+</html>
+

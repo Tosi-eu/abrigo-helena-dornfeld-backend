@@ -34,7 +34,7 @@ export class CabinetRepository {
     const data = rows.map(i => ({
       numero: i.num_armario,
       categoria_id: i.categoria_id,
-      categoria: i.CabinetCategoryModel.nome,
+      categoria: i.CabinetCategoryModel?.nome ?? null,
     }));
 
     return {

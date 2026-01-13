@@ -5,7 +5,7 @@ export class LoginModel extends Model {
   declare id: number;
   declare login: string;
   declare password: string;
-  declare refreshToken?: string | null;
+  declare refresh_token?: string | null;
 }
 
 LoginModel.init(
@@ -24,7 +24,7 @@ LoginModel.init(
       type: DataTypes.STRING(255),
       allowNull: false,
     },
-    refreshToken: {
+    refresh_token: {
       type: DataTypes.STRING,
       allowNull: true,
     },
@@ -33,6 +33,9 @@ LoginModel.init(
     sequelize,
     tableName: 'login',
     timestamps: true,
+    indexes: [
+      { fields: ['refresh_token'], name: 'idx_login_refresh_token' },
+    ],
   },
 );
 

@@ -3,18 +3,29 @@ import { CacheKeyHelper } from '../../infrastructure/helpers/redis.helper';
 import { MedicineStock, InputStock } from '../domain/estoque';
 import {
   ItemType,
-  MedicineStatus,
+  StockItemStatus,
   QueryPaginationParams,
 } from '../utils/utils';
 import { CacheService } from './redis.service';
+import { PriceSearchService } from './price-search.service';
+import { MedicineRepository } from '../../infrastructure/database/repositories/medicamento.repository';
+import { InputRepository } from '../../infrastructure/database/repositories/insumo.repository';
+import { logger } from '../../infrastructure/helpers/logger.helper';
 
 export class StockService {
+  private medicineRepo: MedicineRepository;
+  private inputRepo: InputRepository;
+
   constructor(
     private readonly repo: StockRepository,
     private readonly cache: CacheService,
-  ) {}
+    private readonly priceSearchService?: PriceSearchService,
+  ) {
+    this.medicineRepo = new MedicineRepository();
+    this.inputRepo = new InputRepository();
+  }
 
-  async medicineStockIn(data: MedicineStock) {
+  async medicineStockIn(data: MedicineStock): Promise<{ message: string; priceSearchResult?: { found: boolean; price: number | null } }> {
     if (
       !data.medicamento_id ||
       (!data.armario_id && !data.gaveta_id) ||
@@ -23,14 +34,102 @@ export class StockService {
       throw new Error('Campos obrigatórios faltando.');
     }
 
+    let priceSearchResult: { found: boolean; price: number | null } | undefined;
+
+    // Se o preço não foi informado, tentar buscar automaticamente com timeout
+    if (!data.preco && this.priceSearchService) {
+      logger.debug('Preço não informado, iniciando busca automática', {
+        operation: 'stock_in',
+        itemType: 'medicamento',
+        itemId: data.medicamento_id,
+      });
+      
+      try {
+        const medicine = await this.medicineRepo.findMedicineById(data.medicamento_id);
+        if (medicine) {
+          logger.debug('Medicamento encontrado', {
+            operation: 'stock_in',
+            itemType: 'medicamento',
+            itemId: data.medicamento_id,
+            nome: medicine.nome,
+            dosagem: `${medicine.dosagem}${medicine.unidade_medida}`,
+          });
+          
+          // Timeout de 500ms para não bloquear o registro
+          const timeoutPromise = new Promise<null>((resolve) => {
+            setTimeout(() => resolve(null), 500);
+          });
+
+          const searchPromise = this.priceSearchService.searchPrice(
+            medicine.nome,
+            'medicine',
+            medicine.dosagem,
+            'São Carlos',
+            'São Paulo',
+            medicine.unidade_medida,
+          );
+
+          const searchResult = await Promise.race([searchPromise, timeoutPromise]);
+
+          if (searchResult && searchResult.averagePrice !== null && searchResult.averagePrice > 0) {
+            const precoUnitario = searchResult.averagePrice;
+            const precoTotal = precoUnitario * data.quantidade;
+            logger.info('Preço encontrado automaticamente', {
+              operation: 'stock_in',
+              itemType: 'medicamento',
+              itemId: data.medicamento_id,
+              precoUnitario: precoUnitario.toFixed(2),
+              precoTotal: precoTotal.toFixed(2),
+              quantidade: data.quantidade,
+              fonte: searchResult.source,
+            });
+            data.preco = precoTotal;
+            priceSearchResult = { found: true, price: precoUnitario };
+          } else {
+            logger.info('Nenhum preço encontrado ou timeout na busca', {
+              operation: 'stock_in',
+              itemType: 'medicamento',
+              itemId: data.medicamento_id,
+            });
+            priceSearchResult = { found: false, price: null };
+          }
+        } else {
+          logger.warn('Medicamento não encontrado', {
+            operation: 'stock_in',
+            itemType: 'medicamento',
+            itemId: data.medicamento_id,
+          });
+          priceSearchResult = { found: false, price: null };
+        }
+      } catch (error) {
+        logger.error('Erro ao buscar preço', {
+          operation: 'stock_in',
+          itemType: 'medicamento',
+          itemId: data.medicamento_id,
+        }, error as Error);
+        priceSearchResult = { found: false, price: null };
+      }
+    }
+
+    // Se o preço foi informado manualmente, multiplicar pela quantidade
+    if (data.preco && !priceSearchResult) {
+      data.preco = data.preco * data.quantidade;
+      logger.debug('Preço manual informado multiplicado pela quantidade', {
+        operation: 'stock_in',
+        itemType: 'medicamento',
+        itemId: data.medicamento_id,
+        precoTotal: data.preco.toFixed(2),
+      });
+    }
+
     const result = await this.repo.createMedicineStockIn(data);
 
     await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
 
-    return result;
+    return { ...result, priceSearchResult };
   }
 
-  async inputStockIn(data: InputStock) {
+  async inputStockIn(data: InputStock): Promise<{ message: string; priceSearchResult?: { found: boolean; price: number | null } }> {
     if (
       !data.insumo_id ||
       (!data.armario_id && !data.gaveta_id) ||
@@ -40,11 +139,95 @@ export class StockService {
       throw new Error('Campos obrigatórios faltando.');
     }
 
+    let priceSearchResult: { found: boolean; price: number | null } | undefined;
+
+    if (!data.preco && this.priceSearchService) {
+      logger.debug('Preço não informado, iniciando busca automática', {
+        operation: 'stock_in',
+        itemType: 'insumo',
+        itemId: data.insumo_id,
+      });
+      
+      try {
+        const input = await this.inputRepo.findInputById(data.insumo_id);
+        if (input) {
+          logger.debug('Insumo encontrado', {
+            operation: 'stock_in',
+            itemType: 'insumo',
+            itemId: data.insumo_id,
+            nome: input.nome,
+          });
+          
+          const timeoutPromise = new Promise<null>((resolve) => {
+            setTimeout(() => resolve(null), 500);
+          });
+
+          const searchPromise = this.priceSearchService.searchPrice(
+            input.nome,
+            'input',
+            undefined,
+            'São Carlos',
+            'São Paulo',
+          );
+
+          const searchResult = await Promise.race([searchPromise, timeoutPromise]);
+
+          if (searchResult && searchResult.averagePrice !== null && searchResult.averagePrice > 0) {
+            const precoUnitario = searchResult.averagePrice;
+            const precoTotal = precoUnitario * data.quantidade;
+            logger.info('Preço encontrado automaticamente', {
+              operation: 'stock_in',
+              itemType: 'insumo',
+              itemId: data.insumo_id,
+              precoUnitario: precoUnitario.toFixed(2),
+              precoTotal: precoTotal.toFixed(2),
+              quantidade: data.quantidade,
+              fonte: searchResult.source,
+            });
+            data.preco = precoTotal;
+            priceSearchResult = { found: true, price: precoUnitario };
+          } else {
+            logger.info('Nenhum preço encontrado ou timeout na busca', {
+              operation: 'stock_in',
+              itemType: 'insumo',
+              itemId: data.insumo_id,
+            });
+            priceSearchResult = { found: false, price: null };
+          }
+        } else {
+          logger.warn('Insumo não encontrado', {
+            operation: 'stock_in',
+            itemType: 'insumo',
+            itemId: data.insumo_id,
+          });
+          priceSearchResult = { found: false, price: null };
+        }
+      } catch (error) {
+        logger.error('Erro ao buscar preço', {
+          operation: 'stock_in',
+          itemType: 'insumo',
+          itemId: data.insumo_id,
+        }, error as Error);
+        priceSearchResult = { found: false, price: null };
+      }
+    }
+
+    // Se o preço foi informado manualmente, multiplicar pela quantidade
+    if (data.preco && !priceSearchResult) {
+      data.preco = data.preco * data.quantidade;
+      logger.debug('Preço manual informado multiplicado pela quantidade', {
+        operation: 'stock_in',
+        itemType: 'insumo',
+        itemId: data.insumo_id,
+        precoTotal: data.preco.toFixed(2),
+      });
+    }
+
     const result = await this.repo.createInputStockIn(data);
 
     await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
 
-    return result;
+    return { ...result, priceSearchResult };
   }
 
   async stockOut(data: {
@@ -73,12 +256,18 @@ export class StockService {
       async () => {
         const data = await this.repo.listStockItems(params);
 
+        // Only transform quantidade if it exists (armarios/gavetas types don't have it)
         return {
           ...data,
-          data: data.data.map(item => ({
-            ...item,
-            quantidade: Number(item.quantidade),
-          })),
+          data: data.data.map(item => {
+            if ('quantidade' in item) {
+              return {
+                ...item,
+                quantidade: Number(item.quantidade),
+              };
+            }
+            return item;
+          }),
         };
       },
       30,
@@ -111,8 +300,8 @@ export class StockService {
     return result;
   }
 
-  async suspendIndividualMedicine(estoqueId: number) {
-    const stock = await this.repo.findMedicineStockById(estoqueId);
+  async suspendIndividualMedicine(estoque_id: number) {
+    const stock = await this.repo.findMedicineStockById(estoque_id);
 
     if (!stock) {
       throw new Error('Medicamento não encontrado');
@@ -122,11 +311,11 @@ export class StockService {
       throw new Error('Somente medicamentos individuais podem ser suspensos');
     }
 
-    if (stock.status === MedicineStatus.SUSPENSO) {
+    if (stock.status === StockItemStatus.SUSPENSO) {
       throw new Error('Medicamento já está suspenso');
     }
 
-    const result = await this.repo.suspendIndividualMedicine(estoqueId);
+    const result = await this.repo.suspendIndividualMedicine(estoque_id);
 
     await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
 
@@ -144,7 +333,7 @@ export class StockService {
       throw new Error('Somente medicamentos individuais podem ser retomados');
     }
 
-    if (stock.status !== MedicineStatus.SUSPENSO) {
+    if (stock.status !== StockItemStatus.SUSPENSO) {
       throw new Error('Medicamento não está suspenso');
     }
 
@@ -169,7 +358,7 @@ export class StockService {
       throw new Error('Somente medicamentos com casela podem ser transferidos');
     }
 
-    if (stock.status === MedicineStatus.SUSPENSO) {
+    if (stock.status === StockItemStatus.SUSPENSO) {
       throw new Error('Medicamento suspenso não pode ser transferido');
     }
 
@@ -178,6 +367,152 @@ export class StockService {
     }
 
     const result = await this.repo.transferMedicineSector(estoque_id, setor);
+
+    await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
+
+    return result;
+  }
+
+  async updateStockItem(
+    estoqueId: number,
+    tipo: ItemType,
+    data: {
+      quantidade?: number;
+      armario_id?: number | null;
+      gaveta_id?: number | null;
+      validade?: Date | null;
+      origem?: string | null;
+      setor?: string;
+      lote?: string | null;
+      casela_id?: number | null;
+      tipo?: string;
+      preco?: number | null;
+    },
+  ) {
+    if (tipo === ItemType.MEDICAMENTO) {
+      const stock = await this.repo.findMedicineStockById(estoqueId);
+      if (!stock) {
+        throw new Error('Item de estoque não encontrado');
+      }
+
+      if (stock.status === StockItemStatus.SUSPENSO) {
+        throw new Error(
+          'Não é possível editar um medicamento suspenso. Reative-o primeiro.',
+        );
+      }
+    } else {
+      const stock = await this.repo.findInputStockById(estoqueId);
+      if (!stock) {
+        throw new Error('Item de estoque não encontrado');
+      }
+
+      if (stock.status === StockItemStatus.SUSPENSO) {
+        throw new Error(
+          'Não é possível editar um insumo suspenso. Reative-o primeiro.',
+        );
+      }
+    }
+
+    const result = await this.repo.updateStockItem(estoqueId, tipo, data);
+
+    await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
+
+    return result;
+  }
+
+  async deleteStockItem(estoqueId: number, tipo: ItemType) {
+    const result = await this.repo.deleteStockItem(estoqueId, tipo);
+
+    await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
+
+    return result;
+  }
+
+  async removeIndividualInput(estoqueId: number) {
+    const stock = await this.repo.findInputStockById(estoqueId);
+
+    if (!stock) {
+      throw new Error('Insumo não encontrado');
+    }
+
+    if (stock.tipo !== 'individual') {
+      throw new Error('Insumo não é individual');
+    }
+
+    const result = await this.repo.removeIndividualInput(estoqueId);
+
+    await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
+
+    return result;
+  }
+
+  async suspendIndividualInput(estoque_id: number) {
+    const stock = await this.repo.findInputStockById(estoque_id);
+
+    if (!stock) {
+      throw new Error('Insumo não encontrado');
+    }
+
+    if (stock.casela_id == null) {
+      throw new Error('Somente insumos individuais podem ser suspensos');
+    }
+
+    if (stock.status === StockItemStatus.SUSPENSO) {
+      throw new Error('Insumo já está suspenso');
+    }
+
+    const result = await this.repo.suspendIndividualInput(estoque_id);
+
+    await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
+
+    return result;
+  }
+
+  async resumeIndividualInput(estoque_id: number) {
+    const stock = await this.repo.findInputStockById(estoque_id);
+
+    if (!stock) {
+      throw new Error('Insumo não encontrado');
+    }
+
+    if (stock.casela_id == null) {
+      throw new Error('Somente insumos individuais podem ser retomados');
+    }
+
+    if (stock.status !== StockItemStatus.SUSPENSO) {
+      throw new Error('Insumo não está suspenso');
+    }
+
+    const result = await this.repo.resumeIndividualInput(estoque_id);
+
+    await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
+
+    return result;
+  }
+
+  async transferInputSector(
+    estoque_id: number,
+    setor: 'farmacia' | 'enfermagem',
+  ) {
+    const stock = await this.repo.findInputStockById(estoque_id);
+
+    if (!stock) {
+      throw new Error('Insumo não encontrado');
+    }
+
+    if (stock.casela_id == null) {
+      throw new Error('Somente insumos com casela podem ser transferidos');
+    }
+
+    if (stock.status === StockItemStatus.SUSPENSO) {
+      throw new Error('Insumo suspenso não pode ser transferido');
+    }
+
+    if (stock.setor === setor) {
+      throw new Error('Insumo já está neste setor');
+    }
+
+    const result = await this.repo.transferInputSector(estoque_id, setor);
 
     await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
 

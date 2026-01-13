@@ -12,7 +12,7 @@ describe('Login E2E - CRUD', () => {
 
   it('deve criar um usuário', async () => {
     const res = await request(app)
-      .post('/api/login')
+      .post('/api/v1/login')
       .send({ login: 'joao', password: '1234' });
 
     expect(res.status).toBe(201);
@@ -24,7 +24,7 @@ describe('Login E2E - CRUD', () => {
 
   it('não deve criar login duplicado', async () => {
     const res = await request(app)
-      .post('/api/login')
+      .post('/api/v1/login')
       .send({ login: 'joao', password: 'abcd' });
 
     expect(res.status).toBe(409);
@@ -32,7 +32,7 @@ describe('Login E2E - CRUD', () => {
 
   it('deve autenticar com sucesso', async () => {
     const res = await request(app)
-      .post('/api/login/authenticate')
+      .post('/api/v1/login/authenticate')
       .send({ login: 'joao', password: '1234' });
 
     expect(res.status).toBe(200);
@@ -41,14 +41,14 @@ describe('Login E2E - CRUD', () => {
 
   it('não deve autenticar com senha errada', async () => {
     const res = await request(app)
-      .post('/api/login/authenticate')
+      .post('/api/v1/login/authenticate')
       .send({ login: 'joao', password: 'senha_errada' });
 
     expect(res.status).toBe(401);
   });
 
   it('deve atualizar login e senha', async () => {
-    const res = await request(app).put(`/api/login/${userId}`).send({
+    const res = await request(app).put(`/api/v1/login/${userId}`).send({
       currentLogin: 'joao',
       currentPassword: '1234',
       login: 'joao2',
@@ -60,7 +60,7 @@ describe('Login E2E - CRUD', () => {
   });
 
   it('não deve atualizar com senha atual incorreta', async () => {
-    const res = await request(app).put(`/api/login/${userId}`).send({
+    const res = await request(app).put(`/api/v1/login/${userId}`).send({
       currentLogin: 'joao2',
       currentPassword: 'errada',
       login: 'zz',
@@ -71,7 +71,7 @@ describe('Login E2E - CRUD', () => {
   });
 
   it('deve resetar senha', async () => {
-    const res = await request(app).post('/api/login/reset-password').send({
+    const res = await request(app).post('/api/v1/login/reset-password').send({
       login: 'joao2',
       newPassword: 'senha_resettada',
     });
@@ -80,13 +80,23 @@ describe('Login E2E - CRUD', () => {
     expect(res.body.login).toBe('joao2');
   });
 
+  it('não deve resetar senha com login inexistente', async () => {
+    const res = await request(app).post('/api/v1/login/reset-password').send({
+      login: 'usuario_inexistente',
+      newPassword: 'nova_senha',
+    });
+
+    expect(res.status).toBe(404);
+    expect(res.body.error).toBe('Login não encontrado');
+  });
+
   it('deve deletar o usuário', async () => {
-    const res = await request(app).delete(`/api/login/${userId}`);
+    const res = await request(app).delete(`/api/v1/login/${userId}`);
     expect(res.status).toBe(204);
   });
 
   it('não deve deletar novamente', async () => {
-    const res = await request(app).delete(`/api/login/${userId}`);
+    const res = await request(app).delete(`/api/v1/login/${userId}`);
     expect(res.status).toBe(404);
   });
 });

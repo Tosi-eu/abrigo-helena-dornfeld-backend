@@ -26,4 +26,12 @@ export class CacheService {
   async invalidateByPattern(pattern: string): Promise<void> {
     await this.redis.delByPattern(pattern);
   }
+
+  async set<T>(key: string, value: T, ttlSeconds?: number): Promise<void> {
+    await this.redis.set(key, value, ttlSeconds);
+  }
+
+  async get<T>(key: string): Promise<T | null> {
+    return this.redis.get<T>(key);
+  }
 }

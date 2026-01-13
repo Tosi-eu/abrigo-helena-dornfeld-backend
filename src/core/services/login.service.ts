@@ -2,6 +2,7 @@ import bcrypt from 'bcrypt';
 import { LoginRepository } from '../../infrastructure/database/repositories/login.repository';
 import { jwtConfig } from '../../infrastructure/helpers/auth.helper';
 import jwt from 'jsonwebtoken';
+import { BaseError } from 'sequelize';
 
 export class LoginService {
   constructor(private readonly repo: LoginRepository) {}
@@ -10,8 +11,11 @@ export class LoginService {
     const hashed = await bcrypt.hash(password, 10);
     try {
       return await this.repo.create({ login, password: hashed });
-    } catch (err: any) {
-      if (err.name === 'SequelizeUniqueConstraintError') {
+    } catch (err: unknown) {
+      if (
+        err instanceof BaseError &&
+        err.name === 'SequelizeUniqueConstraintError'
+      ) {
         throw new Error('duplicate key');
       }
       throw err;
@@ -31,7 +35,7 @@ export class LoginService {
       { expiresIn: jwtConfig.expiresIn },
     );
 
-    await this.repo.update(user.id, { refreshToken: token });
+    await this.repo.update(user.id, { refresh_token: token });
 
     return {
       token,
@@ -66,8 +70,11 @@ export class LoginService {
       if (!updated) return null;
 
       return { id: updated.id, login: updated.login };
-    } catch (err: any) {
-      if (err.name === 'SequelizeUniqueConstraintError') {
+    } catch (err: unknown) {
+      if (
+        err instanceof BaseError &&
+        err.name === 'SequelizeUniqueConstraintError'
+      ) {
         throw new Error('duplicate key');
       }
       throw err;
@@ -84,7 +91,9 @@ export class LoginService {
 
   async resetPassword(login: string, newPassword: string) {
     const user = await this.repo.findByLogin(login);
-    if (!user) return null;
+    if (!user) {
+      throw new Error('Login não encontrado');
+    }
 
     const hashed = await bcrypt.hash(newPassword, 10);
     const updated = await this.repo.update(user.id, { password: hashed });

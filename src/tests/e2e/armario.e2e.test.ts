@@ -11,7 +11,7 @@ describe('Cabinet E2E - CRUD básico', () => {
     app = await setupTestApp();
 
     const cat = await request(app)
-      .post('/api/categoria-armario')
+      .post('/api/v1/categoria-armario')
       .send({ nome: 'Categoria Teste' });
 
     categoryId = cat.body.id;
@@ -19,7 +19,7 @@ describe('Cabinet E2E - CRUD básico', () => {
 
   it('deve criar um armário', async () => {
     const res = await request(app)
-      .post('/api/armarios')
+      .post('/api/v1/armarios')
       .send({ numero: 1, categoria_id: categoryId });
 
     expect(res.status).toBe(201);
@@ -30,7 +30,7 @@ describe('Cabinet E2E - CRUD básico', () => {
 
   it('deve atualizar um armário', async () => {
     const res = await request(app)
-      .put(`/api/armarios/${createdNumber}`)
+      .put(`/api/v1/armarios/${createdNumber}`)
       .send({ categoria_id: categoryId });
 
     expect(res.status).toBe(200);
@@ -39,19 +39,19 @@ describe('Cabinet E2E - CRUD básico', () => {
 
   it('não deve atualizar com categoria inválida', async () => {
     const res = await request(app)
-      .put(`/api/armarios/${createdNumber}`)
+      .put(`/api/v1/armarios/${createdNumber}`)
       .send({ categoria_id: 0 });
 
     expect(res.status).toBe(400);
   });
 
   it('deve remover um armário', async () => {
-    const res = await request(app).delete(`/api/armarios/${createdNumber}`);
+    const res = await request(app).delete(`/api/v1/armarios/${createdNumber}`);
     expect(res.status).toBe(204);
   });
 
   it('não deve remover novamente', async () => {
-    const res = await request(app).delete(`/api/armarios/${createdNumber}`);
+    const res = await request(app).delete(`/api/v1/armarios/${createdNumber}`);
     expect(res.status).toBe(404);
   });
 });

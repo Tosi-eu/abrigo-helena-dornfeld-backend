@@ -4,11 +4,23 @@ import ResidentModel from './residente.model';
 import MedicineModel from './medicamento.model';
 import LoginModel from './login.model';
 
+export enum NotificationDestinoType {
+  SUS = 'sus',
+  FAMILIA = 'familia',
+  FARMACIA = 'farmacia',
+}
+
+export enum EventStatus {
+  PENDENTE = 'pending',
+  ENVIADO = 'sent',
+  CANCELADO = 'cancelled',
+}
+
 interface NotificationEventAttrs {
   id: number;
   medicamento_id: number;
   residente_id: number;
-  destino: 'sus' | 'familia' | 'farmacia';
+  destino: NotificationDestinoType;
   data_prevista: Date;
   criado_por: number;
   status: EventStatus;
@@ -20,12 +32,6 @@ type NotificationEventCreation = Optional<
   'id' | 'status'
 >;
 
-enum EventStatus {
-  PENDENTE = 'pending',
-  ENVIADO = 'sent',
-  CANCELADO = 'cancelled',
-}
-
 export class NotificationEventModel
   extends Model<NotificationEventAttrs, NotificationEventCreation>
   implements NotificationEventAttrs
@@ -33,7 +39,7 @@ export class NotificationEventModel
   declare id: number;
   declare medicamento_id: number;
   declare residente_id: number;
-  declare destino: 'sus' | 'familia' | 'farmacia';
+  declare destino: NotificationDestinoType;
   declare data_prevista: Date;
   declare criado_por: number;
   declare status: EventStatus;
@@ -51,7 +57,7 @@ NotificationEventModel.init(
     residente_id: { type: DataTypes.INTEGER, allowNull: false },
 
     destino: {
-      type: DataTypes.ENUM('SUS', 'Família'),
+      type: DataTypes.ENUM(...Object.values(NotificationDestinoType)),
       allowNull: false,
     },
 
@@ -79,6 +85,18 @@ NotificationEventModel.init(
     sequelize,
     tableName: 'notificacao',
     timestamps: true,
+    indexes: [
+      { fields: ['medicamento_id'], name: 'idx_notificacao_medicamento_id' },
+      { fields: ['residente_id'], name: 'idx_notificacao_residente_id' },
+      { fields: ['criado_por'], name: 'idx_notificacao_criado_por' },
+      { fields: ['status'], name: 'idx_notificacao_status' },
+      { fields: ['data_prevista'], name: 'idx_notificacao_data_prevista' },
+      { fields: ['visto'], name: 'idx_notificacao_visto' },
+      {
+        fields: ['status', 'data_prevista'],
+        name: 'idx_notificacao_status_data_prevista',
+      },
+    ],
   },
 );
 
