@@ -1,14 +1,15 @@
-import { Op } from 'sequelize';
+import { Op, WhereOptions } from 'sequelize';
 import MovementModel from '../models/movimentacao.model';
 import Movement from '../../../core/domain/movimentacao';
 import MedicineModel from '../models/medicamento.model';
+import MedicineStockModel from '../models/estoque-medicamento.model';
 import CabinetModel from '../models/armario.model';
 import ResidenteModel from '../models/residente.model';
 import LoginModel from '../models/login.model';
 import InputModel from '../models/insumo.model';
 import { formatDateToPtBr } from '../../helpers/date.helper';
 import { sequelize } from '../sequelize';
-import { NonMovementedItem, ItemType } from '../../../core/utils/utils';
+import { NonMovementedItem, ItemType, OperationType } from '../../../core/utils/utils';
 import { MovementWhereOptions } from '../../types/sequelize.types';
 
 export interface MovementQueryParams {
@@ -66,6 +67,83 @@ export class MovementRepository {
       data: formatted,
       hasNext: count > page * limit,
       total: count,
+      page,
+      limit,
+    };
+  }
+
+  async listPharmacyToNursingTransfers({
+    startDate,
+    endDate,
+    page,
+    limit,
+  }: {
+    startDate?: Date;
+    endDate?: Date;
+    page: number;
+    limit: number;
+  }) {
+    const where: MovementWhereOptions = {
+      medicamento_id: { [Op.not]: null },
+      setor: 'farmacia',
+      tipo: OperationType.INDIVIDUAL,
+    };
+
+    const offset = (page - 1) * limit;
+
+    if (startDate && endDate) {
+      const endOfDay = new Date(endDate);
+      endOfDay.setHours(23, 59, 59, 999);
+      where.data = {
+        [Op.between]: [startDate, endOfDay],
+      };
+    } else if (startDate) {
+      where.data = { [Op.gte]: startDate };
+    } else if (endDate) {
+      const endOfDay = new Date(endDate);
+      endOfDay.setHours(23, 59, 59, 999);
+      where.data = { [Op.lte]: endOfDay };
+    }
+
+    const { rows, count } = await MovementModel.findAndCountAll({
+      where,
+      order: [['data', 'DESC']],
+      offset,
+      limit,
+      include: [
+        { model: MedicineModel, attributes: ['id', 'nome', 'principio_ativo'] },
+        { model: CabinetModel, attributes: ['num_armario'] },
+        { model: ResidenteModel, attributes: ['num_casela', 'nome'] },
+        { model: LoginModel, attributes: ['login'] },
+      ],
+    });
+
+    const transfers = [];
+    for (const row of rows) {
+      const movement = row.get({ plain: true });
+      
+      if (movement.medicamento_id && movement.casela_id) {
+        const stockInNursing = await MedicineStockModel.findOne({
+          where: {
+            medicamento_id: movement.medicamento_id,
+            casela_id: movement.casela_id,
+            setor: 'enfermagem',
+          },
+        });
+
+        if (stockInNursing) {
+          transfers.push({
+            ...movement,
+            data: formatDateToPtBr(movement.data),
+          });
+        }
+      }
+    }
+
+    return {
+      data: transfers,
+      hasNext: count > page * limit,
+      total: transfers.length,
       page,
       limit,
     };
@@ -230,7 +308,6 @@ export class MovementRepository {
     const now = new Date();
     const results: NonMovementedItem[] = [];
 
-    // Query medicines with movements
     const medicineMovements = await MovementModel.findAll({
       attributes: [
         'medicamento_id',
@@ -279,7 +356,6 @@ export class MovementRepository {
       });
     }
 
-    // Query inputs with movements
     const inputMovements = await MovementModel.findAll({
       attributes: [
         'insumo_id',
@@ -328,7 +404,6 @@ export class MovementRepository {
       });
     }
 
-    // Sort by dias_parados DESC and limit
     results.sort((a, b) => b.dias_parados - a.dias_parados);
     return results.slice(0, limit);
   }

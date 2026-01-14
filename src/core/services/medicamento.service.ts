@@ -1,10 +1,15 @@
 import { Medicine } from '../domain/medicamento';
 import { MedicineRepository } from '../../infrastructure/database/repositories/medicamento.repository';
+import { PriceSearchService } from './price-search.service';
+import { logger } from '../../infrastructure/helpers/logger.helper';
 
 const DOSAGE_REGEX = /^\d+([.,]\d+)?(\/\d+([,]\d+)?)?$/;
 
 export class MedicineService {
-  constructor(private readonly repo: MedicineRepository) {}
+  constructor(
+    private readonly repo: MedicineRepository,
+    private readonly priceSearchService?: PriceSearchService,
+  ) {}
 
   async createMedicine(data: {
     nome: string;
@@ -12,6 +17,7 @@ export class MedicineService {
     unidade_medida: string;
     principio_ativo: string;
     estoque_minimo?: number;
+    preco?: number | null;
   }): Promise<Medicine> {
     if (!data.nome || !data.unidade_medida || data.dosagem == null) {
       throw new Error('Nome, dosagem e unidade de medida são obrigatórios.');
@@ -28,7 +34,35 @@ export class MedicineService {
       throw new Error('Dosagem deve ser maior que zero.');
     }
 
-    return this.repo.createMedicine(data);
+    const created = await this.repo.createMedicine(data);
+
+    if (this.priceSearchService && created.id) {
+      try {
+        const priceResult = await this.priceSearchService.updatePriceInDatabase(
+          created.id,
+          data.nome,
+          'medicine',
+          data.dosagem,
+          data.unidade_medida,
+        );
+
+        if (priceResult.found && priceResult.price) {
+          const updated = await this.repo.updateMedicineById(created.id, {
+            ...created,
+            preco: priceResult.price,
+          });
+          if (updated) return updated;
+        }
+      } catch (error) {
+        logger.error('Erro ao buscar preço automaticamente', {
+          operation: 'create_medicine',
+          medicineId: created.id,
+          nome: data.nome,
+        }, error as Error);
+      }
+    }
+
+    return created;
   }
 
   async findAll({ page = 1, limit = 10 }: { page?: number; limit?: number }) {

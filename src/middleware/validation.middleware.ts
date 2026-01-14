@@ -1,10 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
+import { AuthRequest } from './auth.middleware';
 
 const MAX_PAGE_SIZE = 100;
 const DEFAULT_PAGE_SIZE = 10;
 const MIN_PAGE = 1;
 
-export interface ValidatedRequest extends Request {
+export interface ValidatedRequest extends AuthRequest {
   validated?: {
     page: number;
     limit: number;

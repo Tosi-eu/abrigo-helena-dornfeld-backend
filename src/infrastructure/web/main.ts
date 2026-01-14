@@ -78,49 +78,6 @@ app.use('/api/v1', routes);
 
 app.use(errorHandler);
 
-async function runSeeders(): Promise<void> {
-  return new Promise(resolve => {
-    const sequelizeCliPath = join(
-      process.cwd(),
-      'node_modules',
-      '.bin',
-      'sequelize-cli',
-    );
-
-    logger.info('Executando seeders...', { operation: 'seeders' });
-
-    const env = {
-      ...process.env,
-      NODE_ENV: process.env.NODE_ENV || 'development',
-    };
-
-    const seedProcess = spawn('node', [sequelizeCliPath, 'db:seed:all'], {
-      cwd: process.cwd(),
-      stdio: 'inherit',
-      env,
-    });
-
-    seedProcess.on('close', code => {
-      if (code === 0) {
-        logger.info('Seeders executados com sucesso', { operation: 'seeders', status: 'success' });
-        resolve();
-      } else {
-        logger.warn('Seeders finalizaram com código não-zero', {
-          operation: 'seeders',
-          exitCode: code,
-          note: 'Pode ser normal se já foram executados',
-        });
-        resolve();
-      }
-    });
-
-    seedProcess.on('error', error => {
-      logger.error('Erro ao executar seeders', { operation: 'seeders' }, error as Error);
-      resolve();
-    });
-  });
-}
-
 void (async () => {
   try {
     await sequelize.authenticate();
@@ -130,10 +87,6 @@ void (async () => {
 
     await sequelize.sync({ alter: false });
     logger.info('Tabelas sincronizadas', { operation: 'database', status: 'synced' });
-
-    // Executar seeders após sincronização
-    await runSeeders();
-
     app.listen(port, () => {
       logger.info('Servidor iniciado', { operation: 'server', port, status: 'running' });
     });

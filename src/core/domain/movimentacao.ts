@@ -1,7 +1,7 @@
-import { OperationType } from '../utils/utils';
+import { MovementType } from '../utils/utils';
 
 export interface Movement {
-  tipo: OperationType;
+  tipo: MovementType;
   login_id: number;
   armario_id?: number;
   gaveta_id?: number;
@@ -11,6 +11,7 @@ export interface Movement {
   casela_id?: number | null;
   validade: Date;
   setor: string;
+  lote?: string | null;
 }
 
 export default Movement;

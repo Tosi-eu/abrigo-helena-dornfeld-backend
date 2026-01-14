@@ -24,5 +24,10 @@ router.post('/', (req, res) => controller.create(req, res));
 router.get('/medicamentos/ranking', validatePagination, (req, res) =>
   controller.getMedicineRanking(req, res),
 );
+router.get(
+  '/transferencias/farmacia-enfermaria',
+  validatePagination,
+  (req, res) => controller.getPharmacyToNursingTransfers(req, res),
+);
 
 export default router;

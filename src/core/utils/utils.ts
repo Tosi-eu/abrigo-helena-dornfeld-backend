@@ -7,6 +7,7 @@ export enum OperationType {
 export enum MovementType {
   ENTRADA = 'entrada',
   SAIDA = 'saida',
+  TRANSFER = 'transferencia',
 }
 
 export enum ItemType {
