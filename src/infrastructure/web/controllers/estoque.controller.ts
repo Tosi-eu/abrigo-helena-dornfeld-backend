@@ -8,17 +8,22 @@ import { ValidatedRequest } from '../../../middleware/validation.middleware';
 export class StockController {
   constructor(private readonly service: StockService) {}
 
-  async stockIn(req: Request, res: Response) {
+  async stockIn(req: ValidatedRequest, res: Response) {
     try {
       const { medicamento_id, insumo_id } = req.body;
+      const login_id = req.user?.id;
+
+      if (!login_id) {
+        return res.status(401).json({ error: 'Usuário não autenticado' });
+      }
 
       if (medicamento_id) {
-        const result = await this.service.medicineStockIn(req.body);
+        const result = await this.service.medicineStockIn(req.body, login_id);
         return res.json(result);
       }
 
       if (insumo_id) {
-        const result = await this.service.inputStockIn(req.body);
+        const result = await this.service.inputStockIn(req.body, login_id);
         return res.json(result);
       }
     } catch (error: unknown) {
@@ -26,9 +31,15 @@ export class StockController {
     }
   }
 
-  async stockOut(req: Request, res: Response) {
+  async stockOut(req: ValidatedRequest, res: Response) {
     try {
-      const result = await this.service.stockOut(req.body);
+      const login_id = req.user?.id;
+
+      if (!login_id) {
+        return res.status(401).json({ error: 'Usuário não autenticado' });
+      }
+
+      const result = await this.service.stockOut(req.body, login_id);
       return res.json(result);
     } catch (error: unknown) {
       return sendErrorResponse(res, 400, error, 'Erro ao registrar saída');
@@ -99,7 +110,6 @@ export class StockController {
       return sendErrorResponse(res, 500, error, 'Erro ao calcular proporção');
     }
   }
-
   async removeIndividualMedicine(req: Request, res: Response) {
     try {
       const { estoque_id } = req.params;
@@ -117,6 +127,7 @@ export class StockController {
       return sendErrorResponse(res, 400, error, 'Erro ao remover medicamento');
     }
   }
+
 
   async suspendIndividualMedicine(req: Request, res: Response) {
     try {
@@ -162,35 +173,34 @@ export class StockController {
   async transferMedicineSector(req: ValidatedRequest, res: Response) {
     try {
       const { estoque_id } = req.params;
-      const { setor, quantidade, casela_id, tipo } = req.body as {
+      const { setor, quantidade, casela_id } = req.body as {
         setor: 'farmacia' | 'enfermagem';
-        quantidade?: number;
+        quantidade: number;
         casela_id?: number;
-        tipo?: string;
       };
+  
       const login_id = req.user?.id;
-
+  
       if (!estoque_id) {
         return res.status(400).json({ error: 'Estoque inválido' });
       }
-
+  
       if (!login_id) {
         return res.status(401).json({ error: 'Usuário não autenticado' });
       }
-
+  
       if (!setor) {
         return res.status(400).json({ error: 'Setor é obrigatório' });
       }
-
+  
       const result = await this.service.transferMedicineSector(
         Number(estoque_id),
         setor,
         login_id,
         quantidade,
         casela_id,
-        tipo,
       );
-
+  
       return res.json(result);
     } catch (error: unknown) {
       return sendErrorResponse(
@@ -201,7 +211,7 @@ export class StockController {
       );
     }
   }
-
+  
   async updateStockItem(req: Request, res: Response) {
     try {
       const { estoque_id } = req.params;
@@ -308,7 +318,6 @@ export class StockController {
       );
     }
   }
-
   async suspendIndividualInput(req: Request, res: Response) {
     try {
       const { estoque_id } = req.params;
@@ -345,32 +354,37 @@ export class StockController {
     }
   }
 
-  async transferInputSector(req: Request, res: Response) {
+  async transferInputSector(req: ValidatedRequest, res: Response) {
     try {
       const { estoque_id } = req.params;
-      const { setor, quantidade, casela_id, tipo } = req.body as {
+      const { setor, quantidade, casela_id } = req.body as {
         setor: 'farmacia' | 'enfermagem';
-        quantidade?: number;
+        quantidade: number;
         casela_id?: number;
-        tipo?: string;
       };
-
+  
+      const login_id = req.user?.id;
+  
       if (!estoque_id) {
         return res.status(400).json({ error: 'Estoque inválido' });
       }
-
+  
+      if (!login_id) {
+        return res.status(401).json({ error: 'Usuário não autenticado' });
+      }
+  
       if (!setor) {
         return res.status(400).json({ error: 'Setor é obrigatório' });
       }
-
+  
       const result = await this.service.transferInputSector(
         Number(estoque_id),
         setor,
         quantidade,
+        login_id,
         casela_id,
-        tipo,
       );
-
+  
       return res.json(result);
     } catch (error: unknown) {
       return sendErrorResponse(res, 400, error, 'Erro ao transferir insumo');

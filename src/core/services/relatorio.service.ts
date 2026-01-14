@@ -53,6 +53,11 @@ export class ReportService {
         return report;
       }
 
+      case 'transferencias': {
+        const data = await this.repo.getTransfersData();
+        return data;
+      }
+
       default:
         throw new Error('Tipo inválido');
     }

@@ -590,6 +590,22 @@ export class StockRepository {
     };
   }
 
+  async removeIndividualInput(estoqueId: number) {
+    await InputStockModel.update(
+      {
+        casela_id: null,
+        tipo: 'geral',
+      },
+      {
+        where: { id: estoqueId },
+      },
+    );
+
+    return {
+      message: 'Insumo removido do estoque individual',
+    };
+  }
+  
   async suspendIndividualMedicine(estoque_id: number) {
     await MedicineStockModel.update(
       {
@@ -625,59 +641,65 @@ export class StockRepository {
   async transferMedicineSector(
     estoqueId: number,
     setor: 'farmacia' | 'enfermagem',
-    quantidade?: number,
+    quantidade: number,
     casela_id?: number,
-    tipo?: string,
   ) {
     const stock = await MedicineStockModel.findByPk(estoqueId);
     if (!stock) {
       throw new Error('Estoque não encontrado');
     }
-
-    if (!quantidade || quantidade >= stock.quantidade) {
-      const updateData: { setor: string; casela_id?: number | null; tipo?: string } = { setor };
-      updateData.casela_id = casela_id ?? stock.casela_id;
-      if (tipo) {
-        updateData.tipo = tipo;
-      } else if (casela_id != null) {
-        updateData.tipo = OperationType.INDIVIDUAL;
-      }
-      await MedicineStockModel.update(
-        updateData,
-        { where: { id: estoqueId } }
-      );
-      return {
-        message: 'Medicamento transferido de setor com sucesso',
-      };
+  
+    const isIndividual = stock.tipo === OperationType.INDIVIDUAL;
+    const resolvedCaselaId = isIndividual ? stock.casela_id : casela_id;
+  
+    if (!resolvedCaselaId) {
+      throw new Error('Casela é obrigatória');
+    }
+  
+    if (!quantidade || quantidade <= 0) {
+      throw new Error('Quantidade inválida');
+    }
+  
+    if (quantidade > stock.quantidade) {
+      throw new Error(`Quantidade não pode ser maior que ${stock.quantidade}`);
+    }
+  
+    const existing = await MedicineStockModel.findOne({
+      where: {
+        medicamento_id: stock.medicamento_id,
+        casela_id: resolvedCaselaId,
+        validade: stock.validade,
+        setor,
+        lote: stock.lote ?? null,
+        tipo: OperationType.INDIVIDUAL,
+      },
+    });
+  
+    if (existing) {
+      existing.quantidade += quantidade;
+      await existing.save();
+    } else {
+      await MedicineStockModel.create({
+        medicamento_id: stock.medicamento_id,
+        casela_id: resolvedCaselaId,
+        armario_id: stock.armario_id,
+        gaveta_id: stock.gaveta_id,
+        validade: stock.validade,
+        quantidade,
+        origem: stock.origem,
+        tipo: OperationType.INDIVIDUAL,
+        setor,
+        lote: stock.lote,
+        status: stock.status,
+        observacao: stock.observacao,
+      });
     }
 
-    const quantidadeRestante = stock.quantidade - quantidade;
-    
-    await MedicineStockModel.create({
-      medicamento_id: stock.medicamento_id,
-      casela_id: casela_id ?? stock.casela_id,
-      armario_id: stock.armario_id,
-      gaveta_id: stock.gaveta_id,
-      validade: stock.validade,
-      quantidade: quantidade,
-      origem: stock.origem,
-      tipo: tipo === OperationType.INDIVIDUAL ? OperationType.GERAL : OperationType.INDIVIDUAL,
-      setor: setor,
-      lote: stock.lote,
-      status: stock.status,
-      observacao: stock.observacao,
-    });
+    await stock.update({ quantidade: stock.quantidade - quantidade });
 
-    await MedicineStockModel.update(
-      { quantidade: quantidadeRestante },
-      { where: { id: estoqueId } }
-    );
-
-    return {
-      message: `${quantidade} unidades transferidas com sucesso. ${quantidadeRestante} unidades permanecem no setor original.`,
-    };
+    return { message: 'Medicamento transferido de setor com sucesso' };
   }
-
+  
   async findInputStockById(id: number) {
     return InputStockModel.findByPk(id);
   }
@@ -875,71 +897,64 @@ export class StockRepository {
   async transferInputSector(
     estoqueId: number,
     setor: 'farmacia' | 'enfermagem',
-    quantidade?: number,
+    quantidade: number,
     casela_id?: number,
-    tipo?: string,
   ) {
     const stock = await InputStockModel.findByPk(estoqueId);
     if (!stock) {
       throw new Error('Estoque não encontrado');
     }
 
-    if (!quantidade || quantidade >= stock.quantidade) {
-      const updateData: { setor: string; casela_id?: number | null; tipo?: string } = { setor };
-      updateData.casela_id = casela_id ?? stock.casela_id;
-      if (tipo) {
-        updateData.tipo = tipo;
-      } else if (casela_id != null) {
-        updateData.tipo = OperationType.INDIVIDUAL;
-      }
-      await InputStockModel.update(
-        updateData,
-        { where: { id: estoqueId } }
-      );
-      return {
-        message: 'Insumo transferido de setor com sucesso',
-      };
+    const isIndividual = stock.tipo === OperationType.INDIVIDUAL;
+    const resolvedCaselaId = isIndividual ? stock.casela_id : casela_id;
+
+    if (!resolvedCaselaId) {
+      throw new Error('Casela é obrigatória');
     }
 
-    const quantidadeRestante = stock.quantidade - quantidade;
-    const newTipo = tipo || (casela_id != null ? OperationType.INDIVIDUAL : stock.tipo);
-    
-    await InputStockModel.create({
-      insumo_id: stock.insumo_id,
-      casela_id: casela_id ?? stock.casela_id,
-      armario_id: stock.armario_id,
-      gaveta_id: stock.gaveta_id,
-      validade: stock.validade,
-      quantidade: quantidade,
-      tipo: newTipo,
-      setor: setor,
-      lote: stock.lote,
-      status: stock.status,
+    if (!quantidade || quantidade <= 0) {
+      throw new Error('Quantidade inválida');
+    }
+
+    if (quantidade > stock.quantidade) {
+      throw new Error(`Quantidade não pode ser maior que ${stock.quantidade}`);
+    }
+
+    const existing = await InputStockModel.findOne({
+      where: {
+        insumo_id: stock.insumo_id,
+        casela_id: resolvedCaselaId,
+        validade: stock.validade,
+        setor,
+        lote: stock.lote ?? null,
+        tipo: OperationType.INDIVIDUAL,
+      },
     });
 
-    await InputStockModel.update(
-      { quantidade: quantidadeRestante },
-      { where: { id: estoqueId } }
-    );
+    if (existing) {
+      existing.quantidade += quantidade;
+      await existing.save();
+    } else {
+      await InputStockModel.create({
+        insumo_id: stock.insumo_id,
+        casela_id: resolvedCaselaId,
+        armario_id: stock.armario_id,
+        gaveta_id: stock.gaveta_id,
+        validade: stock.validade,
+        quantidade,
+        tipo: OperationType.INDIVIDUAL,
+        setor,
+        lote: stock.lote,
+        status: stock.status,
+      });
+    }
 
-    return {
-      message: `${quantidade} unidades transferidas com sucesso. ${quantidadeRestante} unidades permanecem no setor original.`,
-    };
+    if (quantidade < stock.quantidade) {
+      await stock.update({ quantidade: stock.quantidade - quantidade });
+    } else {
+      await stock.destroy();
+    }
+
+    return { message: 'Insumo transferido de setor com sucesso' };
   }
-
-  async removeIndividualInput(estoqueId: number) {
-    await InputStockModel.update(
-      {
-        casela_id: null,
-        tipo: 'geral',
-      },
-      {
-        where: { id: estoqueId },
-      },
-    );
-
-    return {
-      message: 'Insumo removido do estoque individual',
-    };
-  }
-}
+}  
