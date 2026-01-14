@@ -92,3 +92,19 @@ export interface TransferReport {
   lote: string | null;
   usuario: string;
 }
+
+export interface DailyMovementReport {
+  data: string;
+  tipo_movimentacao: 'entrada' | 'saida' | 'transferencia';
+  tipo_item: 'medicamento' | 'insumo';
+  nome: string;
+  principio_ativo?: string | null;
+  quantidade: number;
+  casela: number | null;
+  residente: string | null;
+  armario: number | null;
+  gaveta: number | null;
+  setor: string;
+  lote: string | null;
+  usuario: string;
+}

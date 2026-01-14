@@ -10,6 +10,7 @@ import {
   ResidentConsumptionInput,
   ResidentReport,
   TransferReport,
+  DailyMovementReport,
 } from '../models/relatorio.model';
 import { ResidentMonthlyUsage, MovementType } from '../../../core/utils/utils';
 import { formatDateToPtBr } from '../../helpers/date.helper';
@@ -520,6 +521,80 @@ export class ReportRepository {
         casela: plain.ResidentModel?.num_casela || null,
         residente: plain.ResidentModel?.nome || null,
         armario: plain.CabinetModel?.num_armario || null,
+        setor: plain.setor,
+        lote: plain.lote || null,
+        usuario: plain.LoginModel?.login || '',
+      };
+    });
+  }
+
+  async getDailyMovementsData(): Promise<DailyMovementReport[]> {
+    const now = new Date();
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+
+    const results = await MovementModel.findAll({
+      attributes: [
+        'data',
+        'tipo',
+        'quantidade',
+        'setor',
+        'lote',
+        'casela_id',
+        'armario_id',
+        'gaveta_id',
+        'medicamento_id',
+        'insumo_id',
+      ],
+      include: [
+        {
+          model: MedicineModel,
+          attributes: ['nome', 'principio_ativo'],
+          required: false,
+        },
+        {
+          model: InputModel,
+          attributes: ['nome'],
+          required: false,
+        },
+        {
+          model: ResidentModel,
+          attributes: ['nome', 'num_casela'],
+          required: false,
+        },
+        {
+          model: CabinetModel,
+          attributes: ['num_armario'],
+          required: false,
+        },
+        {
+          model: LoginModel,
+          attributes: ['login'],
+          required: true,
+        },
+      ],
+      where: {
+        data: {
+          [Op.gte]: startOfDay,
+          [Op.lte]: endOfDay,
+        },
+      },
+      order: [['data', 'DESC']],
+    });
+
+    return results.map((row) => {
+      const plain = row.get({ plain: true }) as any;
+      return {
+        data: formatDateToPtBr(plain.data),
+        tipo_movimentacao: plain.tipo as 'entrada' | 'saida' | 'transferencia',
+        tipo_item: plain.medicamento_id ? 'medicamento' : 'insumo',
+        nome: plain.MedicineModel?.nome || plain.InputModel?.nome || '',
+        principio_ativo: plain.MedicineModel?.principio_ativo || null,
+        quantidade: Number(plain.quantidade) || 0,
+        casela: plain.ResidentModel?.num_casela || null,
+        residente: plain.ResidentModel?.nome || null,
+        armario: plain.CabinetModel?.num_armario || null,
+        gaveta: plain.gaveta_id || null,
         setor: plain.setor,
         lote: plain.lote || null,
         usuario: plain.LoginModel?.login || '',

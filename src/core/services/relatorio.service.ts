@@ -58,6 +58,11 @@ export class ReportService {
         return data;
       }
 
+      case 'movimentos_dia': {
+        const data = await this.repo.getDailyMovementsData();
+        return data;
+      }
+
       default:
         throw new Error('Tipo inválido');
     }
