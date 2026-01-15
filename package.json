@@ -8,11 +8,15 @@
     "dev:server": "ts-node-dev --respawn --transpile-only src/infrastructure/database/connection.ts",
     "build": "tsc",
     "start": "node dist/infrastructure/web/main.js",
+    "start:local": "NODE_ENV=development npm run dev",
     "test": "jest tests/unit",
     "test:e2e": "jest tests/e2e --detectOpenHandles",
     "test:watch": "jest --watchAll",
     "format": "prettier --write \"src/**/*.{ts,js,json}\"",
-    "lint": "eslint \"src/**/*.ts\" --fix"
+    "lint": "eslint \"src/**/*.ts\" --fix",
+    "db:migrate": "sequelize-cli db:migrate",
+    "db:migrate:undo": "sequelize-cli db:migrate:undo",
+    "db:seed": "sequelize-cli db:seed:all"
   },
   "dependencies": {
     "@types/pdfkit": "^0.17.3",

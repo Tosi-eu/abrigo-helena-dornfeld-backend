@@ -586,8 +586,8 @@ export class StockRepository {
 
     const carrinhoMedicamentos = await MedicineStockModel.sum('quantidade', {
       where: {
-        tipo: OperationType.CARRINHO,
-          setor: SectorType.ENFERMAGEM,
+        tipo: { [Op.in]: [OperationType.CARRINHO, OperationType.CARRINHO_PSICOTROPICOS] },
+        setor: SectorType.ENFERMAGEM,
       },
     });
 
@@ -600,8 +600,8 @@ export class StockRepository {
 
     const carrinhoInsumos = await InputStockModel.sum('quantidade', {
       where: {
-        tipo: OperationType.CARRINHO,
-          setor: SectorType.ENFERMAGEM,
+        tipo: { [Op.in]: [OperationType.CARRINHO, OperationType.CARRINHO_PSICOTROPICOS] },
+        setor: SectorType.ENFERMAGEM,
       },
     });
 
@@ -623,6 +623,7 @@ export class StockRepository {
       {
         casela_id: null,
         tipo: 'geral',
+        setor: SectorType.FARMACIA,
       },
       {
         where: { id: estoqueId },
@@ -639,6 +640,7 @@ export class StockRepository {
       {
         casela_id: null,
         tipo: 'geral',
+        setor: SectorType.FARMACIA,
       },
       {
         where: { id: estoqueId },
