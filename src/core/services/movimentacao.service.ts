@@ -1,7 +1,7 @@
 import { MovementRepository } from '../../infrastructure/database/repositories/movimentacao.repository';
 import { formatDateToPtBr } from '../../infrastructure/helpers/date.helper';
 import { CacheKeyHelper } from '../../infrastructure/helpers/redis.helper';
-import { NonMovementedItem, OperationType } from '../utils/utils';
+import { MovementType, NonMovementedItem, OperationType } from '../utils/utils';
 import { CacheService } from './redis.service';
 import Movement from '../domain/movimentacao';
 import {
@@ -48,7 +48,7 @@ export class MovementService {
     }
 
     const movement: Movement = {
-      tipo: data.tipo as OperationType,
+      tipo: data.tipo as MovementType,
       login_id: data.login_id,
       armario_id: data.armario_id,
       gaveta_id: data.gaveta_id,

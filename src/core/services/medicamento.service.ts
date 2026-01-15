@@ -34,6 +34,17 @@ export class MedicineService {
       throw new Error('Dosagem deve ser maior que zero.');
     }
 
+    const existing = await this.repo.findByUniqueFields({
+      nome: data.nome.trim(),
+      principio_ativo: data.principio_ativo.trim(),
+      dosagem: data.dosagem.trim(),
+      unidade_medida: data.unidade_medida,
+    });
+
+    if (existing) {
+      throw new Error('Já existe um medicamento com esta combinação de nome, princípio ativo, dosagem e unidade de medida.');
+    }
+
     const created = await this.repo.createMedicine(data);
 
     if (this.priceSearchService && created.id) {
@@ -95,6 +106,19 @@ export class MedicineService {
     if (data.estoque_minimo != null && data.estoque_minimo < 0) {
       throw new Error('Estoque mínimo não pode ser negativo.');
     }
+
+    // Verificar se já existe outro medicamento com a mesma combinação única
+    const existing = await this.repo.findByUniqueFields({
+      nome: data.nome.trim(),
+      principio_ativo: data.principio_ativo?.trim() || '',
+      dosagem: data.dosagem.trim(),
+      unidade_medida: data.unidade_medida,
+    });
+
+    if (existing && existing.id !== id) {
+      throw new Error('Já existe outro medicamento com esta combinação de nome, princípio ativo, dosagem e unidade de medida.');
+    }
+
     return this.repo.updateMedicineById(id, data);
   }
 

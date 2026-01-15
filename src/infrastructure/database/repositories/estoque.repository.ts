@@ -30,6 +30,28 @@ import { StockQueryResult } from '../../types/estoque.types';
 export class StockRepository {
   async createMedicineStockIn(data: MedicineStock) {
     try {
+      if (data.lote) {
+        const existingLotMedicine = await MedicineStockModel.findOne({
+          where: {
+            lote: data.lote,
+          },
+        });
+
+        if (existingLotMedicine) {
+          throw new Error('Lote já existe no estoque. Lotes devem ser únicos.');
+        }
+
+        const existingLotInput = await InputStockModel.findOne({
+          where: {
+            lote: data.lote,
+          },
+        });
+
+        if (existingLotInput) {
+          throw new Error('Lote já existe no estoque. Lotes devem ser únicos entre medicamentos e insumos.');
+        }
+      }
+
       const existing = await MedicineStockModel.findOne({
         where: {
           medicamento_id: data.medicamento_id,
@@ -71,6 +93,28 @@ export class StockRepository {
   }
 
   async createInputStockIn(data: InputStock) {
+    if (data.lote) {
+      const existingLotInput = await InputStockModel.findOne({
+        where: {
+          lote: data.lote,
+        },
+      });
+
+      if (existingLotInput) {
+        throw new Error('Lote já existe no estoque. Lotes devem ser únicos.');
+      }
+
+      const existingLotMedicine = await MedicineStockModel.findOne({
+        where: {
+          lote: data.lote,
+        },
+      });
+
+      if (existingLotMedicine) {
+        throw new Error('Lote já existe no estoque. Lotes devem ser únicos entre medicamentos e insumos.');
+      }
+    }
+
     const existing = await InputStockModel.findOne({
       where: {
         insumo_id: data.insumo_id,
@@ -663,6 +707,10 @@ export class StockRepository {
     if (quantidade > stock.quantidade) {
       throw new Error(`Quantidade não pode ser maior que ${stock.quantidade}`);
     }
+
+    if (!stock.origem) {
+      throw new Error('Origem é obrigatória para medicamentos');
+    }
   
     const existing = await MedicineStockModel.findOne({
       where: {
@@ -777,6 +825,29 @@ export class StockRepository {
         throw new Error('O tipo não pode ser vazio');
       }
 
+      if (updateData.lote) {
+        const existingLotMedicine = await MedicineStockModel.findOne({
+          where: {
+            lote: updateData.lote,
+            id: { [Op.ne]: estoqueId },
+          },
+        });
+
+        if (existingLotMedicine) {
+          throw new Error('Lote já existe no estoque. Lotes devem ser únicos.');
+        }
+
+        const existingLotInput = await InputStockModel.findOne({
+          where: {
+            lote: updateData.lote,
+          },
+        });
+
+        if (existingLotInput) {
+          throw new Error('Lote já existe no estoque. Lotes devem ser únicos entre medicamentos e insumos.');
+        }
+      }
+
       await MedicineStockModel.update(updateData, { where: { id: estoqueId } });
     } else {
       const stock = await this.findInputStockById(estoqueId);
@@ -830,6 +901,29 @@ export class StockRepository {
 
       if (updateData.tipo != null && updateData.tipo.trim() === '') {
         throw new Error('O tipo não pode ser vazio');
+      }
+
+      if (updateData.lote) {
+        const existingLotInput = await InputStockModel.findOne({
+          where: {
+            lote: updateData.lote,
+            id: { [Op.ne]: estoqueId },
+          },
+        });
+
+        if (existingLotInput) {
+          throw new Error('Lote já existe no estoque. Lotes devem ser únicos.');
+        }
+
+        const existingLotMedicine = await MedicineStockModel.findOne({
+          where: {
+            lote: updateData.lote,
+          },
+        });
+
+        if (existingLotMedicine) {
+          throw new Error('Lote já existe no estoque. Lotes devem ser únicos entre medicamentos e insumos.');
+        }
       }
 
       await InputStockModel.update(updateData, { where: { id: estoqueId } });

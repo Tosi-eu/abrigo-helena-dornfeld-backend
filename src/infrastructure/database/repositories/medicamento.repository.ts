@@ -53,6 +53,34 @@ export class MedicineRepository {
     const row = await MedicineModel.findByPk(id);
     return row
       ? {
+          id: row.id,
+          nome: row.nome,
+          dosagem: row.dosagem,
+          unidade_medida: row.unidade_medida,
+          estoque_minimo: row.estoque_minimo,
+          principio_ativo: row.principio_ativo,
+          preco: row.preco ?? null,
+        }
+      : null;
+  }
+
+  async findByUniqueFields(fields: {
+    nome: string;
+    principio_ativo: string;
+    dosagem: string;
+    unidade_medida: string;
+  }): Promise<Medicine | null> {
+    const row = await MedicineModel.findOne({
+      where: {
+        nome: fields.nome,
+        principio_ativo: fields.principio_ativo,
+        dosagem: fields.dosagem,
+        unidade_medida: fields.unidade_medida,
+      },
+    });
+    return row
+      ? {
+          id: row.id,
           nome: row.nome,
           dosagem: row.dosagem,
           unidade_medida: row.unidade_medida,
@@ -76,6 +104,7 @@ export class MedicineRepository {
 
     return updated
       ? {
+          id: updated.id,
           nome: updated.nome,
           dosagem: updated.dosagem,
           unidade_medida: updated.unidade_medida,

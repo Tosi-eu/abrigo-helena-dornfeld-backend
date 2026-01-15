@@ -178,21 +178,25 @@ export class StockController {
         quantidade: number;
         casela_id?: number;
       };
-  
+
       const login_id = req.user?.id;
-  
+
       if (!estoque_id) {
         return res.status(400).json({ error: 'Estoque inválido' });
       }
-  
+
       if (!login_id) {
         return res.status(401).json({ error: 'Usuário não autenticado' });
       }
-  
+
       if (!setor) {
         return res.status(400).json({ error: 'Setor é obrigatório' });
       }
-  
+
+      if (!quantidade || quantidade <= 0) {
+        return res.status(400).json({ error: 'Quantidade é obrigatória e deve ser maior que zero' });
+      }
+
       const result = await this.service.transferMedicineSector(
         Number(estoque_id),
         setor,
@@ -200,7 +204,7 @@ export class StockController {
         quantidade,
         casela_id,
       );
-  
+
       return res.json(result);
     } catch (error: unknown) {
       return sendErrorResponse(
@@ -362,21 +366,25 @@ export class StockController {
         quantidade: number;
         casela_id?: number;
       };
-  
+
       const login_id = req.user?.id;
-  
+
       if (!estoque_id) {
         return res.status(400).json({ error: 'Estoque inválido' });
       }
-  
+
       if (!login_id) {
         return res.status(401).json({ error: 'Usuário não autenticado' });
       }
-  
+
       if (!setor) {
         return res.status(400).json({ error: 'Setor é obrigatório' });
       }
-  
+
+      if (!quantidade || quantidade <= 0) {
+        return res.status(400).json({ error: 'Quantidade é obrigatória e deve ser maior que zero' });
+      }
+
       const result = await this.service.transferInputSector(
         Number(estoque_id),
         setor,
@@ -384,7 +392,7 @@ export class StockController {
         login_id,
         casela_id,
       );
-  
+
       return res.json(result);
     } catch (error: unknown) {
       return sendErrorResponse(res, 400, error, 'Erro ao transferir insumo');
