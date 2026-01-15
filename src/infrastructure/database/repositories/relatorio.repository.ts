@@ -12,6 +12,7 @@ import {
   TransferReport,
   DailyMovementReport,
   ResidentMedicinesReport,
+  ExpiredMedicineReport,
 } from '../models/relatorio.model';
 import { ResidentMonthlyUsage, MovementType } from '../../../core/utils/utils';
 import { formatDateToPtBr } from '../../helpers/date.helper';
@@ -647,5 +648,68 @@ export class ReportRepository {
       quantidade: Number(row.quantidade) || 0,
       validade: formatDateToPtBr(new Date(row.validade)),
     }));
+  }
+
+  async getExpiredMedicinesData(): Promise<ExpiredMedicineReport[]> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const results = await MedicineStockModel.findAll({
+      attributes: [
+        [col('validade'), 'validade'],
+        [col('lote'), 'lote'],
+        [col('setor'), 'setor'],
+        [fn('SUM', col('quantidade')), 'quantidade'],
+      ],
+      include: [
+        {
+          model: MedicineModel,
+          attributes: ['nome', 'principio_ativo'],
+          required: true,
+        },
+        {
+          model: ResidentModel,
+          attributes: ['nome'],
+          required: false,
+        },
+      ],
+      where: {
+        validade: {
+          [Op.lt]: today,
+        },
+      },
+      group: [
+        'MedicineModel.nome',
+        'MedicineModel.principio_ativo',
+        'MedicineStockModel.validade',
+        'MedicineStockModel.lote',
+        'MedicineStockModel.setor',
+        'ResidentModel.nome',
+      ],
+      order: [
+        ['validade', 'ASC'],
+        ['MedicineModel', 'nome', 'ASC'],
+      ],
+      raw: true,
+      nest: true,
+    });
+
+    return results.map((row: any) => {
+      const expiryDate = new Date(row.validade);
+      const daysExpired = Math.floor(
+        (today.getTime() - expiryDate.getTime()) / (1000 * 60 * 60 * 24)
+      );
+
+      return {
+        medicamento: row.MedicineModel?.nome || '',
+        principio_ativo: row.MedicineModel?.principio_ativo || '',
+        quantidade: Number(row.quantidade) || 0,
+        validade: formatDateToPtBr(expiryDate),
+        residente: row.ResidentModel?.nome || null,
+        dias_vencido: daysExpired,
+        lote: row.lote || null,
+        setor: row.setor || '',
+      };
+    });
   }
 }

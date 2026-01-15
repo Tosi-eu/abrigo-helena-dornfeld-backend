@@ -71,6 +71,11 @@ export class ReportService {
         return data;
       }
 
+      case 'medicamentos_vencidos': {
+        const data = await this.repo.getExpiredMedicinesData();
+        return data;
+      }
+
       default:
         throw new Error('Tipo inválido');
     }
