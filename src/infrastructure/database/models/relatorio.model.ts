@@ -115,3 +115,14 @@ export interface ResidentMedicinesReport {
   quantidade: number;
   validade: string;
 }
+
+export interface ExpiredMedicineReport {
+  medicamento: string;
+  principio_ativo: string;
+  quantidade: number;
+  validade: string;
+  residente: string | null;
+  dias_vencido: number;
+  lote: string | null;
+  setor: string;
+}
