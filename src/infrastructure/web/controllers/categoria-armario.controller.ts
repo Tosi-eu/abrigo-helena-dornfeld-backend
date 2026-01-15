@@ -8,7 +8,12 @@ export class CabinetCategoryController {
   async create(req: Request, res: Response) {
     try {
       const { nome } = req.body;
-      const created = await this.service.create(nome);
+
+      if (!nome || typeof nome !== 'string' || nome.trim() === '') {
+        return res.status(400).json({ error: 'Nome da categoria é obrigatório' });
+      }
+
+      const created = await this.service.create(nome.trim());
       return res.status(201).json(created);
     } catch (error: unknown) {
       return sendErrorResponse(res, 400, error, 'Erro ao criar categoria');

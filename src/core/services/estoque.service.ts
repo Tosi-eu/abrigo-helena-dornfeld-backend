@@ -35,7 +35,8 @@ export class StockService {
     if (
       !data.medicamento_id ||
       (!data.armario_id && !data.gaveta_id) ||
-      !data.quantidade
+      !data.quantidade ||
+      !data.origem
     ) {
       throw new Error('Campos obrigatórios faltando.');
     }

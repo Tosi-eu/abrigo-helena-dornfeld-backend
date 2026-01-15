@@ -50,6 +50,13 @@ InputModel.init(
     sequelize,
     tableName: 'insumo',
     timestamps: true,
+    indexes: [
+      {
+        unique: true,
+        fields: ['nome'],
+        name: 'uniq_insumo_nome',
+      },
+    ],
   },
 );
 

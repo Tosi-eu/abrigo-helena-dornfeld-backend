@@ -11,6 +11,7 @@ import {
   ResidentReport,
   TransferReport,
   DailyMovementReport,
+  ResidentMedicinesReport,
 } from '../models/relatorio.model';
 import { ResidentMonthlyUsage, MovementType } from '../../../core/utils/utils';
 import { formatDateToPtBr } from '../../helpers/date.helper';
@@ -523,7 +524,6 @@ export class ReportRepository {
         armario: plain.CabinetModel?.num_armario || null,
         setor: plain.setor,
         lote: plain.lote || null,
-        usuario: plain.LoginModel?.login || '',
       };
     });
   }
@@ -567,11 +567,6 @@ export class ReportRepository {
           attributes: ['num_armario'],
           required: false,
         },
-        {
-          model: LoginModel,
-          attributes: ['login'],
-          required: true,
-        },
       ],
       where: {
         data: {
@@ -597,8 +592,60 @@ export class ReportRepository {
         gaveta: plain.gaveta_id || null,
         setor: plain.setor,
         lote: plain.lote || null,
-        usuario: plain.LoginModel?.login || '',
       };
     });
+  }
+
+  async getResidentMedicinesData(casela: number): Promise<ResidentMedicinesReport[]> {
+    const resident = await ResidentModel.findOne({
+      where: { num_casela: casela },
+    });
+
+    if (!resident) {
+      return [];
+    }
+
+    const results = await MedicineStockModel.findAll({
+      attributes: [
+        [fn('SUM', col('quantidade')), 'quantidade'],
+        [fn('MIN', col('validade')), 'validade'],
+      ],
+      include: [
+        {
+          model: MedicineModel,
+          attributes: ['nome', 'principio_ativo'],
+          required: true,
+        },
+        {
+          model: ResidentModel,
+          attributes: ['nome', 'num_casela'],
+          required: true,
+          where: { num_casela: casela },
+        },
+      ],
+      where: {
+        casela_id: { [Op.not]: null },
+      },
+      group: [
+        'ResidentModel.nome',
+        'ResidentModel.num_casela',
+        'MedicineModel.nome',
+        'MedicineModel.principio_ativo',
+      ],
+      order: [
+        ['MedicineModel', 'nome', 'ASC'],
+      ],
+      raw: true,
+      nest: true,
+    });
+
+    return results.map((row: any) => ({
+      residente: row.ResidentModel?.nome || '',
+      casela: row.ResidentModel?.num_casela || casela,
+      medicamento: row.MedicineModel?.nome || '',
+      principio_ativo: row.MedicineModel?.principio_ativo || null,
+      quantidade: Number(row.quantidade) || 0,
+      validade: formatDateToPtBr(new Date(row.validade)),
+    }));
   }
 }

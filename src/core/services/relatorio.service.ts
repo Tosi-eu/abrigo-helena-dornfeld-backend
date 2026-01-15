@@ -63,6 +63,14 @@ export class ReportService {
         return data;
       }
 
+      case 'medicamentos_residente': {
+        if (!casela || isNaN(casela)) {
+          throw new Error('Casela do residente é obrigatória');
+        }
+        const data = await this.repo.getResidentMedicinesData(casela);
+        return data;
+      }
+
       default:
         throw new Error('Tipo inválido');
     }

@@ -65,6 +65,21 @@ MedicineModel.init(
     sequelize,
     tableName: 'medicamento',
     timestamps: true,
+    indexes: [
+      {
+        unique: true,
+        fields: ['nome', 'principio_ativo', 'dosagem', 'unidade_medida'],
+        name: 'uniq_medicamento_nome_principio_dosagem',
+      },
+      {
+        fields: ['nome'],
+        name: 'idx_medicamento_nome',
+      },
+      {
+        fields: ['principio_ativo'],
+        name: 'idx_medicamento_principio_ativo',
+      },
+    ],
   },
 );
 

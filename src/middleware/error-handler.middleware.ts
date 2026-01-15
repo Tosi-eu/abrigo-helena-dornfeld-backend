@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { sanitizeErrorMessage } from '../infrastructure/helpers/sanitize.helper';
 import { isAppError } from '../infrastructure/types/error.types';
 import { logger } from '../infrastructure/helpers/logger.helper';
@@ -10,7 +10,7 @@ export function errorHandler(err: unknown, req: Request, res: Response) {
   logger.error('Error handler', {
     operation: 'error_handler',
     path: req.path,
-    method: req.method,
+    method: req.method ,
     statusCode: isAppError(err) ? (err.statusCode || err.status || 500) : 500,
   }, err instanceof Error ? err : new Error(errorMessage));
 

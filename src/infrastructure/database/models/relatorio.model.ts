@@ -90,7 +90,6 @@ export interface TransferReport {
   armario: number | null;
   setor: string;
   lote: string | null;
-  usuario: string;
 }
 
 export interface DailyMovementReport {
@@ -106,5 +105,13 @@ export interface DailyMovementReport {
   gaveta: number | null;
   setor: string;
   lote: string | null;
-  usuario: string;
+}
+
+export interface ResidentMedicinesReport {
+  residente: string;
+  casela: number;
+  medicamento: string;
+  principio_ativo: string | null;
+  quantidade: number;
+  validade: string;
 }
