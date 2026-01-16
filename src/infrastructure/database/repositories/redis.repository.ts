@@ -1,39 +1,68 @@
-import { redisClient, isRedisAvailable } from '../redis/client.redis';
+import { getRedisClient, isRedisAvailable } from '../redis/client.redis';
 
 export class RedisRepository {
-  private async checkRedis(): Promise<boolean> {
+  private get client() {
+    return getRedisClient();
+  }
+
+  async setIfNotExists(
+    key: string,
+    value: string,
+    ttlSeconds: number,
+  ): Promise<boolean> {
+    if (!isRedisAvailable()) return false;
+
+    const client = this.client;
+    if (!client) return false;
+
     try {
-      return await isRedisAvailable();
+      const result = await client.set(
+        key,
+        value,
+        'EX',
+        ttlSeconds,
+        'NX',
+      );
+
+      return result === 'OK';
     } catch {
       return false;
     }
   }
 
   async get<T>(key: string): Promise<T | null> {
-    if (!(await this.checkRedis())) {
-      return null;
-    }
+    if (!isRedisAvailable()) return null;
+
+    const client = this.client;
+    if (!client) return null;
+
     try {
-      const value = await redisClient.get(key);
-      return value ? JSON.parse(value) : null;
+      const value = await client.get(key);
+      return value ? (JSON.parse(value) as T) : null;
     } catch {
       return null;
     }
   }
 
-  async set<T>(key: string, value: T, ttlSeconds?: number): Promise<void> {
-    if (!(await this.checkRedis())) {
-      return;
-    }
+  async set<T>(
+    key: string,
+    value: T,
+    ttlSeconds?: number,
+  ): Promise<void> {
+    if (!isRedisAvailable()) return;
+
+    const client = this.client;
+    if (!client) return;
+
     try {
       const payload = JSON.stringify(value);
+
       if (ttlSeconds) {
-        await redisClient.set(key, payload, 'EX', ttlSeconds);
+        await client.set(key, payload, 'EX', ttlSeconds);
       } else {
-        await redisClient.set(key, payload);
+        await client.set(key, payload);
       }
     } catch (error) {
-      // Silently fail in development if Redis is not available
       if (process.env.NODE_ENV !== 'development') {
         console.error('Redis set error:', error);
       }
@@ -41,11 +70,13 @@ export class RedisRepository {
   }
 
   async del(key: string): Promise<void> {
-    if (!(await this.checkRedis())) {
-      return;
-    }
+    if (!isRedisAvailable()) return;
+
+    const client = this.client;
+    if (!client) return;
+
     try {
-      await redisClient.del(key);
+      await client.del(key);
     } catch (error) {
       if (process.env.NODE_ENV !== 'development') {
         console.error('Redis del error:', error);
@@ -54,14 +85,29 @@ export class RedisRepository {
   }
 
   async delByPattern(pattern: string): Promise<void> {
-    if (!(await this.checkRedis())) {
-      return;
-    }
+    if (!isRedisAvailable()) return;
+
+    const client = this.client;
+    if (!client) return;
+
+    let cursor = '0';
+
     try {
-      const keys = await redisClient.keys(pattern);
-      if (keys.length) {
-        await redisClient.del(keys);
-      }
+      do {
+        const [nextCursor, keys] = await client.scan(
+          cursor,
+          'MATCH',
+          pattern,
+          'COUNT',
+          100,
+        );
+
+        cursor = nextCursor;
+
+        if (keys.length > 0) {
+          await client.del(...keys);
+        }
+      } while (cursor !== '0');
     } catch (error) {
       if (process.env.NODE_ENV !== 'development') {
         console.error('Redis delByPattern error:', error);
@@ -70,11 +116,13 @@ export class RedisRepository {
   }
 
   async exists(key: string): Promise<boolean> {
-    if (!(await this.checkRedis())) {
-      return false;
-    }
+    if (!isRedisAvailable()) return false;
+
+    const client = this.client;
+    if (!client) return false;
+
     try {
-      return (await redisClient.exists(key)) === 1;
+      return (await client.exists(key)) === 1;
     } catch {
       return false;
     }

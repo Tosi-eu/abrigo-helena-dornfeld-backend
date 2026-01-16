@@ -5,16 +5,13 @@ import {
   ItemType,
   StockItemStatus,
   QueryPaginationParams,
-  OperationType,
   MovementType,
 } from '../utils/utils';
-import Movement from '../domain/movimentacao';
 import { MovementRepository } from '../../infrastructure/database/repositories/movimentacao.repository';
 import { CacheService } from './redis.service';
 import { PriceSearchService } from './price-search.service';
 import { MedicineRepository } from '../../infrastructure/database/repositories/medicamento.repository';
 import { InputRepository } from '../../infrastructure/database/repositories/insumo.repository';
-import { logger } from '../../infrastructure/helpers/logger.helper';
 
 export class StockService {
   private medicineRepo: MedicineRepository;
