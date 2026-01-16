@@ -40,8 +40,8 @@ export class InputService {
     return created;
   }
 
-  listPaginated(page: number = 1, limit: number = 10) {
-    return this.repo.listAllInputs(page, limit);
+  listPaginated(page: number = 1, limit: number = 10, name?: string) {
+    return this.repo.listAllInputs(page, limit, name);
   }
 
   updateInput(id: number, data: Omit<Input, 'id'>) {

@@ -332,34 +332,61 @@ export class StockRepository {
       const in45Days = new Date(today);
       in45Days.setDate(in45Days.getDate() + 45);
 
+      const baseWhere: any = {};
+
       switch (filter) {
         case 'noStock':
-          return { quantidade: 0 };
+          baseWhere.quantidade = 0;
+          break;
         case 'belowMin':
-          return { quantidade: { [Op.gt]: 0 } };
+          baseWhere.quantidade = { [Op.gt]: 0 };
+          break;
         case 'expired':
-          return {
-            quantidade: { [Op.gt]: 0 },
-            validade: { [Op.lt]: today },
-          };
+          baseWhere.quantidade = { [Op.gt]: 0 };
+          baseWhere.validade = { [Op.lt]: today };
+          break;
         case 'expiringSoon':
-          return {
-            quantidade: { [Op.gt]: 0 },
-            validade: { [Op.between]: [today, in45Days] },
-          };
+          baseWhere.quantidade = { [Op.gt]: 0 };
+          baseWhere.validade = { [Op.between]: [today, in45Days] };
+          break;
         default:
-          return {};
+          break;
       }
+
+      return baseWhere;
     };
 
     const whereCondition = buildWhereCondition();
     const results: StockQueryResult[] = [];
 
-    if (!type || type === 'medicamento') {
+    const shouldIncludeMedicines = !params.itemType || params.itemType === 'medicamento';
+    const shouldIncludeInputs = !params.itemType || params.itemType === 'insumo';
+
+    if ((!type || type === 'medicamento') && shouldIncludeMedicines) {
       const medicineWhere: any = { ...whereCondition };
       
       if (filter === 'belowMin') {
         medicineWhere.quantidade = { [Op.gt]: 0 };
+      }
+
+      if (params.cabinet) {
+        medicineWhere.armario_id = Number(params.cabinet);
+      }
+      if (params.drawer) {
+        medicineWhere.gaveta_id = Number(params.drawer);
+      }
+      if (params.casela) {
+        medicineWhere.casela_id = Number(params.casela);
+      }
+      if (params.sector) {
+        medicineWhere.setor = params.sector;
+      }
+
+      const medicineIncludeWhere: any = {};
+      if (params.name && params.name.trim()) {
+        medicineIncludeWhere.nome = {
+          [Op.iLike]: `%${params.name.trim()}%`,
+        };
       }
 
       const medicineStocks = await MedicineStockModel.findAll({
@@ -369,6 +396,7 @@ export class StockRepository {
             model: MedicineModel,
             attributes: ['id', 'nome', 'principio_ativo', 'estoque_minimo'],
             required: true,
+            where: Object.keys(medicineIncludeWhere).length > 0 ? medicineIncludeWhere : undefined,
           },
           {
             model: ResidentModel,
@@ -416,11 +444,31 @@ export class StockRepository {
       }
     }
 
-    if (!type || type === 'insumo') {
+    if ((!type || type === 'insumo') && shouldIncludeInputs) {
       const inputWhere: any = { ...whereCondition };
       
       if (filter === 'belowMin') {
         inputWhere.quantidade = { [Op.gt]: 0 };
+      }
+
+      if (params.cabinet) {
+        inputWhere.armario_id = Number(params.cabinet);
+      }
+      if (params.drawer) {
+        inputWhere.gaveta_id = Number(params.drawer);
+      }
+      if (params.casela) {
+        inputWhere.casela_id = Number(params.casela);
+      }
+      if (params.sector) {
+        inputWhere.setor = params.sector;
+      }
+
+      const inputIncludeWhere: any = {};
+      if (params.name && params.name.trim()) {
+        inputIncludeWhere.nome = {
+          [Op.iLike]: `%${params.name.trim()}%`,
+        };
       }
 
       const inputStocks = await InputStockModel.findAll({
@@ -430,6 +478,7 @@ export class StockRepository {
             model: InputModel,
             attributes: ['id', 'nome', 'descricao', 'estoque_minimo'],
             required: true,
+            where: Object.keys(inputIncludeWhere).length > 0 ? inputIncludeWhere : undefined,
           },
           {
             model: ResidentModel,

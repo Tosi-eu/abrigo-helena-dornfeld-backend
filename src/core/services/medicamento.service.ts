@@ -76,8 +76,8 @@ export class MedicineService {
     return created;
   }
 
-  async findAll({ page = 1, limit = 10 }: { page?: number; limit?: number }) {
-    return this.repo.findAllMedicines({ page, limit });
+  async findAll({ page = 1, limit = 10, name }: { page?: number; limit?: number; name?: string }) {
+    return this.repo.findAllMedicines({ page, limit, name });
   }
 
   async findById(id: number) {

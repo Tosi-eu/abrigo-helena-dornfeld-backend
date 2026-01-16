@@ -1,5 +1,6 @@
 import MedicineModel from '../models/medicamento.model';
 import { Medicine } from '../../../core/domain/medicamento';
+import { Op } from 'sequelize';
 
 export class MedicineRepository {
   async createMedicine(data: Medicine): Promise<Medicine> {
@@ -23,10 +24,18 @@ export class MedicineRepository {
     };
   }
 
-  async findAllMedicines({ page, limit }: { page: number; limit: number }) {
+  async findAllMedicines({ page, limit, name }: { page: number; limit: number; name?: string }) {
     const offset = (page - 1) * limit;
 
+    const where: any = {};
+    if (name && name.trim()) {
+      where.nome = {
+        [Op.iLike]: `%${name.trim()}%`,
+      };
+    }
+
     const { rows, count } = await MedicineModel.findAndCountAll({
+      where,
       order: [['nome', 'ASC']],
       offset,
       limit,

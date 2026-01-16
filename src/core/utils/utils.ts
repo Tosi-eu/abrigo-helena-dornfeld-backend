@@ -74,6 +74,12 @@ export interface QueryPaginationParams {
   type: string;
   page?: number;
   limit?: number;
+  name?: string;
+  itemType?: string;
+  cabinet?: string;
+  drawer?: string;
+  casela?: string;
+  sector?: string;
 }
 
 export interface StockProportion {

@@ -3,6 +3,7 @@ import MovementModel from '../models/movimentacao.model';
 import Movement from '../../../core/domain/movimentacao';
 import MedicineModel from '../models/medicamento.model';
 import MedicineStockModel from '../models/estoque-medicamento.model';
+import InputStockModel from '../models/estoque-insumo.model';
 import CabinetModel from '../models/armario.model';
 import ResidenteModel from '../models/residente.model';
 import LoginModel from '../models/login.model';
@@ -308,6 +309,7 @@ export class MovementRepository {
     const now = new Date();
     const results: NonMovementedItem[] = [];
 
+    const medicineMovementsMap = new Map<number, Date>();
     const medicineMovements = await MovementModel.findAll({
       attributes: [
         'medicamento_id',
@@ -319,29 +321,46 @@ export class MovementRepository {
       where: {
         medicamento_id: { [Op.not]: null },
       },
-      include: [
-        {
-          model: MedicineModel,
-          attributes: ['id', 'nome', 'principio_ativo'],
-          required: true,
-        },
-      ],
-      group: [
-        'medicamento_id',
-        'MedicineModel.id',
-        'MedicineModel.nome',
-        'MedicineModel.principio_ativo',
-      ],
-      raw: false,
-      subQuery: false,
+      group: ['medicamento_id'],
+      raw: true,
     });
 
-    for (const movement of medicineMovements) {
-      const plain = movement.get({ plain: true }) as any;
-      const medicine = plain.MedicineModel;
-      const ultimaMovimentacao = plain.ultima_movimentacao
-        ? new Date(plain.ultima_movimentacao)
-        : new Date('1900-01-01');
+    for (const movement of medicineMovements as any[]) {
+      if (movement.medicamento_id) {
+        const ultimaMovimentacao = movement.ultima_movimentacao
+          ? new Date(movement.ultima_movimentacao)
+          : null;
+        if (ultimaMovimentacao) {
+          medicineMovementsMap.set(movement.medicamento_id, ultimaMovimentacao);
+        }
+      }
+    }
+
+    const medicinesInStock = await MedicineStockModel.findAll({
+      attributes: ['medicamento_id'],
+      where: {
+        quantidade: { [Op.gt]: 0 },
+      },
+      group: ['medicamento_id'],
+      raw: true,
+    });
+
+    const medicineIds = Array.from(
+      new Set([
+        ...medicineMovementsMap.keys(),
+        ...medicinesInStock.map((m: any) => m.medicamento_id),
+      ]),
+    );
+
+    const medicines = await MedicineModel.findAll({
+      where: {
+        id: { [Op.in]: medicineIds },
+      },
+      attributes: ['id', 'nome', 'principio_ativo'],
+    });
+
+    for (const medicine of medicines) {
+      const ultimaMovimentacao = medicineMovementsMap.get(medicine.id) || new Date('1900-01-01');
       const diasParados = Math.floor(
         (now.getTime() - ultimaMovimentacao.getTime()) / (1000 * 60 * 60 * 24),
       );
@@ -356,6 +375,7 @@ export class MovementRepository {
       });
     }
 
+    const inputMovementsMap = new Map<number, Date>();
     const inputMovements = await MovementModel.findAll({
       attributes: [
         'insumo_id',
@@ -367,29 +387,46 @@ export class MovementRepository {
       where: {
         insumo_id: { [Op.not]: null },
       },
-      include: [
-        {
-          model: InputModel,
-          attributes: ['id', 'nome', 'descricao'],
-          required: true,
-        },
-      ],
-      group: [
-        'insumo_id',
-        'InputModel.id',
-        'InputModel.nome',
-        'InputModel.descricao',
-      ],
-      raw: false,
-      subQuery: false,
+      group: ['insumo_id'],
+      raw: true,
     });
 
-    for (const movement of inputMovements) {
-      const plain = movement.get({ plain: true }) as any;
-      const input = plain.InputModel;
-      const ultimaMovimentacao = plain.ultima_movimentacao
-        ? new Date(plain.ultima_movimentacao)
-        : new Date('1900-01-01');
+    for (const movement of inputMovements as any[]) {
+      if (movement.insumo_id) {
+        const ultimaMovimentacao = movement.ultima_movimentacao
+          ? new Date(movement.ultima_movimentacao)
+          : null;
+        if (ultimaMovimentacao) {
+          inputMovementsMap.set(movement.insumo_id, ultimaMovimentacao);
+        }
+      }
+    }
+
+    const inputsInStock = await InputStockModel.findAll({
+      attributes: ['insumo_id'],
+      where: {
+        quantidade: { [Op.gt]: 0 },
+      },
+      group: ['insumo_id'],
+      raw: true,
+    });
+
+    const inputIds = Array.from(
+      new Set([
+        ...inputMovementsMap.keys(),
+        ...inputsInStock.map((i: any) => i.insumo_id),
+      ]),
+    );
+    
+    const inputs = await InputModel.findAll({
+      where: {
+        id: { [Op.in]: inputIds },
+      },
+      attributes: ['id', 'nome', 'descricao'],
+    });
+
+    for (const input of inputs) {
+      const ultimaMovimentacao = inputMovementsMap.get(input.id) || new Date('1900-01-01');
       const diasParados = Math.floor(
         (now.getTime() - ultimaMovimentacao.getTime()) / (1000 * 60 * 60 * 24),
       );

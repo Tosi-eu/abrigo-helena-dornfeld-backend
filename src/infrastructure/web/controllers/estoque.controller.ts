@@ -48,13 +48,19 @@ export class StockController {
 
   async list(req: Request, res: Response) {
     try {
-      const { filter, type, page, limit } = req.query;
+      const { filter, type, page, limit, name, itemType, cabinet, drawer, casela, sector } = req.query;
 
       const data = await this.service.listStock({
         filter: String(filter || ''),
         type: String(type || ''),
         page: Number(page) || 1,
         limit: Number(limit) || 10,
+        name: name ? String(name) : undefined,
+        itemType: itemType ? String(itemType) : undefined,
+        cabinet: cabinet ? String(cabinet) : undefined,
+        drawer: drawer ? String(drawer) : undefined,
+        casela: casela ? String(casela) : undefined,
+        sector: sector ? String(sector) : undefined,
       });
 
       if (handleETagResponse(req, res, data)) {
