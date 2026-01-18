@@ -89,7 +89,10 @@ MedicineStockModel.init(
     tableName: 'estoque_medicamento',
     timestamps: true,
     indexes: [
-      { fields: ['medicamento_id'], name: 'idx_estoque_medicamento_medicamento_id' },
+      {
+        fields: ['medicamento_id'],
+        name: 'idx_estoque_medicamento_medicamento_id',
+      },
       { fields: ['armario_id'], name: 'idx_estoque_medicamento_armario_id' },
       { fields: ['gaveta_id'], name: 'idx_estoque_medicamento_gaveta_id' },
       { fields: ['casela_id'], name: 'idx_estoque_medicamento_casela_id' },

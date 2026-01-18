@@ -14,7 +14,11 @@ import {
 const repo = new StockRepository();
 const medicineRepo = new MedicineRepository();
 const inputRepo = new InputRepository();
-const priceSearchService = new PriceSearchService(cacheService, medicineRepo, inputRepo);
+const priceSearchService = new PriceSearchService(
+  cacheService,
+  medicineRepo,
+  inputRepo,
+);
 const service = new StockService(repo, cacheService, priceSearchService);
 const controller = new StockController(service);
 

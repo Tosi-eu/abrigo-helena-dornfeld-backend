@@ -29,11 +29,15 @@ export class InputService {
           if (updated) return updated;
         }
       } catch (error) {
-        logger.error('Erro ao buscar preço automaticamente', {
-          operation: 'create_input',
-          inputId: created.id,
-          nome: data.nome,
-        }, error as Error);
+        logger.error(
+          'Erro ao buscar preço automaticamente',
+          {
+            operation: 'create_input',
+            inputId: created.id,
+            nome: data.nome,
+          },
+          error as Error,
+        );
       }
     }
 

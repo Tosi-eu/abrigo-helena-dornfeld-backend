@@ -48,7 +48,18 @@ export class StockController {
 
   async list(req: Request, res: Response) {
     try {
-      const { filter, type, page, limit, name, itemType, cabinet, drawer, casela, sector } = req.query;
+      const {
+        filter,
+        type,
+        page,
+        limit,
+        name,
+        itemType,
+        cabinet,
+        drawer,
+        casela,
+        sector,
+      } = req.query;
 
       const data = await this.service.listStock({
         filter: String(filter || ''),
@@ -64,7 +75,7 @@ export class StockController {
       });
 
       if (handleETagResponse(req, res, data)) {
-        return; 
+        return;
       }
 
       return res.json(data);
@@ -108,7 +119,7 @@ export class StockController {
       };
 
       if (handleETagResponse(req, res, responseData)) {
-        return; 
+        return;
       }
 
       return res.json(responseData);
@@ -133,7 +144,6 @@ export class StockController {
       return sendErrorResponse(res, 400, error, 'Erro ao remover medicamento');
     }
   }
-
 
   async suspendIndividualMedicine(req: Request, res: Response) {
     try {
@@ -200,7 +210,11 @@ export class StockController {
       }
 
       if (!quantidade || quantidade <= 0) {
-        return res.status(400).json({ error: 'Quantidade é obrigatória e deve ser maior que zero' });
+        return res
+          .status(400)
+          .json({
+            error: 'Quantidade é obrigatória e deve ser maior que zero',
+          });
       }
 
       const result = await this.service.transferMedicineSector(
@@ -221,7 +235,7 @@ export class StockController {
       );
     }
   }
-  
+
   async updateStockItem(req: Request, res: Response) {
     try {
       const { estoque_id } = req.params;
@@ -388,7 +402,11 @@ export class StockController {
       }
 
       if (!quantidade || quantidade <= 0) {
-        return res.status(400).json({ error: 'Quantidade é obrigatória e deve ser maior que zero' });
+        return res
+          .status(400)
+          .json({
+            error: 'Quantidade é obrigatória e deve ser maior que zero',
+          });
       }
 
       const result = await this.service.transferInputSector(

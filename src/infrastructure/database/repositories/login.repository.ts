@@ -12,13 +12,27 @@ export class LoginRepository {
   async findByLogin(login: string) {
     return LoginModel.findOne({
       where: { login },
-      attributes: ['id', 'login', 'password', 'refresh_token', 'first_name', 'last_name'],
+      attributes: [
+        'id',
+        'login',
+        'password',
+        'refresh_token',
+        'first_name',
+        'last_name',
+      ],
     });
   }
 
   async findById(id: number) {
     return LoginModel.findByPk(id, {
-      attributes: ['id', 'login', 'password', 'refresh_token', 'first_name', 'last_name'],
+      attributes: [
+        'id',
+        'login',
+        'password',
+        'refresh_token',
+        'first_name',
+        'last_name',
+      ],
     });
   }
 

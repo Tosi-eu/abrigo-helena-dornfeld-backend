@@ -28,9 +28,9 @@ export class MedicineController {
     const list = await this.service.findAll({ page, limit, name });
 
     if (handleETagResponse(req, res, list)) {
-      return; 
+      return;
     }
-    
+
     res.json(list);
   }
 

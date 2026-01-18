@@ -15,7 +15,9 @@ class StructuredLogger {
   private logger: winston.Logger;
 
   constructor() {
-    const logLevel = process.env.LOG_LEVEL || (process.env.NODE_ENV === 'production' ? 'info' : 'debug');
+    const logLevel =
+      process.env.LOG_LEVEL ||
+      (process.env.NODE_ENV === 'production' ? 'info' : 'debug');
 
     this.logger = winston.createLogger({
       level: logLevel,
@@ -62,7 +64,7 @@ class StructuredLogger {
 
   error(message: string, context?: LogContext, error?: Error): void {
     const meta: LogContext = { ...context };
-    
+
     if (error) {
       meta.error = {
         message: error.message,
@@ -86,7 +88,13 @@ class StructuredLogger {
     this.logger.debug(message, context);
   }
 
-  logRequest(method: string, path: string, statusCode: number, duration: number, context?: LogContext): void {
+  logRequest(
+    method: string,
+    path: string,
+    statusCode: number,
+    duration: number,
+    context?: LogContext,
+  ): void {
     this.info('HTTP Request', {
       method,
       path,
@@ -112,7 +120,11 @@ class StructuredLogger {
     this.warn(`Security Event: ${event}`, context);
   }
 
-  logPerformance(operation: string, duration: number, context?: LogContext): void {
+  logPerformance(
+    operation: string,
+    duration: number,
+    context?: LogContext,
+  ): void {
     this.info(`Performance: ${operation}`, {
       duration: `${duration}ms`,
       ...context,
@@ -123,6 +135,3 @@ class StructuredLogger {
 export const logger = new StructuredLogger();
 
 export { StructuredLogger };
-
-
-

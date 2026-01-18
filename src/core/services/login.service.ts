@@ -20,17 +20,16 @@ export class LoginService {
   async getById(id: number) {
     const user = await this.repo.findById(id);
     if (!user) return null;
-  
+
     return {
       id: user.id,
       login: user.login,
       firstName: user.first_name,
       lastName: user.last_name,
     };
-  }  
+  }
 
   async create(attrs: Login) {
-
     const userExists = await this.repo.findByLogin(attrs.login);
 
     if (userExists) {
@@ -90,26 +89,26 @@ export class LoginService {
   }: UpdateUserInput) {
     const user = await this.repo.findById(userId);
     if (!user) return null;
-  
+
     const passwordMatch = await bcrypt.compare(currentPassword, user.password);
     if (!passwordMatch) return null;
-  
+
     const updateData: any = {};
-  
+
     if (firstName !== undefined) updateData.first_name = firstName;
     if (lastName !== undefined) updateData.last_name = lastName;
-  
+
     if (login && login !== user.login) {
       updateData.login = login;
     }
-  
+
     if (password) {
       updateData.password = await bcrypt.hash(password, 10);
     }
-  
+
     try {
       const updated = await this.repo.update(userId, updateData);
-  
+
       return {
         id: updated!.id,
         login: updated!.login,

@@ -17,11 +17,11 @@ const createRedisClient = (): Redis | null => {
       lazyConnect: true,
       enableOfflineQueue: false,
       maxRetriesPerRequest: 1,
-      retryStrategy: (times) => {
+      retryStrategy: times => {
         if (process.env.NODE_ENV === 'development' && times > 3) {
           logger.warn('[Redis] Disabled after retries (dev mode)');
           redisAvailable = false;
-          return null; 
+          return null;
         }
 
         return Math.min(times * 100, 2000);
@@ -33,7 +33,7 @@ const createRedisClient = (): Redis | null => {
       logger.info('[Redis] Connected');
     });
 
-    client.on('error', (err) => {
+    client.on('error', err => {
       redisAvailable = false;
 
       if (process.env.NODE_ENV === 'development') {
@@ -43,7 +43,7 @@ const createRedisClient = (): Redis | null => {
       }
     });
 
-    client.connect().catch((err) => {
+    client.connect().catch(err => {
       redisAvailable = false;
       logger.error('[Redis] Failed to connect', { error: err });
     });

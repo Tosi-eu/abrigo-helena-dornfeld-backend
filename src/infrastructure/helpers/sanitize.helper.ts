@@ -39,17 +39,29 @@ export function sanitizeErrorMessage(
   if (!error) return 'Erro interno do servidor';
 
   if (error && typeof error === 'object' && 'name' in error) {
-    if (error.name === 'SequelizeValidationError' || error.name === 'ValidationError') {
-      const validationError = error as { errors?: Array<{ message?: string; path?: string }>; message?: string };
+    if (
+      error.name === 'SequelizeValidationError' ||
+      error.name === 'ValidationError'
+    ) {
+      const validationError = error as {
+        errors?: Array<{ message?: string; path?: string }>;
+        message?: string;
+      };
       if (validationError.errors && validationError.errors.length > 0) {
         const firstError = validationError.errors[0];
-        return firstError.message || `Erro de validação no campo ${firstError.path || 'desconhecido'}`;
+        return (
+          firstError.message ||
+          `Erro de validação no campo ${firstError.path || 'desconhecido'}`
+        );
       }
       return validationError.message || 'Erro de validação';
     }
 
     if (error.name === 'SequelizeUniqueConstraintError') {
-      const uniqueError = error as { errors?: Array<{ message?: string; path?: string }>; message?: string };
+      const uniqueError = error as {
+        errors?: Array<{ message?: string; path?: string }>;
+        message?: string;
+      };
       if (uniqueError.errors && uniqueError.errors.length > 0) {
         const firstError = uniqueError.errors[0];
         const field = firstError.path || 'campo';

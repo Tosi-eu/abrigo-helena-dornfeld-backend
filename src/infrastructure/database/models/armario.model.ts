@@ -41,9 +41,7 @@ CabinetModel.init(
     sequelize,
     tableName: 'armario',
     timestamps: true,
-    indexes: [
-      { fields: ['categoria_id'], name: 'idx_armario_categoria_id' },
-    ],
+    indexes: [{ fields: ['categoria_id'], name: 'idx_armario_categoria_id' }],
   },
 );
 

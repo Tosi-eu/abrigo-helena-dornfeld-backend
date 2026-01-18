@@ -19,4 +19,3 @@ module.exports = {
     await queryInterface.removeColumn('insumo', 'preco');
   },
 };
-

@@ -1,8 +1,10 @@
-import { NotificationDestinoType } from '../database/models/notificacao.model';
-import { EventStatus } from '../database/models/notificacao.model';
+import {
+  EventStatus,
+  NotificationDestinoType,
+} from '../database/models/notificacao.model';
 
 export interface NotificationUpdateData {
-  status?: 'pending' | 'completed' | 'cancelled';
+  status?: EventStatus;
   visto?: boolean;
   data_prevista?: Date;
   destino?: NotificationDestinoType;

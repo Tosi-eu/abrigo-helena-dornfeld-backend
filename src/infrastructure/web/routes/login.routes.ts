@@ -19,7 +19,9 @@ router.post('/reset-password', (req, res) =>
 
 router.use(authMiddleware);
 
-router.get('/usuario-logado', (req, res) => controller.getCurrentUser(req, res));
+router.get('/usuario-logado', (req, res) =>
+  controller.getCurrentUser(req, res),
+);
 
 router.put('/', (req, res) => controller.update(req, res));
 router.delete('/', (req, res) => controller.delete(req, res));

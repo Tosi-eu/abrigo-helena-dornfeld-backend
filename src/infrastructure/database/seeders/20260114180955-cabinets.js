@@ -10,7 +10,9 @@ module.exports = {
     );
 
     if (categories.length === 0) {
-      console.warn('Nenhuma categoria de armário encontrada. Pulando inserção de armários.');
+      console.warn(
+        'Nenhuma categoria de armário encontrada. Pulando inserção de armários.',
+      );
       return;
     }
 
@@ -44,4 +46,3 @@ module.exports = {
     });
   },
 };
-

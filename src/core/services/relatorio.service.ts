@@ -19,17 +19,16 @@ export type MovementsParams =
   | {
       periodo: MovementPeriod.INTERVALO;
       data_inicial: string; // YYYY-MM-DD
-      data_final: string;   // YYYY-MM-DD
+      data_final: string; // YYYY-MM-DD
     };
 
-  export type GenerateReportParams =
-    | (MovementsParams & {
-        casela?: number;
-      })
-    | {
-        casela?: number;
-      };
-  
+export type GenerateReportParams =
+  | (MovementsParams & {
+      casela?: number;
+    })
+  | {
+      casela?: number;
+    };
 
 export class ReportService {
   constructor(private readonly repo: ReportRepository) {}
@@ -81,44 +80,46 @@ export class ReportService {
         const report = await this.repo.getResidentConsumptionReport(casela);
         if (!report) {
           throw new Error('Residente não encontrado');
-          }
+        }
         return report;
       }
 
       case 'transferencias':
         return this.repo.getTransfersData();
 
-        case 'movimentacoes': {
-          if (!('periodo' in params)) {
-            throw new Error('Período é obrigatório para relatório de movimentações');
-          }
-        
-          const { periodo } = params;
-        
-          if (periodo === MovementPeriod.DIARIO) {
-            return this.repo.getMovementsByPeriod({
-              periodo,
-              data: params.data,
-            });
-          }
-        
-          if (periodo === MovementPeriod.MENSAL) {
-            return this.repo.getMovementsByPeriod({
-              periodo,
-              mes: params.mes,
-            });
-          }
-        
-          if (periodo === MovementPeriod.INTERVALO) {
-            return this.repo.getMovementsByPeriod({
-              periodo,
-              data_inicial: params.data_inicial,
-              data_final: params.data_final,
-            });
-          }
-        
-          throw new Error('Período inválido');
-      }            
+      case 'movimentacoes': {
+        if (!('periodo' in params)) {
+          throw new Error(
+            'Período é obrigatório para relatório de movimentações',
+          );
+        }
+
+        const { periodo } = params;
+
+        if (periodo === MovementPeriod.DIARIO) {
+          return this.repo.getMovementsByPeriod({
+            periodo,
+            data: params.data,
+          });
+        }
+
+        if (periodo === MovementPeriod.MENSAL) {
+          return this.repo.getMovementsByPeriod({
+            periodo,
+            mes: params.mes,
+          });
+        }
+
+        if (periodo === MovementPeriod.INTERVALO) {
+          return this.repo.getMovementsByPeriod({
+            periodo,
+            data_inicial: params.data_inicial,
+            data_final: params.data_final,
+          });
+        }
+
+        throw new Error('Período inválido');
+      }
 
       case 'medicamentos_residente': {
         if (!casela || isNaN(casela)) {

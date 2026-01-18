@@ -24,7 +24,15 @@ export class MedicineRepository {
     };
   }
 
-  async findAllMedicines({ page, limit, name }: { page: number; limit: number; name?: string }) {
+  async findAllMedicines({
+    page,
+    limit,
+    name,
+  }: {
+    page: number;
+    limit: number;
+    name?: string;
+  }) {
     const offset = (page - 1) * limit;
 
     const where: any = {};
@@ -128,5 +136,4 @@ export class MedicineRepository {
     const count = await MedicineModel.destroy({ where: { id } });
     return count > 0;
   }
-
 }

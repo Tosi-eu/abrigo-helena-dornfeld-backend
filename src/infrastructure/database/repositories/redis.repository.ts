@@ -20,7 +20,12 @@ export class RedisRepository {
       const result = await client.set(key, value, 'EX', ttlSeconds, 'NX');
       return result === 'OK';
     } catch (error) {
-      logger.error('Redis setIfNotExists error', { key, value, ttlSeconds, error });
+      logger.error('Redis setIfNotExists error', {
+        key,
+        value,
+        ttlSeconds,
+        error,
+      });
       return false;
     }
   }
@@ -82,7 +87,13 @@ export class RedisRepository {
 
     try {
       do {
-        const [nextCursor, keys] = await client.scan(cursor, 'MATCH', pattern, 'COUNT', 100);
+        const [nextCursor, keys] = await client.scan(
+          cursor,
+          'MATCH',
+          pattern,
+          'COUNT',
+          100,
+        );
 
         cursor = nextCursor;
 

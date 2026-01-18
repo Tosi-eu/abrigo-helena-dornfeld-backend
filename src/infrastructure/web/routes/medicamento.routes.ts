@@ -12,7 +12,11 @@ import {
 
 const repo = new MedicineRepository();
 const inputRepo = new InputRepository();
-const priceSearchService = new PriceSearchService(cacheService, repo, inputRepo);
+const priceSearchService = new PriceSearchService(
+  cacheService,
+  repo,
+  inputRepo,
+);
 const service = new MedicineService(repo, priceSearchService);
 const controller = new MedicineController(service);
 

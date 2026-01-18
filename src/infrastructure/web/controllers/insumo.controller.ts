@@ -21,11 +21,11 @@ export class InsumoController {
     const name = req.query.name as string | undefined;
 
     const list = await this.service.listPaginated(page, limit, name);
-    
+
     if (handleETagResponse(req, res, list)) {
-      return; 
+      return;
     }
-    
+
     return res.json(list);
   }
 

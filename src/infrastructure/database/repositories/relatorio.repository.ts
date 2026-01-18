@@ -25,7 +25,10 @@ import MovementModel from '../models/movimentacao.model';
 import CabinetModel from '../models/armario.model';
 import CabinetCategoryModel from '../models/categorias-armario.model';
 import LoginModel from '../models/login.model';
-import { MovementPeriod, MovementsParams } from '../../../core/services/relatorio.service';
+import {
+  MovementPeriod,
+  MovementsParams,
+} from '../../../core/services/relatorio.service';
 
 export class ReportRepository {
   async getMedicinesData(): Promise<MedicineReport[]> {
@@ -164,7 +167,7 @@ export class ReportRepository {
     const results = await MovementModel.findAll({
       attributes: [
         [
-          sequelize.literal("DATE_TRUNC('month', \"MovementModel\".\"data\")"),
+          sequelize.literal('DATE_TRUNC(\'month\', "MovementModel"."data")'),
           'data',
         ],
         [fn('SUM', col('quantidade')), 'consumo_mensal'],
@@ -196,7 +199,9 @@ export class ReportRepository {
         'MedicineModel.id',
         'MedicineModel.nome',
         'MedicineModel.principio_ativo',
-        sequelize.literal("DATE_TRUNC('month', \"MovementModel\".\"data\")") as any,
+        sequelize.literal(
+          'DATE_TRUNC(\'month\', "MovementModel"."data")',
+        ) as any,
       ],
       order: [
         ['ResidentModel', 'nome', 'ASC'],
@@ -335,7 +340,9 @@ export class ReportRepository {
     };
   }
 
-  async getResidentConsumptionReport(casela: number): Promise<ResidentConsumptionReport | null> {
+  async getResidentConsumptionReport(
+    casela: number,
+  ): Promise<ResidentConsumptionReport | null> {
     const resident = await ResidentModel.findByPk(casela);
     if (!resident) {
       return null;
@@ -345,7 +352,7 @@ export class ReportRepository {
       attributes: [
         [fn('AVG', col('preco')), 'preco'],
         [
-          sequelize.literal("COALESCE(SUM(quantidade), 0)"),
+          sequelize.literal('COALESCE(SUM(quantidade), 0)'),
           'quantidade_estoque',
         ],
         [
@@ -358,7 +365,13 @@ export class ReportRepository {
       include: [
         {
           model: MedicineModel,
-          attributes: ['id', 'nome', 'dosagem', 'unidade_medida', 'principio_ativo'],
+          attributes: [
+            'id',
+            'nome',
+            'dosagem',
+            'unidade_medida',
+            'principio_ativo',
+          ],
           required: true,
         },
       ],
@@ -381,7 +394,7 @@ export class ReportRepository {
       attributes: [
         [fn('AVG', col('preco')), 'preco'],
         [
-          sequelize.literal("COALESCE(SUM(quantidade), 0)"),
+          sequelize.literal('COALESCE(SUM(quantidade), 0)'),
           'quantidade_estoque',
         ],
       ],
@@ -401,15 +414,17 @@ export class ReportRepository {
       nest: true,
     });
 
-    const medicines: ResidentConsumptionMedicine[] = medicinesRows.map((row: any) => ({
-      nome: row.MedicineModel?.nome || '',
-      dosagem: row.MedicineModel?.dosagem || '',
-      unidade_medida: row.MedicineModel?.unidade_medida || '',
-      principio_ativo: row.MedicineModel?.principio_ativo || '',
-      preco: row.preco ? parseFloat(String(row.preco)) : null,
-      quantidade_estoque: Number(row.quantidade_estoque) || 0,
-      observacao: row.observacao || null,
-    }));
+    const medicines: ResidentConsumptionMedicine[] = medicinesRows.map(
+      (row: any) => ({
+        nome: row.MedicineModel?.nome || '',
+        dosagem: row.MedicineModel?.dosagem || '',
+        unidade_medida: row.MedicineModel?.unidade_medida || '',
+        principio_ativo: row.MedicineModel?.principio_ativo || '',
+        preco: row.preco ? parseFloat(String(row.preco)) : null,
+        quantidade_estoque: Number(row.quantidade_estoque) || 0,
+        observacao: row.observacao || null,
+      }),
+    );
 
     const inputs: ResidentConsumptionInput[] = inputsRows.map((row: any) => ({
       nome: row.InputModel?.nome || '',
@@ -418,7 +433,7 @@ export class ReportRepository {
       quantidade_estoque: Number(row.quantidade_estoque) || 0,
     }));
 
-    const custosMedicamentos = medicines.map((med) => {
+    const custosMedicamentos = medicines.map(med => {
       const preco = med.preco || 0;
       const custoMensal = preco;
       const custoAnual = custoMensal * 12;
@@ -431,7 +446,7 @@ export class ReportRepository {
       };
     });
 
-    const custosInsumos = inputs.map((input) => {
+    const custosInsumos = inputs.map(input => {
       const preco = input.preco || 0;
       const custoMensal = preco;
       const custoAnual = custoMensal * 12;
@@ -444,7 +459,7 @@ export class ReportRepository {
       };
     });
 
-    const totalEstimado = 
+    const totalEstimado =
       custosMedicamentos.reduce((sum, c) => sum + c.custo_anual, 0) +
       custosInsumos.reduce((sum, c) => sum + c.custo_anual, 0);
 
@@ -461,8 +476,20 @@ export class ReportRepository {
 
   async getTransfersData(): Promise<TransferReport[]> {
     const now = new Date();
-    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+    const startOfDay = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+    );
+    const endOfDay = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+      23,
+      59,
+      59,
+      999,
+    );
 
     const results = await MovementModel.findAll({
       attributes: [
@@ -513,7 +540,7 @@ export class ReportRepository {
       order: [['data', 'DESC']],
     });
 
-    return results.map((row) => {
+    return results.map(row => {
       const plain = row.get({ plain: true }) as any;
       return {
         data: formatDateToPtBr(plain.data),
@@ -533,54 +560,56 @@ export class ReportRepository {
   async getMovementsByPeriod(
     params: MovementsParams,
   ): Promise<DailyMovementReport[]> {
-  
     let start: Date;
     let end: Date;
-  
+
     switch (params.periodo) {
       case MovementPeriod.DIARIO: {
         const d = new Date(params.data);
         start = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-        end = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
+        end = new Date(
+          d.getFullYear(),
+          d.getMonth(),
+          d.getDate(),
+          23,
+          59,
+          59,
+          999,
+        );
         break;
       }
-  
+
       case MovementPeriod.MENSAL: {
         const [year, month] = params.mes.split('-').map(Number);
         start = new Date(year, month - 1, 1);
         end = new Date(year, month, 0, 23, 59, 59, 999);
         break;
       }
-  
+
       case MovementPeriod.INTERVALO: {
         start = new Date(params.data_inicial);
         end = new Date(params.data_final);
         end.setHours(23, 59, 59, 999);
         break;
       }
-  
+
       default:
         throw new Error('Período inválido');
     }
-  
+
     const results = await MovementModel.findAll({
       where: {
         data: {
           [Op.between]: [start, end],
         },
       },
-      include: [
-        MedicineModel,
-        InputModel,
-        ResidentModel,
-        CabinetModel,
-      ],
+      include: [MedicineModel, InputModel, ResidentModel, CabinetModel],
       order: [['data', 'DESC']],
     });
-  
+
     return results.map(row => {
       const plain = row.get({ plain: true }) as any;
-  
+
       return {
         data: formatDateToPtBr(plain.data),
         tipo_movimentacao: plain.tipo,
@@ -598,7 +627,9 @@ export class ReportRepository {
     });
   }
 
-  async getResidentMedicinesData(casela: number): Promise<ResidentMedicinesReport[]> {
+  async getResidentMedicinesData(
+    casela: number,
+  ): Promise<ResidentMedicinesReport[]> {
     const resident = await ResidentModel.findOne({
       where: { num_casela: casela },
     });
@@ -634,9 +665,7 @@ export class ReportRepository {
         'MedicineModel.nome',
         'MedicineModel.principio_ativo',
       ],
-      order: [
-        ['MedicineModel', 'nome', 'ASC'],
-      ],
+      order: [['MedicineModel', 'nome', 'ASC']],
       raw: true,
       nest: true,
     });
@@ -698,7 +727,7 @@ export class ReportRepository {
     return results.map((row: any) => {
       const expiryDate = new Date(row.validade);
       const daysExpired = Math.floor(
-        (today.getTime() - expiryDate.getTime()) / (1000 * 60 * 60 * 24)
+        (today.getTime() - expiryDate.getTime()) / (1000 * 60 * 60 * 24),
       );
 
       return {

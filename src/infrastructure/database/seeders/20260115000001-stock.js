@@ -23,31 +23,47 @@ module.exports = {
     );
 
     if (medicines.length === 0 || inputs.length === 0) {
-      console.warn('Medicamentos ou insumos não encontrados. Pulando inserção de estoque.');
+      console.warn(
+        'Medicamentos ou insumos não encontrados. Pulando inserção de estoque.',
+      );
       return;
     }
 
     if (cabinets.length === 0 || drawers.length === 0) {
-      console.warn('Armários ou gavetas não encontrados. Pulando inserção de estoque.');
+      console.warn(
+        'Armários ou gavetas não encontrados. Pulando inserção de estoque.',
+      );
       return;
     }
 
     const now = new Date();
-    const getRandomDate = (daysFromNow) => {
+    const getRandomDate = daysFromNow => {
       const date = new Date(now);
       date.setDate(date.getDate() + daysFromNow);
       return date;
     };
 
-    const types = ['individual', 'geral', 'carrinho_emergencia', 'carrinho_psicotropicos'];
+    const types = [
+      'individual',
+      'geral',
+      'carrinho_emergencia',
+      'carrinho_psicotropicos',
+    ];
     const sectors = ['farmacia', 'enfermagem'];
-    const origins = ['Compra', 'Doação', 'Farmácia Municipal', 'Farmácia Popular'];
+    const origins = [
+      'Compra',
+      'Doação',
+      'Farmácia Municipal',
+      'Farmácia Popular',
+    ];
 
-    const pickLocation = (i) => {
-      const useCabinet = i % 2 === 0; 
+    const pickLocation = i => {
+      const useCabinet = i % 2 === 0;
 
       return {
-        armario_id: useCabinet ? cabinets[i % cabinets.length].num_armario : null,
+        armario_id: useCabinet
+          ? cabinets[i % cabinets.length].num_armario
+          : null,
         gaveta_id: !useCabinet ? drawers[i % drawers.length].num_gaveta : null,
       };
     };
@@ -125,12 +141,16 @@ module.exports = {
 
     if (medicineStocks.length > 0) {
       await queryInterface.bulkInsert(MEDICINE_STOCK_TABLE, medicineStocks);
-      console.log(`Inseridos ${medicineStocks.length} itens de estoque de medicamentos.`);
+      console.log(
+        `Inseridos ${medicineStocks.length} itens de estoque de medicamentos.`,
+      );
     }
 
     if (inputStocks.length > 0) {
       await queryInterface.bulkInsert(INPUT_STOCK_TABLE, inputStocks);
-      console.log(`Inseridos ${inputStocks.length} itens de estoque de insumos.`);
+      console.log(
+        `Inseridos ${inputStocks.length} itens de estoque de insumos.`,
+      );
     }
   },
 

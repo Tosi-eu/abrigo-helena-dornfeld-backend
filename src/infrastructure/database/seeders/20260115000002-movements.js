@@ -25,12 +25,16 @@ module.exports = {
     );
 
     if (medicines.length === 0 && inputs.length === 0) {
-      console.warn('Medicamentos ou insumos não encontrados. Pulando inserção de movimentações.');
+      console.warn(
+        'Medicamentos ou insumos não encontrados. Pulando inserção de movimentações.',
+      );
       return;
     }
 
     if (logins.length === 0) {
-      console.warn('Nenhum login encontrado. Criando movimentações com login_id = 1 (caso exista).');
+      console.warn(
+        'Nenhum login encontrado. Criando movimentações com login_id = 1 (caso exista).',
+      );
     }
 
     const loginId = logins.length > 0 ? logins[0].id : 1;
@@ -38,27 +42,32 @@ module.exports = {
     const sectors = ['farmacia', 'enfermagem'];
 
     const now = new Date();
-    const getRandomDate = (daysAgo) => {
+    const getRandomDate = daysAgo => {
       const date = new Date(now);
       date.setDate(date.getDate() - daysAgo);
-      date.setHours(Math.floor(Math.random() * 12) + 8, Math.floor(Math.random() * 60), 0, 0);
+      date.setHours(
+        Math.floor(Math.random() * 12) + 8,
+        Math.floor(Math.random() * 60),
+        0,
+        0,
+      );
       return date;
     };
 
     const movements = [];
     for (let i = 0; i < 400; i++) {
       const isMedicine = i % 2 === 0 && medicines.length > 0;
-      const item = isMedicine 
+      const item = isMedicine
         ? medicines[Math.floor(i / 2) % medicines.length]
         : inputs[Math.floor(i / 2) % inputs.length];
-      
+
       const cabinet = cabinets[i % cabinets.length];
       const drawer = drawers[i % drawers.length];
       const sector = sectors[i % 2];
-      const daysAgo = Math.floor(Math.random() * 180); 
+      const daysAgo = Math.floor(Math.random() * 180);
       const data = getRandomDate(daysAgo);
       const quantity = Math.floor(Math.random() * 50) + 5;
-      const lote = isMedicine 
+      const lote = isMedicine
         ? `LOTE-MOV-${String(i + 1).padStart(4, '0')}-${data.getFullYear()}`
         : `INS-MOV-${String(i + 1).padStart(4, '0')}-${data.getFullYear()}`;
 
@@ -81,19 +90,20 @@ module.exports = {
 
     for (let i = 0; i < 350; i++) {
       const isMedicine = i % 2 === 0 && medicines.length > 0;
-      const item = isMedicine 
+      const item = isMedicine
         ? medicines[Math.floor(i / 2) % medicines.length]
         : inputs[Math.floor(i / 2) % inputs.length];
-      
+
       const cabinet = cabinets[i % cabinets.length];
       const drawer = drawers[i % drawers.length];
       const sector = sectors[i % 2];
-      const daysAgo = Math.floor(Math.random() * 120); 
+      const daysAgo = Math.floor(Math.random() * 120);
       const data = getRandomDate(daysAgo);
       const quantity = Math.floor(Math.random() * 30) + 1;
-      const caselaId = i % 5 === 0 && residents.length > 0 
-        ? residents[i % residents.length].num_casela 
-        : null;
+      const caselaId =
+        i % 5 === 0 && residents.length > 0
+          ? residents[i % residents.length].num_casela
+          : null;
 
       movements.push({
         tipo: 'saida',
@@ -114,10 +124,10 @@ module.exports = {
 
     for (let i = 0; i < 200; i++) {
       const isMedicine = i % 2 === 0 && medicines.length > 0;
-      const item = isMedicine 
+      const item = isMedicine
         ? medicines[Math.floor(i / 2) % medicines.length]
         : inputs[Math.floor(i / 2) % inputs.length];
-      
+
       const cabinet = cabinets[i % cabinets.length];
       const drawer = drawers[i % drawers.length];
       const fromSector = sectors[i % 2];
@@ -125,9 +135,10 @@ module.exports = {
       const daysAgo = Math.floor(Math.random() * 90);
       const data = getRandomDate(daysAgo);
       const quantity = Math.floor(Math.random() * 20) + 1;
-      const caselaId = i % 3 === 0 && residents.length > 0 
-        ? residents[i % residents.length].num_casela 
-        : null;
+      const caselaId =
+        i % 3 === 0 && residents.length > 0
+          ? residents[i % residents.length].num_casela
+          : null;
 
       movements.push({
         tipo: 'transferencia',
@@ -159,12 +170,11 @@ module.exports = {
     const TABLE_NAME = 'movimentacao';
 
     await queryInterface.sequelize.query(
-      `DELETE FROM ${TABLE_NAME} WHERE lote LIKE 'LOTE-MOV-%' OR lote LIKE 'INS-MOV-%'`
+      `DELETE FROM ${TABLE_NAME} WHERE lote LIKE 'LOTE-MOV-%' OR lote LIKE 'INS-MOV-%'`,
     );
-    
+
     await queryInterface.sequelize.query(
-      `DELETE FROM ${TABLE_NAME} WHERE lote IS NULL AND tipo IN ('saida', 'transferencia')`
+      `DELETE FROM ${TABLE_NAME} WHERE lote IS NULL AND tipo IN ('saida', 'transferencia')`,
     );
   },
 };
-

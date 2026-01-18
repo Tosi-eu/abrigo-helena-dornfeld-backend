@@ -1,7 +1,7 @@
 import { MovementRepository } from '../../infrastructure/database/repositories/movimentacao.repository';
 import { formatDateToPtBr } from '../../infrastructure/helpers/date.helper';
 import { CacheKeyHelper } from '../../infrastructure/helpers/redis.helper';
-import { MovementType, NonMovementedItem, OperationType } from '../utils/utils';
+import { MovementType, NonMovementedItem } from '../utils/utils';
 import { CacheService } from './redis.service';
 import Movement from '../domain/movimentacao';
 import {

@@ -93,5 +93,4 @@ export class InputRepository {
   async deleteInputById(id: number): Promise<boolean> {
     return (await InputModel.destroy({ where: { id } })) > 0;
   }
-
 }

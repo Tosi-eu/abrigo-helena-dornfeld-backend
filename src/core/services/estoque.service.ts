@@ -28,7 +28,10 @@ export class StockService {
     this.movementRepo = new MovementRepository();
   }
 
-  async medicineStockIn(data: MedicineStock, login_id: number): Promise<{ message: string }> {
+  async medicineStockIn(
+    data: MedicineStock,
+    login_id: number,
+  ): Promise<{ message: string }> {
     if (
       !data.medicamento_id ||
       (!data.armario_id && !data.gaveta_id) ||
@@ -46,7 +49,7 @@ export class StockService {
       throw new Error('Produto está vencido.');
     }
 
-    if(data.casela_id && data.gaveta_id) {
+    if (data.casela_id && data.gaveta_id) {
       throw new Error('Casela e gaveta não podem ser informados juntos.');
     }
 
@@ -75,7 +78,10 @@ export class StockService {
     return result;
   }
 
-  async inputStockIn(data: InputStock, login_id: number): Promise<{ message: string }> {
+  async inputStockIn(
+    data: InputStock,
+    login_id: number,
+  ): Promise<{ message: string }> {
     if (
       !data.insumo_id ||
       (!data.armario_id && !data.gaveta_id) ||
@@ -110,11 +116,14 @@ export class StockService {
     return result;
   }
 
-  async stockOut(data: {
-    estoqueId: number;
-    tipo: ItemType;
-    quantidade: number;
-  }, login_id: number) {
+  async stockOut(
+    data: {
+      estoqueId: number;
+      tipo: ItemType;
+      quantidade: number;
+    },
+    login_id: number,
+  ) {
     const { estoqueId, tipo, quantidade } = data;
 
     if (!estoqueId) throw new Error('Nenhum item foi selecionado');
@@ -138,7 +147,10 @@ export class StockService {
     await this.movementRepo.create({
       tipo: MovementType.SAIDA,
       login_id,
-      medicamento_id: tipo === ItemType.MEDICAMENTO ? (stockItem as any).medicamento_id : null,
+      medicamento_id:
+        tipo === ItemType.MEDICAMENTO
+          ? (stockItem as any).medicamento_id
+          : null,
       insumo_id: tipo === ItemType.INSUMO ? (stockItem as any).insumo_id : null,
       quantidade,
       casela_id: stockItem.casela_id ?? null,
@@ -239,37 +251,39 @@ export class StockService {
     casela_id?: number,
   ) {
     const stock = await this.repo.findMedicineStockById(estoque_id);
-  
+
     if (!stock) {
       throw new Error('Medicamento não encontrado');
     }
 
-    if(!login_id) {
+    if (!login_id) {
       throw new Error('Login é obrigatório');
     }
-  
+
     if (stock.status === StockItemStatus.SUSPENSO) {
       throw new Error('Medicamento suspenso não pode ser transferido');
     }
-  
+
     if (stock.setor !== 'farmacia') {
-      throw new Error('Transferência permitida apenas de farmácia para enfermaria');
+      throw new Error(
+        'Transferência permitida apenas de farmácia para enfermaria',
+      );
     }
-  
+
     if (setor !== 'enfermagem') {
       throw new Error('Transferência permitida apenas para enfermaria');
     }
-  
+
     const isIndividual = stock.casela_id != null;
     const resolvedCaselaId = isIndividual ? stock.casela_id : casela_id;
-  
+
     if (isIndividual) {
       const result = await this.repo.transferMedicineSector(
         estoque_id,
         setor,
-        quantidade
+        quantidade,
       );
-  
+
       await this.movementRepo.create({
         tipo: MovementType.TRANSFER,
         login_id,
@@ -283,30 +297,30 @@ export class StockService {
         gaveta_id: stock.gaveta_id ?? undefined,
         lote: stock.lote ?? null,
       });
-  
+
       await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
       return result;
     }
-  
+
     if (!casela_id) {
       throw new Error('Casela é obrigatória para transferir item geral');
     }
-  
+
     if (!quantidade || quantidade <= 0) {
       throw new Error('Quantidade é obrigatória e deve ser maior que zero');
     }
-  
+
     if (quantidade > stock.quantidade) {
       throw new Error(`Quantidade não pode ser maior que ${stock.quantidade}`);
     }
-  
+
     const result = await this.repo.transferMedicineSector(
       estoque_id,
       setor,
       quantidade,
       casela_id,
     );
-  
+
     // Create movement record for transfer
     await this.movementRepo.create({
       tipo: MovementType.TRANSFER,
@@ -321,11 +335,10 @@ export class StockService {
       gaveta_id: stock.gaveta_id ?? undefined,
       lote: stock.lote ?? null,
     });
-  
+
     await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
     return result;
   }
-  
 
   async updateStockItem(
     estoqueId: number,
@@ -366,8 +379,12 @@ export class StockService {
         );
       }
 
-      const { origem, ...inputData } = data;
-      const result = await this.repo.updateStockItem(estoqueId, tipo, inputData);
+      const { ...inputData } = data;
+      const result = await this.repo.updateStockItem(
+        estoqueId,
+        tipo,
+        inputData,
+      );
       await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
       return result;
     }
@@ -475,7 +492,7 @@ export class StockService {
     casela_id?: number,
   ) {
     const stock = await this.repo.findInputStockById(estoque_id);
-  
+
     if (!stock) {
       throw new Error('Insumo não encontrado');
     }
@@ -483,29 +500,31 @@ export class StockService {
     if (!login_id) {
       throw new Error('Usuário não autenticado');
     }
-  
+
     if (stock.status === StockItemStatus.SUSPENSO) {
       throw new Error('Insumo suspenso não pode ser transferido');
     }
-  
+
     if (stock.setor !== 'farmacia') {
-      throw new Error('Transferência permitida apenas de farmácia para enfermaria');
+      throw new Error(
+        'Transferência permitida apenas de farmácia para enfermaria',
+      );
     }
-  
+
     if (setor !== 'enfermagem') {
       throw new Error('Transferência permitida apenas para enfermaria');
     }
-  
+
     const isIndividual = stock.casela_id != null;
     const resolvedCaselaId = isIndividual ? stock.casela_id : casela_id;
-  
+
     if (isIndividual) {
       const result = await this.repo.transferInputSector(
         estoque_id,
         setor,
-        quantidade
+        quantidade,
       );
-  
+
       await this.movementRepo.create({
         tipo: MovementType.TRANSFER,
         login_id,
@@ -519,30 +538,30 @@ export class StockService {
         gaveta_id: stock.gaveta_id ?? undefined,
         lote: stock.lote ?? null,
       });
-  
+
       await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
       return result;
     }
-  
+
     if (!casela_id) {
       throw new Error('Casela é obrigatória para transferir item geral');
     }
-  
+
     if (!quantidade || quantidade <= 0) {
       throw new Error('Quantidade é obrigatória e deve ser maior que zero');
     }
-  
+
     if (quantidade > stock.quantidade) {
       throw new Error(`Quantidade não pode ser maior que ${stock.quantidade}`);
     }
-  
+
     const result = await this.repo.transferInputSector(
       estoque_id,
       setor,
       quantidade,
       casela_id,
     );
-  
+
     await this.movementRepo.create({
       tipo: MovementType.TRANSFER,
       login_id,
@@ -556,9 +575,8 @@ export class StockService {
       gaveta_id: stock.gaveta_id ?? undefined,
       lote: stock.lote ?? null,
     });
-  
+
     await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
     return result;
   }
-  
 }

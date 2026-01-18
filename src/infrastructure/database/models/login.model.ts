@@ -43,9 +43,7 @@ LoginModel.init(
     sequelize,
     tableName: 'login',
     timestamps: true,
-    indexes: [
-      { fields: ['refresh_token'], name: 'idx_login_refresh_token' },
-    ],
+    indexes: [{ fields: ['refresh_token'], name: 'idx_login_refresh_token' }],
   },
 );
 

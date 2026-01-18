@@ -15,11 +15,7 @@ export class CacheService {
     }
 
     const lockKey = `lock:${key}`;
-    const lockAcquired = await this.redis.setIfNotExists(
-      lockKey,
-      '1',
-      5,
-    );
+    const lockAcquired = await this.redis.setIfNotExists(lockKey, '1', 5);
 
     if (!lockAcquired) {
       await new Promise(resolve => setTimeout(resolve, 50));
@@ -47,11 +43,7 @@ export class CacheService {
     await this.redis.delByPattern(pattern);
   }
 
-  async set<T>(
-    key: string,
-    value: T,
-    ttlSeconds?: number,
-  ): Promise<void> {
+  async set<T>(key: string, value: T, ttlSeconds?: number): Promise<void> {
     await this.redis.set(key, value, ttlSeconds);
   }
 

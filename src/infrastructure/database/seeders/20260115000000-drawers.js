@@ -10,7 +10,9 @@ module.exports = {
     );
 
     if (categories.length === 0) {
-      console.warn('Nenhuma categoria de gaveta encontrada. Pulando inserção de gavetas.');
+      console.warn(
+        'Nenhuma categoria de gaveta encontrada. Pulando inserção de gavetas.',
+      );
       return;
     }
 
@@ -22,7 +24,7 @@ module.exports = {
 
     const drawers = [];
     let gavetaNum = 1;
-    
+
     for (let i = 0; i < 20; i++) {
       if (!existingNumbers.has(gavetaNum)) {
         const categoriaIndex = i % categories.length;
@@ -49,4 +51,3 @@ module.exports = {
     });
   },
 };
-

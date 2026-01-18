@@ -10,13 +10,13 @@ module.exports = {
         nome: 'Gaze Estéril',
         descricao: 'Gaze estéril para curativos',
         estoque_minimo: 50,
-        preco: 8.90,
+        preco: 8.9,
       },
       {
         nome: 'Algodão',
         descricao: 'Algodão hidrófilo',
         estoque_minimo: 30,
-        preco: 5.50,
+        preco: 5.5,
       },
       {
         nome: 'Seringa Descartável 5ml',
@@ -40,7 +40,7 @@ module.exports = {
         nome: 'Agulha 30x8',
         descricao: 'Agulha descartável 30x8',
         estoque_minimo: 120,
-        preco: 0.40,
+        preco: 0.4,
       },
       {
         nome: 'Luvas de Procedimento',
@@ -52,25 +52,25 @@ module.exports = {
         nome: 'Máscara Cirúrgica',
         descricao: 'Máscara cirúrgica descartável',
         estoque_minimo: 300,
-        preco: 0.30,
+        preco: 0.3,
       },
       {
         nome: 'Soro Fisiológico 0,9%',
         descricao: 'Soro fisiológico 0,9% 500ml',
         estoque_minimo: 40,
-        preco: 4.50,
+        preco: 4.5,
       },
       {
         nome: 'Álcool 70%',
         descricao: 'Álcool etílico 70% para antissepsia',
         estoque_minimo: 20,
-        preco: 12.80,
+        preco: 12.8,
       },
       {
         nome: 'Seringa Descartável 3ml',
         descricao: 'Seringa descartável de 3ml',
         estoque_minimo: 100,
-        preco: 0.40,
+        preco: 0.4,
       },
       {
         nome: 'Seringa Descartável 20ml',
@@ -88,7 +88,7 @@ module.exports = {
         nome: 'Agulha 40x12',
         descricao: 'Agulha descartável 40x12',
         estoque_minimo: 100,
-        preco: 0.50,
+        preco: 0.5,
       },
       {
         nome: 'Luvas Estéreis',
@@ -100,67 +100,67 @@ module.exports = {
         nome: 'Soro Glicosado 5%',
         descricao: 'Soro glicosado 5% 500ml',
         estoque_minimo: 35,
-        preco: 5.20,
+        preco: 5.2,
       },
       {
         nome: 'Ringer Lactato',
         descricao: 'Solução Ringer Lactato 500ml',
         estoque_minimo: 30,
-        preco: 6.80,
+        preco: 6.8,
       },
       {
         nome: 'Clorexidina 2%',
         descricao: 'Solução de clorexidina 2% para antissepsia',
         estoque_minimo: 25,
-        preco: 15.50,
+        preco: 15.5,
       },
       {
         nome: 'Povidona Iodada',
         descricao: 'Solução de povidona iodada 10%',
         estoque_minimo: 20,
-        preco: 18.20,
+        preco: 18.2,
       },
       {
         nome: 'Esparadrapo',
         descricao: 'Esparadrapo microporoso',
         estoque_minimo: 80,
-        preco: 3.50,
+        preco: 3.5,
       },
       {
         nome: 'Ataduras',
         descricao: 'Ataduras de crepe 10cm',
         estoque_minimo: 40,
-        preco: 4.80,
+        preco: 4.8,
       },
       {
         nome: 'Tecido Adesivo',
         descricao: 'Tecido adesivo para curativos',
         estoque_minimo: 60,
-        preco: 2.90,
+        preco: 2.9,
       },
       {
         nome: 'Água Oxigenada',
         descricao: 'Água oxigenada 10 volumes',
         estoque_minimo: 30,
-        preco: 7.40,
+        preco: 7.4,
       },
       {
         nome: 'Suporte para Soro',
         descricao: 'Suporte para soro com regulador',
         estoque_minimo: 25,
-        preco: 12.00,
+        preco: 12.0,
       },
       {
         nome: 'Cateter Abocath 18G',
         descricao: 'Cateter intravenoso 18G',
         estoque_minimo: 50,
-        preco: 8.50,
+        preco: 8.5,
       },
       {
         nome: 'Cateter Abocath 20G',
         descricao: 'Cateter intravenoso 20G',
         estoque_minimo: 50,
-        preco: 7.80,
+        preco: 7.8,
       },
     ];
 
@@ -218,4 +218,3 @@ module.exports = {
     });
   },
 };
-

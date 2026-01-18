@@ -41,9 +41,7 @@ DrawerModel.init(
     sequelize,
     tableName: 'gaveta',
     timestamps: true,
-    indexes: [
-      { fields: ['categoria_id'], name: 'idx_gaveta_categoria_id' },
-    ],
+    indexes: [{ fields: ['categoria_id'], name: 'idx_gaveta_categoria_id' }],
   },
 );
 

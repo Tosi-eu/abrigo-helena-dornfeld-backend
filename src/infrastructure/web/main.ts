@@ -3,8 +3,6 @@ import dotenv from 'dotenv';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import cookieParser from 'cookie-parser';
-import { spawn } from 'child_process';
-import { join } from 'path';
 import routes from './routes/index.routes';
 import { sequelize } from '../database/sequelize';
 import '../database/models/index.models';
@@ -81,17 +79,31 @@ app.use(errorHandler);
 void (async () => {
   try {
     await sequelize.authenticate();
-    logger.info('Conexão com o banco estabelecida', { operation: 'database', status: 'connected' });
+    logger.info('Conexão com o banco estabelecida', {
+      operation: 'database',
+      status: 'connected',
+    });
 
     setupAssociations();
 
     await sequelize.sync({ alter: false });
-    logger.info('Tabelas sincronizadas', { operation: 'database', status: 'synced' });
+    logger.info('Tabelas sincronizadas', {
+      operation: 'database',
+      status: 'synced',
+    });
     app.listen(port, () => {
-      logger.info('Servidor iniciado', { operation: 'server', port, status: 'running' });
+      logger.info('Servidor iniciado', {
+        operation: 'server',
+        port,
+        status: 'running',
+      });
     });
   } catch (err: unknown) {
-    logger.error('Erro ao iniciar servidor', { operation: 'server' }, err as Error);
+    logger.error(
+      'Erro ao iniciar servidor',
+      { operation: 'server' },
+      err as Error,
+    );
     process.exit(1);
   }
 })();

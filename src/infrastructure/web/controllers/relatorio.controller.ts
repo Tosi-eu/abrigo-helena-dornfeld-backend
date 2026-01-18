@@ -1,5 +1,8 @@
 import { Request, Response } from 'express';
-import { MovementPeriod, ReportService } from '../../../core/services/relatorio.service';
+import {
+  MovementPeriod,
+  ReportService,
+} from '../../../core/services/relatorio.service';
 import { sendErrorResponse } from '../../helpers/error-response.helper';
 import { handleETagResponse } from '../../helpers/etag.helper';
 import { logger } from '../../helpers/logger.helper';
@@ -15,7 +18,7 @@ export class ReportController {
       const data_inicial = req.query.data_inicial as string | undefined;
       const mes = req.query.mes as string | undefined;
       const data_final = req.query.data_final as string | undefined;
-      
+
       if (!type) {
         return res.status(400).json({ error: 'Tipo obrigatório' });
       }

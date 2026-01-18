@@ -12,7 +12,7 @@ module.exports = {
         unidade_medida: 'mg',
         principio_ativo: 'Dipirona Sódica',
         estoque_minimo: 20,
-        preco: 5.50,
+        preco: 5.5,
       },
       {
         nome: 'Paracetamol',
@@ -20,7 +20,7 @@ module.exports = {
         unidade_medida: 'mg',
         principio_ativo: 'Paracetamol',
         estoque_minimo: 30,
-        preco: 4.80,
+        preco: 4.8,
       },
       {
         nome: 'Ibuprofeno',
@@ -28,7 +28,7 @@ module.exports = {
         unidade_medida: 'mg',
         principio_ativo: 'Ibuprofeno',
         estoque_minimo: 25,
-        preco: 6.20,
+        preco: 6.2,
       },
       {
         nome: 'Omeprazol',
@@ -36,7 +36,7 @@ module.exports = {
         unidade_medida: 'mg',
         principio_ativo: 'Omeprazol',
         estoque_minimo: 15,
-        preco: 8.90,
+        preco: 8.9,
       },
       {
         nome: 'Amoxicilina',
@@ -44,7 +44,7 @@ module.exports = {
         unidade_medida: 'mg',
         principio_ativo: 'Amoxicilina',
         estoque_minimo: 10,
-        preco: 12.50,
+        preco: 12.5,
       },
       {
         nome: 'Losartana',
@@ -52,7 +52,7 @@ module.exports = {
         unidade_medida: 'mg',
         principio_ativo: 'Losartana Potássica',
         estoque_minimo: 20,
-        preco: 15.30,
+        preco: 15.3,
       },
       {
         nome: 'Metformina',
@@ -60,7 +60,7 @@ module.exports = {
         unidade_medida: 'mg',
         principio_ativo: 'Metformina',
         estoque_minimo: 30,
-        preco: 7.80,
+        preco: 7.8,
       },
       {
         nome: 'Captopril',
@@ -68,7 +68,7 @@ module.exports = {
         unidade_medida: 'mg',
         principio_ativo: 'Captopril',
         estoque_minimo: 20,
-        preco: 9.40,
+        preco: 9.4,
       },
       {
         nome: 'Atenolol',
@@ -76,7 +76,7 @@ module.exports = {
         unidade_medida: 'mg',
         principio_ativo: 'Atenolol',
         estoque_minimo: 15,
-        preco: 8.20,
+        preco: 8.2,
       },
       {
         nome: 'Hidroclorotiazida',
@@ -84,7 +84,7 @@ module.exports = {
         unidade_medida: 'mg',
         principio_ativo: 'Hidroclorotiazida',
         estoque_minimo: 20,
-        preco: 6.80,
+        preco: 6.8,
       },
       {
         nome: 'Sinvastatina',
@@ -92,7 +92,7 @@ module.exports = {
         unidade_medida: 'mg',
         principio_ativo: 'Sinvastatina',
         estoque_minimo: 30,
-        preco: 11.50,
+        preco: 11.5,
       },
       {
         nome: 'AAS',
@@ -100,7 +100,7 @@ module.exports = {
         unidade_medida: 'mg',
         principio_ativo: 'Ácido Acetilsalicílico',
         estoque_minimo: 50,
-        preco: 3.20,
+        preco: 3.2,
       },
       {
         nome: 'Dorflex',
@@ -108,7 +108,7 @@ module.exports = {
         unidade_medida: 'mg',
         principio_ativo: 'Orfenadrina + Dipirona + Cafeína',
         estoque_minimo: 25,
-        preco: 7.40,
+        preco: 7.4,
       },
       {
         nome: 'Cloridrato de Metformina',
@@ -116,7 +116,7 @@ module.exports = {
         unidade_medida: 'mg',
         principio_ativo: 'Metformina',
         estoque_minimo: 35,
-        preco: 6.90,
+        preco: 6.9,
       },
       {
         nome: 'Glibenclamida',
@@ -124,7 +124,7 @@ module.exports = {
         unidade_medida: 'mg',
         principio_ativo: 'Glibenclamida',
         estoque_minimo: 20,
-        preco: 9.80,
+        preco: 9.8,
       },
       {
         nome: 'Bromoprida',
@@ -132,7 +132,7 @@ module.exports = {
         unidade_medida: 'mg',
         principio_ativo: 'Bromoprida',
         estoque_minimo: 15,
-        preco: 8.60,
+        preco: 8.6,
       },
       {
         nome: 'Hidroxicloroquina',
@@ -140,7 +140,7 @@ module.exports = {
         unidade_medida: 'mg',
         principio_ativo: 'Hidroxicloroquina',
         estoque_minimo: 10,
-        preco: 18.50,
+        preco: 18.5,
       },
       {
         nome: 'Prednisona',
@@ -148,7 +148,7 @@ module.exports = {
         unidade_medida: 'mg',
         principio_ativo: 'Prednisona',
         estoque_minimo: 15,
-        preco: 14.20,
+        preco: 14.2,
       },
       {
         nome: 'Ciprofloxacino',
@@ -156,7 +156,7 @@ module.exports = {
         unidade_medida: 'mg',
         principio_ativo: 'Ciprofloxacino',
         estoque_minimo: 12,
-        preco: 16.80,
+        preco: 16.8,
       },
       {
         nome: 'Azitromicina',
@@ -164,7 +164,7 @@ module.exports = {
         unidade_medida: 'mg',
         principio_ativo: 'Azitromicina',
         estoque_minimo: 8,
-        preco: 22.40,
+        preco: 22.4,
       },
     ];
 
@@ -216,4 +216,3 @@ module.exports = {
     });
   },
 };
-
