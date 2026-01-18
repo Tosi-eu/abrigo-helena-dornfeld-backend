@@ -90,7 +90,6 @@ export class MovementService {
         const data = await this.repo.getNonMovementedMedicines(limit);
 
         return data.map(item => ({
-          tipo_item: item.tipo_item,
           item_id: item.item_id,
           nome: item.nome,
           detalhe: item.detalhe ?? null,

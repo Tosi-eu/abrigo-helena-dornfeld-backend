@@ -25,6 +25,7 @@ import MovementModel from '../models/movimentacao.model';
 import CabinetModel from '../models/armario.model';
 import CabinetCategoryModel from '../models/categorias-armario.model';
 import LoginModel from '../models/login.model';
+import { MovementPeriod, MovementsParams } from '../../../core/services/relatorio.service';
 
 export class ReportRepository {
   async getMedicinesData(): Promise<MedicineReport[]> {
@@ -529,60 +530,60 @@ export class ReportRepository {
     });
   }
 
-  async getDailyMovementsData(): Promise<DailyMovementReport[]> {
-    const now = new Date();
-    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
-
+  async getMovementsByPeriod(
+    params: MovementsParams,
+  ): Promise<DailyMovementReport[]> {
+  
+    let start: Date;
+    let end: Date;
+  
+    switch (params.periodo) {
+      case MovementPeriod.DIARIO: {
+        const d = new Date(params.data);
+        start = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+        end = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
+        break;
+      }
+  
+      case MovementPeriod.MENSAL: {
+        const [year, month] = params.mes.split('-').map(Number);
+        start = new Date(year, month - 1, 1);
+        end = new Date(year, month, 0, 23, 59, 59, 999);
+        break;
+      }
+  
+      case MovementPeriod.INTERVALO: {
+        start = new Date(params.data_inicial);
+        end = new Date(params.data_final);
+        end.setHours(23, 59, 59, 999);
+        break;
+      }
+  
+      default:
+        throw new Error('Período inválido');
+    }
+  
     const results = await MovementModel.findAll({
-      attributes: [
-        'data',
-        'tipo',
-        'quantidade',
-        'setor',
-        'lote',
-        'casela_id',
-        'armario_id',
-        'gaveta_id',
-        'medicamento_id',
-        'insumo_id',
-      ],
-      include: [
-        {
-          model: MedicineModel,
-          attributes: ['nome', 'principio_ativo'],
-          required: false,
-        },
-        {
-          model: InputModel,
-          attributes: ['nome'],
-          required: false,
-        },
-        {
-          model: ResidentModel,
-          attributes: ['nome', 'num_casela'],
-          required: false,
-        },
-        {
-          model: CabinetModel,
-          attributes: ['num_armario'],
-          required: false,
-        },
-      ],
       where: {
         data: {
-          [Op.gte]: startOfDay,
-          [Op.lte]: endOfDay,
+          [Op.between]: [start, end],
         },
       },
+      include: [
+        MedicineModel,
+        InputModel,
+        ResidentModel,
+        CabinetModel,
+      ],
       order: [['data', 'DESC']],
     });
-
-    return results.map((row) => {
+  
+    return results.map(row => {
       const plain = row.get({ plain: true }) as any;
+  
       return {
         data: formatDateToPtBr(plain.data),
-        tipo_movimentacao: plain.tipo as 'entrada' | 'saida' | 'transferencia',
+        tipo_movimentacao: plain.tipo,
         tipo_item: plain.medicamento_id ? 'medicamento' : 'insumo',
         nome: plain.MedicineModel?.nome || plain.InputModel?.nome || '',
         principio_ativo: plain.MedicineModel?.principio_ativo || null,

@@ -7,11 +7,11 @@ import InputStockModel from '../models/estoque-insumo.model';
 import CabinetModel from '../models/armario.model';
 import ResidenteModel from '../models/residente.model';
 import LoginModel from '../models/login.model';
-import InputModel from '../models/insumo.model';
 import { formatDateToPtBr } from '../../helpers/date.helper';
 import { sequelize } from '../sequelize';
 import { NonMovementedItem, ItemType, OperationType } from '../../../core/utils/utils';
 import { MovementWhereOptions } from '../../types/sequelize.types';
+import InputModel from '../models/insumo.model';
 
 export interface MovementQueryParams {
   days?: number;
@@ -26,51 +26,6 @@ export class MovementRepository {
       ...data,
       data: new Date(),
     });
-  }
-
-  async listMedicineMovements({
-    days,
-    type,
-    page,
-    limit,
-  }: MovementQueryParams) {
-    const where: MovementWhereOptions = {
-      medicamento_id: { [Op.not]: null },
-    };
-
-    if (days && days > 0) {
-      where.data = { [Op.gte]: new Date(Date.now() - days * 86400000) };
-    }
-
-    if (type) where.tipo = type;
-
-    const offset = (page - 1) * limit;
-
-    const { rows, count } = await MovementModel.findAndCountAll({
-      where,
-      order: [['data', 'DESC']],
-      offset,
-      limit,
-      include: [
-        { model: MedicineModel, attributes: ['nome', 'principio_ativo'] },
-        { model: CabinetModel, attributes: ['num_armario'] },
-        { model: ResidenteModel, attributes: ['num_casela', 'nome'] },
-        { model: LoginModel, attributes: ['login'] },
-      ],
-    });
-
-    const formatted = rows.map(r => ({
-      ...r.get({ plain: true }),
-      data: formatDateToPtBr(r.data),
-    }));
-
-    return {
-      data: formatted,
-      hasNext: count > page * limit,
-      total: count,
-      page,
-      limit,
-    };
   }
 
   async listPharmacyToNursingTransfers({
@@ -150,6 +105,52 @@ export class MovementRepository {
     };
   }
 
+
+  async listMedicineMovements({
+    days,
+    type,
+    page,
+    limit,
+  }: MovementQueryParams) {
+    const where: MovementWhereOptions = {
+      medicamento_id: { [Op.not]: null },
+    };
+
+    if (days && days > 0) {
+      where.data = { [Op.gte]: new Date(Date.now() - days * 86400000) };
+    }
+
+    if (type) where.tipo = type;
+
+    const offset = (page - 1) * limit;
+
+    const { rows, count } = await MovementModel.findAndCountAll({
+      where,
+      order: [['data', 'DESC']],
+      offset,
+      limit,
+      include: [
+        { model: MedicineModel, attributes: ['nome', 'principio_ativo'] },
+        { model: CabinetModel, attributes: ['num_armario'] },
+        { model: ResidenteModel, attributes: ['num_casela', 'nome'] },
+        { model: LoginModel, attributes: ['first_name'] },
+      ],
+    });
+
+    const formatted = rows.map(r => ({
+      ...r.get({ plain: true }),
+      data: formatDateToPtBr(r.data),
+    }));
+
+    return {
+      data: formatted,
+      hasNext: count > page * limit,
+      total: count,
+      page,
+      limit,
+    };
+  }
+
   async listInputMovements({ days, type, page, limit }: MovementQueryParams) {
     const where: MovementWhereOptions = {
       insumo_id: { [Op.not]: null },
@@ -174,7 +175,7 @@ export class MovementRepository {
         { model: InputModel, attributes: ['nome', 'descricao'] },
         { model: CabinetModel, attributes: ['num_armario'] },
         { model: ResidenteModel, attributes: ['num_casela', 'nome'] },
-        { model: LoginModel, attributes: ['login'] },
+        { model: LoginModel, attributes: ['first_name'] },
       ],
     });
 
@@ -390,7 +391,6 @@ export class MovementRepository {
   
     const results: NonMovementedItem[] = [
       ...medicines.map((m: any) => ({
-        tipo_item: ItemType.MEDICAMENTO,
         item_id: m.id,
         nome: m.nome,
         detalhe: m.detalhe,
@@ -400,7 +400,6 @@ export class MovementRepository {
         dias_parados: Number(m.dias_parados ?? 0),
       })),
       ...inputs.map((i: any) => ({
-        tipo_item: ItemType.INSUMO,
         item_id: i.id,
         nome: i.nome,
         detalhe: i.detalhe || null,

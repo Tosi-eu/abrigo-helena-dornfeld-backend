@@ -92,7 +92,6 @@ export interface StockProportion {
 }
 
 export interface NonMovementedItem {
-  tipo_item: ItemType;
   item_id: number;
   nome: string;
   detalhe: string | null;

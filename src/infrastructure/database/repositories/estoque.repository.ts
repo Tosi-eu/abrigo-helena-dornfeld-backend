@@ -36,20 +36,6 @@ export class StockRepository {
             lote: data.lote,
           },
         });
-
-        if (existingLotMedicine) {
-          throw new Error('Lote já existe no estoque. Lotes devem ser únicos.');
-        }
-
-        const existingLotInput = await InputStockModel.findOne({
-          where: {
-            lote: data.lote,
-          },
-        });
-
-        if (existingLotInput) {
-          throw new Error('Lote já existe no estoque. Lotes devem ser únicos entre medicamentos e insumos.');
-        }
       }
 
       const existing = await MedicineStockModel.findOne({

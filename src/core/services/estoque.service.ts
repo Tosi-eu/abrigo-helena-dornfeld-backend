@@ -38,6 +38,18 @@ export class StockService {
       throw new Error('Campos obrigatórios faltando.');
     }
 
+    if (data.quantidade <= 0) {
+      throw new Error('Quantidade inválida.');
+    }
+
+    if (data.validade < new Date()) {
+      throw new Error('Produto está vencido.');
+    }
+
+    if(data.casela_id && data.gaveta_id) {
+      throw new Error('Casela e gaveta não podem ser informados juntos.');
+    }
+
     if (!login_id) {
       throw new Error('Usuário não autenticado');
     }

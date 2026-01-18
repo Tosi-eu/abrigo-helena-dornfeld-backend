@@ -43,34 +43,44 @@ module.exports = {
     const sectors = ['farmacia', 'enfermagem'];
     const origins = ['Compra', 'Doação', 'Farmácia Municipal', 'Farmácia Popular'];
 
+    const pickLocation = (i) => {
+      const useCabinet = i % 2 === 0; 
+
+      return {
+        armario_id: useCabinet ? cabinets[i % cabinets.length].num_armario : null,
+        gaveta_id: !useCabinet ? drawers[i % drawers.length].num_gaveta : null,
+      };
+    };
+
     const medicineStocks = [];
     for (let i = 0; i < 200; i++) {
       const medicine = medicines[i % medicines.length];
-      const cabinet = cabinets[i % cabinets.length];
-      const drawer = drawers[i % drawers.length];
       const type = types[i % types.length];
-      const sector = sectors[i % 2];
+      const sector = sectors[i % sectors.length];
       const origin = origins[i % origins.length];
       const quantity = Math.floor(Math.random() * 100) + 10;
       const daysFromNow = Math.floor(Math.random() * 365) - 180;
       const validade = getRandomDate(daysFromNow);
       const lote = `LOTE-${String(i + 1).padStart(4, '0')}-${new Date().getFullYear()}`;
-      
-      const caselaId = type === 'individual' && residents.length > 0 
-        ? residents[i % residents.length].num_casela 
-        : null;
+
+      const location = pickLocation(i);
+
+      const caselaId =
+        type === 'individual' && residents.length > 0
+          ? residents[i % residents.length].num_casela
+          : null;
 
       medicineStocks.push({
         medicamento_id: medicine.id,
-        armario_id: cabinet.num_armario,
-        gaveta_id: drawer.num_gaveta,
+        armario_id: location.armario_id,
+        gaveta_id: location.gaveta_id,
         casela_id: caselaId,
         quantidade: quantity,
-        validade: validade,
+        validade,
         origem: origin,
         tipo: type,
         setor: sector,
-        lote: lote,
+        lote,
         status: 'active',
         suspended_at: null,
         observacao: i % 10 === 0 ? 'Item de teste' : null,
@@ -82,29 +92,30 @@ module.exports = {
     const inputStocks = [];
     for (let i = 0; i < 150; i++) {
       const input = inputs[i % inputs.length];
-      const cabinet = cabinets[i % cabinets.length];
-      const drawer = drawers[i % drawers.length];
       const type = types[i % types.length];
-      const sector = sectors[i % 2];
+      const sector = sectors[i % sectors.length];
       const quantity = Math.floor(Math.random() * 200) + 20;
       const daysFromNow = Math.floor(Math.random() * 365) - 180;
       const validade = getRandomDate(daysFromNow);
       const lote = `INS-${String(i + 1).padStart(4, '0')}-${new Date().getFullYear()}`;
 
-      const caselaId = type === 'individual' && residents.length > 0 
-        ? residents[i % residents.length].num_casela 
-        : null;
+      const location = pickLocation(i);
+
+      const caselaId =
+        type === 'individual' && residents.length > 0
+          ? residents[i % residents.length].num_casela
+          : null;
 
       inputStocks.push({
         insumo_id: input.id,
-        armario_id: cabinet.num_armario,
-        gaveta_id: drawer.num_gaveta,
+        armario_id: location.armario_id,
+        gaveta_id: location.gaveta_id,
         casela_id: caselaId,
         quantidade: quantity,
-        validade: validade,
+        validade,
         tipo: type,
         setor: sector,
-        lote: lote,
+        lote,
         status: 'active',
         suspended_at: null,
         createdAt: new Date(),
@@ -128,12 +139,11 @@ module.exports = {
     const INPUT_STOCK_TABLE = 'estoque_insumo';
 
     await queryInterface.sequelize.query(
-      `DELETE FROM ${MEDICINE_STOCK_TABLE} WHERE lote LIKE 'LOTE-%'`
+      `DELETE FROM ${MEDICINE_STOCK_TABLE} WHERE lote LIKE 'LOTE-%'`,
     );
-    
+
     await queryInterface.sequelize.query(
-      `DELETE FROM ${INPUT_STOCK_TABLE} WHERE lote LIKE 'INS-%'`
+      `DELETE FROM ${INPUT_STOCK_TABLE} WHERE lote LIKE 'INS-%'`,
     );
   },
 };
-
