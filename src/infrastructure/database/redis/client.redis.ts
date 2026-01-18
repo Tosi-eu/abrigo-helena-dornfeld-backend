@@ -1,6 +1,7 @@
 import Redis from 'ioredis';
 import { RedisRepository } from '../repositories/redis.repository';
 import { CacheService } from '../../../core/services/redis.service';
+import { logger } from '../../helpers/logger.helper';
 
 let redisAvailable = false;
 let redisClient: Redis | null = null;
@@ -18,7 +19,7 @@ const createRedisClient = (): Redis | null => {
       maxRetriesPerRequest: 1,
       retryStrategy: (times) => {
         if (process.env.NODE_ENV === 'development' && times > 3) {
-          console.warn('[Redis] Disabled after retries (dev mode)');
+          logger.warn('[Redis] Disabled after retries (dev mode)');
           redisAvailable = false;
           return null; 
         }
@@ -29,26 +30,28 @@ const createRedisClient = (): Redis | null => {
 
     client.on('connect', () => {
       redisAvailable = true;
-      console.log('[Redis] Connected');
+      logger.info('[Redis] Connected');
     });
 
     client.on('error', (err) => {
       redisAvailable = false;
 
       if (process.env.NODE_ENV === 'development') {
-        console.warn('[Redis] Error – cache disabled:', err.message);
+        logger.warn('[Redis] Error – cache disabled', { error: err });
       } else {
-        console.error('[Redis] Error:', err);
+        logger.error('[Redis] Error', { error: err });
       }
     });
 
-    client.connect().catch(() => {
+    client.connect().catch((err) => {
       redisAvailable = false;
+      logger.error('[Redis] Failed to connect', { error: err });
     });
 
     return client;
   } catch (error) {
-    console.error('[Redis] Failed to initialize:', error);
+    redisAvailable = false;
+    logger.error('[Redis] Failed to initialize', { error });
     return null;
   }
 };

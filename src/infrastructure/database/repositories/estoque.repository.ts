@@ -30,13 +30,6 @@ import { StockQueryResult } from '../../types/estoque.types';
 export class StockRepository {
   async createMedicineStockIn(data: MedicineStock) {
     try {
-      if (data.lote) {
-        const existingLotMedicine = await MedicineStockModel.findOne({
-          where: {
-            lote: data.lote,
-          },
-        });
-      }
 
       const existing = await MedicineStockModel.findOne({
         where: {

@@ -1,3 +1,4 @@
+import { logger } from '../../helpers/logger.helper';
 import { getRedisClient, isRedisAvailable } from '../redis/client.redis';
 
 export class RedisRepository {
@@ -16,16 +17,10 @@ export class RedisRepository {
     if (!client) return false;
 
     try {
-      const result = await client.set(
-        key,
-        value,
-        'EX',
-        ttlSeconds,
-        'NX',
-      );
-
+      const result = await client.set(key, value, 'EX', ttlSeconds, 'NX');
       return result === 'OK';
-    } catch {
+    } catch (error) {
+      logger.error('Redis setIfNotExists error', { key, value, ttlSeconds, error });
       return false;
     }
   }
@@ -39,16 +34,13 @@ export class RedisRepository {
     try {
       const value = await client.get(key);
       return value ? (JSON.parse(value) as T) : null;
-    } catch {
+    } catch (error) {
+      logger.error('Redis get error', { key, error });
       return null;
     }
   }
 
-  async set<T>(
-    key: string,
-    value: T,
-    ttlSeconds?: number,
-  ): Promise<void> {
+  async set<T>(key: string, value: T, ttlSeconds?: number): Promise<void> {
     if (!isRedisAvailable()) return;
 
     const client = this.client;
@@ -63,9 +55,7 @@ export class RedisRepository {
         await client.set(key, payload);
       }
     } catch (error) {
-      if (process.env.NODE_ENV !== 'development') {
-        console.error('Redis set error:', error);
-      }
+      logger.error('Redis set error', { key, value, ttlSeconds, error });
     }
   }
 
@@ -78,9 +68,7 @@ export class RedisRepository {
     try {
       await client.del(key);
     } catch (error) {
-      if (process.env.NODE_ENV !== 'development') {
-        console.error('Redis del error:', error);
-      }
+      logger.error('Redis del error', { key, error });
     }
   }
 
@@ -94,13 +82,7 @@ export class RedisRepository {
 
     try {
       do {
-        const [nextCursor, keys] = await client.scan(
-          cursor,
-          'MATCH',
-          pattern,
-          'COUNT',
-          100,
-        );
+        const [nextCursor, keys] = await client.scan(cursor, 'MATCH', pattern, 'COUNT', 100);
 
         cursor = nextCursor;
 
@@ -109,9 +91,7 @@ export class RedisRepository {
         }
       } while (cursor !== '0');
     } catch (error) {
-      if (process.env.NODE_ENV !== 'development') {
-        console.error('Redis delByPattern error:', error);
-      }
+      logger.error('Redis delByPattern error', { pattern, error });
     }
   }
 
@@ -123,7 +103,8 @@ export class RedisRepository {
 
     try {
       return (await client.exists(key)) === 1;
-    } catch {
+    } catch (error) {
+      logger.error('Redis exists error', { key, error });
       return false;
     }
   }
