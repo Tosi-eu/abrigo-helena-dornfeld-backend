@@ -474,23 +474,15 @@ export class ReportRepository {
     };
   }
 
-  async getTransfersData(): Promise<TransferReport[]> {
-    const now = new Date();
-    const startOfDay = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate(),
-    );
-    const endOfDay = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate(),
-      23,
-      59,
-      59,
-      999,
-    );
-
+  async getTransfersData(date: string): Promise<TransferReport[]> {
+    if (!date) {
+      throw new Error('Data é obrigatória para relatório de transferências');
+    }
+  
+    const d = new Date(date);
+    const startOfDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    const endOfDay = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
+  
     const results = await MovementModel.findAll({
       attributes: [
         'data',
@@ -503,43 +495,20 @@ export class ReportRepository {
         'insumo_id',
       ],
       include: [
-        {
-          model: MedicineModel,
-          attributes: ['nome', 'principio_ativo'],
-          required: false,
-        },
-        {
-          model: InputModel,
-          attributes: ['nome'],
-          required: false,
-        },
-        {
-          model: ResidentModel,
-          attributes: ['nome', 'num_casela'],
-          required: false,
-        },
-        {
-          model: CabinetModel,
-          attributes: ['num_armario'],
-          required: false,
-        },
-        {
-          model: LoginModel,
-          attributes: ['login'],
-          required: true,
-        },
+        { model: MedicineModel, attributes: ['nome', 'principio_ativo'], required: false },
+        { model: InputModel, attributes: ['nome'], required: false },
+        { model: ResidentModel, attributes: ['nome', 'num_casela'], required: false },
+        { model: CabinetModel, attributes: ['num_armario'], required: false },
+        { model: LoginModel, attributes: ['login'], required: true },
       ],
       where: {
         tipo: MovementType.TRANSFER,
         setor: 'enfermagem',
-        data: {
-          [Op.gte]: startOfDay,
-          [Op.lte]: endOfDay,
-        },
+        data: { [Op.gte]: startOfDay, [Op.lte]: endOfDay },
       },
       order: [['data', 'DESC']],
     });
-
+  
     return results.map(row => {
       const plain = row.get({ plain: true }) as any;
       return {
@@ -555,7 +524,7 @@ export class ReportRepository {
         lote: plain.lote || null,
       };
     });
-  }
+  }  
 
   async getMovementsByPeriod(
     params: MovementsParams,

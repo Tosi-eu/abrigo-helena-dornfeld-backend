@@ -23,18 +23,14 @@ export type MovementsParams =
     };
 
 export type GenerateReportParams =
-  | (MovementsParams & {
-      casela?: number;
-    })
-  | {
-      casela?: number;
-    };
+  | (MovementsParams & { casela?: number; data?: string })
+  | { casela?: number; data?: string };
 
 export class ReportService {
   constructor(private readonly repo: ReportRepository) {}
 
-  async generateReport(type: string, params: GenerateReportParams = {}) {
-    const { casela } = params;
+  async generateReport(type: string, params: GenerateReportParams) {
+    const { casela, data } = params;
 
     switch (type) {
       case 'medicamentos': {
@@ -85,7 +81,10 @@ export class ReportService {
       }
 
       case 'transferencias':
-        return this.repo.getTransfersData();
+        if (!data) {
+          throw new Error('Data é obrigatória para relatório de transferências');
+        }
+        return this.repo.getTransfersData(data);      
 
       case 'movimentacoes': {
         if (!('periodo' in params)) {

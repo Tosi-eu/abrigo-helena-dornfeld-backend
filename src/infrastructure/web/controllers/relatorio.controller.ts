@@ -23,6 +23,10 @@ export class ReportController {
         return res.status(400).json({ error: 'Tipo obrigatório' });
       }
 
+      if (type === 'transferencias' && !data) {
+        return res.status(400).json({ error: 'Data é obrigatória para transferências' });
+      }
+
       const casela = req.query.casela
         ? parseInt(req.query.casela as string)
         : undefined;
