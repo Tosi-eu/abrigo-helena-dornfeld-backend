@@ -26,11 +26,10 @@ export function handleETagResponse(
 
   if (checkETag(req, etag)) {
     res.status(304).end();
-    return true; 
+    return true;
   }
 
   res.setHeader('ETag', etag);
   res.setHeader('Cache-Control', 'no-cache');
-  return false; 
+  return false;
 }
-

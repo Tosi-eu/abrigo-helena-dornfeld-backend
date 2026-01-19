@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { QueryPaginationParams } from '../../core/utils/utils';
 import {
   MovementQueryParams,
@@ -5,8 +6,15 @@ import {
 } from '../../core/types/movimentacao.types';
 
 export class CacheKeyHelper {
+  private static hash(value: unknown): string {
+    return crypto
+      .createHash('sha1')
+      .update(JSON.stringify(value))
+      .digest('hex');
+  }
+
   static stockList(params: QueryPaginationParams) {
-    return `stock:list:${JSON.stringify(params)}`;
+    return `stock:list:${this.hash(params)}`;
   }
 
   static stockDashboard(setor: string) {
@@ -18,15 +26,15 @@ export class CacheKeyHelper {
   }
 
   static movementMedicineList(params: MovementQueryParams) {
-    return `movement:medicine:list:${JSON.stringify(params)}`;
+    return `movement:medicine:list:${this.hash(params)}`;
   }
 
   static movementInputList(params: MovementQueryParams) {
-    return `movement:input:list:${JSON.stringify(params)}`;
+    return `movement:input:list:${this.hash(params)}`;
   }
 
   static movementRanking(params: MovementRankingParams) {
-    return `movement:ranking:${JSON.stringify(params)}`;
+    return `movement:ranking:${this.hash(params)}`;
   }
 
   static nonMovementedMedicines(limit: number) {

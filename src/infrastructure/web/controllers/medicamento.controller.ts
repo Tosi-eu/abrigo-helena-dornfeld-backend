@@ -23,13 +23,14 @@ export class MedicineController {
 
   async getAll(req: ValidatedRequest, res: Response) {
     const { page, limit } = req.validated!;
+    const name = req.query.name as string | undefined;
 
-    const list = await this.service.findAll({ page, limit });
+    const list = await this.service.findAll({ page, limit, name });
 
     if (handleETagResponse(req, res, list)) {
-      return; 
+      return;
     }
-    
+
     res.json(list);
   }
 

@@ -28,10 +28,10 @@ export class MedicineStockModel
   declare casela_id: number | null;
   declare armario_id?: number | null;
   declare gaveta_id?: number | null;
-  declare validade: Date | null;
+  declare validade: Date;
   declare quantidade: number;
   declare origem: string | null;
-  declare tipo: string | null;
+  declare tipo: string;
   declare setor: string;
   declare lote?: string | null;
   declare status: StockItemStatus;
@@ -89,7 +89,10 @@ MedicineStockModel.init(
     tableName: 'estoque_medicamento',
     timestamps: true,
     indexes: [
-      { fields: ['medicamento_id'], name: 'idx_estoque_medicamento_medicamento_id' },
+      {
+        fields: ['medicamento_id'],
+        name: 'idx_estoque_medicamento_medicamento_id',
+      },
       { fields: ['armario_id'], name: 'idx_estoque_medicamento_armario_id' },
       { fields: ['gaveta_id'], name: 'idx_estoque_medicamento_gaveta_id' },
       { fields: ['casela_id'], name: 'idx_estoque_medicamento_casela_id' },

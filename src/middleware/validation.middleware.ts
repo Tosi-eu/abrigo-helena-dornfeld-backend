@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+import { Response, NextFunction } from 'express';
 import { AuthRequest } from './auth.middleware';
 
 const MAX_PAGE_SIZE = 100;

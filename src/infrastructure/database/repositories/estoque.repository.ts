@@ -30,28 +30,6 @@ import { StockQueryResult } from '../../types/estoque.types';
 export class StockRepository {
   async createMedicineStockIn(data: MedicineStock) {
     try {
-      if (data.lote) {
-        const existingLotMedicine = await MedicineStockModel.findOne({
-          where: {
-            lote: data.lote,
-          },
-        });
-
-        if (existingLotMedicine) {
-          throw new Error('Lote já existe no estoque. Lotes devem ser únicos.');
-        }
-
-        const existingLotInput = await InputStockModel.findOne({
-          where: {
-            lote: data.lote,
-          },
-        });
-
-        if (existingLotInput) {
-          throw new Error('Lote já existe no estoque. Lotes devem ser únicos entre medicamentos e insumos.');
-        }
-      }
-
       const existing = await MedicineStockModel.findOne({
         where: {
           medicamento_id: data.medicamento_id,
@@ -111,7 +89,9 @@ export class StockRepository {
       });
 
       if (existingLotMedicine) {
-        throw new Error('Lote já existe no estoque. Lotes devem ser únicos entre medicamentos e insumos.');
+        throw new Error(
+          'Lote já existe no estoque. Lotes devem ser únicos entre medicamentos e insumos.',
+        );
       }
     }
 
@@ -203,10 +183,7 @@ export class StockRepository {
       const cabinetIds = cabinets.map(c => c.num_armario);
 
       const medicineTotals = await MedicineStockModel.findAll({
-        attributes: [
-          'armario_id',
-          [fn('SUM', col('quantidade')), 'total'],
-        ],
+        attributes: ['armario_id', [fn('SUM', col('quantidade')), 'total']],
         where: {
           armario_id: { [Op.in]: cabinetIds },
         },
@@ -215,10 +192,7 @@ export class StockRepository {
       });
 
       const inputTotals = await InputStockModel.findAll({
-        attributes: [
-          'armario_id',
-          [fn('SUM', col('quantidade')), 'total'],
-        ],
+        attributes: ['armario_id', [fn('SUM', col('quantidade')), 'total']],
         where: {
           armario_id: { [Op.in]: cabinetIds },
         },
@@ -269,10 +243,7 @@ export class StockRepository {
       const drawerIds = drawers.map(d => d.num_gaveta);
 
       const medicineTotals = await MedicineStockModel.findAll({
-        attributes: [
-          'gaveta_id',
-          [fn('SUM', col('quantidade')), 'total'],
-        ],
+        attributes: ['gaveta_id', [fn('SUM', col('quantidade')), 'total']],
         where: {
           gaveta_id: { [Op.in]: drawerIds },
         },
@@ -281,10 +252,7 @@ export class StockRepository {
       });
 
       const inputTotals = await InputStockModel.findAll({
-        attributes: [
-          'gaveta_id',
-          [fn('SUM', col('quantidade')), 'total'],
-        ],
+        attributes: ['gaveta_id', [fn('SUM', col('quantidade')), 'total']],
         where: {
           gaveta_id: { [Op.in]: drawerIds },
         },
@@ -332,34 +300,63 @@ export class StockRepository {
       const in45Days = new Date(today);
       in45Days.setDate(in45Days.getDate() + 45);
 
+      const baseWhere: any = {};
+
       switch (filter) {
         case 'noStock':
-          return { quantidade: 0 };
+          baseWhere.quantidade = 0;
+          break;
         case 'belowMin':
-          return { quantidade: { [Op.gt]: 0 } };
+          baseWhere.quantidade = { [Op.gt]: 0 };
+          break;
         case 'expired':
-          return {
-            quantidade: { [Op.gt]: 0 },
-            validade: { [Op.lt]: today },
-          };
+          baseWhere.quantidade = { [Op.gt]: 0 };
+          baseWhere.validade = { [Op.lt]: today };
+          break;
         case 'expiringSoon':
-          return {
-            quantidade: { [Op.gt]: 0 },
-            validade: { [Op.between]: [today, in45Days] },
-          };
+          baseWhere.quantidade = { [Op.gt]: 0 };
+          baseWhere.validade = { [Op.between]: [today, in45Days] };
+          break;
         default:
-          return {};
+          break;
       }
+
+      return baseWhere;
     };
 
     const whereCondition = buildWhereCondition();
     const results: StockQueryResult[] = [];
 
-    if (!type || type === 'medicamento') {
+    const shouldIncludeMedicines =
+      !params.itemType || params.itemType === 'medicamento';
+    const shouldIncludeInputs =
+      !params.itemType || params.itemType === 'insumo';
+
+    if ((!type || type === 'medicamento') && shouldIncludeMedicines) {
       const medicineWhere: any = { ...whereCondition };
-      
+
       if (filter === 'belowMin') {
         medicineWhere.quantidade = { [Op.gt]: 0 };
+      }
+
+      if (params.cabinet) {
+        medicineWhere.armario_id = Number(params.cabinet);
+      }
+      if (params.drawer) {
+        medicineWhere.gaveta_id = Number(params.drawer);
+      }
+      if (params.casela) {
+        medicineWhere.casela_id = Number(params.casela);
+      }
+      if (params.sector) {
+        medicineWhere.setor = params.sector;
+      }
+
+      const medicineIncludeWhere: any = {};
+      if (params.name && params.name.trim()) {
+        medicineIncludeWhere.nome = {
+          [Op.iLike]: `%${params.name.trim()}%`,
+        };
       }
 
       const medicineStocks = await MedicineStockModel.findAll({
@@ -369,6 +366,10 @@ export class StockRepository {
             model: MedicineModel,
             attributes: ['id', 'nome', 'principio_ativo', 'estoque_minimo'],
             required: true,
+            where:
+              Object.keys(medicineIncludeWhere).length > 0
+                ? medicineIncludeWhere
+                : undefined,
           },
           {
             model: ResidentModel,
@@ -416,11 +417,31 @@ export class StockRepository {
       }
     }
 
-    if (!type || type === 'insumo') {
+    if ((!type || type === 'insumo') && shouldIncludeInputs) {
       const inputWhere: any = { ...whereCondition };
-      
+
       if (filter === 'belowMin') {
         inputWhere.quantidade = { [Op.gt]: 0 };
+      }
+
+      if (params.cabinet) {
+        inputWhere.armario_id = Number(params.cabinet);
+      }
+      if (params.drawer) {
+        inputWhere.gaveta_id = Number(params.drawer);
+      }
+      if (params.casela) {
+        inputWhere.casela_id = Number(params.casela);
+      }
+      if (params.sector) {
+        inputWhere.setor = params.sector;
+      }
+
+      const inputIncludeWhere: any = {};
+      if (params.name && params.name.trim()) {
+        inputIncludeWhere.nome = {
+          [Op.iLike]: `%${params.name.trim()}%`,
+        };
       }
 
       const inputStocks = await InputStockModel.findAll({
@@ -430,6 +451,10 @@ export class StockRepository {
             model: InputModel,
             attributes: ['id', 'nome', 'descricao', 'estoque_minimo'],
             required: true,
+            where:
+              Object.keys(inputIncludeWhere).length > 0
+                ? inputIncludeWhere
+                : undefined,
           },
           {
             model: ResidentModel,
@@ -573,20 +598,25 @@ export class StockRepository {
     const medicamentosGeral = await MedicineStockModel.sum('quantidade', {
       where: {
         tipo: OperationType.GERAL,
-          setor: SectorType.ENFERMAGEM,
+        setor: SectorType.ENFERMAGEM,
       },
     });
 
     const medicamentosIndividual = await MedicineStockModel.sum('quantidade', {
       where: {
         tipo: OperationType.INDIVIDUAL,
-          setor: SectorType.ENFERMAGEM,
+        setor: SectorType.ENFERMAGEM,
       },
     });
 
     const carrinhoMedicamentos = await MedicineStockModel.sum('quantidade', {
       where: {
-        tipo: { [Op.in]: [OperationType.CARRINHO, OperationType.CARRINHO_PSICOTROPICOS] },
+        tipo: {
+          [Op.in]: [
+            OperationType.CARRINHO,
+            OperationType.CARRINHO_PSICOTROPICOS,
+          ],
+        },
         setor: SectorType.ENFERMAGEM,
       },
     });
@@ -594,13 +624,18 @@ export class StockRepository {
     const insumos = await InputStockModel.sum('quantidade', {
       where: {
         tipo: OperationType.GERAL,
-          setor: SectorType.ENFERMAGEM,
+        setor: SectorType.ENFERMAGEM,
       },
     });
 
     const carrinhoInsumos = await InputStockModel.sum('quantidade', {
       where: {
-        tipo: { [Op.in]: [OperationType.CARRINHO, OperationType.CARRINHO_PSICOTROPICOS] },
+        tipo: {
+          [Op.in]: [
+            OperationType.CARRINHO,
+            OperationType.CARRINHO_PSICOTROPICOS,
+          ],
+        },
         setor: SectorType.ENFERMAGEM,
       },
     });
@@ -651,7 +686,7 @@ export class StockRepository {
       message: 'Insumo removido do estoque individual',
     };
   }
-  
+
   async suspendIndividualMedicine(estoque_id: number) {
     await MedicineStockModel.update(
       {
@@ -694,18 +729,18 @@ export class StockRepository {
     if (!stock) {
       throw new Error('Estoque não encontrado');
     }
-  
+
     const isIndividual = stock.tipo === OperationType.INDIVIDUAL;
     const resolvedCaselaId = isIndividual ? stock.casela_id : casela_id;
-  
+
     if (!resolvedCaselaId) {
       throw new Error('Casela é obrigatória');
     }
-  
+
     if (!quantidade || quantidade <= 0) {
       throw new Error('Quantidade inválida');
     }
-  
+
     if (quantidade > stock.quantidade) {
       throw new Error(`Quantidade não pode ser maior que ${stock.quantidade}`);
     }
@@ -713,7 +748,7 @@ export class StockRepository {
     if (!stock.origem) {
       throw new Error('Origem é obrigatória para medicamentos');
     }
-  
+
     const existing = await MedicineStockModel.findOne({
       where: {
         medicamento_id: stock.medicamento_id,
@@ -724,7 +759,7 @@ export class StockRepository {
         tipo: OperationType.INDIVIDUAL,
       },
     });
-  
+
     if (existing) {
       existing.quantidade += quantidade;
       await existing.save();
@@ -749,7 +784,7 @@ export class StockRepository {
 
     return { message: 'Medicamento transferido de setor com sucesso' };
   }
-  
+
   async findInputStockById(id: number) {
     return InputStockModel.findByPk(id);
   }
@@ -846,7 +881,9 @@ export class StockRepository {
         });
 
         if (existingLotInput) {
-          throw new Error('Lote já existe no estoque. Lotes devem ser únicos entre medicamentos e insumos.');
+          throw new Error(
+            'Lote já existe no estoque. Lotes devem ser únicos entre medicamentos e insumos.',
+          );
         }
       }
 
@@ -924,7 +961,9 @@ export class StockRepository {
         });
 
         if (existingLotMedicine) {
-          throw new Error('Lote já existe no estoque. Lotes devem ser únicos entre medicamentos e insumos.');
+          throw new Error(
+            'Lote já existe no estoque. Lotes devem ser únicos entre medicamentos e insumos.',
+          );
         }
       }
 
@@ -1053,4 +1092,4 @@ export class StockRepository {
 
     return { message: 'Insumo transferido de setor com sucesso' };
   }
-}  
+}

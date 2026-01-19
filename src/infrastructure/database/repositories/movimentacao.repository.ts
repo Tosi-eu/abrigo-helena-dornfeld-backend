@@ -1,15 +1,16 @@
-import { Op, WhereOptions } from 'sequelize';
+import { Op } from 'sequelize';
 import MovementModel from '../models/movimentacao.model';
 import Movement from '../../../core/domain/movimentacao';
 import MedicineModel from '../models/medicamento.model';
 import MedicineStockModel from '../models/estoque-medicamento.model';
+import InputStockModel from '../models/estoque-insumo.model';
 import CabinetModel from '../models/armario.model';
 import ResidenteModel from '../models/residente.model';
 import LoginModel from '../models/login.model';
 import InputModel from '../models/insumo.model';
 import { formatDateToPtBr } from '../../helpers/date.helper';
 import { sequelize } from '../sequelize';
-import { NonMovementedItem, ItemType, OperationType } from '../../../core/utils/utils';
+import { NonMovementedItem, OperationType } from '../../../core/utils/utils';
 import { MovementWhereOptions } from '../../types/sequelize.types';
 
 export interface MovementQueryParams {
@@ -54,7 +55,7 @@ export class MovementRepository {
         { model: MedicineModel, attributes: ['nome', 'principio_ativo'] },
         { model: CabinetModel, attributes: ['num_armario'] },
         { model: ResidenteModel, attributes: ['num_casela', 'nome'] },
-        { model: LoginModel, attributes: ['login'] },
+        { model: LoginModel, attributes: ['first_name'] },
       ],
     });
 
@@ -173,7 +174,7 @@ export class MovementRepository {
         { model: InputModel, attributes: ['nome', 'descricao'] },
         { model: CabinetModel, attributes: ['num_armario'] },
         { model: ResidenteModel, attributes: ['num_casela', 'nome'] },
-        { model: LoginModel, attributes: ['login'] },
+        { model: LoginModel, attributes: ['first_name'] },
       ],
     });
 
@@ -305,106 +306,111 @@ export class MovementRepository {
   }
 
   async getNonMovementedMedicines(limit = 10) {
-    const now = new Date();
-    const results: NonMovementedItem[] = [];
-
-    const medicineMovements = await MovementModel.findAll({
+    const medicines = await MedicineModel.findAll({
       attributes: [
-        'medicamento_id',
+        'id',
+        'nome',
+        ['principio_ativo', 'detalhe'],
         [
-          sequelize.literal('MAX("MovementModel"."data")'),
+          sequelize.fn(
+            'MAX',
+            sequelize.col('MovementModels.data'),
+          ),
           'ultima_movimentacao',
         ],
+        [
+          sequelize.literal(
+            `DATE_PART('day', NOW() - MAX("MovementModels"."data"))`,
+          ),
+          'dias_parados',
+        ],
       ],
-      where: {
-        medicamento_id: { [Op.not]: null },
-      },
       include: [
         {
-          model: MedicineModel,
-          attributes: ['id', 'nome', 'principio_ativo'],
+          model: MovementModel,
+          attributes: [],
+          required: false,
+        },
+        {
+          model: MedicineStockModel,
+          attributes: [],
+          where: {
+            quantidade: { [Op.gt]: 0 },
+          },
           required: true,
         },
       ],
-      group: [
-        'medicamento_id',
-        'MedicineModel.id',
-        'MedicineModel.nome',
-        'MedicineModel.principio_ativo',
-      ],
-      raw: false,
+      group: ['MedicineModel.id'],
+      order: [[sequelize.literal('dias_parados'), 'DESC']],
+      limit,
       subQuery: false,
+      raw: true,
     });
-
-    for (const movement of medicineMovements) {
-      const plain = movement.get({ plain: true }) as any;
-      const medicine = plain.MedicineModel;
-      const ultimaMovimentacao = plain.ultima_movimentacao
-        ? new Date(plain.ultima_movimentacao)
-        : new Date('1900-01-01');
-      const diasParados = Math.floor(
-        (now.getTime() - ultimaMovimentacao.getTime()) / (1000 * 60 * 60 * 24),
-      );
-
-      results.push({
-        tipo_item: ItemType.MEDICAMENTO,
-        item_id: medicine.id,
-        nome: medicine.nome,
-        detalhe: medicine.principio_ativo,
-        ultima_movimentacao: formatDateToPtBr(ultimaMovimentacao),
-        dias_parados: diasParados,
-      });
-    }
-
-    const inputMovements = await MovementModel.findAll({
+  
+    const inputs = await InputModel.findAll({
       attributes: [
-        'insumo_id',
+        'id',
+        'nome',
+        ['descricao', 'detalhe'],
         [
-          sequelize.literal('MAX("MovementModel"."data")'),
+          sequelize.fn(
+            'MAX',
+            sequelize.col('MovementModels.data'),
+          ),
           'ultima_movimentacao',
         ],
+        [
+          sequelize.literal(
+            `DATE_PART('day', NOW() - MAX("MovementModels"."data"))`,
+          ),
+          'dias_parados',
+        ],
       ],
-      where: {
-        insumo_id: { [Op.not]: null },
-      },
       include: [
         {
-          model: InputModel,
-          attributes: ['id', 'nome', 'descricao'],
+          model: MovementModel,
+          attributes: [],
+          required: false,
+        },
+        {
+          model: InputStockModel,
+          attributes: [],
+          where: {
+            quantidade: { [Op.gt]: 0 },
+          },
           required: true,
         },
       ],
-      group: [
-        'insumo_id',
-        'InputModel.id',
-        'InputModel.nome',
-        'InputModel.descricao',
-      ],
-      raw: false,
+      group: ['InputModel.id'],
+      order: [[sequelize.literal('dias_parados'), 'DESC']],
+      limit,
       subQuery: false,
+      raw: true,
     });
-
-    for (const movement of inputMovements) {
-      const plain = movement.get({ plain: true }) as any;
-      const input = plain.InputModel;
-      const ultimaMovimentacao = plain.ultima_movimentacao
-        ? new Date(plain.ultima_movimentacao)
-        : new Date('1900-01-01');
-      const diasParados = Math.floor(
-        (now.getTime() - ultimaMovimentacao.getTime()) / (1000 * 60 * 60 * 24),
-      );
-
-      results.push({
-        tipo_item: ItemType.INSUMO,
-        item_id: input.id,
-        nome: input.nome,
-        detalhe: input.descricao || null,
-        ultima_movimentacao: formatDateToPtBr(ultimaMovimentacao),
-        dias_parados: diasParados,
-      });
-    }
-
+  
+    const results: NonMovementedItem[] = [
+      ...medicines.map((m: any) => ({
+        item_id: m.id,
+        nome: m.nome,
+        detalhe: m.detalhe,
+        ultima_movimentacao: formatDateToPtBr(
+          m.ultima_movimentacao ?? new Date('1900-01-01'),
+        ),
+        dias_parados: Number(m.dias_parados ?? 0),
+      })),
+      ...inputs.map((i: any) => ({
+        item_id: i.id,
+        nome: i.nome,
+        detalhe: i.detalhe || null,
+        ultima_movimentacao: formatDateToPtBr(
+          i.ultima_movimentacao ?? new Date('1900-01-01'),
+        ),
+        dias_parados: Number(i.dias_parados ?? 0),
+      })),
+    ];
+  
     results.sort((a, b) => b.dias_parados - a.dias_parados);
+  
     return results.slice(0, limit);
-  }
+  }  
 }

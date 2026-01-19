@@ -29,19 +29,23 @@ export class InputService {
           if (updated) return updated;
         }
       } catch (error) {
-        logger.error('Erro ao buscar preço automaticamente', {
-          operation: 'create_input',
-          inputId: created.id,
-          nome: data.nome,
-        }, error as Error);
+        logger.error(
+          'Erro ao buscar preço automaticamente',
+          {
+            operation: 'create_input',
+            inputId: created.id,
+            nome: data.nome,
+          },
+          error as Error,
+        );
       }
     }
 
     return created;
   }
 
-  listPaginated(page: number = 1, limit: number = 10) {
-    return this.repo.listAllInputs(page, limit);
+  listPaginated(page: number = 1, limit: number = 10, name?: string) {
+    return this.repo.listAllInputs(page, limit, name);
   }
 
   updateInput(id: number, data: Omit<Input, 'id'>) {

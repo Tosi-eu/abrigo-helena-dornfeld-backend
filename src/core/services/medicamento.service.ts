@@ -2,6 +2,7 @@ import { Medicine } from '../domain/medicamento';
 import { MedicineRepository } from '../../infrastructure/database/repositories/medicamento.repository';
 import { PriceSearchService } from './price-search.service';
 import { logger } from '../../infrastructure/helpers/logger.helper';
+import { normalizeDosage } from '../../infrastructure/helpers/dosage.helper';
 
 const DOSAGE_REGEX = /^\d+([.,]\d+)?(\/\d+([,]\d+)?)?$/;
 
@@ -34,18 +35,49 @@ export class MedicineService {
       throw new Error('Dosagem deve ser maior que zero.');
     }
 
-    const existing = await this.repo.findByUniqueFields({
+    const normalizedDosage = normalizeDosage(data.dosagem.trim());
+
+    let existing = await this.repo.findByUniqueFields({
       nome: data.nome.trim(),
       principio_ativo: data.principio_ativo.trim(),
-      dosagem: data.dosagem.trim(),
+      dosagem: normalizedDosage,
       unidade_medida: data.unidade_medida,
     });
+
+    if (!existing && data.dosagem.trim() !== normalizedDosage) {
+      existing = await this.repo.findByUniqueFields({
+        nome: data.nome.trim(),
+        principio_ativo: data.principio_ativo.trim(),
+        dosagem: data.dosagem.trim(),
+        unidade_medida: data.unidade_medida,
+      });
+    }
+
+    if (!existing) {
+      const allMatches = await this.repo.findAllMedicines({
+        page: 1,
+        limit: 100,
+        name: data.nome.trim(),
+      });
+      
+      existing = allMatches.data.find(med => {
+        const medNormalizedDosage = normalizeDosage(med.dosagem);
+        return med.principio_ativo?.trim() === data.principio_ativo.trim() &&
+               med.unidade_medida === data.unidade_medida &&
+               medNormalizedDosage === normalizedDosage;
+      }) || null;
+    }
 
     if (existing) {
       throw new Error('Já existe um medicamento com esta combinação de nome, princípio ativo, dosagem e unidade de medida.');
     }
 
-    const created = await this.repo.createMedicine(data);
+    const dataToSave = {
+      ...data,
+      dosagem: normalizedDosage,
+    };
+
+    const created = await this.repo.createMedicine(dataToSave);
 
     if (this.priceSearchService && created.id) {
       try {
@@ -76,8 +108,8 @@ export class MedicineService {
     return created;
   }
 
-  async findAll({ page = 1, limit = 10 }: { page?: number; limit?: number }) {
-    return this.repo.findAllMedicines({ page, limit });
+  async findAll({ page = 1, limit = 10, name }: { page?: number; limit?: number; name?: string }) {
+    return this.repo.findAllMedicines({ page, limit, name });
   }
 
   async findById(id: number) {
@@ -107,13 +139,39 @@ export class MedicineService {
       throw new Error('Estoque mínimo não pode ser negativo.');
     }
 
-    // Verificar se já existe outro medicamento com a mesma combinação única
-    const existing = await this.repo.findByUniqueFields({
+    const normalizedDosage = normalizeDosage(data.dosagem.trim());
+
+    let existing = await this.repo.findByUniqueFields({
       nome: data.nome.trim(),
       principio_ativo: data.principio_ativo?.trim() || '',
-      dosagem: data.dosagem.trim(),
+      dosagem: normalizedDosage,
       unidade_medida: data.unidade_medida,
     });
+
+    if (!existing && data.dosagem.trim() !== normalizedDosage) {
+      existing = await this.repo.findByUniqueFields({
+        nome: data.nome.trim(),
+        principio_ativo: data.principio_ativo?.trim() || '',
+        dosagem: data.dosagem.trim(),
+        unidade_medida: data.unidade_medida,
+      });
+    }
+
+    if (!existing) {
+      const allMatches = await this.repo.findAllMedicines({
+        page: 1,
+        limit: 100,
+        name: data.nome.trim(),
+      });
+      
+      existing = allMatches.data.find(med => {
+        const medNormalizedDosage = normalizeDosage(med.dosagem);
+        return med.principio_ativo?.trim() === (data.principio_ativo?.trim() || '') &&
+               med.unidade_medida === data.unidade_medida &&
+               medNormalizedDosage === normalizedDosage &&
+               med.id !== id;
+      }) || null;
+    }
 
     if (existing && existing.id !== id) {
       throw new Error('Já existe outro medicamento com esta combinação de nome, princípio ativo, dosagem e unidade de medida.');

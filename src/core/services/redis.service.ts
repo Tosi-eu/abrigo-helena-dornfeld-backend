@@ -9,12 +9,28 @@ export class CacheService {
     ttlSeconds = 60,
   ): Promise<T> {
     const cached = await this.redis.get<T>(key);
-    if (cached) {
+
+    if (cached !== null) {
       return cached;
     }
 
+    const lockKey = `lock:${key}`;
+    const lockAcquired = await this.redis.setIfNotExists(lockKey, '1', 5);
+
+    if (!lockAcquired) {
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      const retry = await this.redis.get<T>(key);
+      if (retry !== null) {
+        return retry;
+      }
+    }
+
     const value = await resolver();
-    await this.redis.set(key, value, ttlSeconds);
+
+    if (value !== null && value !== undefined) {
+      await this.redis.set(key, value, ttlSeconds);
+    }
 
     return value;
   }

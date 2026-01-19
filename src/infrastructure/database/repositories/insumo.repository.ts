@@ -1,5 +1,6 @@
 import InputModel from '../models/insumo.model';
 import { Input } from '../../../core/domain/insumo';
+import { Op } from 'sequelize';
 
 export class InputRepository {
   async createInput(data: Omit<Input, 'id'>): Promise<Input> {
@@ -19,6 +20,7 @@ export class InputRepository {
   async listAllInputs(
     page: number = 1,
     limit: number = 10,
+    name?: string,
   ): Promise<{
     data: Input[];
     total: number;
@@ -28,7 +30,15 @@ export class InputRepository {
   }> {
     const offset = (page - 1) * limit;
 
+    const where: any = {};
+    if (name && name.trim()) {
+      where.nome = {
+        [Op.iLike]: `%${name.trim()}%`,
+      };
+    }
+
     const { rows, count } = await InputModel.findAndCountAll({
+      where,
       limit,
       offset,
       order: [['nome', 'ASC']],
@@ -83,5 +93,4 @@ export class InputRepository {
   async deleteInputById(id: number): Promise<boolean> {
     return (await InputModel.destroy({ where: { id } })) > 0;
   }
-
 }

@@ -1,21 +1,38 @@
+import { Login } from '../../../core/domain/login';
 import { LoginModel } from '../models/login.model';
 
 export class LoginRepository {
-  async create(data: { login: string; password: string }) {
-    const user = await LoginModel.create(data);
+  async create(data: Login) {
+    const user = await LoginModel.create({
+      ...data,
+    });
     return { id: user.id, login: user.login };
   }
 
   async findByLogin(login: string) {
     return LoginModel.findOne({
       where: { login },
-      attributes: ['id', 'login', 'password', 'refresh_token'],
+      attributes: [
+        'id',
+        'login',
+        'password',
+        'refresh_token',
+        'first_name',
+        'last_name',
+      ],
     });
   }
 
   async findById(id: number) {
     return LoginModel.findByPk(id, {
-      attributes: ['id', 'login', 'password', 'refresh_token'],
+      attributes: [
+        'id',
+        'login',
+        'password',
+        'refresh_token',
+        'first_name',
+        'last_name',
+      ],
     });
   }
 

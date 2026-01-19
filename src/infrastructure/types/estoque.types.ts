@@ -2,10 +2,10 @@ export interface StockQueryResult {
   id?: number;
   nome?: string;
   quantidade?: number;
-  validade?: string | Date;
+  validade: Date;
   minimo?: number;
   armario_id?: number;
   gaveta_id?: number;
-  tipo?: string;
+  tipo: string;
   [key: string]: unknown;
 }

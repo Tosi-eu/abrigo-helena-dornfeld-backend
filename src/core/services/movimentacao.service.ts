@@ -1,7 +1,7 @@
 import { MovementRepository } from '../../infrastructure/database/repositories/movimentacao.repository';
 import { formatDateToPtBr } from '../../infrastructure/helpers/date.helper';
 import { CacheKeyHelper } from '../../infrastructure/helpers/redis.helper';
-import { MovementType, NonMovementedItem, OperationType } from '../utils/utils';
+import { MovementType, NonMovementedItem } from '../utils/utils';
 import { CacheService } from './redis.service';
 import Movement from '../domain/movimentacao';
 import {
@@ -90,7 +90,6 @@ export class MovementService {
         const data = await this.repo.getNonMovementedMedicines(limit);
 
         return data.map(item => ({
-          tipo_item: item.tipo_item,
           item_id: item.item_id,
           nome: item.nome,
           detalhe: item.detalhe ?? null,

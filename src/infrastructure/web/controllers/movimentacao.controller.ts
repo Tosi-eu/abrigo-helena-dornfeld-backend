@@ -21,7 +21,7 @@ export class MovementController {
       });
 
       if (handleETagResponse(req, res, result)) {
-        return; 
+        return;
       }
 
       res.json(result);
@@ -44,7 +44,7 @@ export class MovementController {
       });
 
       if (handleETagResponse(req, res, result)) {
-        return; 
+        return;
       }
 
       res.json(result);
@@ -87,11 +87,11 @@ export class MovementController {
     try {
       const limit = Math.min(100, Number(req.query.limit) || 10);
       const result = await this.service.getNonMovementedMedicines(limit);
-      
+
       if (handleETagResponse(req, res, result)) {
-        return; 
+        return;
       }
-      
+
       return res.json(result);
     } catch (error: unknown) {
       return sendErrorResponse(res, 500, error, 'Erro ao buscar medicamentos');

@@ -5,7 +5,7 @@ export type MovementWhereOptions = WhereOptions & {
   medicamento_id?: { [Op.not]: null } | number;
   insumo_id?: { [Op.not]: null } | number;
   tipo?: string;
-  data?: 
+  data?:
     | { [Op.gte]: Date }
     | { [Op.lte]: Date }
     | { [Op.between]: [Date, Date] };

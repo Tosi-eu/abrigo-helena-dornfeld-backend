@@ -5,27 +5,26 @@ module.exports = {
   async up(queryInterface, Sequelize) {
     const TABLE_NAME = 'armario';
 
-    // Primeiro, busca as categorias existentes
     const [categories] = await queryInterface.sequelize.query(
       `SELECT id FROM categoria_armario ORDER BY id LIMIT 1`,
     );
 
     if (categories.length === 0) {
-      console.warn('Nenhuma categoria de armário encontrada. Pulando inserção de armários.');
+      console.warn(
+        'Nenhuma categoria de armário encontrada. Pulando inserção de armários.',
+      );
       return;
     }
 
     const categoriaId = categories[0].id;
 
-    // Verifica armários existentes
     const [existing] = await queryInterface.sequelize.query(
       `SELECT num_armario FROM ${TABLE_NAME}`,
     );
 
     const existingNumbers = new Set(existing.map(e => e.num_armario));
 
-    // Cria armários numerados de 1 a 5
-    const cabinets = [1, 2, 3, 4, 5]
+    const cabinets = Array.from({ length: 15 }, (_, i) => i + 1)
       .filter(num => !existingNumbers.has(num))
       .map(num => ({
         num_armario: num,
@@ -43,8 +42,7 @@ module.exports = {
     const TABLE_NAME = 'armario';
 
     await queryInterface.bulkDelete(TABLE_NAME, {
-      num_armario: [1, 2, 3, 4, 5],
+      num_armario: Array.from({ length: 15 }, (_, i) => i + 1),
     });
   },
 };
-

@@ -7,13 +7,18 @@ export class LoginController {
   constructor(private readonly service: LoginService) {}
 
   async create(req: AuthRequest, res: Response) {
-    const { login, password } = req.body;
+    const { login, password, first_name, last_name } = req.body;
 
     if (!login || !password)
       return res.status(400).json({ error: 'Login e senha obrigatórios' });
 
     try {
-      const user = await this.service.create(login, password);
+      const user = await this.service.create({
+        login,
+        password,
+        first_name,
+        last_name,
+      });
       return res.status(201).json(user);
     } catch (error: unknown) {
       const message = getErrorMessage(error);
@@ -50,29 +55,34 @@ export class LoginController {
 
   async update(req: AuthRequest, res: Response) {
     const userId = req.user!.id;
-    const { currentLogin, currentPassword, login, password } = req.body;
+    const { currentPassword, login, password, firstName, lastName } = req.body;
 
-    if (!currentLogin || !currentPassword || !login || !password)
-      return res.status(400).json({ error: 'Dados obrigatórios ausentes' });
+    if (!currentPassword) {
+      return res.status(400).json({ error: 'Senha atual é obrigatória' });
+    }
 
     try {
-      const updated = await this.service.updateUser(
+      const updated = await this.service.updateUser({
         userId,
-        currentLogin,
         currentPassword,
         login,
         password,
-      );
+        firstName,
+        lastName,
+      });
 
-      if (!updated)
-        return res.status(401).json({ error: 'Credenciais atuais incorretas' });
+      if (!updated) {
+        return res.status(401).json({ error: 'Senha atual incorreta' });
+      }
 
       return res.json(updated);
     } catch (error: unknown) {
       const message = getErrorMessage(error);
+
       if (message === 'duplicate key') {
         return res.status(409).json({ error: 'Login já cadastrado' });
       }
+
       return res.status(500).json({ error: 'Erro ao atualizar usuário' });
     }
   }
@@ -107,15 +117,26 @@ export class LoginController {
     }
   }
 
+  async getCurrentUser(req: AuthRequest, res: Response) {
+    const userId = req.user!.id;
+
+    const user = await this.service.getById(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+
+    return res.json(user);
+  }
+
   async logout(req: AuthRequest, res: Response) {
     await this.service.logout(req.user!.id);
-    
+
     res.clearCookie('authToken', {
       httpOnly: true,
       sameSite: 'lax',
       path: '/',
     });
-    
+
     return res.status(204).send();
   }
 }

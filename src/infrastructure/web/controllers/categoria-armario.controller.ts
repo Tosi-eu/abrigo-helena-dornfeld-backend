@@ -10,7 +10,9 @@ export class CabinetCategoryController {
       const { nome } = req.body;
 
       if (!nome || typeof nome !== 'string' || nome.trim() === '') {
-        return res.status(400).json({ error: 'Nome da categoria é obrigatório' });
+        return res
+          .status(400)
+          .json({ error: 'Nome da categoria é obrigatório' });
       }
 
       const created = await this.service.create(nome.trim());
