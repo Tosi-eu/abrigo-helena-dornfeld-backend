@@ -1,7 +1,7 @@
 export enum OperationType {
   INDIVIDUAL = 'individual',
   GERAL = 'geral',
-  CARRINHO = 'carrinho_emergencia',
+  CARRINHO_EMERGENCIA = 'carrinho_emergencia',
   CARRINHO_PSICOTROPICOS = 'carrinho_psicotropicos',
 }
 

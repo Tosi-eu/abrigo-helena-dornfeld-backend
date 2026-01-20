@@ -25,7 +25,16 @@ import {
   StockQueryType,
 } from '../../../core/utils/utils';
 import { formatDateToPtBr } from '../../helpers/date.helper';
-import { StockQueryResult } from '../../types/estoque.types';
+import { SECTOR_CONFIG, StockGroup, StockQueryResult } from '../../types/estoque.types';
+
+interface StockModel {
+  sum(
+    field: string,
+    options?: {
+      where?: Record<string, unknown>;
+    },
+  ): Promise<number | null>;
+}
 
 export class StockRepository {
   async createMedicineStockIn(data: MedicineStock) {
@@ -554,101 +563,117 @@ export class StockRepository {
     };
   }
 
-  async getStockProportionBySector(setor: 'farmacia' | 'enfermagem'): Promise<{
-    medicamentos_geral: number;
-    medicamentos_individual: number;
-    insumos: number;
-    carrinho_medicamentos: number;
-    carrinho_insumos: number;
-  }> {
-    if (setor === SectorType.FARMACIA) {
-      const medicamentosGeral = await MedicineStockModel.sum('quantidade', {
-        where: {
-          tipo: OperationType.GERAL,
-          setor: SectorType.FARMACIA,
-        },
-      });
+  private async sumStock(
+    model: StockModel,
+    options?: {
+      setor?: SectorType;
+      tipos?: OperationType[];
+    },
+  ): Promise<number> {
+    const result = await model.sum('quantidade', {
+      where: {
+        ...(options?.setor && { setor: options.setor }),
+        ...(options?.tipos && { tipo: { [Op.in]: options.tipos } }),
+      },
+    });
+  
+    return Number(result || 0);
+  }  
 
-      const medicamentosIndividual = await MedicineStockModel.sum(
-        'quantidade',
-        {
-          where: {
-            tipo: OperationType.INDIVIDUAL,
-            setor: SectorType.FARMACIA,
-          },
-        },
-      );
-
-      const insumos = await InputStockModel.sum('quantidade', {
-        where: {
-          tipo: OperationType.GERAL,
-          setor: SectorType.FARMACIA,
-        },
-      });
-
+  async getStockProportionBySector(
+    setor?: SectorType,
+  ): Promise<Record<StockGroup, number>> {
+    const baseResult: Record<StockGroup, number> = {
+      medicamentos_geral: 0,
+      medicamentos_individual: 0,
+      insumos_geral: 0,
+      insumos_individual: 0,
+      carrinho_emergencia_medicamentos: 0,
+      carrinho_psicotropicos_medicamentos: 0,
+      carrinho_emergencia_insumos: 0,
+      carrinho_psicotropicos_insumos: 0,
+    };
+  
+    if (!setor) {
+      const [
+        medicamentosGeral,
+        medicamentosIndividual,
+        insumosGeral,
+        insumosIndividual,
+  
+        carrinhoEmergenciaMedicamentos,
+        carrinhoPsicotropicosMedicamentos,
+  
+        carrinhoEmergenciaInsumos,
+        carrinhoPsicotropicosInsumos,
+      ] = await Promise.all([
+        this.sumStock(MedicineStockModel, {
+          tipos: [OperationType.GERAL],
+        }),
+        this.sumStock(MedicineStockModel, {
+          tipos: [OperationType.INDIVIDUAL],
+        }),
+        this.sumStock(InputStockModel, {
+          tipos: [OperationType.GERAL],
+        }),
+        this.sumStock(InputStockModel, {
+          tipos: [OperationType.INDIVIDUAL],
+        }),
+  
+        this.sumStock(MedicineStockModel, {
+          tipos: [OperationType.CARRINHO_EMERGENCIA],
+        }),
+        this.sumStock(MedicineStockModel, {
+          tipos: [OperationType.CARRINHO_PSICOTROPICOS],
+        }),
+  
+        this.sumStock(InputStockModel, {
+          tipos: [OperationType.CARRINHO_EMERGENCIA],
+        }),
+        this.sumStock(InputStockModel, {
+          tipos: [OperationType.CARRINHO_PSICOTROPICOS],
+        }),
+      ]);
+  
       return {
-        medicamentos_geral: Number(medicamentosGeral || 0),
-        medicamentos_individual: Number(medicamentosIndividual || 0),
-        insumos: Number(insumos || 0),
-        carrinho_medicamentos: 0,
-        carrinho_insumos: 0,
+        medicamentos_geral: medicamentosGeral,
+        medicamentos_individual: medicamentosIndividual,
+        insumos_geral: insumosGeral,
+        insumos_individual: insumosIndividual,
+  
+        carrinho_emergencia_medicamentos:
+          carrinhoEmergenciaMedicamentos,
+        carrinho_psicotropicos_medicamentos:
+          carrinhoPsicotropicosMedicamentos,
+  
+        carrinho_emergencia_insumos:
+          carrinhoEmergenciaInsumos,
+        carrinho_psicotropicos_insumos:
+          carrinhoPsicotropicosInsumos,
       };
     }
-
-    const medicamentosGeral = await MedicineStockModel.sum('quantidade', {
-      where: {
-        tipo: OperationType.GERAL,
-        setor: SectorType.ENFERMAGEM,
-      },
-    });
-
-    const medicamentosIndividual = await MedicineStockModel.sum('quantidade', {
-      where: {
-        tipo: OperationType.INDIVIDUAL,
-        setor: SectorType.ENFERMAGEM,
-      },
-    });
-
-    const carrinhoMedicamentos = await MedicineStockModel.sum('quantidade', {
-      where: {
-        tipo: {
-          [Op.in]: [
-            OperationType.CARRINHO,
-            OperationType.CARRINHO_PSICOTROPICOS,
-          ],
-        },
-        setor: SectorType.ENFERMAGEM,
-      },
-    });
-
-    const insumos = await InputStockModel.sum('quantidade', {
-      where: {
-        tipo: OperationType.GERAL,
-        setor: SectorType.ENFERMAGEM,
-      },
-    });
-
-    const carrinhoInsumos = await InputStockModel.sum('quantidade', {
-      where: {
-        tipo: {
-          [Op.in]: [
-            OperationType.CARRINHO,
-            OperationType.CARRINHO_PSICOTROPICOS,
-          ],
-        },
-        setor: SectorType.ENFERMAGEM,
-      },
-    });
-
-    return {
-      medicamentos_geral: Number(medicamentosGeral || 0),
-      medicamentos_individual: Number(medicamentosIndividual || 0),
-      insumos: Number(insumos || 0),
-      carrinho_medicamentos: Number(carrinhoMedicamentos || 0),
-      carrinho_insumos: Number(carrinhoInsumos || 0),
-    };
-  }
-
+  
+    const config = SECTOR_CONFIG[setor];
+  
+    for (const [group, tipos] of Object.entries(config.medicines)) {
+      baseResult[group as StockGroup] =
+        await this.sumStock(MedicineStockModel, {
+          setor,
+          tipos,
+        });
+    }
+  
+    for (const [group, tipos] of Object.entries(config.inputs)) {
+      baseResult[group as StockGroup] =
+        await this.sumStock(InputStockModel, {
+          setor,
+          tipos,
+        });
+    }
+  
+    return baseResult;
+  }  
+  
   async findMedicineStockById(id: number) {
     return MedicineStockModel.findByPk(id);
   }
