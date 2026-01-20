@@ -6,6 +6,7 @@ import {
   StockItemStatus,
   QueryPaginationParams,
   MovementType,
+  SectorType,
 } from '../utils/utils';
 import { MovementRepository } from '../../infrastructure/database/repositories/movimentacao.repository';
 import { CacheService } from './redis.service';
@@ -20,8 +21,7 @@ export class StockService {
 
   constructor(
     private readonly repo: StockRepository,
-    private readonly cache: CacheService,
-    private readonly priceSearchService?: PriceSearchService,
+    private readonly cache: CacheService
   ) {
     this.medicineRepo = new MedicineRepository();
     this.inputRepo = new InputRepository();
@@ -191,14 +191,14 @@ export class StockService {
     );
   }
 
-  async getProportion(setor: 'farmacia' | 'enfermagem') {
+  async getProportion(setor?: SectorType) {
     return this.cache.getOrSet(
-      CacheKeyHelper.stockDashboard(setor),
+      CacheKeyHelper.stockDashboard(setor ?? 'general'),
       () => this.repo.getStockProportionBySector(setor),
       60,
     );
   }
-
+  
   async suspendIndividualMedicine(estoque_id: number) {
     const stock = await this.repo.findMedicineStockById(estoque_id);
 

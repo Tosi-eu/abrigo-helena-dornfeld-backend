@@ -2,8 +2,9 @@ import { Request, Response } from 'express';
 import { StockService } from '../../../core/services/estoque.service';
 import { sendErrorResponse } from '../../helpers/error-response.helper';
 import { handleETagResponse } from '../../helpers/etag.helper';
-import { ItemType } from '../../../core/utils/utils';
+import { ItemType, SectorType } from '../../../core/utils/utils';
 import { ValidatedRequest } from '../../../middleware/validation.middleware';
+import { toSectorType } from '../../helpers/stock.helper';
 
 export class StockController {
   constructor(private readonly service: StockService) {}
@@ -86,29 +87,32 @@ export class StockController {
 
   async proportion(req: Request, res: Response) {
     try {
-      const { setor } = req.query as { setor?: 'farmacia' | 'enfermagem' };
 
-      if (!setor) {
+      const sectorType = toSectorType(req.query.setor as string | undefined);
+  
+      if (sectorType === 'invalid') {
         return res.status(400).json({
-          error: 'Query param "setor" é obrigatório (farmacia ou enfermagem)',
+          error:
+          'Setor é obrigatório e deve ser "farmacia" ou "enfermagem"',
         });
       }
-
-      const data = await this.service.getProportion(setor);
-
+  
+      const data = await this.service.getProportion(sectorType as SectorType);
+  
       const totalGeral = Object.values(data).reduce(
         (acc, v) => acc + Number(v || 0),
         0,
       );
-
+  
       const pct = (v: number) =>
         totalGeral > 0 ? Number(((v / totalGeral) * 100).toFixed(2)) : 0;
-
+  
       const responseData = {
         percentuais: {
           medicamentos_geral: pct(data.medicamentos_geral),
           medicamentos_individual: pct(data.medicamentos_individual),
-          insumos: pct(data.insumos),
+          insumos_geral: pct(data.insumos_geral),
+          insumos_individual: pct(data.insumos_individual),
           carrinho_medicamentos: pct(data.carrinho_medicamentos),
           carrinho_insumos: pct(data.carrinho_insumos),
         },
@@ -117,16 +121,18 @@ export class StockController {
           total_geral: totalGeral,
         },
       };
-
+  
       if (handleETagResponse(req, res, responseData)) {
         return;
       }
-
+  
       return res.json(responseData);
     } catch (error: unknown) {
       return sendErrorResponse(res, 500, error, 'Erro ao calcular proporção');
     }
   }
+  
+
   async removeIndividualMedicine(req: Request, res: Response) {
     try {
       const { estoque_id } = req.params;
