@@ -12,14 +12,7 @@ import {
 } from '../../../middleware/validation.middleware';
 
 const repo = new StockRepository();
-const medicineRepo = new MedicineRepository();
-const inputRepo = new InputRepository();
-const priceSearchService = new PriceSearchService(
-  cacheService,
-  medicineRepo,
-  inputRepo,
-);
-const service = new StockService(repo, cacheService, priceSearchService);
+const service = new StockService(repo, cacheService);
 const controller = new StockController(service);
 
 const router = Router();

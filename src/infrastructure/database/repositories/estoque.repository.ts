@@ -588,8 +588,10 @@ export class StockRepository {
       medicamentos_individual: 0,
       insumos_geral: 0,
       insumos_individual: 0,
-      carrinho_medicamentos: 0,
-      carrinho_insumos: 0,
+      carrinho_emergencia_medicamentos: 0,
+      carrinho_psicotropicos_medicamentos: 0,
+      carrinho_emergencia_insumos: 0,
+      carrinho_psicotropicos_insumos: 0,
     };
   
     if (!setor) {
@@ -598,8 +600,12 @@ export class StockRepository {
         medicamentosIndividual,
         insumosGeral,
         insumosIndividual,
-        carrinhoMedicamentos,
-        carrinhoInsumos,
+  
+        carrinhoEmergenciaMedicamentos,
+        carrinhoPsicotropicosMedicamentos,
+  
+        carrinhoEmergenciaInsumos,
+        carrinhoPsicotropicosInsumos,
       ] = await Promise.all([
         this.sumStock(MedicineStockModel, {
           tipos: [OperationType.GERAL],
@@ -613,34 +619,44 @@ export class StockRepository {
         this.sumStock(InputStockModel, {
           tipos: [OperationType.INDIVIDUAL],
         }),
+  
         this.sumStock(MedicineStockModel, {
-          tipos: [
-            OperationType.CARRINHO_EMERGENCIA,
-            OperationType.CARRINHO_PSICOTROPICOS,
-          ],
+          tipos: [OperationType.CARRINHO_EMERGENCIA],
+        }),
+        this.sumStock(MedicineStockModel, {
+          tipos: [OperationType.CARRINHO_PSICOTROPICOS],
+        }),
+  
+        this.sumStock(InputStockModel, {
+          tipos: [OperationType.CARRINHO_EMERGENCIA],
         }),
         this.sumStock(InputStockModel, {
-          tipos: [
-            OperationType.CARRINHO_EMERGENCIA,
-            OperationType.CARRINHO_PSICOTROPICOS,
-          ],
+          tipos: [OperationType.CARRINHO_PSICOTROPICOS],
         }),
       ]);
-    
+  
       return {
         medicamentos_geral: medicamentosGeral,
         medicamentos_individual: medicamentosIndividual,
         insumos_geral: insumosGeral,
         insumos_individual: insumosIndividual,
-        carrinho_medicamentos: carrinhoMedicamentos,
-        carrinho_insumos: carrinhoInsumos,
+  
+        carrinho_emergencia_medicamentos:
+          carrinhoEmergenciaMedicamentos,
+        carrinho_psicotropicos_medicamentos:
+          carrinhoPsicotropicosMedicamentos,
+  
+        carrinho_emergencia_insumos:
+          carrinhoEmergenciaInsumos,
+        carrinho_psicotropicos_insumos:
+          carrinhoPsicotropicosInsumos,
       };
-    }   
+    }
   
     const config = SECTOR_CONFIG[setor];
   
     for (const [group, tipos] of Object.entries(config.medicines)) {
-      baseResult[group as keyof typeof baseResult] =
+      baseResult[group as StockGroup] =
         await this.sumStock(MedicineStockModel, {
           setor,
           tipos,
@@ -648,7 +664,7 @@ export class StockRepository {
     }
   
     for (const [group, tipos] of Object.entries(config.inputs)) {
-      baseResult[group as keyof typeof baseResult] =
+      baseResult[group as StockGroup] =
         await this.sumStock(InputStockModel, {
           setor,
           tipos,
@@ -656,7 +672,7 @@ export class StockRepository {
     }
   
     return baseResult;
-  }
+  }  
   
   async findMedicineStockById(id: number) {
     return MedicineStockModel.findByPk(id);

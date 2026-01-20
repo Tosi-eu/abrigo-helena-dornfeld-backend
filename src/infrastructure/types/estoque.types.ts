@@ -17,8 +17,10 @@ export type StockGroup =
   | 'medicamentos_individual'
   | 'insumos_geral'
   | 'insumos_individual'
-  | 'carrinho_medicamentos'
-  | 'carrinho_insumos';
+  | 'carrinho_emergencia_medicamentos'
+  | 'carrinho_psicotropicos_medicamentos'
+  | 'carrinho_emergencia_insumos'
+  | 'carrinho_psicotropicos_insumos';
 
 export type SectorConfig = {
   medicines: Partial<Record<StockGroup, OperationType[]>>;
@@ -41,16 +43,20 @@ export const SECTOR_CONFIG: Record<SectorType, SectorConfig> = {
     medicines: {
       medicamentos_geral: [OperationType.GERAL],
       medicamentos_individual: [OperationType.INDIVIDUAL],
-      carrinho_medicamentos: [
+      carrinho_emergencia_medicamentos: [
         OperationType.CARRINHO_EMERGENCIA,
+      ],
+      carrinho_psicotropicos_medicamentos: [
         OperationType.CARRINHO_PSICOTROPICOS,
       ],
     },
     inputs: {
       insumos_geral: [OperationType.GERAL],
       insumos_individual: [OperationType.INDIVIDUAL],
-      carrinho_insumos: [
+      carrinho_emergencia_insumos: [
         OperationType.CARRINHO_EMERGENCIA,
+      ],
+      carrinho_psicotropicos_insumos: [
         OperationType.CARRINHO_PSICOTROPICOS,
       ],
     },

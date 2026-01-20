@@ -113,8 +113,10 @@ export class StockController {
           medicamentos_individual: pct(data.medicamentos_individual),
           insumos_geral: pct(data.insumos_geral),
           insumos_individual: pct(data.insumos_individual),
-          carrinho_medicamentos: pct(data.carrinho_medicamentos),
-          carrinho_insumos: pct(data.carrinho_insumos),
+          carrinho_emergencia_medicamentos: pct(data.carrinho_emergencia_medicamentos),
+          carrinho_psicotropicos_medicamentos: pct(data.carrinho_psicotropicos_medicamentos),
+          carrinho_emergencia_insumos: pct(data.carrinho_emergencia_insumos),
+          carrinho_psicotropicos_insumos: pct(data.carrinho_psicotropicos_insumos),
         },
         totais: {
           ...data,
@@ -131,7 +133,6 @@ export class StockController {
       return sendErrorResponse(res, 500, error, 'Erro ao calcular proporção');
     }
   }
-  
 
   async removeIndividualMedicine(req: Request, res: Response) {
     try {
