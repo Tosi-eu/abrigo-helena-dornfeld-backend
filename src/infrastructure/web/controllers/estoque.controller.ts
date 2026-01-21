@@ -196,10 +196,11 @@ export class StockController {
   async transferMedicineSector(req: ValidatedRequest, res: Response) {
     try {
       const { estoque_id } = req.params;
-      const { setor, quantidade, casela_id } = req.body as {
+      const { setor, quantidade, casela_id, destino } = req.body as {
         setor: 'farmacia' | 'enfermagem';
         quantidade: number;
         casela_id?: number;
+        destino?: string;
       };
 
       const login_id = req.user?.id;
@@ -230,6 +231,7 @@ export class StockController {
         login_id,
         quantidade,
         casela_id,
+        destino ?? null,
       );
 
       return res.json(result);
@@ -240,6 +242,53 @@ export class StockController {
         error,
         'Erro ao transferir medicamento',
       );
+    }
+  }
+
+  async transferInputSector(req: ValidatedRequest, res: Response) {
+    try {
+      const { estoque_id } = req.params;
+      const { setor, quantidade, casela_id, destino } = req.body as {
+        setor: 'farmacia' | 'enfermagem';
+        quantidade: number;
+        casela_id?: number;
+        destino?: string;
+      };
+
+      const login_id = req.user?.id;
+
+      if (!estoque_id) {
+        return res.status(400).json({ error: 'Estoque inválido' });
+      }
+
+      if (!login_id) {
+        return res.status(401).json({ error: 'Usuário não autenticado' });
+      }
+
+      if (!setor) {
+        return res.status(400).json({ error: 'Setor é obrigatório' });
+      }
+
+      if (!quantidade || quantidade <= 0) {
+        return res
+          .status(400)
+          .json({
+            error: 'Quantidade é obrigatória e deve ser maior que zero',
+          });
+      }
+
+      const result = await this.service.transferInputSector(
+        Number(estoque_id),
+        setor,
+        quantidade,
+        login_id,
+        casela_id,
+        destino ?? null,
+      );
+
+      return res.json(result);
+    } catch (error: unknown) {
+      return sendErrorResponse(res, 400, error, 'Erro ao transferir insumo');
     }
   }
 
@@ -349,6 +398,7 @@ export class StockController {
       );
     }
   }
+
   async suspendIndividualInput(req: Request, res: Response) {
     try {
       const { estoque_id } = req.params;
@@ -382,51 +432,6 @@ export class StockController {
       return res.json(result);
     } catch (error: unknown) {
       return sendErrorResponse(res, 400, error, 'Erro ao retomar insumo');
-    }
-  }
-
-  async transferInputSector(req: ValidatedRequest, res: Response) {
-    try {
-      const { estoque_id } = req.params;
-      const { setor, quantidade, casela_id } = req.body as {
-        setor: 'farmacia' | 'enfermagem';
-        quantidade: number;
-        casela_id?: number;
-      };
-
-      const login_id = req.user?.id;
-
-      if (!estoque_id) {
-        return res.status(400).json({ error: 'Estoque inválido' });
-      }
-
-      if (!login_id) {
-        return res.status(401).json({ error: 'Usuário não autenticado' });
-      }
-
-      if (!setor) {
-        return res.status(400).json({ error: 'Setor é obrigatório' });
-      }
-
-      if (!quantidade || quantidade <= 0) {
-        return res
-          .status(400)
-          .json({
-            error: 'Quantidade é obrigatória e deve ser maior que zero',
-          });
-      }
-
-      const result = await this.service.transferInputSector(
-        Number(estoque_id),
-        setor,
-        quantidade,
-        login_id,
-        casela_id,
-      );
-
-      return res.json(result);
-    } catch (error: unknown) {
-      return sendErrorResponse(res, 400, error, 'Erro ao transferir insumo');
     }
   }
 }

@@ -11,6 +11,7 @@ export interface Movement {
   casela_id?: number | null;
   validade: Date;
   setor: string;
+  destino?: string | null;
   lote?: string | null;
 }
 

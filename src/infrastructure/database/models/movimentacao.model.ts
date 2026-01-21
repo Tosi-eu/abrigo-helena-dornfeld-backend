@@ -13,6 +13,7 @@ interface MovementAttrs {
   quantidade: number;
   casela_id?: number | null;
   setor: string;
+  destino?: string | null;
   lote?: string | null;
 }
 
@@ -25,6 +26,7 @@ type MovementCreation = Optional<
   | 'gaveta_id'
   | 'armario_id'
   | 'lote'
+  | 'destino'
 >;
 
 export class MovementModel
@@ -42,6 +44,7 @@ export class MovementModel
   declare casela_id: number | null;
   declare gaveta_id: number | null;
   declare setor: string;
+  declare destino?: string | null;
   declare lote?: string | null;
 }
 
@@ -59,6 +62,7 @@ MovementModel.init(
     casela_id: { type: DataTypes.INTEGER, allowNull: true },
     setor: { type: DataTypes.STRING, allowNull: false },
     lote: { type: DataTypes.STRING, allowNull: true },
+    destino: { type: DataTypes.TEXT, allowNull: true },
   },
   {
     sequelize,
