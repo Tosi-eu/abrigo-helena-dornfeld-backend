@@ -12,6 +12,7 @@ export interface InputStockAttributes {
   validade: Date;
   tipo: string;
   setor: string;
+  destino?: string | null;
   lote?: string | null;
   status?: StockItemStatus;
   suspended_at?: Date | null;
@@ -30,6 +31,7 @@ export class InputStockModel
   declare validade: Date;
   declare tipo: string;
   declare setor: string;
+  declare destino?: string | null;
   declare lote?: string | null;
   declare status: StockItemStatus;
   declare suspended_at?: Date | null;
@@ -64,6 +66,7 @@ InputStockModel.init(
     tipo: { type: DataTypes.TEXT, allowNull: false },
     setor: { type: DataTypes.TEXT, allowNull: false },
     lote: { type: DataTypes.STRING, allowNull: true },
+    destino: { type: DataTypes.TEXT, allowNull: true },
     status: {
       type: DataTypes.ENUM(...Object.values(StockItemStatus)),
       allowNull: false,
