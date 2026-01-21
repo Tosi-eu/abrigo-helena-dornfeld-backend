@@ -111,7 +111,8 @@ export interface ResidentMedicinesReport {
   residente: string;
   casela: number;
   medicamento: string;
-  principio_ativo: string | null;
+  principio_ativo: string;
+  dosagem: string;
   quantidade: number;
   validade: string;
 }

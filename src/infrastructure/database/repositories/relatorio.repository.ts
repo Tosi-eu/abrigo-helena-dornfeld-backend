@@ -615,7 +615,7 @@ export class ReportRepository {
       include: [
         {
           model: MedicineModel,
-          attributes: ['nome', 'principio_ativo'],
+          attributes: ['nome', 'principio_ativo', 'dosagem', 'unidade_medida'],
           required: true,
         },
         {
@@ -633,7 +633,10 @@ export class ReportRepository {
         'ResidentModel.num_casela',
         'MedicineModel.nome',
         'MedicineModel.principio_ativo',
+        'MedicineModel.dosagem',
+        'MedicineModel.unidade_medida',
       ],
+
       order: [['MedicineModel', 'nome', 'ASC']],
       raw: true,
       nest: true,
@@ -644,6 +647,7 @@ export class ReportRepository {
       casela: row.ResidentModel?.num_casela || casela,
       medicamento: row.MedicineModel?.nome || '',
       principio_ativo: row.MedicineModel?.principio_ativo || null,
+      dosagem: `${row.MedicineModel?.dosagem || ''}${row.MedicineModel?.unidade_medida || ''}`.trim(),
       quantidade: Number(row.quantidade) || 0,
       validade: formatDateToPtBr(new Date(row.validade)),
     }));

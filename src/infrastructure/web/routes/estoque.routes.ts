@@ -3,9 +3,6 @@ import { StockRepository } from '../../database/repositories/estoque.repository'
 import { StockService } from '../../../core/services/estoque.service';
 import { StockController } from '../controllers/estoque.controller';
 import { cacheService } from '../../database/redis/client.redis';
-import { PriceSearchService } from '../../../core/services/price-search.service';
-import { MedicineRepository } from '../../database/repositories/medicamento.repository';
-import { InputRepository } from '../../database/repositories/insumo.repository';
 import {
   validatePagination,
   validateEstoqueIdParam,

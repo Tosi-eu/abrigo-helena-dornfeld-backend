@@ -248,8 +248,8 @@ export class StockService {
     setor: 'farmacia' | 'enfermagem',
     login_id: number,
     quantidade: number,
-    casela_id?: number,
-    destino?: string | null,
+    casela_id?: number | null,
+    observacao?: string | null,
   ) {
     const stock = await this.repo.findMedicineStockById(estoque_id);
   
@@ -283,33 +283,21 @@ export class StockService {
       throw new Error(`Quantidade não pode ser maior que ${stock.quantidade}`);
     }
   
-    const hasDestino = destino != null && destino?.trim() !== '';
     const hasCasela = casela_id != null;
   
-    if (hasDestino && hasCasela) {
-      throw new Error('Destino e casela não podem ser informados juntos');
-    }
   
-    if (!hasDestino && !hasCasela) {
-      throw new Error('Casela ou destino é obrigatório para transferir');
+    if (!hasCasela) {
+      throw new Error('Casela é obrigatória para transferir');
     }
 
-    const targetTipo = hasDestino
-      ? OperationType.GERAL
-      : OperationType.INDIVIDUAL;
-  
-    const targetCaselaId =
-      targetTipo === OperationType.INDIVIDUAL ? casela_id : undefined;
-  
-    const targetDestino =
-      targetTipo === OperationType.GERAL ? destino : null;
+    const targetCaselaId = casela_id != null ? casela_id : stock.casela_id;
   
     const result = await this.repo.transferMedicineSector(
       estoque_id,
       setor,
       quantidade,
-      targetCaselaId,
-      targetDestino,
+      targetCaselaId as number,
+      observacao
     );
   
     await this.movementRepo.create({
@@ -323,8 +311,7 @@ export class StockService {
       setor,
       armario_id: stock.armario_id ?? undefined,
       gaveta_id: stock.gaveta_id ?? undefined,
-      lote: stock.lote ?? null,
-      destino: targetDestino,
+      lote: stock.lote ?? null
     });
   
     await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
@@ -339,6 +326,7 @@ export class StockService {
     login_id: number,
     casela_id?: number,
     destino?: string | null,
+    observacao?: string | null,
   ) {
     const stock = await this.repo.findInputStockById(estoque_id);
   
@@ -388,7 +376,7 @@ export class StockService {
       : OperationType.INDIVIDUAL;
   
     const targetCaselaId =
-      targetTipo === OperationType.INDIVIDUAL ? casela_id : undefined;
+      targetTipo === OperationType.INDIVIDUAL ? casela_id : null;
   
     const targetDestino =
       targetTipo === OperationType.GERAL ? destino : null;
@@ -399,6 +387,7 @@ export class StockService {
       quantidade,
       targetCaselaId,
       targetDestino,
+      observacao ?? null
     );
   
     await this.movementRepo.create({

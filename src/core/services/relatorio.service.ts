@@ -10,7 +10,7 @@ export enum MovementPeriod {
 export type MovementsParams =
   | {
       periodo: MovementPeriod.DIARIO;
-      data: string; // YYYY-MM-DD
+      data: string; 
     }
   | {
       periodo: MovementPeriod.MENSAL;
@@ -18,8 +18,8 @@ export type MovementsParams =
     }
   | {
       periodo: MovementPeriod.INTERVALO;
-      data_inicial: string; // YYYY-MM-DD
-      data_final: string; // YYYY-MM-DD
+      data_inicial: string; 
+      data_final: string; 
     };
 
 export type GenerateReportParams =

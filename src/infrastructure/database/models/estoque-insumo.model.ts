@@ -14,6 +14,7 @@ export interface InputStockAttributes {
   setor: string;
   destino?: string | null;
   lote?: string | null;
+  observacao?: string | null;
   status?: StockItemStatus;
   suspended_at?: Date | null;
 }
@@ -33,6 +34,7 @@ export class InputStockModel
   declare setor: string;
   declare destino?: string | null;
   declare lote?: string | null;
+  declare observacao?: string | null;
   declare status: StockItemStatus;
   declare suspended_at?: Date | null;
 }
@@ -67,6 +69,7 @@ InputStockModel.init(
     setor: { type: DataTypes.TEXT, allowNull: false },
     lote: { type: DataTypes.STRING, allowNull: true },
     destino: { type: DataTypes.TEXT, allowNull: true },
+    observacao: { type: DataTypes.TEXT, allowNull: true },
     status: {
       type: DataTypes.ENUM(...Object.values(StockItemStatus)),
       allowNull: false,

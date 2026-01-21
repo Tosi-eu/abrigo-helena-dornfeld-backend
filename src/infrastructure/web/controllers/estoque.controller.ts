@@ -196,11 +196,11 @@ export class StockController {
   async transferMedicineSector(req: ValidatedRequest, res: Response) {
     try {
       const { estoque_id } = req.params;
-      const { setor, quantidade, casela_id, destino } = req.body as {
+      const { setor, quantidade, casela_id, observacao } = req.body as {
         setor: 'farmacia' | 'enfermagem';
         quantidade: number;
         casela_id?: number;
-        destino?: string;
+        observacao?: string;
       };
 
       const login_id = req.user?.id;
@@ -230,8 +230,8 @@ export class StockController {
         setor,
         login_id,
         quantidade,
-        casela_id,
-        destino ?? null,
+        casela_id ?? null,
+        observacao ?? null
       );
 
       return res.json(result);
@@ -248,11 +248,12 @@ export class StockController {
   async transferInputSector(req: ValidatedRequest, res: Response) {
     try {
       const { estoque_id } = req.params;
-      const { setor, quantidade, casela_id, destino } = req.body as {
+      const { setor, quantidade, casela_id, destino, observacao } = req.body as {
         setor: 'farmacia' | 'enfermagem';
         quantidade: number;
         casela_id?: number;
         destino?: string;
+        observacao?: string;
       };
 
       const login_id = req.user?.id;
@@ -284,6 +285,7 @@ export class StockController {
         login_id,
         casela_id,
         destino ?? null,
+        observacao ?? null
       );
 
       return res.json(result);
