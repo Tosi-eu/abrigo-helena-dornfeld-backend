@@ -27,7 +27,7 @@ export enum SectorType {
 }
 
 export enum StockFilterType {
-  NO_STOCK = 'noStock',
+  NEAR_MIN = 'nearMin',
   BELOW_MIN = 'belowMin',
   EXPIRED = 'expired',
   EXPIRING_SOON = 'expiringSoon',

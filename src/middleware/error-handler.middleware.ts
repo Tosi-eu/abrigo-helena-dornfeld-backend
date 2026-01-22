@@ -1,13 +1,19 @@
-import { Request, Response } from 'express';
+import { NextFunction, Request, Response } from 'express';
 import { sanitizeErrorMessage } from '../infrastructure/helpers/sanitize.helper';
 import { isAppError } from '../infrastructure/types/error.types';
 import { logger } from '../infrastructure/helpers/logger.helper';
 
 const isProduction = process.env.NODE_ENV === 'production';
 
-export function errorHandler(err: unknown, req: Request, res: Response) {
+export function errorHandler(
+  err: unknown,
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
   const errorMessage =
     err instanceof Error ? err.message : 'Internal server error';
+
   logger.error(
     'Error handler',
     {
@@ -22,6 +28,7 @@ export function errorHandler(err: unknown, req: Request, res: Response) {
   const statusCode = isAppError(err)
     ? err.statusCode || err.status || 500
     : 500;
+
   const message = sanitizeErrorMessage(err, isProduction);
   const stack = err instanceof Error && !isProduction ? err.stack : undefined;
 

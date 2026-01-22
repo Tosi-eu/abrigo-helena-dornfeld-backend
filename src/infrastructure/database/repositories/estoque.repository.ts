@@ -282,26 +282,30 @@ export class StockRepository {
     const buildWhereCondition = () => {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
+
       const in45Days = new Date(today);
       in45Days.setDate(in45Days.getDate() + 45);
 
       const baseWhere: any = {};
 
       switch (filter) {
-        case 'noStock':
-          baseWhere.quantidade = 0;
-          break;
         case 'belowMin':
           baseWhere.quantidade = { [Op.gt]: 0 };
           break;
+
         case 'expired':
           baseWhere.quantidade = { [Op.gt]: 0 };
           baseWhere.validade = { [Op.lt]: today };
           break;
+
         case 'expiringSoon':
           baseWhere.quantidade = { [Op.gt]: 0 };
           baseWhere.validade = { [Op.between]: [today, in45Days] };
           break;
+
+        case 'nearMin':
+          break;
+
         default:
           break;
       }
@@ -349,7 +353,7 @@ export class StockRepository {
         include: [
           {
             model: MedicineModel,
-            attributes: ['id', 'nome', 'principio_ativo', 'estoque_minimo'],
+            attributes: ['id', 'nome', 'principio_ativo', 'dosagem', 'unidade_medida', 'estoque_minimo'],
             required: true,
             where:
               Object.keys(medicineIncludeWhere).length > 0
@@ -373,8 +377,21 @@ export class StockRepository {
         const resident = plainStock.ResidentModel as ResidentModel | undefined;
 
         if (filter === 'belowMin') {
-          const estoqueMinimo = medicine?.estoque_minimo || 0;
-          if (stock.quantidade > estoqueMinimo) continue;
+          const minStock = medicine?.estoque_minimo ?? 0;
+          if (stock.quantidade > minStock) continue;
+        }
+
+        if (filter === 'nearMin') {
+          const minStock = medicine?.estoque_minimo ?? 0;
+          if (minStock === 0) continue;
+
+          const upperLimit = minStock * 1.35;
+          if (
+            stock.quantidade < minStock ||
+            stock.quantidade > upperLimit
+          ) {
+            continue;
+          }
         }
 
         results.push({
@@ -383,6 +400,8 @@ export class StockRepository {
           item_id: medicine?.id,
           nome: medicine?.nome,
           principio_ativo: medicine?.principio_ativo || null,
+          dosagem: medicine?.dosagem || null,
+          unidade_medida: medicine?.unidade_medida || null,
           descricao: null,
           validade: stock.validade,
           quantidade: stock.quantidade,
@@ -396,9 +415,9 @@ export class StockRepository {
           setor: stock.setor,
           status: stock.status || null,
           suspenso_em: stock.suspended_at || null,
-          destino: stock.destino || null,
           lote: stock.lote || null,
           observacao: stock.observacao || null,
+          destino: null,
         } as StockQueryResult);
       }
     }
@@ -406,7 +425,7 @@ export class StockRepository {
     if ((!type || type === 'insumo') && shouldIncludeInputs) {
       const inputWhere: any = { ...whereCondition };
 
-      if (filter === 'belowMin') {
+      if (filter === 'nearMin') {
         inputWhere.quantidade = { [Op.gt]: 0 };
       }
 
@@ -459,8 +478,22 @@ export class StockRepository {
         const resident = plainStock.ResidentModel as ResidentModel | undefined;
 
         if (filter === StockFilterType.BELOW_MIN) {
-          const estoqueMinimo = input?.estoque_minimo || 0;
-          if (stock.quantidade > estoqueMinimo) continue;
+          const minStock = input?.estoque_minimo ?? 0;
+          if (stock.quantidade > minStock) continue;
+        }
+
+        if (filter === StockFilterType.NEAR_MIN) {
+          const minStock = input?.estoque_minimo ?? 0;
+          if (minStock === 0) continue;
+
+          const upperLimit = minStock * 1.35;
+
+          if (
+            stock.quantidade < minStock ||
+            stock.quantidade > upperLimit
+          ) {
+            continue;
+          }
         }
 
         results.push({
@@ -484,7 +517,7 @@ export class StockRepository {
           suspenso_em: stock.suspended_at || null,
           destino: stock.destino || null,
           lote: stock.lote || null,
-          observacao: null,
+          observacao: stock.observacao || null,
         } as StockQueryResult);
       }
     }
@@ -766,12 +799,6 @@ export class StockRepository {
         );
       }
 
-      if (updateData.validade != null && updateData.validade < new Date()) {
-        throw new Error(
-          'A data de validade não pode ser anterior à data atual',
-        );
-      }
-
       if (updateData.quantidade != null && updateData.quantidade < 1) {
         throw new Error('A quantidade não pode ser menor que 0');
       }
@@ -822,12 +849,6 @@ export class StockRepository {
       if (updateData.armario_id != null && updateData.gaveta_id != null) {
         throw new Error(
           'Não é permitido preencher armário e gaveta ao mesmo tempo',
-        );
-      }
-
-      if (updateData.validade != null && updateData.validade < new Date()) {
-        throw new Error(
-          'A data de validade não pode ser anterior à data atual',
         );
       }
 
@@ -919,29 +940,17 @@ export class StockRepository {
     estoqueId: number,
     setor: 'farmacia' | 'enfermagem',
     quantidade: number,
-    casela_id?: number | null,
-    destino?: string | null,
+    casela_id: number,
+    observacao?: string | null,
   ) {
     const stock = await MedicineStockModel.findByPk(estoqueId);
+
     if (!stock) {
       throw new Error('Estoque não encontrado');
     }
   
-    const isIndividual = stock.tipo === OperationType.INDIVIDUAL;
-    const hasDestino = destino != null && destino.trim() !== '';
-  
-    if (hasDestino && casela_id) {
-      throw new Error('Destino e casela não podem ser informados juntos');
-    }
-  
-    const resolvedCaselaId = isIndividual
-      ? stock.casela_id
-      : hasDestino
-        ? null
-        : casela_id;
-  
-    if (!resolvedCaselaId && !hasDestino) {
-      throw new Error('Casela ou destino é obrigatório');
+    if (!casela_id) {
+      throw new Error('Casela é obrigatória para transferência de setor');
     }
   
     if (!quantidade || quantidade <= 0) {
@@ -959,12 +968,11 @@ export class StockRepository {
     const existing = await MedicineStockModel.findOne({
       where: {
         medicamento_id: stock.medicamento_id,
-        casela_id: resolvedCaselaId,
+        casela_id: casela_id,
         validade: stock.validade,
         setor,
         lote: stock.lote ?? null,
-        tipo: stock.tipo,
-        destino: hasDestino ? destino : null,
+        tipo: stock.tipo
       },
     });
   
@@ -974,18 +982,17 @@ export class StockRepository {
     } else {
       await MedicineStockModel.create({
         medicamento_id: stock.medicamento_id,
-        casela_id: resolvedCaselaId,
+        casela_id: casela_id,
         armario_id: stock.armario_id,
         gaveta_id: stock.gaveta_id,
         validade: stock.validade,
         quantidade,
         origem: stock.origem,
-        tipo: hasDestino ? OperationType.GERAL : OperationType.INDIVIDUAL,
+        tipo: OperationType.INDIVIDUAL,
         setor,
         lote: stock.lote,
         status: stock.status,
-        observacao: stock.observacao,
-        destino: hasDestino ? destino : null,
+        observacao: observacao ?? stock.observacao,
       });
     }
   
@@ -1004,27 +1011,17 @@ export class StockRepository {
     quantidade: number,
     casela_id?: number | null,
     destino?: string | null,
+    observacao?: string | null,
   ) {
     const stock = await InputStockModel.findByPk(estoqueId);
     if (!stock) {
       throw new Error('Estoque não encontrado');
     }
-  
-    const isIndividual = stock.tipo === OperationType.INDIVIDUAL;
+
     const hasDestino = destino != null && destino.trim() !== '';
   
     if (hasDestino && casela_id) {
       throw new Error('Destino e casela não podem ser informados juntos');
-    }
-  
-    const resolvedCaselaId = isIndividual
-      ? stock.casela_id
-      : hasDestino
-        ? null
-        : casela_id;
-  
-    if (!resolvedCaselaId && !hasDestino) {
-      throw new Error('Casela ou destino é obrigatório');
     }
   
     if (!quantidade || quantidade <= 0) {
@@ -1038,7 +1035,7 @@ export class StockRepository {
     const existing = await InputStockModel.findOne({
       where: {
         insumo_id: stock.insumo_id,
-        casela_id: resolvedCaselaId,
+        casela_id: casela_id,
         validade: stock.validade,
         setor,
         lote: stock.lote ?? null,
@@ -1053,7 +1050,7 @@ export class StockRepository {
     } else {
       await InputStockModel.create({
         insumo_id: stock.insumo_id,
-        casela_id: resolvedCaselaId,
+        casela_id: casela_id,
         armario_id: stock.armario_id,
         gaveta_id: stock.gaveta_id,
         validade: stock.validade,
@@ -1063,6 +1060,7 @@ export class StockRepository {
         lote: stock.lote,
         status: stock.status,
         destino: hasDestino ? destino : null,
+        observacao: observacao ?? stock.observacao,
       });
     }
   
@@ -1074,5 +1072,5 @@ export class StockRepository {
   
     return { message: 'Insumo transferido de setor com sucesso' };
   }
-  
+
 }

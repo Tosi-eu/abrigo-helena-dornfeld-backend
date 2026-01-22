@@ -404,6 +404,7 @@ export class PriceSearchService {
         'g',
         'mcg',
         'mg/ml',
+        'g/ml',
         'ui',
         'cp',
         'comprimido',
