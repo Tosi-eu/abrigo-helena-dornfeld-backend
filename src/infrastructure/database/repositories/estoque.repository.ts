@@ -282,26 +282,30 @@ export class StockRepository {
     const buildWhereCondition = () => {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
+
       const in45Days = new Date(today);
       in45Days.setDate(in45Days.getDate() + 45);
 
       const baseWhere: any = {};
 
       switch (filter) {
-        case 'noStock':
-          baseWhere.quantidade = 0;
-          break;
         case 'belowMin':
           baseWhere.quantidade = { [Op.gt]: 0 };
           break;
+
         case 'expired':
           baseWhere.quantidade = { [Op.gt]: 0 };
           baseWhere.validade = { [Op.lt]: today };
           break;
+
         case 'expiringSoon':
           baseWhere.quantidade = { [Op.gt]: 0 };
           baseWhere.validade = { [Op.between]: [today, in45Days] };
           break;
+
+        case 'nearMin':
+          break;
+
         default:
           break;
       }
@@ -373,8 +377,21 @@ export class StockRepository {
         const resident = plainStock.ResidentModel as ResidentModel | undefined;
 
         if (filter === 'belowMin') {
-          const estoqueMinimo = medicine?.estoque_minimo || 0;
-          if (stock.quantidade > estoqueMinimo) continue;
+          const minStock = medicine?.estoque_minimo ?? 0;
+          if (stock.quantidade > minStock) continue;
+        }
+
+        if (filter === 'nearMin') {
+          const minStock = medicine?.estoque_minimo ?? 0;
+          if (minStock === 0) continue;
+
+          const upperLimit = minStock * 1.35;
+          if (
+            stock.quantidade < minStock ||
+            stock.quantidade > upperLimit
+          ) {
+            continue;
+          }
         }
 
         results.push({
@@ -400,7 +417,7 @@ export class StockRepository {
           suspenso_em: stock.suspended_at || null,
           lote: stock.lote || null,
           observacao: stock.observacao || null,
-          destino: null
+          destino: null,
         } as StockQueryResult);
       }
     }
@@ -408,7 +425,7 @@ export class StockRepository {
     if ((!type || type === 'insumo') && shouldIncludeInputs) {
       const inputWhere: any = { ...whereCondition };
 
-      if (filter === 'belowMin') {
+      if (filter === 'nearMin') {
         inputWhere.quantidade = { [Op.gt]: 0 };
       }
 
@@ -461,8 +478,22 @@ export class StockRepository {
         const resident = plainStock.ResidentModel as ResidentModel | undefined;
 
         if (filter === StockFilterType.BELOW_MIN) {
-          const estoqueMinimo = input?.estoque_minimo || 0;
-          if (stock.quantidade > estoqueMinimo) continue;
+          const minStock = input?.estoque_minimo ?? 0;
+          if (stock.quantidade > minStock) continue;
+        }
+
+        if (filter === StockFilterType.NEAR_MIN) {
+          const minStock = input?.estoque_minimo ?? 0;
+          if (minStock === 0) continue;
+
+          const upperLimit = minStock * 1.35;
+
+          if (
+            stock.quantidade < minStock ||
+            stock.quantidade > upperLimit
+          ) {
+            continue;
+          }
         }
 
         results.push({
