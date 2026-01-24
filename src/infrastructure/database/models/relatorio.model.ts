@@ -92,7 +92,7 @@ export interface TransferReport {
   lote: string | null;
 }
 
-export interface DailyMovementReport {
+export interface MovementReport {
   data: string;
   tipo_movimentacao: 'entrada' | 'saida' | 'transferencia';
   tipo_item: 'medicamento' | 'insumo';

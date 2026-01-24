@@ -27,6 +27,21 @@ export class ReportController {
         return res.status(400).json({ error: 'Data é obrigatória para transferências' });
       }
 
+      if (type === 'movimentacoes') {
+        if (!periodo) {
+          return res.status(400).json({ error: 'Período é obrigatório para relatório de movimentações' });
+        }
+        if (periodo === MovementPeriod.MENSAL && !mes) {
+          return res.status(400).json({ error: 'Mês é obrigatório para relatório de movimentações mensais' });
+        }
+        if (periodo === MovementPeriod.DIARIO && !data) {
+          return res.status(400).json({ error: 'Data é obrigatória para relatório de movimentações diárias' });
+        }
+        if (periodo === MovementPeriod.INTERVALO && (!data_inicial || !data_final)) {
+          return res.status(400).json({ error: 'Data inicial e final são obrigatórias para relatório de movimentações por intervalo' });
+        }
+      }
+
       const casela = req.query.casela
         ? parseInt(req.query.casela as string)
         : undefined;
@@ -40,11 +55,16 @@ export class ReportController {
         data_final,
       });
 
-      if (handleETagResponse(req, res, result)) {
+      const body =
+        type === 'movimentacoes' && periodo
+          ? { data: result, _reportMeta: { period: periodo } }
+          : result;
+
+      if (handleETagResponse(req, res, body)) {
         return;
       }
 
-      return res.json(result);
+      return res.json(body);
     } catch (error: unknown) {
       const type = req.query.type as string;
       logger.error(
