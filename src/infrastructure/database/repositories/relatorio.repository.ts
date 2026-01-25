@@ -10,7 +10,7 @@ import {
   ResidentConsumptionInput,
   ResidentReport,
   TransferReport,
-  DailyMovementReport,
+  MovementReport,
   ResidentMedicinesReport,
   ExpiredMedicineReport,
 } from '../models/relatorio.model';
@@ -528,7 +528,7 @@ export class ReportRepository {
 
   async getMovementsByPeriod(
     params: MovementsParams,
-  ): Promise<DailyMovementReport[]> {
+  ): Promise<MovementReport[]> {
     let start: Date;
     let end: Date;
 
