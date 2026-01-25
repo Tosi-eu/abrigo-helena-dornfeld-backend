@@ -81,14 +81,12 @@ export interface ResidentConsumptionReport {
 
 export interface TransferReport {
   data: string;
-  tipo_item: 'medicamento' | 'insumo';
   nome: string;
   principio_ativo?: string | null;
   quantidade: number;
   casela: number | null;
   residente: string | null;
   armario: number | null;
-  setor: string;
   lote: string | null;
 }
 
