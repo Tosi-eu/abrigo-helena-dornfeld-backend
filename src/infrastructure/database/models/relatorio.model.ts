@@ -93,9 +93,9 @@ export interface TransferReport {
 export interface MovementReport {
   data: string;
   tipo_movimentacao: 'entrada' | 'saida' | 'transferencia';
-  tipo_item: 'medicamento' | 'insumo';
   nome: string;
-  principio_ativo?: string | null;
+  principio_ativo: string | null;
+  descricao: string | null;
   quantidade: number;
   casela: number | null;
   residente: string | null;

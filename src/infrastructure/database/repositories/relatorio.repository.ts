@@ -582,9 +582,9 @@ export class ReportRepository {
       return {
         data: formatDateToPtBr(plain.data),
         tipo_movimentacao: plain.tipo,
-        tipo_item: plain.medicamento_id ? 'medicamento' : 'insumo',
         nome: plain.MedicineModel?.nome || plain.InputModel?.nome || '',
         principio_ativo: plain.MedicineModel?.principio_ativo || null,
+        descricao: plain.InputModel?.descricao || null,
         quantidade: Number(plain.quantidade) || 0,
         casela: plain.ResidentModel?.num_casela || null,
         residente: plain.ResidentModel?.nome || null,
@@ -592,6 +592,7 @@ export class ReportRepository {
         gaveta: plain.gaveta_id || null,
         setor: plain.setor,
         lote: plain.lote || null,
+        destino: plain.destino || null,
       };
     });
   }
