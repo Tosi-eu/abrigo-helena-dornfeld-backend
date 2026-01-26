@@ -81,23 +81,21 @@ export interface ResidentConsumptionReport {
 
 export interface TransferReport {
   data: string;
-  tipo_item: 'medicamento' | 'insumo';
   nome: string;
   principio_ativo?: string | null;
   quantidade: number;
   casela: number | null;
   residente: string | null;
   armario: number | null;
-  setor: string;
   lote: string | null;
 }
 
-export interface DailyMovementReport {
+export interface MovementReport {
   data: string;
   tipo_movimentacao: 'entrada' | 'saida' | 'transferencia';
-  tipo_item: 'medicamento' | 'insumo';
   nome: string;
-  principio_ativo?: string | null;
+  principio_ativo: string | null;
+  descricao: string | null;
   quantidade: number;
   casela: number | null;
   residente: string | null;

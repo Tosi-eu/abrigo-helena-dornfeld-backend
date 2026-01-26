@@ -10,7 +10,7 @@ import {
   ResidentConsumptionInput,
   ResidentReport,
   TransferReport,
-  DailyMovementReport,
+  MovementReport,
   ResidentMedicinesReport,
   ExpiredMedicineReport,
 } from '../models/relatorio.model';
@@ -487,16 +487,16 @@ export class ReportRepository {
       attributes: [
         'data',
         'quantidade',
-        'setor',
         'lote',
         'casela_id',
         'armario_id',
         'medicamento_id',
         'insumo_id',
+        'destino'
       ],
       include: [
         { model: MedicineModel, attributes: ['nome', 'principio_ativo'], required: false },
-        { model: InputModel, attributes: ['nome'], required: false },
+        { model: InputModel, attributes: ['nome', 'descricao'], required: false },
         { model: ResidentModel, attributes: ['nome', 'num_casela'], required: false },
         { model: CabinetModel, attributes: ['num_armario'], required: false },
         { model: LoginModel, attributes: ['login'], required: true },
@@ -513,22 +513,22 @@ export class ReportRepository {
       const plain = row.get({ plain: true }) as any;
       return {
         data: formatDateToPtBr(plain.data),
-        tipo_item: plain.medicamento_id ? 'medicamento' : 'insumo',
         nome: plain.MedicineModel?.nome || plain.InputModel?.nome || '',
         principio_ativo: plain.MedicineModel?.principio_ativo || null,
+        descricao: plain.InputModel?.descricao || null,
         quantidade: Number(plain.quantidade) || 0,
         casela: plain.ResidentModel?.num_casela || null,
         residente: plain.ResidentModel?.nome || null,
         armario: plain.CabinetModel?.num_armario || null,
-        setor: plain.setor,
         lote: plain.lote || null,
+        destino: plain.destino || null,
       };
     });
   }  
 
   async getMovementsByPeriod(
     params: MovementsParams,
-  ): Promise<DailyMovementReport[]> {
+  ): Promise<MovementReport[]> {
     let start: Date;
     let end: Date;
 
@@ -582,9 +582,9 @@ export class ReportRepository {
       return {
         data: formatDateToPtBr(plain.data),
         tipo_movimentacao: plain.tipo,
-        tipo_item: plain.medicamento_id ? 'medicamento' : 'insumo',
         nome: plain.MedicineModel?.nome || plain.InputModel?.nome || '',
         principio_ativo: plain.MedicineModel?.principio_ativo || null,
+        descricao: plain.InputModel?.descricao || null,
         quantidade: Number(plain.quantidade) || 0,
         casela: plain.ResidentModel?.num_casela || null,
         residente: plain.ResidentModel?.nome || null,
@@ -592,6 +592,7 @@ export class ReportRepository {
         gaveta: plain.gaveta_id || null,
         setor: plain.setor,
         lote: plain.lote || null,
+        destino: plain.destino || null,
       };
     });
   }
