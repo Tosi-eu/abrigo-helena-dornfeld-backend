@@ -937,73 +937,80 @@ export class StockRepository {
   }
 
   async transferMedicineSector(
-    estoqueId: number,
-    setor: 'farmacia' | 'enfermagem',
-    quantidade: number,
-    casela_id: number,
-    observacao?: string | null,
-  ) {
-    const stock = await MedicineStockModel.findByPk(estoqueId);
+      estoqueId: number,
+      setor: 'farmacia' | 'enfermagem',
+      quantidade: number,
+      bypassCasela: boolean,
+      casela_id: number,
+      observacao?: string | null,
+    ) {
+      const stock = await MedicineStockModel.findByPk(estoqueId);
 
-    if (!stock) {
-      throw new Error('Estoque não encontrado');
-    }
-  
-    if (!casela_id) {
-      throw new Error('Casela é obrigatória para transferência de setor');
-    }
-  
-    if (!quantidade || quantidade <= 0) {
-      throw new Error('Quantidade inválida');
-    }
-  
-    if (quantidade > stock.quantidade) {
-      throw new Error(`Quantidade não pode ser maior que ${stock.quantidade}`);
-    }
-  
-    if (!stock.origem) {
-      throw new Error('Origem é obrigatória para medicamentos');
-    }
-  
-    const existing = await MedicineStockModel.findOne({
-      where: {
-        medicamento_id: stock.medicamento_id,
-        casela_id: casela_id,
-        validade: stock.validade,
-        setor,
-        lote: stock.lote ?? null,
-        tipo: stock.tipo
-      },
-    });
-  
-    if (existing) {
-      existing.quantidade += quantidade;
-      await existing.save();
-    } else {
-      await MedicineStockModel.create({
-        medicamento_id: stock.medicamento_id,
-        casela_id: casela_id,
-        armario_id: stock.armario_id,
-        gaveta_id: stock.gaveta_id,
-        validade: stock.validade,
-        quantidade,
-        origem: stock.origem,
-        tipo: OperationType.INDIVIDUAL,
-        setor,
-        lote: stock.lote,
-        status: stock.status,
-        observacao: observacao ?? stock.observacao,
+      if (!stock) {
+        throw new Error('Estoque não encontrado');
+      }
+    
+      if (!casela_id && !bypassCasela) {
+        throw new Error('Casela é obrigatória para transferência de setor');
+      }
+    
+      if (!quantidade || quantidade <= 0) {
+        throw new Error('Quantidade inválida');
+      }
+    
+      if (quantidade > stock.quantidade) {
+        throw new Error(`Quantidade não pode ser maior que ${stock.quantidade}`);
+      }
+    
+      if (!stock.origem) {
+        throw new Error('Origem é obrigatória para medicamentos');
+      }
+
+      const finalCaselaId = bypassCasela ? null : casela_id;
+      const finalDetails = bypassCasela
+        ? 'para uso geral'
+        : observacao ?? stock.observacao;
+      const finalStockType = bypassCasela ? OperationType.GERAL : OperationType.INDIVIDUAL;
+    
+      const existing = await MedicineStockModel.findOne({
+        where: {
+          medicamento_id: stock.medicamento_id,
+          casela_id: finalCaselaId,
+          validade: stock.validade,
+          setor,
+          lote: stock.lote ?? null,
+          tipo: stock.tipo
+        },
       });
+    
+      if (existing) {
+        existing.quantidade += quantidade;
+        await existing.save();
+      } else {
+        await MedicineStockModel.create({
+          medicamento_id: stock.medicamento_id,
+          casela_id: finalCaselaId,
+          armario_id: stock.armario_id,
+          gaveta_id: stock.gaveta_id,
+          validade: stock.validade,
+          quantidade,
+          origem: stock.origem,
+          tipo: finalStockType,
+          setor,
+          lote: stock.lote,
+          status: stock.status,
+          observacao: finalDetails,
+        });
+      }
+    
+      if (quantidade < stock.quantidade) {
+        await stock.update({ quantidade: stock.quantidade - quantidade });
+      } else {
+        await stock.destroy();
+      }
+    
+      return { message: 'Medicamento transferido de setor com sucesso' };
     }
-  
-    if (quantidade < stock.quantidade) {
-      await stock.update({ quantidade: stock.quantidade - quantidade });
-    } else {
-      await stock.destroy();
-    }
-  
-    return { message: 'Medicamento transferido de setor com sucesso' };
-  }
   
   async transferInputSector(
     estoqueId: number,
