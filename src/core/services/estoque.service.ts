@@ -248,6 +248,7 @@ export class StockService {
     setor: 'farmacia' | 'enfermagem',
     login_id: number,
     quantidade: number,
+    bypassCasela: boolean,
     casela_id?: number | null,
     observacao?: string | null,
   ) {
@@ -286,7 +287,7 @@ export class StockService {
     const hasCasela = casela_id != null;
   
   
-    if (!hasCasela) {
+    if (!hasCasela && !bypassCasela) {
       throw new Error('Casela é obrigatória para transferir');
     }
 
@@ -296,8 +297,9 @@ export class StockService {
       estoque_id,
       setor,
       quantidade,
+      bypassCasela,
       targetCaselaId as number,
-      observacao
+      observacao,
     );
   
     await this.movementRepo.create({

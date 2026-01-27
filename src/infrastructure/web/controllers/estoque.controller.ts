@@ -196,11 +196,12 @@ export class StockController {
   async transferMedicineSector(req: ValidatedRequest, res: Response) {
     try {
       const { estoque_id } = req.params;
-      const { setor, quantidade, casela_id, observacao } = req.body as {
+      const { setor, quantidade, casela_id, observacao, bypassCasela } = req.body as {
         setor: 'farmacia' | 'enfermagem';
         quantidade: number;
         casela_id?: number;
         observacao?: string;
+        bypassCasela: boolean;
       };
 
       const login_id = req.user?.id;
@@ -230,8 +231,9 @@ export class StockController {
         setor,
         login_id,
         quantidade,
+        bypassCasela,
         casela_id ?? null,
-        observacao ?? null
+        observacao ?? null,
       );
 
       return res.json(result);
