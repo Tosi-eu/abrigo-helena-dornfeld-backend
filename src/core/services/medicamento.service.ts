@@ -81,27 +81,31 @@ export class MedicineService {
 
     if (this.priceSearchService && created.id) {
       try {
-        const priceResult = await this.priceSearchService.updatePriceInDatabase(
-          created.id,
+        const priceResult = await this.priceSearchService.searchPrice(
           data.nome,
           'medicine',
           data.dosagem,
           data.unidade_medida,
         );
 
-        if (priceResult.found && priceResult.price) {
+        if (priceResult?.averagePrice) {
           const updated = await this.repo.updateMedicineById(created.id, {
             ...created,
-            preco: priceResult.price,
+            preco: priceResult.averagePrice,
           });
+
           if (updated) return updated;
         }
       } catch (error) {
-        logger.error('Erro ao buscar preço automaticamente', {
-          operation: 'create_medicine',
-          medicineId: created.id,
-          nome: data.nome,
-        }, error as Error);
+        logger.error(
+          'Erro ao buscar preço automaticamente',
+          {
+            operation: 'create_medicine',
+            medicineId: created.id,
+            nome: data.nome,
+          },
+          error as Error,
+        );
       }
     }
 
