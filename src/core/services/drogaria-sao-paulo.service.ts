@@ -3,8 +3,8 @@ import { load } from 'cheerio';
 import { logger } from '../../infrastructure/helpers/logger.helper';
 import { PriceSourceStrategy } from '../utils/utils';
 
-export class DrogaRaiaStrategy implements PriceSourceStrategy {
-  readonly sourceName = 'droga_raia';
+export class DrogariaSaoPauloStrategy implements PriceSourceStrategy {
+  readonly sourceName = 'drogaria_sao_paulo';
 
   supports(itemType: 'medicine' | 'input'): boolean {
     return itemType === 'medicine';
@@ -19,11 +19,11 @@ export class DrogaRaiaStrategy implements PriceSourceStrategy {
   }): Promise<number[]> {
     try {
       const query = `${itemName} ${dosage ?? ''}`.trim();
-      const url = `https://www.drogaraia.com.br/search?w=${encodeURIComponent(
+      const url = `https://www.drogariasaopaulo.com.br/pesquisa?q=${encodeURIComponent(
         query,
-      )}&search-type=direct`;
+      )}`;
 
-      logger.debug('Buscando preços na Droga Raia', {
+      logger.debug('Buscando preços na Drogaria São Paulo', {
         source: this.sourceName,
         url,
         query,
@@ -35,7 +35,7 @@ export class DrogaRaiaStrategy implements PriceSourceStrategy {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
           Accept: 'text/html,application/xhtml+xml',
           'Accept-Language': 'pt-BR,pt;q=0.9',
-          Referer: 'https://www.drogaraia.com.br/',
+          Referer: 'https://www.drogariasaopaulo.com.br/',
           Connection: 'keep-alive',
         },
         validateStatus: s => s >= 200 && s < 400,
@@ -44,34 +44,28 @@ export class DrogaRaiaStrategy implements PriceSourceStrategy {
       const $ = load(response.data);
       const results: number[] = [];
 
-      $('article[data-card="product"]').each((_, article) => {
-        let finalPrice: number | null = null;
+      // Cada produto está dentro de um <li>
+      $('li').each((_, li) => {
+        let price: number | null = null;
 
-        const discountPrices = $(article)
-          .find('[data-testid="price-discount"] [data-testid="price"]');
+        // 1️⃣ Tenta pegar preço promocional
+        const promoText = $(li).find('.valor-por').text();
+        price = this.extractPrice(promoText);
 
-        if (discountPrices.length > 0) {
-          const promoText = discountPrices.last().text();
-          finalPrice = this.extractPrice(promoText);
+        // 2️⃣ Fallback para preço original
+        if (price === null) {
+          const originalText = $(li).find('.valor-de').text();
+          price = this.extractPrice(originalText);
         }
 
-        if (finalPrice == null) {
-          const normalPriceText = $(article)
-            .find('[data-testid="price"]')
-            .first()
-            .text();
-
-          finalPrice = this.extractPrice(normalPriceText);
-        }
-
-        if (finalPrice !== null) {
-          results.push(finalPrice);
+        if (price !== null) {
+          results.push(price);
         }
       });
 
       return results;
     } catch (error) {
-      logger.error('Erro ao buscar preço na Droga Raia', {
+      logger.error('Erro ao buscar preço na Drogaria São Paulo', {
         source: this.sourceName,
         error: (error as Error).message,
       });
@@ -84,7 +78,7 @@ export class DrogaRaiaStrategy implements PriceSourceStrategy {
 
     const match = text
       .replace(/\s+/g, ' ')
-      .match(/R\$\s*(\d+,\d{2})/);
+      .match(/R\$\s*(\d+(?:,\d{2})?)/);
 
     if (!match) return null;
 

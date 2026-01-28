@@ -84,13 +84,12 @@ export class MedicineService {
         const priceResult = await this.priceSearchService.searchPrice(
           data.nome,
           'medicine',
-          data.dosagem,
+          normalizedDosage,
           data.unidade_medida,
         );
 
         if (priceResult?.averagePrice) {
           const updated = await this.repo.updateMedicineById(created.id, {
-            ...created,
             preco: priceResult.averagePrice,
           });
 

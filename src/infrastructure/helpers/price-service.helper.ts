@@ -1,6 +1,7 @@
 import { BuscapeStrategy } from "../../core/services/buscape.service";
 import { ConsultaRemediosStrategy } from "../../core/services/consulta-remedio.service";
 import { DrogaRaiaStrategy } from "../../core/services/droga-raia.service";
+import { DrogariaSaoPauloStrategy } from "../../core/services/drogaria-sao-paulo.service";
 import { MercadoLivreStrategy } from "../../core/services/mercado-livre.service";
 import { PriceSearchService } from "../../core/services/price-search.service";
 import { cacheService } from "../database/redis/client.redis";
@@ -196,6 +197,7 @@ const priceSearchService = new PriceSearchService(
   [
     new ConsultaRemediosStrategy(),
     new DrogaRaiaStrategy(),
+    new DrogariaSaoPauloStrategy(),
     new MercadoLivreStrategy(),
     new BuscapeStrategy(),
   ],

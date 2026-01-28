@@ -989,6 +989,11 @@ export class StockRepository {
     
       if (existing) {
         existing.quantidade += quantidade;
+
+        if (observacao != null) {
+          existing.observacao = observacao;
+        }
+
         await existing.save();
       } else {
         await MedicineStockModel.create({
@@ -1060,6 +1065,11 @@ export class StockRepository {
   
     if (existing) {
       existing.quantidade += quantidade;
+
+      if (observacao != null) {
+        existing.observacao = observacao;
+      }
+
       await existing.save();
     } else {
       await InputStockModel.create({

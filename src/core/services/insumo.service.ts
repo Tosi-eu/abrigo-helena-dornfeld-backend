@@ -11,21 +11,22 @@ export class InputService {
 
   async createInput(data: Omit<Input, 'id'>) {
     if (!data.nome) throw new Error('Nome é obrigatório');
+
     const created = await this.repo.createInput(data);
 
     if (this.priceSearchService && created.id) {
       try {
-        const priceResult = await this.priceSearchService.updatePriceInDatabase(
-          created.id,
+        const priceResult = await this.priceSearchService.searchPrice(
           data.nome,
           'input',
         );
 
-        if (priceResult.found && priceResult.price) {
+        if (priceResult?.averagePrice) {
           const updated = await this.repo.updateInputById(created.id, {
             ...created,
-            preco: priceResult.price,
+            preco: priceResult.averagePrice,
           });
+
           if (updated) return updated;
         }
       } catch (error) {

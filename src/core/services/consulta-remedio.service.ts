@@ -33,6 +33,12 @@ export class ConsultaRemediosStrategy implements PriceSourceStrategy {
         )}`,
       ];
 
+      logger.debug('Buscando preços na Consulta Remédios', {
+        source: this.sourceName,
+        urls,
+        normalizedPath,
+      });
+
       for (const url of urls) {
         try {
           const response = await axios.get(url, {
@@ -90,7 +96,7 @@ export class ConsultaRemediosStrategy implements PriceSourceStrategy {
     const $ = load(html);
     const prices: number[] = [];
 
-    $('[class*="preco"], [itemprop="price"]').each((_, el) => {
+    $('div:contains("R$")').each((_, el) => {
       const text = $(el).text();
       const price = this.parsePrice(text);
       if (price) prices.push(price);
