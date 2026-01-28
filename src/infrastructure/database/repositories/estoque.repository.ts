@@ -955,12 +955,16 @@ export class StockRepository {
       }
     
       if (!quantidade || quantidade <= 0) {
-        throw new Error('Quantidade inválida');
+        throw new Error('Quantidade inválida, deve ser um valor positivo');
       }
     
       if (quantidade > stock.quantidade) {
         throw new Error(`Quantidade não pode ser maior que ${stock.quantidade}`);
       }
+
+      if (stock.quantidade === 0) {
+        throw new Error('Não há estoque disponível para transferir');
+     }
     
       if (!stock.origem) {
         throw new Error('Origem é obrigatória para medicamentos');
@@ -979,7 +983,7 @@ export class StockRepository {
           validade: stock.validade,
           setor,
           lote: stock.lote ?? null,
-          tipo: stock.tipo
+          tipo: finalStockType
         },
       });
     
@@ -1003,11 +1007,7 @@ export class StockRepository {
         });
       }
     
-      if (quantidade < stock.quantidade) {
-        await stock.update({ quantidade: stock.quantidade - quantidade });
-      } else {
-        await stock.destroy();
-      }
+      await stock.update({ quantidade: stock.quantidade - quantidade });
     
       return { message: 'Medicamento transferido de setor com sucesso' };
     }
@@ -1021,6 +1021,7 @@ export class StockRepository {
     observacao?: string | null,
   ) {
     const stock = await InputStockModel.findByPk(estoqueId);
+  
     if (!stock) {
       throw new Error('Estoque não encontrado');
     }
@@ -1032,12 +1033,18 @@ export class StockRepository {
     }
   
     if (!quantidade || quantidade <= 0) {
-      throw new Error('Quantidade inválida');
+      throw new Error('Quantidade inválida, deve ser um valor positivo');
     }
-  
+
+    if (stock.quantidade === 0) {
+      throw new Error('Não há estoque disponível para transferir');
+    }
+      
     if (quantidade > stock.quantidade) {
       throw new Error(`Quantidade não pode ser maior que ${stock.quantidade}`);
     }
+
+    const finalTipo = hasDestino ? OperationType.GERAL : OperationType.INDIVIDUAL;
   
     const existing = await InputStockModel.findOne({
       where: {
@@ -1046,7 +1053,7 @@ export class StockRepository {
         validade: stock.validade,
         setor,
         lote: stock.lote ?? null,
-        tipo: stock.tipo,
+        tipo: finalTipo,
         destino: hasDestino ? destino : null,
       },
     });
@@ -1062,7 +1069,7 @@ export class StockRepository {
         gaveta_id: stock.gaveta_id,
         validade: stock.validade,
         quantidade,
-        tipo: hasDestino ? OperationType.GERAL : OperationType.INDIVIDUAL,
+        tipo: finalTipo,
         setor,
         lote: stock.lote,
         status: stock.status,
@@ -1071,11 +1078,7 @@ export class StockRepository {
       });
     }
   
-    if (quantidade < stock.quantidade) {
-      await stock.update({ quantidade: stock.quantidade - quantidade });
-    } else {
-      await stock.destroy();
-    }
+    await stock.update({ quantidade: stock.quantidade - quantidade });
   
     return { message: 'Insumo transferido de setor com sucesso' };
   }
