@@ -2,21 +2,15 @@ import { Router } from 'express';
 import { MedicineRepository } from '../../database/repositories/medicamento.repository';
 import { MedicineService } from '../../../core/services/medicamento.service';
 import { MedicineController } from '../controllers/medicamento.controller';
-import { cacheService } from '../../database/redis/client.redis';
-import { PriceSearchService } from '../../../core/services/price-search.service';
-import { InputRepository } from '../../database/repositories/insumo.repository';
+
 import {
   validatePagination,
   validateIdParam,
 } from '../../../middleware/validation.middleware';
+import { priceSearchService } from '../../helpers/price-service.helper';
 
 const repo = new MedicineRepository();
-const inputRepo = new InputRepository();
-const priceSearchService = new PriceSearchService(
-  cacheService,
-  repo,
-  inputRepo,
-);
+
 const service = new MedicineService(repo, priceSearchService);
 const controller = new MedicineController(service);
 
