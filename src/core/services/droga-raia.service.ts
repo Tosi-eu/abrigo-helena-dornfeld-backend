@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { load } from 'cheerio';
 import { logger } from '../../infrastructure/helpers/logger.helper';
 import { PriceSourceStrategy } from '../utils/utils';
 
@@ -29,49 +28,34 @@ export class DrogaRaiaStrategy implements PriceSourceStrategy {
         query,
       });
 
-      const response = await axios.get(url, {
+      const response = await axios.get<string>(url, {
         timeout: 15000,
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-          Accept: 'text/html,application/xhtml+xml',
+          'User-Agent': 'Mozilla/5.0',
+          Accept: 'text/html',
           'Accept-Language': 'pt-BR,pt;q=0.9',
-          Referer: 'https://www.drogaraia.com.br/',
-          Connection: 'keep-alive',
         },
-        validateStatus: s => s >= 200 && s < 400,
+        validateStatus: status => status >= 200 && status < 400,
       });
 
-      const $ = load(response.data);
-      const results: number[] = [];
+      const nextData = this.extractNextData(response.data);
 
-      $('article[data-card="product"]').each((_, article) => {
-        let finalPrice: number | null = null;
+      if (!nextData) {
+        logger.warn('Next Data não encontrado na página', {
+          source: this.sourceName,
+        });
+        return [];
+      }
 
-        const discountPrices = $(article)
-          .find('[data-testid="price-discount"] [data-testid="price"]');
+      const products =
+        nextData?.props?.pageProps?.pageProps?.results?.products ?? [];
 
-        if (discountPrices.length > 0) {
-          const promoText = discountPrices.last().text();
-          finalPrice = this.extractPrice(promoText);
-        }
+      return products
+        .map((product: any) => Number(product.priceService) || null)
+        .filter((price: number | null): price is number => price !== null);
 
-        if (finalPrice == null) {
-          const normalPriceText = $(article)
-            .find('[data-testid="price"]')
-            .first()
-            .text();
-
-          finalPrice = this.extractPrice(normalPriceText);
-        }
-
-        if (finalPrice !== null) {
-          results.push(finalPrice);
-        }
-      });
-
-      return results;
     } catch (error) {
-      logger.error('Erro ao buscar preço na Droga Raia', {
+      logger.error('Erro ao buscar preços na Droga Raia', {
         source: this.sourceName,
         error: (error as Error).message,
       });
@@ -79,15 +63,19 @@ export class DrogaRaiaStrategy implements PriceSourceStrategy {
     }
   }
 
-  private extractPrice(text: string): number | null {
-    if (!text) return null;
+  private extractNextData(html: string): any | null {
+    const match = html.match(
+      /<script id="__NEXT_DATA__" type="application\/json">(.+?)<\/script>/
+    );
 
-    const match = text
-      .replace(/\s+/g, ' ')
-      .match(/R\$\s*(\d+,\d{2})/);
+    if (!match || !match[1]) {
+      return null;
+    }
 
-    if (!match) return null;
-
-    return Number(match[1].replace(',', '.'));
+    try {
+      return JSON.parse(match[1]);
+    } catch {
+      return null;
+    }
   }
 }
