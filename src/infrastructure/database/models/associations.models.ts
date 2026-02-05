@@ -191,4 +191,26 @@ export function setupAssociations() {
     onDelete: 'SET NULL',
     onUpdate: 'CASCADE',
   });
+  MovementModel.hasOne(StockMedicineAttrs, {
+    foreignKey: 'medicamento_id',
+    sourceKey: 'medicamento_id',
+    constraints: false,
+  });
+
+  StockMedicineAttrs.belongsTo(MovementModel, {
+    foreignKey: 'medicamento_id',
+    targetKey: 'medicamento_id',
+    constraints: false,
+  });
+  MovementModel.hasOne(StockInputAttrs, {
+    foreignKey: 'insumo_id',
+    sourceKey: 'insumo_id',
+    constraints: false,
+  });
+
+  StockInputAttrs.belongsTo(MovementModel, {
+    foreignKey: 'insumo_id',
+    targetKey: 'insumo_id',
+    constraints: false,
+  });
 }

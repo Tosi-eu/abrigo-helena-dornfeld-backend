@@ -1,5 +1,5 @@
 import { sequelize } from '../sequelize';
-import { Op, fn, col } from 'sequelize';
+import { Op, fn, col, where } from 'sequelize';
 import {
   AllItemsReport,
   InputReport,
@@ -520,17 +520,87 @@ export class ReportRepository {
         },
         { model: CabinetModel, attributes: ['num_armario'], required: false },
         { model: LoginModel, attributes: ['login'], required: true },
+
+        {
+          model: MedicineStockModel,
+          attributes: ['observacao'],
+          required: false,
+          on: {
+            [Op.and]: [
+              where(
+                col('MedicineStockModel.medicamento_id'),
+                Op.eq,
+                col('MovementModel.medicamento_id'),
+              ),
+              where(
+                col('MedicineStockModel.armario_id'),
+                Op.eq,
+                col('MovementModel.armario_id'),
+              ),
+              where(
+                col('MedicineStockModel.casela_id'),
+                Op.eq,
+                col('MovementModel.casela_id'),
+              ),
+              where(
+                col('MedicineStockModel.lote'),
+                Op.eq,
+                col('MovementModel.lote'),
+              ),
+            ],
+          },
+        },
+
+        {
+          model: InputStockModel,
+          attributes: ['observacao'],
+          required: false,
+          on: {
+            [Op.and]: [
+              where(
+                col('InputStockModel.insumo_id'),
+                Op.eq,
+                col('MovementModel.insumo_id'),
+              ),
+              where(
+                col('InputStockModel.armario_id'),
+                Op.eq,
+                col('MovementModel.armario_id'),
+              ),
+              where(
+                col('InputStockModel.casela_id'),
+                Op.eq,
+                col('MovementModel.casela_id'),
+              ),
+              where(
+                col('InputStockModel.lote'),
+                Op.eq,
+                col('MovementModel.lote'),
+              ),
+            ],
+          },
+        }
+
       ],
       where: {
         tipo: MovementType.TRANSFER,
         setor: 'enfermagem',
-        data: { [Op.gte]: startOfDay, [Op.lte]: endOfDay },
+        data: {
+          [Op.gte]: startOfDay,
+          [Op.lte]: endOfDay,
+        },
       },
       order: [['data', 'DESC']],
     });
 
     return results.map(row => {
       const plain = row.get({ plain: true }) as any;
+
+      const observacao =
+        plain.MedicineStockModel?.observacao ??
+        plain.InputStockModel?.observacao ??
+        null;
+
       return {
         data: formatDateToPtBr(plain.data),
         nome: plain.MedicineModel?.nome || plain.InputModel?.nome || '',
@@ -542,6 +612,7 @@ export class ReportRepository {
         armario: plain.CabinetModel?.num_armario || null,
         lote: plain.lote || null,
         destino: plain.destino || null,
+        observacao,
       };
     });
   }
