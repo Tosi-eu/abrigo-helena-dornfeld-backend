@@ -53,7 +53,6 @@ export class DrogaRaiaStrategy implements PriceSourceStrategy {
       return products
         .map((product: any) => Number(product.priceService) || null)
         .filter((price: number | null): price is number => price !== null);
-
     } catch (error) {
       logger.error('Erro ao buscar preços na Droga Raia', {
         source: this.sourceName,
@@ -65,7 +64,7 @@ export class DrogaRaiaStrategy implements PriceSourceStrategy {
 
   private extractNextData(html: string): any | null {
     const match = html.match(
-      /<script id="__NEXT_DATA__" type="application\/json">(.+?)<\/script>/
+      /<script id="__NEXT_DATA__" type="application\/json">(.+?)<\/script>/,
     );
 
     if (!match || !match[1]) {

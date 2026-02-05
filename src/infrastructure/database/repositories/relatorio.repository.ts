@@ -478,11 +478,19 @@ export class ReportRepository {
     if (!date) {
       throw new Error('Data é obrigatória para relatório de transferências');
     }
-  
+
     const d = new Date(date);
     const startOfDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-    const endOfDay = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
-  
+    const endOfDay = new Date(
+      d.getFullYear(),
+      d.getMonth(),
+      d.getDate(),
+      23,
+      59,
+      59,
+      999,
+    );
+
     const results = await MovementModel.findAll({
       attributes: [
         'data',
@@ -492,12 +500,24 @@ export class ReportRepository {
         'armario_id',
         'medicamento_id',
         'insumo_id',
-        'destino'
+        'destino',
       ],
       include: [
-        { model: MedicineModel, attributes: ['nome', 'principio_ativo'], required: false },
-        { model: InputModel, attributes: ['nome', 'descricao'], required: false },
-        { model: ResidentModel, attributes: ['nome', 'num_casela'], required: false },
+        {
+          model: MedicineModel,
+          attributes: ['nome', 'principio_ativo'],
+          required: false,
+        },
+        {
+          model: InputModel,
+          attributes: ['nome', 'descricao'],
+          required: false,
+        },
+        {
+          model: ResidentModel,
+          attributes: ['nome', 'num_casela'],
+          required: false,
+        },
         { model: CabinetModel, attributes: ['num_armario'], required: false },
         { model: LoginModel, attributes: ['login'], required: true },
       ],
@@ -508,7 +528,7 @@ export class ReportRepository {
       },
       order: [['data', 'DESC']],
     });
-  
+
     return results.map(row => {
       const plain = row.get({ plain: true }) as any;
       return {
@@ -524,7 +544,7 @@ export class ReportRepository {
         destino: plain.destino || null,
       };
     });
-  }  
+  }
 
   async getMovementsByPeriod(
     params: MovementsParams,
@@ -648,7 +668,8 @@ export class ReportRepository {
       casela: row.ResidentModel?.num_casela || casela,
       medicamento: row.MedicineModel?.nome || '',
       principio_ativo: row.MedicineModel?.principio_ativo || null,
-      dosagem: `${row.MedicineModel?.dosagem || ''}${row.MedicineModel?.unidade_medida || ''}`.trim(),
+      dosagem:
+        `${row.MedicineModel?.dosagem || ''}${row.MedicineModel?.unidade_medida || ''}`.trim(),
       quantidade: Number(row.quantidade) || 0,
       validade: formatDateToPtBr(new Date(row.validade)),
     }));

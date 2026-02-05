@@ -24,21 +24,45 @@ export class ReportController {
       }
 
       if (type === 'transferencias' && !data) {
-        return res.status(400).json({ error: 'Data é obrigatória para transferências' });
+        return res
+          .status(400)
+          .json({ error: 'Data é obrigatória para transferências' });
       }
 
       if (type === 'movimentacoes') {
         if (!periodo) {
-          return res.status(400).json({ error: 'Período é obrigatório para relatório de movimentações' });
+          return res
+            .status(400)
+            .json({
+              error: 'Período é obrigatório para relatório de movimentações',
+            });
         }
         if (periodo === MovementPeriod.MENSAL && !mes) {
-          return res.status(400).json({ error: 'Mês é obrigatório para relatório de movimentações mensais' });
+          return res
+            .status(400)
+            .json({
+              error:
+                'Mês é obrigatório para relatório de movimentações mensais',
+            });
         }
         if (periodo === MovementPeriod.DIARIO && !data) {
-          return res.status(400).json({ error: 'Data é obrigatória para relatório de movimentações diárias' });
+          return res
+            .status(400)
+            .json({
+              error:
+                'Data é obrigatória para relatório de movimentações diárias',
+            });
         }
-        if (periodo === MovementPeriod.INTERVALO && (!data_inicial || !data_final)) {
-          return res.status(400).json({ error: 'Data inicial e final são obrigatórias para relatório de movimentações por intervalo' });
+        if (
+          periodo === MovementPeriod.INTERVALO &&
+          (!data_inicial || !data_final)
+        ) {
+          return res
+            .status(400)
+            .json({
+              error:
+                'Data inicial e final são obrigatórias para relatório de movimentações por intervalo',
+            });
         }
       }
 

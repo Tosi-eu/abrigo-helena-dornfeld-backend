@@ -87,47 +87,51 @@ export class StockController {
 
   async proportion(req: Request, res: Response) {
     try {
-
       const sectorType = toSectorType(req.query.setor as string | undefined);
-  
+
       if (sectorType === 'invalid') {
         return res.status(400).json({
-          error:
-          'Setor é obrigatório e deve ser "farmacia" ou "enfermagem"',
+          error: 'Setor é obrigatório e deve ser "farmacia" ou "enfermagem"',
         });
       }
-  
+
       const data = await this.service.getProportion(sectorType as SectorType);
-  
+
       const totalGeral = Object.values(data).reduce(
         (acc, v) => acc + Number(v || 0),
         0,
       );
-  
+
       const pct = (v: number) =>
         totalGeral > 0 ? Number(((v / totalGeral) * 100).toFixed(2)) : 0;
-  
+
       const responseData = {
         percentuais: {
           medicamentos_geral: pct(data.medicamentos_geral),
           medicamentos_individual: pct(data.medicamentos_individual),
           insumos_geral: pct(data.insumos_geral),
           insumos_individual: pct(data.insumos_individual),
-          carrinho_emergencia_medicamentos: pct(data.carrinho_emergencia_medicamentos),
-          carrinho_psicotropicos_medicamentos: pct(data.carrinho_psicotropicos_medicamentos),
+          carrinho_emergencia_medicamentos: pct(
+            data.carrinho_emergencia_medicamentos,
+          ),
+          carrinho_psicotropicos_medicamentos: pct(
+            data.carrinho_psicotropicos_medicamentos,
+          ),
           carrinho_emergencia_insumos: pct(data.carrinho_emergencia_insumos),
-          carrinho_psicotropicos_insumos: pct(data.carrinho_psicotropicos_insumos),
+          carrinho_psicotropicos_insumos: pct(
+            data.carrinho_psicotropicos_insumos,
+          ),
         },
         totais: {
           ...data,
           total_geral: totalGeral,
         },
       };
-  
+
       if (handleETagResponse(req, res, responseData)) {
         return;
       }
-  
+
       return res.json(responseData);
     } catch (error: unknown) {
       return sendErrorResponse(res, 500, error, 'Erro ao calcular proporção');
@@ -196,13 +200,14 @@ export class StockController {
   async transferMedicineSector(req: ValidatedRequest, res: Response) {
     try {
       const { estoque_id } = req.params;
-      const { setor, quantidade, casela_id, observacao, bypassCasela } = req.body as {
-        setor: 'farmacia' | 'enfermagem';
-        quantidade: number;
-        casela_id?: number;
-        observacao?: string;
-        bypassCasela: boolean;
-      };
+      const { setor, quantidade, casela_id, observacao, bypassCasela } =
+        req.body as {
+          setor: 'farmacia' | 'enfermagem';
+          quantidade: number;
+          casela_id?: number;
+          observacao?: string;
+          bypassCasela: boolean;
+        };
 
       const login_id = req.user?.id;
 
@@ -219,11 +224,9 @@ export class StockController {
       }
 
       if (!quantidade || quantidade <= 0) {
-        return res
-          .status(400)
-          .json({
-            error: 'Quantidade é obrigatória e deve ser maior que zero',
-          });
+        return res.status(400).json({
+          error: 'Quantidade é obrigatória e deve ser maior que zero',
+        });
       }
 
       const result = await this.service.transferMedicineSector(
@@ -250,13 +253,14 @@ export class StockController {
   async transferInputSector(req: ValidatedRequest, res: Response) {
     try {
       const { estoque_id } = req.params;
-      const { setor, quantidade, casela_id, destino, observacao } = req.body as {
-        setor: 'farmacia' | 'enfermagem';
-        quantidade: number;
-        casela_id?: number;
-        destino?: string;
-        observacao?: string;
-      };
+      const { setor, quantidade, casela_id, destino, observacao } =
+        req.body as {
+          setor: 'farmacia' | 'enfermagem';
+          quantidade: number;
+          casela_id?: number;
+          destino?: string;
+          observacao?: string;
+        };
 
       const login_id = req.user?.id;
 
@@ -273,11 +277,9 @@ export class StockController {
       }
 
       if (!quantidade || quantidade <= 0) {
-        return res
-          .status(400)
-          .json({
-            error: 'Quantidade é obrigatória e deve ser maior que zero',
-          });
+        return res.status(400).json({
+          error: 'Quantidade é obrigatória e deve ser maior que zero',
+        });
       }
 
       const result = await this.service.transferInputSector(
@@ -287,7 +289,7 @@ export class StockController {
         login_id,
         casela_id,
         destino ?? null,
-        observacao ?? null
+        observacao ?? null,
       );
 
       return res.json(result);

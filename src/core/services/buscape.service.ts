@@ -10,11 +10,7 @@ export class BuscapeStrategy implements PriceSourceStrategy {
     return itemType === 'input';
   }
 
-  async fetchPrices({
-    itemName,
-  }: {
-    itemName: string;
-  }): Promise<number[]> {
+  async fetchPrices({ itemName }: { itemName: string }): Promise<number[]> {
     try {
       const searchTerm = encodeURIComponent(
         itemName.toLowerCase().replace(/[^\w\s]/g, ' '),

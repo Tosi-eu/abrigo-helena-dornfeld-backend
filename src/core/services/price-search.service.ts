@@ -1,7 +1,10 @@
 import { CacheService } from './redis.service';
 import { PriceSourceStrategy } from '../utils/utils';
 import { logger } from '../../infrastructure/helpers/logger.helper';
-import { OutlierFilter, PriceAggregator } from '../../infrastructure/helpers/price-service.helper';
+import {
+  OutlierFilter,
+  PriceAggregator,
+} from '../../infrastructure/helpers/price-service.helper';
 
 export interface PriceSearchResult {
   averagePrice: number | null;
@@ -15,8 +18,7 @@ export class PriceSearchService {
     private readonly strategies: PriceSourceStrategy[],
     private readonly aggregator: PriceAggregator,
     private readonly outlierFilter: OutlierFilter,
-  ) {
-  }
+  ) {}
 
   private getCacheKey(
     itemName: string,

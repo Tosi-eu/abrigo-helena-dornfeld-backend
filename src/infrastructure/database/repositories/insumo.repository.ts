@@ -74,7 +74,7 @@ export class InputRepository {
 
   async updateInputById(
     id: number,
-    data: Omit<Input, 'id'>,
+    data: Partial<Omit<Input, 'id'>>,
   ): Promise<Input | null> {
     const insumo = await InputModel.findByPk(id);
     if (!insumo) return null;

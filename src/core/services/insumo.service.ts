@@ -9,37 +9,40 @@ export class InputService {
     private readonly priceSearchService?: PriceSearchService,
   ) {}
 
+  private triggerPriceSearchInBackground(input: Input) {
+    setImmediate(async () => {
+      try {
+        const priceResult = await this.priceSearchService!.searchPrice(
+          input.nome,
+          'input',
+        );
+
+        if (priceResult?.averagePrice) {
+          await this.repo.updateInputById(input.id!, {
+            preco: priceResult.averagePrice,
+          });
+        }
+      } catch (error) {
+        logger.error(
+          'Erro ao buscar preço em background',
+          {
+            operation: 'background_price_search',
+            inputId: input.id,
+            nome: input.nome,
+          },
+          error as Error,
+        );
+      }
+    });
+  }
+
   async createInput(data: Omit<Input, 'id'>) {
     if (!data.nome) throw new Error('Nome é obrigatório');
 
     const created = await this.repo.createInput(data);
 
     if (this.priceSearchService && created.id) {
-      try {
-        const priceResult = await this.priceSearchService.searchPrice(
-          data.nome,
-          'input',
-        );
-
-        if (priceResult?.averagePrice) {
-          const updated = await this.repo.updateInputById(created.id, {
-            ...created,
-            preco: priceResult.averagePrice,
-          });
-
-          if (updated) return updated;
-        }
-      } catch (error) {
-        logger.error(
-          'Erro ao buscar preço automaticamente',
-          {
-            operation: 'create_input',
-            inputId: created.id,
-            nome: data.nome,
-          },
-          error as Error,
-        );
-      }
+      this.triggerPriceSearchInBackground(created);
     }
 
     return created;

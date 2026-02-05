@@ -12,6 +12,37 @@ export class MedicineService {
     private readonly priceSearchService?: PriceSearchService,
   ) {}
 
+  private triggerPriceSearchInBackground(
+    medicine: Medicine,
+    normalizedDosage: string,
+  ) {
+    setImmediate(async () => {
+      try {
+        const priceResult = await this.priceSearchService!.searchPrice(
+          medicine.nome,
+          'medicine',
+          normalizedDosage,
+          medicine.unidade_medida,
+        );
+
+        if (priceResult?.averagePrice) {
+          await this.repo.updateMedicineById(medicine.id!, {
+            preco: priceResult.averagePrice,
+          });
+        }
+      } catch (error) {
+        logger.error(
+          'Erro ao buscar preço em background',
+          {
+            operation: 'background_price_search',
+            medicineId: medicine.id,
+          },
+          error as Error,
+        );
+      }
+    });
+  }
+
   async createMedicine(data: {
     nome: string;
     dosagem: string;
@@ -59,17 +90,22 @@ export class MedicineService {
         limit: 100,
         name: data.nome.trim(),
       });
-      
-      existing = allMatches.data.find(med => {
-        const medNormalizedDosage = normalizeDosage(med.dosagem);
-        return med.principio_ativo?.trim() === data.principio_ativo.trim() &&
-               med.unidade_medida === data.unidade_medida &&
-               medNormalizedDosage === normalizedDosage;
-      }) || null;
+
+      existing =
+        allMatches.data.find(med => {
+          const medNormalizedDosage = normalizeDosage(med.dosagem);
+          return (
+            med.principio_ativo?.trim() === data.principio_ativo.trim() &&
+            med.unidade_medida === data.unidade_medida &&
+            medNormalizedDosage === normalizedDosage
+          );
+        }) || null;
     }
 
     if (existing) {
-      throw new Error('Já existe um medicamento com esta combinação de nome, princípio ativo, dosagem e unidade de medida.');
+      throw new Error(
+        'Já existe um medicamento com esta combinação de nome, princípio ativo, dosagem e unidade de medida.',
+      );
     }
 
     const dataToSave = {
@@ -80,38 +116,21 @@ export class MedicineService {
     const created = await this.repo.createMedicine(dataToSave);
 
     if (this.priceSearchService && created.id) {
-      try {
-        const priceResult = await this.priceSearchService.searchPrice(
-          data.nome,
-          'medicine',
-          normalizedDosage,
-          data.unidade_medida,
-        );
-
-        if (priceResult?.averagePrice) {
-          const updated = await this.repo.updateMedicineById(created.id, {
-            preco: priceResult.averagePrice,
-          });
-
-          if (updated) return updated;
-        }
-      } catch (error) {
-        logger.error(
-          'Erro ao buscar preço automaticamente',
-          {
-            operation: 'create_medicine',
-            medicineId: created.id,
-            nome: data.nome,
-          },
-          error as Error,
-        );
-      }
+      this.triggerPriceSearchInBackground(created, normalizedDosage);
     }
 
     return created;
   }
 
-  async findAll({ page = 1, limit = 10, name }: { page?: number; limit?: number; name?: string }) {
+  async findAll({
+    page = 1,
+    limit = 10,
+    name,
+  }: {
+    page?: number;
+    limit?: number;
+    name?: string;
+  }) {
     return this.repo.findAllMedicines({ page, limit, name });
   }
 
@@ -166,18 +185,24 @@ export class MedicineService {
         limit: 100,
         name: data.nome.trim(),
       });
-      
-      existing = allMatches.data.find(med => {
-        const medNormalizedDosage = normalizeDosage(med.dosagem);
-        return med.principio_ativo?.trim() === (data.principio_ativo?.trim() || '') &&
-               med.unidade_medida === data.unidade_medida &&
-               medNormalizedDosage === normalizedDosage &&
-               med.id !== id;
-      }) || null;
+
+      existing =
+        allMatches.data.find(med => {
+          const medNormalizedDosage = normalizeDosage(med.dosagem);
+          return (
+            med.principio_ativo?.trim() ===
+              (data.principio_ativo?.trim() || '') &&
+            med.unidade_medida === data.unidade_medida &&
+            medNormalizedDosage === normalizedDosage &&
+            med.id !== id
+          );
+        }) || null;
     }
 
     if (existing && existing.id !== id) {
-      throw new Error('Já existe outro medicamento com esta combinação de nome, princípio ativo, dosagem e unidade de medida.');
+      throw new Error(
+        'Já existe outro medicamento com esta combinação de nome, princípio ativo, dosagem e unidade de medida.',
+      );
     }
 
     return this.repo.updateMedicineById(id, data);

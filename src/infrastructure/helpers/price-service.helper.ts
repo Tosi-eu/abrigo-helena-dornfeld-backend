@@ -1,17 +1,17 @@
-import { BuscapeStrategy } from "../../core/services/buscape.service";
-import { ConsultaRemediosStrategy } from "../../core/services/consulta-remedio.service";
-import { DrogaRaiaStrategy } from "../../core/services/droga-raia.service";
-import { DrogariaSaoPauloStrategy } from "../../core/services/drogaria-sao-paulo.service";
-import { MercadoLivreStrategy } from "../../core/services/mercado-livre.service";
-import { PriceSearchService } from "../../core/services/price-search.service";
-import { cacheService } from "../database/redis/client.redis";
-import { logger } from "./logger.helper";
+import { BuscapeStrategy } from '../../core/services/buscape.service';
+import { ConsultaRemediosStrategy } from '../../core/services/consulta-remedio.service';
+import { DrogaRaiaStrategy } from '../../core/services/droga-raia.service';
+import { DrogariaSaoPauloStrategy } from '../../core/services/drogaria-sao-paulo.service';
+import { MercadoLivreStrategy } from '../../core/services/mercado-livre.service';
+import { PriceSearchService } from '../../core/services/price-search.service';
+import { cacheService } from '../database/redis/client.redis';
+import { logger } from './logger.helper';
 
 export class PriceAggregator {
   aggregate(results: Map<string, number[]>): number[] {
     const allPrices: number[] = [];
 
-    for (const [source, prices] of results.entries()) {
+    for (const [, prices] of results.entries()) {
       if (prices.length > 0) {
         allPrices.push(...prices);
       }
