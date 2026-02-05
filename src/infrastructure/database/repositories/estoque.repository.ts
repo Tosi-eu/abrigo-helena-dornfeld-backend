@@ -25,7 +25,11 @@ import {
   StockQueryType,
 } from '../../../core/utils/utils';
 import { formatDateToPtBr } from '../../helpers/date.helper';
-import { SECTOR_CONFIG, StockGroup, StockQueryResult } from '../../types/estoque.types';
+import {
+  SECTOR_CONFIG,
+  StockGroup,
+  StockQueryResult,
+} from '../../types/estoque.types';
 
 interface StockModel {
   sum(
@@ -353,7 +357,14 @@ export class StockRepository {
         include: [
           {
             model: MedicineModel,
-            attributes: ['id', 'nome', 'principio_ativo', 'dosagem', 'unidade_medida', 'estoque_minimo'],
+            attributes: [
+              'id',
+              'nome',
+              'principio_ativo',
+              'dosagem',
+              'unidade_medida',
+              'estoque_minimo',
+            ],
             required: true,
             where:
               Object.keys(medicineIncludeWhere).length > 0
@@ -386,10 +397,7 @@ export class StockRepository {
           if (minStock === 0) continue;
 
           const upperLimit = minStock * 1.35;
-          if (
-            stock.quantidade < minStock ||
-            stock.quantidade > upperLimit
-          ) {
+          if (stock.quantidade < minStock || stock.quantidade > upperLimit) {
             continue;
           }
         }
@@ -488,10 +496,7 @@ export class StockRepository {
 
           const upperLimit = minStock * 1.35;
 
-          if (
-            stock.quantidade < minStock ||
-            stock.quantidade > upperLimit
-          ) {
+          if (stock.quantidade < minStock || stock.quantidade > upperLimit) {
             continue;
           }
         }
@@ -587,9 +592,9 @@ export class StockRepository {
         ...(options?.tipos && { tipo: { [Op.in]: options.tipos } }),
       },
     });
-  
+
     return Number(result || 0);
-  }  
+  }
 
   async getStockProportionBySector(
     setor?: SectorType,
@@ -604,17 +609,17 @@ export class StockRepository {
       carrinho_emergencia_insumos: 0,
       carrinho_psicotropicos_insumos: 0,
     };
-  
+
     if (!setor) {
       const [
         medicamentosGeral,
         medicamentosIndividual,
         insumosGeral,
         insumosIndividual,
-  
+
         carrinhoEmergenciaMedicamentos,
         carrinhoPsicotropicosMedicamentos,
-  
+
         carrinhoEmergenciaInsumos,
         carrinhoPsicotropicosInsumos,
       ] = await Promise.all([
@@ -630,14 +635,14 @@ export class StockRepository {
         this.sumStock(InputStockModel, {
           tipos: [OperationType.INDIVIDUAL],
         }),
-  
+
         this.sumStock(MedicineStockModel, {
           tipos: [OperationType.CARRINHO_EMERGENCIA],
         }),
         this.sumStock(MedicineStockModel, {
           tipos: [OperationType.CARRINHO_PSICOTROPICOS],
         }),
-  
+
         this.sumStock(InputStockModel, {
           tipos: [OperationType.CARRINHO_EMERGENCIA],
         }),
@@ -645,46 +650,43 @@ export class StockRepository {
           tipos: [OperationType.CARRINHO_PSICOTROPICOS],
         }),
       ]);
-  
+
       return {
         medicamentos_geral: medicamentosGeral,
         medicamentos_individual: medicamentosIndividual,
         insumos_geral: insumosGeral,
         insumos_individual: insumosIndividual,
-  
-        carrinho_emergencia_medicamentos:
-          carrinhoEmergenciaMedicamentos,
-        carrinho_psicotropicos_medicamentos:
-          carrinhoPsicotropicosMedicamentos,
-  
-        carrinho_emergencia_insumos:
-          carrinhoEmergenciaInsumos,
-        carrinho_psicotropicos_insumos:
-          carrinhoPsicotropicosInsumos,
+
+        carrinho_emergencia_medicamentos: carrinhoEmergenciaMedicamentos,
+        carrinho_psicotropicos_medicamentos: carrinhoPsicotropicosMedicamentos,
+
+        carrinho_emergencia_insumos: carrinhoEmergenciaInsumos,
+        carrinho_psicotropicos_insumos: carrinhoPsicotropicosInsumos,
       };
     }
-  
+
     const config = SECTOR_CONFIG[setor];
-  
+
     for (const [group, tipos] of Object.entries(config.medicines)) {
-      baseResult[group as StockGroup] =
-        await this.sumStock(MedicineStockModel, {
+      baseResult[group as StockGroup] = await this.sumStock(
+        MedicineStockModel,
+        {
           setor,
           tipos,
-        });
+        },
+      );
     }
-  
+
     for (const [group, tipos] of Object.entries(config.inputs)) {
-      baseResult[group as StockGroup] =
-        await this.sumStock(InputStockModel, {
-          setor,
-          tipos,
-        });
+      baseResult[group as StockGroup] = await this.sumStock(InputStockModel, {
+        setor,
+        tipos,
+      });
     }
-  
+
     return baseResult;
-  }  
-  
+  }
+
   async findMedicineStockById(id: number) {
     return MedicineStockModel.findByPk(id);
   }
@@ -937,86 +939,88 @@ export class StockRepository {
   }
 
   async transferMedicineSector(
-      estoqueId: number,
-      setor: 'farmacia' | 'enfermagem',
-      quantidade: number,
-      bypassCasela: boolean,
-      casela_id: number,
-      observacao?: string | null,
-    ) {
-      const stock = await MedicineStockModel.findByPk(estoqueId);
+    estoqueId: number,
+    setor: 'farmacia' | 'enfermagem',
+    quantidade: number,
+    bypassCasela: boolean,
+    casela_id: number,
+    observacao?: string | null,
+  ) {
+    const stock = await MedicineStockModel.findByPk(estoqueId);
 
-      if (!stock) {
-        throw new Error('Estoque não encontrado');
-      }
-    
-      if (!casela_id && !bypassCasela) {
-        throw new Error('Casela é obrigatória para transferência de setor');
-      }
-    
-      if (!quantidade || quantidade <= 0) {
-        throw new Error('Quantidade inválida, deve ser um valor positivo');
-      }
-    
-      if (quantidade > stock.quantidade) {
-        throw new Error(`Quantidade não pode ser maior que ${stock.quantidade}`);
-      }
-
-      if (stock.quantidade === 0) {
-        throw new Error('Não há estoque disponível para transferir');
-     }
-    
-      if (!stock.origem) {
-        throw new Error('Origem é obrigatória para medicamentos');
-      }
-
-      const finalCaselaId = bypassCasela ? null : casela_id;
-      const finalDetails = bypassCasela
-        ? 'para uso geral'
-        : observacao ?? stock.observacao;
-      const finalStockType = bypassCasela ? OperationType.GERAL : OperationType.INDIVIDUAL;
-    
-      const existing = await MedicineStockModel.findOne({
-        where: {
-          medicamento_id: stock.medicamento_id,
-          casela_id: finalCaselaId,
-          validade: stock.validade,
-          setor,
-          lote: stock.lote ?? null,
-          tipo: finalStockType
-        },
-      });
-    
-      if (existing) {
-        existing.quantidade += quantidade;
-
-        if (observacao != null) {
-          existing.observacao = observacao;
-        }
-
-        await existing.save();
-      } else {
-        await MedicineStockModel.create({
-          medicamento_id: stock.medicamento_id,
-          casela_id: finalCaselaId,
-          armario_id: stock.armario_id,
-          gaveta_id: stock.gaveta_id,
-          validade: stock.validade,
-          quantidade,
-          origem: stock.origem,
-          tipo: finalStockType,
-          setor,
-          lote: stock.lote,
-          status: stock.status,
-          observacao: finalDetails,
-        });
-      }
-    
-      await stock.update({ quantidade: stock.quantidade - quantidade });
-    
-      return { message: 'Medicamento transferido de setor com sucesso' };
+    if (!stock) {
+      throw new Error('Estoque não encontrado');
     }
-  
+
+    if (!casela_id && !bypassCasela) {
+      throw new Error('Casela é obrigatória para transferência de setor');
+    }
+
+    if (!quantidade || quantidade <= 0) {
+      throw new Error('Quantidade inválida, deve ser um valor positivo');
+    }
+
+    if (quantidade > stock.quantidade) {
+      throw new Error(`Quantidade não pode ser maior que ${stock.quantidade}`);
+    }
+
+    if (stock.quantidade === 0) {
+      throw new Error('Não há estoque disponível para transferir');
+    }
+
+    if (!stock.origem) {
+      throw new Error('Origem é obrigatória para medicamentos');
+    }
+
+    const finalCaselaId = bypassCasela ? null : casela_id;
+    const finalDetails = bypassCasela
+      ? 'para uso geral'
+      : (observacao ?? stock.observacao);
+    const finalStockType = bypassCasela
+      ? OperationType.GERAL
+      : OperationType.INDIVIDUAL;
+
+    const existing = await MedicineStockModel.findOne({
+      where: {
+        medicamento_id: stock.medicamento_id,
+        casela_id: finalCaselaId,
+        validade: stock.validade,
+        setor,
+        lote: stock.lote ?? null,
+        tipo: finalStockType,
+      },
+    });
+
+    if (existing) {
+      existing.quantidade += quantidade;
+
+      if (observacao != null) {
+        existing.observacao = observacao;
+      }
+
+      await existing.save();
+    } else {
+      await MedicineStockModel.create({
+        medicamento_id: stock.medicamento_id,
+        casela_id: finalCaselaId,
+        armario_id: stock.armario_id,
+        gaveta_id: stock.gaveta_id,
+        validade: stock.validade,
+        quantidade,
+        origem: stock.origem,
+        tipo: finalStockType,
+        setor,
+        lote: stock.lote,
+        status: stock.status,
+        observacao: finalDetails,
+      });
+    }
+
+    await stock.update({ quantidade: stock.quantidade - quantidade });
+
+    return { message: 'Medicamento transferido de setor com sucesso' };
+  }
+
   async transferInputSector(
     estoqueId: number,
     setor: 'farmacia' | 'enfermagem',
@@ -1026,17 +1030,17 @@ export class StockRepository {
     observacao?: string | null,
   ) {
     const stock = await InputStockModel.findByPk(estoqueId);
-  
+
     if (!stock) {
       throw new Error('Estoque não encontrado');
     }
 
     const hasDestino = destino != null && destino.trim() !== '';
-  
+
     if (hasDestino && casela_id) {
       throw new Error('Destino e casela não podem ser informados juntos');
     }
-  
+
     if (!quantidade || quantidade <= 0) {
       throw new Error('Quantidade inválida, deve ser um valor positivo');
     }
@@ -1044,13 +1048,15 @@ export class StockRepository {
     if (stock.quantidade === 0) {
       throw new Error('Não há estoque disponível para transferir');
     }
-      
+
     if (quantidade > stock.quantidade) {
       throw new Error(`Quantidade não pode ser maior que ${stock.quantidade}`);
     }
 
-    const finalTipo = hasDestino ? OperationType.GERAL : OperationType.INDIVIDUAL;
-  
+    const finalTipo = hasDestino
+      ? OperationType.GERAL
+      : OperationType.INDIVIDUAL;
+
     const existing = await InputStockModel.findOne({
       where: {
         insumo_id: stock.insumo_id,
@@ -1062,7 +1068,7 @@ export class StockRepository {
         destino: hasDestino ? destino : null,
       },
     });
-  
+
     if (existing) {
       existing.quantidade += quantidade;
 
@@ -1087,10 +1093,9 @@ export class StockRepository {
         observacao: observacao ?? stock.observacao,
       });
     }
-  
+
     await stock.update({ quantidade: stock.quantidade - quantidade });
-  
+
     return { message: 'Insumo transferido de setor com sucesso' };
   }
-
 }

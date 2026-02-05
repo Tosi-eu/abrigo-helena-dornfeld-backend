@@ -503,9 +503,21 @@ export class ReportRepository {
         'destino',
       ],
       include: [
-        { model: MedicineModel, attributes: ['nome', 'principio_ativo'], required: false },
-        { model: InputModel, attributes: ['nome', 'descricao'], required: false },
-        { model: ResidentModel, attributes: ['nome', 'num_casela'], required: false },
+        {
+          model: MedicineModel,
+          attributes: ['nome', 'principio_ativo'],
+          required: false,
+        },
+        {
+          model: InputModel,
+          attributes: ['nome', 'descricao'],
+          required: false,
+        },
+        {
+          model: ResidentModel,
+          attributes: ['nome', 'num_casela'],
+          required: false,
+        },
         { model: CabinetModel, attributes: ['num_armario'], required: false },
         { model: LoginModel, attributes: ['login'], required: true },
 
@@ -727,7 +739,8 @@ export class ReportRepository {
       casela: row.ResidentModel?.num_casela || casela,
       medicamento: row.MedicineModel?.nome || '',
       principio_ativo: row.MedicineModel?.principio_ativo || null,
-      dosagem: `${row.MedicineModel?.dosagem || ''}${row.MedicineModel?.unidade_medida || ''}`.trim(),
+      dosagem:
+        `${row.MedicineModel?.dosagem || ''}${row.MedicineModel?.unidade_medida || ''}`.trim(),
       quantidade: Number(row.quantidade) || 0,
       validade: formatDateToPtBr(new Date(row.validade)),
     }));

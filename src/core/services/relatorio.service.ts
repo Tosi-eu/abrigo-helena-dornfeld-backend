@@ -10,7 +10,7 @@ export enum MovementPeriod {
 export type MovementsParams =
   | {
       periodo: MovementPeriod.DIARIO;
-      data: string; 
+      data: string;
     }
   | {
       periodo: MovementPeriod.MENSAL;
@@ -18,8 +18,8 @@ export type MovementsParams =
     }
   | {
       periodo: MovementPeriod.INTERVALO;
-      data_inicial: string; 
-      data_final: string; 
+      data_inicial: string;
+      data_final: string;
     };
 
 export type GenerateReportParams =
@@ -82,9 +82,11 @@ export class ReportService {
 
       case 'transferencias':
         if (!data) {
-          throw new Error('Data é obrigatória para relatório de transferências');
+          throw new Error(
+            'Data é obrigatória para relatório de transferências',
+          );
         }
-        return this.repo.getTransfersData(data);      
+        return this.repo.getTransfersData(data);
 
       case 'movimentacoes': {
         if (!('periodo' in params)) {

@@ -1,4 +1,4 @@
-import { SectorType } from "../../core/utils/utils";
+import { SectorType } from '../../core/utils/utils';
 
 export const toSectorType = (
   setor?: unknown,
