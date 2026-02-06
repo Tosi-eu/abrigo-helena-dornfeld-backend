@@ -60,6 +60,7 @@ export class StockController {
         drawer,
         casela,
         sector,
+        lot
       } = req.query;
 
       const data = await this.service.listStock({
@@ -73,6 +74,7 @@ export class StockController {
         drawer: drawer ? String(drawer) : undefined,
         casela: casela ? String(casela) : undefined,
         sector: sector ? String(sector) : undefined,
+        lot: lot ? String(lot) : undefined,
       });
 
       if (handleETagResponse(req, res, data)) {

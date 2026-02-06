@@ -344,6 +344,11 @@ export class StockRepository {
       if (params.sector) {
         medicineWhere.setor = params.sector;
       }
+      if (params.lot) {
+        medicineWhere.lote = {
+          [Op.iLike]: `%${params.lot}%`,
+        };
+      }
 
       const medicineIncludeWhere: any = {};
       if (params.name && params.name.trim()) {
@@ -448,6 +453,11 @@ export class StockRepository {
       }
       if (params.sector) {
         inputWhere.setor = params.sector;
+      }
+      if (params.lot) {
+        inputWhere.lote = {
+          [Op.iLike]: `%${params.lot}%`,
+        };
       }
 
       const inputIncludeWhere: any = {};

@@ -80,6 +80,7 @@ export interface QueryPaginationParams {
   drawer?: string;
   casela?: string;
   sector?: string;
+  lot?: string;
 }
 
 export interface StockProportion {

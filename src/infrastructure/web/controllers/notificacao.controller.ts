@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { NotificationEventService } from '../../../core/services/notificacao.service';
 import { sendErrorResponse } from '../../helpers/error-response.helper';
+import { getTodayInBrazil } from '../../database/repositories/notificacao.repository';
 
 export class NotificationEventController {
   constructor(private readonly service: NotificationEventService) {}
@@ -75,7 +76,7 @@ export class NotificationEventController {
       const data = await this.service.getTodayPending();
 
       return res.json({
-        date: new Date().toISOString(),
+        date: getTodayInBrazil(),
         count: data.length,
         data,
       });

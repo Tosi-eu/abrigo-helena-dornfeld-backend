@@ -9,6 +9,17 @@ import ResidentModel from '../models/residente.model';
 import { NotificationUpdateData } from '../../types/notificacao.types';
 import { NotificationWhereOptions } from '../../types/sequelize.types';
 
+export function getTodayInBrazil(): string {
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+
+  return formatter.format(new Date()); 
+}
+
 export class NotificationEventRepository {
   async create(data: {
     medicamento_id: number;
@@ -112,26 +123,21 @@ export class NotificationEventRepository {
   }
 
   async getTodayPendingNotifications() {
-    const now = new Date();
-    const today = now
-      .toLocaleDateString('pt-BR')
-      .split('/')
-      .reverse()
-      .join('-');
+    const today = getTodayInBrazil();
 
     return NotificationEventModel.findAll({
       where: {
-        status: 'pending',
+        status: "pending",
         data_prevista: today,
       },
-      order: [['data_prevista', 'ASC']],
+      order: [["data_prevista", "ASC"]],
       include: [
-        { model: ResidentModel, as: 'residente', attributes: ['nome'] },
-        { model: MedicineModel, as: 'medicamento', attributes: ['nome'] },
+        { model: ResidentModel, as: "residente", attributes: ["nome"] },
+        { model: MedicineModel, as: "medicamento", attributes: ["nome"] },
         {
           model: LoginModel,
-          as: 'usuario',
-          attributes: { exclude: ['password'] },
+          as: "usuario",
+          attributes: { exclude: ["password"] },
         },
       ],
     });
