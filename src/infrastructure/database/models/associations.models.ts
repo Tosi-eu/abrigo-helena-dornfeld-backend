@@ -191,26 +191,30 @@ export function setupAssociations() {
     onDelete: 'SET NULL',
     onUpdate: 'CASCADE',
   });
-  MovementModel.hasOne(StockMedicineAttrs, {
+
+  NotificationEventModel.hasMany(MovementModel, {
+    as: 'movimentacoes',
     foreignKey: 'medicamento_id',
     sourceKey: 'medicamento_id',
     constraints: false,
   });
 
-  StockMedicineAttrs.belongsTo(MovementModel, {
+  MovementModel.belongsTo(NotificationEventModel, {
     foreignKey: 'medicamento_id',
     targetKey: 'medicamento_id',
     constraints: false,
   });
-  MovementModel.hasOne(StockInputAttrs, {
-    foreignKey: 'insumo_id',
-    sourceKey: 'insumo_id',
+
+  NotificationEventModel.hasOne(StockMedicineAttrs, {
+    as: 'estoque',
+    foreignKey: 'medicamento_id',
+    sourceKey: 'medicamento_id',
     constraints: false,
   });
 
-  StockInputAttrs.belongsTo(MovementModel, {
-    foreignKey: 'insumo_id',
-    targetKey: 'insumo_id',
+  StockMedicineAttrs.belongsTo(NotificationEventModel, {
+    foreignKey: 'medicamento_id',
+    targetKey: 'medicamento_id',
     constraints: false,
   });
 }

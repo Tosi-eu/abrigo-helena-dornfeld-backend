@@ -583,7 +583,7 @@ export class ReportRepository {
 
       ],
       where: {
-        tipo: MovementType.TRANSFER,
+        tipo: MovementType.TRANSFERENCIA,
         setor: 'enfermagem',
         data: {
           [Op.gte]: startOfDay,

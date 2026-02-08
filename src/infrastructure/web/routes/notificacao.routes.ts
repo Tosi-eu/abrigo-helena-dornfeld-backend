@@ -15,7 +15,6 @@ const router = Router();
 
 router.post('/', (req, res) => controller.create(req, res));
 router.get('/', validatePagination, (req, res) => controller.getAll(req, res));
-router.get('/retirar-hoje', (req, res) => controller.getToday(req, res));
 router.get('/:id', validateIdParam, (req, res) => controller.getById(req, res));
 router.patch('/:id', validateIdParam, (req, res) =>
   controller.update(req, res),
