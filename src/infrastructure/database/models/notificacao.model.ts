@@ -8,7 +8,7 @@ export enum NotificationDestinoType {
   SUS = 'sus',
   FAMILIA = 'familia',
   FARMACIA = 'farmacia',
-  ESTOQUE = 'estoque'
+  ESTOQUE = 'estoque',
 }
 
 export enum EventStatus {

@@ -19,7 +19,7 @@ export function startNotificationBootstrapJob() {
   const repo = new NotificationEventRepository();
   const service = new NotificationEventService(repo);
 
-  runReplacementBootstrap(service);
+  void runReplacementBootstrap(service);
 
   cron.schedule('*/30 * * * *', async () => {
     logger.debug('[CRON] Verificando notificações de reposição...');

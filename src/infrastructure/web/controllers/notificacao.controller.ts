@@ -1,8 +1,10 @@
 import { Request, Response } from 'express';
 import { NotificationEventService } from '../../../core/services/notificacao.service';
 import { sendErrorResponse } from '../../helpers/error-response.helper';
-import { getTodayInBrazil } from '../../database/repositories/notificacao.repository';
-import { EventStatus, NotificationEventType } from '../../database/models/notificacao.model';
+import {
+  EventStatus,
+  NotificationEventType,
+} from '../../database/models/notificacao.model';
 
 export class NotificationEventController {
   constructor(private readonly service: NotificationEventService) {}
@@ -18,16 +20,10 @@ export class NotificationEventController {
 
   async getAll(req: Request, res: Response) {
     try {
-      const {
-        page = 1,
-        limit = 10,
-        type,
-        date,
-        status,
-      } = req.query;
-  
+      const { page = 1, limit = 10, type, date, status } = req.query;
+
       if (!type) throw new Error('Tipo deve ser informado');
-  
+
       const result = await this.service.list({
         page: Number(page),
         limit: Number(limit),
@@ -35,7 +31,7 @@ export class NotificationEventController {
         status: status as EventStatus | undefined,
         date: date?.toString(),
       });
-  
+
       return res.json(result);
     } catch (err) {
       return sendErrorResponse(res, 400, err, 'Erro ao buscar notificações');

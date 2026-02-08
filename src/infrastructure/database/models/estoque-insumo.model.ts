@@ -105,7 +105,10 @@ InputStockModel.init(
       { fields: ['tipo'], name: 'idx_estoque_insumo_tipo' },
       { fields: ['setor'], name: 'idx_estoque_insumo_setor' },
       { fields: ['validade'], name: 'idx_estoque_insumo_validade' },
-      { fields: ['ultima_reposicao'], name: 'idx_estoque_insumo_ultima_reposicao' },
+      {
+        fields: ['ultima_reposicao'],
+        name: 'idx_estoque_insumo_ultima_reposicao',
+      },
       {
         fields: ['tipo', 'setor'],
         name: 'idx_estoque_insumo_tipo_setor',

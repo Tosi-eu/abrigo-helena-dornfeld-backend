@@ -1,6 +1,10 @@
 import { NotificationEventRepository } from '../../infrastructure/database/repositories/notificacao.repository';
 import { NotificationUpdateData } from '../../infrastructure/types/notificacao.types';
-import { EventStatus, NotificationDestinoType, NotificationEventType } from '../../infrastructure/database/models/notificacao.model';
+import {
+  EventStatus,
+  NotificationDestinoType,
+  NotificationEventType,
+} from '../../infrastructure/database/models/notificacao.model';
 
 export class NotificationEventService {
   constructor(private readonly repo: NotificationEventRepository) {}
@@ -29,8 +33,8 @@ export class NotificationEventService {
     date?: string;
   }) {
     return this.repo.listWithFilters(filters);
-  }  
-  
+  }
+
   async update(id: number, updates: NotificationUpdateData) {
     return this.repo.update(id, updates);
   }

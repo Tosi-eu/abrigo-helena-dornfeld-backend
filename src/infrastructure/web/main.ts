@@ -93,10 +93,10 @@ void (async () => {
       status: 'synced',
     });
 
-    if(process.env.ENABLE_CRON === 'true') {
-      startNotificationBootstrapJob()
+    if (process.env.ENABLE_CRON === 'true') {
+      startNotificationBootstrapJob();
     }
-    
+
     app.listen(port, () => {
       logger.info('Servidor iniciado', {
         operation: 'server',

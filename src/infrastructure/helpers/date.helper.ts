@@ -6,7 +6,7 @@ export function toLocaleDateBRT(date: Date | null) {
 }
 
 export function toBrazilDateOnly(date: Date | string): Date {
-  if(!date) return new Date()
+  if (!date) return new Date();
   const d = date instanceof Date ? date : new Date(date);
 
   if (isNaN(d.getTime())) {

@@ -15,7 +15,10 @@ module.exports = {
   },
 
   async down(queryInterface) {
-    await queryInterface.removeColumn('estoque_medicamento', 'ultima_reposicao');
+    await queryInterface.removeColumn(
+      'estoque_medicamento',
+      'ultima_reposicao',
+    );
     await queryInterface.removeColumn('estoque_insumo', 'ultima_reposicao');
   },
 };

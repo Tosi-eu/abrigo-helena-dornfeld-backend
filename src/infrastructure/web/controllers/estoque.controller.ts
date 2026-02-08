@@ -60,7 +60,7 @@ export class StockController {
         drawer,
         casela,
         sector,
-        lot
+        lot,
       } = req.query;
 
       const data = await this.service.listStock({
@@ -202,15 +202,21 @@ export class StockController {
   async transferMedicineSector(req: ValidatedRequest, res: Response) {
     try {
       const { estoque_id } = req.params;
-      const { setor, quantidade, casela_id, observacao, bypassCasela, dias_para_repor } =
-        req.body as {
-          setor: 'farmacia' | 'enfermagem';
-          quantidade: number;
-          casela_id?: number;
-          observacao?: string;
-          bypassCasela: boolean;
-          dias_para_repor?: number | null;
-        };
+      const {
+        setor,
+        quantidade,
+        casela_id,
+        observacao,
+        bypassCasela,
+        dias_para_repor,
+      } = req.body as {
+        setor: 'farmacia' | 'enfermagem';
+        quantidade: number;
+        casela_id?: number;
+        observacao?: string;
+        bypassCasela: boolean;
+        dias_para_repor?: number | null;
+      };
 
       const login_id = req.user?.id;
 
@@ -257,15 +263,21 @@ export class StockController {
   async transferInputSector(req: ValidatedRequest, res: Response) {
     try {
       const { estoque_id } = req.params;
-      const { setor, quantidade, casela_id, destino, observacao, dias_para_repor } =
-        req.body as {
-          setor: 'farmacia' | 'enfermagem';
-          quantidade: number;
-          casela_id?: number;
-          destino?: string;
-          observacao?: string;
-          dias_para_repor?: number | null;
-        };
+      const {
+        setor,
+        quantidade,
+        casela_id,
+        destino,
+        observacao,
+        dias_para_repor,
+      } = req.body as {
+        setor: 'farmacia' | 'enfermagem';
+        quantidade: number;
+        casela_id?: number;
+        destino?: string;
+        observacao?: string;
+        dias_para_repor?: number | null;
+      };
 
       const login_id = req.user?.id;
 

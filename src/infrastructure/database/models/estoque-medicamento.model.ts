@@ -112,7 +112,10 @@ MedicineStockModel.init(
       { fields: ['tipo'], name: 'idx_estoque_medicamento_tipo' },
       { fields: ['setor'], name: 'idx_estoque_medicamento_setor' },
       { fields: ['validade'], name: 'idx_estoque_medicamento_validade' },
-      { fields: ['ultima_reposicao'], name: 'idx_estoque_medicamento_ultima_reposicao' },
+      {
+        fields: ['ultima_reposicao'],
+        name: 'idx_estoque_medicamento_ultima_reposicao',
+      },
       {
         fields: ['tipo', 'setor'],
         name: 'idx_estoque_medicamento_tipo_setor',

@@ -198,7 +198,7 @@ export function setupAssociations() {
     sourceKey: 'medicamento_id',
     constraints: false,
   });
-  
+
   MovementModel.belongsTo(NotificationEventModel, {
     foreignKey: 'medicamento_id',
     targetKey: 'medicamento_id',
@@ -217,6 +217,4 @@ export function setupAssociations() {
     targetKey: 'medicamento_id',
     constraints: false,
   });
-
 }
-

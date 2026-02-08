@@ -33,7 +33,7 @@ export class NotificationEventRepository {
     data_prevista: Date;
     criado_por: number;
     visto: boolean;
-    tipo_evento: NotificationEventType
+    tipo_evento: NotificationEventType;
   }) {
     return NotificationEventModel.create(data);
   }
@@ -52,26 +52,26 @@ export class NotificationEventRepository {
     date?: 'today' | 'tomorrow' | string;
   }) {
     const offset = (page - 1) * limit;
-  
+
     const where: NotificationWhereOptions = {
       tipo_evento: tipo,
       status,
     };
-  
+
     if (date === 'today') {
       where.data_prevista = getTodayInBrazil();
     }
-  
+
     if (date === 'tomorrow') {
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
       where.data_prevista = toBrazilDateOnly(tomorrow);
     }
-  
+
     if (date && !['today', 'tomorrow'].includes(date)) {
       where.data_prevista = date;
     }
-  
+
     const include: any[] = [
       { model: ResidentModel, as: 'residente', attributes: ['nome'] },
       { model: MedicineModel, as: 'medicamento', attributes: ['nome'] },
@@ -81,7 +81,7 @@ export class NotificationEventRepository {
         attributes: ['first_name', 'last_name'],
       },
     ];
-  
+
     if (tipo === NotificationEventType.REPOSICAO_ESTOQUE) {
       include.push(
         {
@@ -90,7 +90,9 @@ export class NotificationEventRepository {
           attributes: ['dias_para_repor'],
           required: false,
           on: {
-            medicamento_id: { [Op.col]: 'NotificationEventModel.medicamento_id' },
+            medicamento_id: {
+              [Op.col]: 'NotificationEventModel.medicamento_id',
+            },
             casela_id: { [Op.col]: 'NotificationEventModel.residente_id' },
           },
         },
@@ -104,15 +106,17 @@ export class NotificationEventRepository {
             setor: 'enfermagem',
           },
           on: {
-            medicamento_id: { [Op.col]: 'NotificationEventModel.medicamento_id' },
+            medicamento_id: {
+              [Op.col]: 'NotificationEventModel.medicamento_id',
+            },
             casela_id: { [Op.col]: 'NotificationEventModel.residente_id' },
           },
           order: [['createdAt', 'DESC']],
           limit: 1,
-        }
+        },
       );
     }
-  
+
     const { rows, count } = await NotificationEventModel.findAndCountAll({
       distinct: true,
       where,
@@ -121,7 +125,7 @@ export class NotificationEventRepository {
       order: [['data_prevista', 'ASC']],
       include,
     });
-  
+
     return {
       items: rows.map((row: any) => ({
         id: row.id,
@@ -138,13 +142,13 @@ export class NotificationEventRepository {
           : 'Sistema',
         quantidade:
           tipo === NotificationEventType.REPOSICAO_ESTOQUE
-            ? row.movimentacoes?.[0]?.quantidade ?? null
+            ? (row.movimentacoes?.[0]?.quantidade ?? null)
             : undefined,
         visto: row.visto,
         tipo_evento: row.tipo_evento,
         dias_para_repor:
           tipo === NotificationEventType.REPOSICAO_ESTOQUE
-            ? Number(row.estoque?.dias_para_repor) ?? null
+            ? (Number(row.estoque?.dias_para_repor) ?? null)
             : null,
       })),
       total: count,
@@ -153,7 +157,7 @@ export class NotificationEventRepository {
       hasNext: offset + rows.length < count,
     };
   }
-  
+
   async findById(id: number) {
     return NotificationEventModel.findByPk(id);
   }
@@ -161,7 +165,7 @@ export class NotificationEventRepository {
   async bootstrapReplacementNotifications(): Promise<number> {
     const today = toBrazilDateOnly(new Date());
     let created = 0;
-  
+
     const medicineStocks = await MedicineStockModel.findAll({
       where: {
         dias_para_repor: { [Op.ne]: null },
@@ -169,25 +173,25 @@ export class NotificationEventRepository {
         quantidade: { [Op.gt]: 0 },
       },
     });
-  
+
     for (const stock of medicineStocks) {
       if (!stock.ultima_reposicao) continue;
-  
+
       const lastReposition = toBrazilDateOnly(stock.ultima_reposicao);
-  
+
       // 📅 data da próxima reposição
       const nextReposition = new Date(lastReposition);
       nextReposition.setDate(
-        nextReposition.getDate() + Number(stock.dias_para_repor)
+        nextReposition.getDate() + Number(stock.dias_para_repor),
       );
-  
+
       // 🔔 dia em que a notificação deve ser criada (dia anterior)
       const notifyDate = new Date(nextReposition);
       notifyDate.setDate(notifyDate.getDate() - 1);
-  
+
       // ✅ regra de negócio EXATA
       if (notifyDate.getTime() !== today.getTime()) continue;
-  
+
       const exists = await NotificationEventModel.findOne({
         where: {
           tipo_evento: NotificationEventType.REPOSICAO_ESTOQUE,
@@ -196,26 +200,26 @@ export class NotificationEventRepository {
           status: EventStatus.PENDENTE,
         },
       });
-  
+
       if (exists) continue;
-  
+
       await NotificationEventModel.create({
         tipo_evento: NotificationEventType.REPOSICAO_ESTOQUE,
         destino: NotificationDestinoType.ESTOQUE,
         medicamento_id: stock.medicamento_id,
         residente_id: stock.casela_id,
-        data_prevista: nextReposition, 
+        data_prevista: nextReposition,
         criado_por: 1,
         visto: false,
         status: EventStatus.PENDENTE,
       });
-  
+
       created++;
     }
-  
+
     return created;
   }
-  
+
   async update(id: number, updates: NotificationUpdateData) {
     const event = await NotificationEventModel.findByPk(id);
     if (!event) return null;
@@ -225,8 +229,7 @@ export class NotificationEventRepository {
     if (updates.visto !== undefined) updateData.visto = updates.visto;
     if (updates.data_prevista !== undefined)
       updateData.data_prevista = updates.data_prevista;
-    if (updates.destino !== undefined)
-      updateData.destino = updates.destino;
+    if (updates.destino !== undefined) updateData.destino = updates.destino;
 
     if (updates.status) {
       const statusMap: Record<string, EventStatus> = {

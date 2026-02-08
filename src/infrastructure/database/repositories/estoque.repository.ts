@@ -24,7 +24,10 @@ import {
   StockFilterType,
   StockQueryType,
 } from '../../../core/utils/utils';
-import { formatDateToPtBr, getTodayAtNoonBrazil, getTomorrow, toBrazilDateOnly } from '../../helpers/date.helper';
+import {
+  formatDateToPtBr,
+  getTodayAtNoonBrazil,
+} from '../../helpers/date.helper';
 import {
   SECTOR_CONFIG,
   StockGroup,
@@ -870,8 +873,7 @@ export class StockRepository {
       if ('setor' in data) updateData.setor = data.setor;
       if ('lote' in data) updateData.lote = data.lote ?? null;
       if ('casela_id' in data) updateData.casela_id = data.casela_id ?? null;
-      if ('observacao' in data)
-        updateData.observacao = data.observacao ?? null;
+      if ('observacao' in data) updateData.observacao = data.observacao ?? null;
       if ('dias_para_repor' in data)
         updateData.dias_para_repor = data.dias_para_repor ?? null;
       if ('tipo' in data) updateData.tipo = data.tipo;
@@ -1018,7 +1020,7 @@ export class StockRepository {
       );
     }
 
-    if(dias_para_repor && (isNaN(dias_para_repor) || dias_para_repor < 0)) {
+    if (dias_para_repor && (isNaN(dias_para_repor) || dias_para_repor < 0)) {
       throw new Error('Dias para repor deve ser um número positivo ou zero');
     }
 
@@ -1087,7 +1089,7 @@ export class StockRepository {
     destino?: string | null,
     observacao?: string | null,
     dias_para_repor?: number | null,
-    ) {
+  ) {
     const stock = await InputStockModel.findByPk(estoqueId);
 
     if (!stock) {
@@ -1112,13 +1114,13 @@ export class StockRepository {
       throw new Error(`Quantidade não pode ser maior que ${stock.quantidade}`);
     }
 
-    if(!casela_id && dias_para_repor != null) {
+    if (!casela_id && dias_para_repor != null) {
       throw new Error(
         'Dias para reposição só pode ser definido para estoque individual',
       );
     }
 
-    if(dias_para_repor && (isNaN(dias_para_repor) || dias_para_repor < 0)) {
+    if (dias_para_repor && (isNaN(dias_para_repor) || dias_para_repor < 0)) {
       throw new Error('Dias para repor deve ser um número positivo ou zero');
     }
 
@@ -1175,5 +1177,4 @@ export class StockRepository {
 
     return { message: 'Insumo transferido de setor com sucesso' };
   }
-
 }
