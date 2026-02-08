@@ -17,6 +17,8 @@ export interface MedicineStockAttributes {
   status?: StockItemStatus;
   suspended_at?: Date | null;
   observacao?: string | null;
+  dias_para_repor?: number | null;
+  ultima_reposicao?: Date | null;
 }
 
 export class MedicineStockModel
@@ -37,6 +39,8 @@ export class MedicineStockModel
   declare lote?: string | null;
   declare status: StockItemStatus;
   declare suspended_at?: Date | null;
+  declare dias_para_repor?: number | null;
+  declare ultima_reposicao?: Date | null;
 }
 
 MedicineStockModel.init(
@@ -83,6 +87,14 @@ MedicineStockModel.init(
       type: DataTypes.TEXT,
       allowNull: true,
     },
+    dias_para_repor: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+    ultima_reposicao: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
   },
   {
     sequelize,
@@ -100,6 +112,7 @@ MedicineStockModel.init(
       { fields: ['tipo'], name: 'idx_estoque_medicamento_tipo' },
       { fields: ['setor'], name: 'idx_estoque_medicamento_setor' },
       { fields: ['validade'], name: 'idx_estoque_medicamento_validade' },
+      { fields: ['ultima_reposicao'], name: 'idx_estoque_medicamento_ultima_reposicao' },
       {
         fields: ['tipo', 'setor'],
         name: 'idx_estoque_medicamento_tipo_setor',
@@ -114,6 +127,8 @@ MedicineStockModel.init(
           'casela_id',
           'origem',
           'lote',
+          'dias_para_repor',
+          'ultima_reposicao',
         ],
         name: 'idx_estoque_medicamento_composite_lookup',
       },

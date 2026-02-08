@@ -251,6 +251,7 @@ export class StockService {
     bypassCasela: boolean,
     casela_id?: number | null,
     observacao?: string | null,
+    dias_para_repor?: number | null,
   ) {
     const stock = await this.repo.findMedicineStockById(estoque_id);
 
@@ -299,10 +300,11 @@ export class StockService {
       bypassCasela,
       targetCaselaId as number,
       observacao,
+      dias_para_repor ?? null,
     );
 
     await this.movementRepo.create({
-      tipo: MovementType.TRANSFER,
+      tipo: MovementType.TRANSFERENCIA,
       login_id,
       medicamento_id: stock.medicamento_id,
       insumo_id: null,
@@ -328,6 +330,7 @@ export class StockService {
     casela_id?: number,
     destino?: string | null,
     observacao?: string | null,
+    dias_para_repor?: number | null,
   ) {
     const stock = await this.repo.findInputStockById(estoque_id);
 
@@ -388,10 +391,11 @@ export class StockService {
       targetCaselaId,
       targetDestino,
       observacao ?? null,
+      dias_para_repor ?? null,
     );
 
     await this.movementRepo.create({
-      tipo: MovementType.TRANSFER,
+      tipo: MovementType.TRANSFERENCIA,
       login_id,
       medicamento_id: null,
       insumo_id: stock.insumo_id,
@@ -424,6 +428,8 @@ export class StockService {
       casela_id?: number | null;
       tipo?: string;
       preco?: number | null;
+      observacao?: string | null;
+      dias_para_repor?: number | null;
     },
   ) {
     if (tipo === ItemType.MEDICAMENTO) {

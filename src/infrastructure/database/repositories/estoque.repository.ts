@@ -24,7 +24,7 @@ import {
   StockFilterType,
   StockQueryType,
 } from '../../../core/utils/utils';
-import { formatDateToPtBr } from '../../helpers/date.helper';
+import { formatDateToPtBr, getTodayAtNoonBrazil, getTomorrow, toBrazilDateOnly } from '../../helpers/date.helper';
 import {
   SECTOR_CONFIG,
   StockGroup,
@@ -430,6 +430,7 @@ export class StockRepository {
           suspenso_em: stock.suspended_at || null,
           lote: stock.lote || null,
           observacao: stock.observacao || null,
+          dias_para_repor: stock.dias_para_repor ?? null,
           destino: null,
         } as StockQueryResult);
       }
@@ -533,6 +534,7 @@ export class StockRepository {
           destino: stock.destino || null,
           lote: stock.lote || null,
           observacao: stock.observacao || null,
+          dias_para_repor: stock.dias_para_repor ?? null,
         } as StockQueryResult);
       }
     }
@@ -785,6 +787,8 @@ export class StockRepository {
       casela_id?: number | null;
       tipo?: string;
       preco?: number | null;
+      observacao?: string | null;
+      dias_para_repor?: number | null;
     },
   ) {
     if (tipo === ItemType.MEDICAMENTO) {
@@ -798,12 +802,15 @@ export class StockRepository {
       if ('quantidade' in data) updateData.quantidade = data.quantidade;
       if ('armario_id' in data) updateData.armario_id = data.armario_id ?? null;
       if ('gaveta_id' in data) updateData.gaveta_id = data.gaveta_id ?? null;
-      if ('validade' in data) updateData.validade = data.validade;
-      if ('origem' in data) updateData.origem = data.origem;
+      if ('validade' in data) updateData.validade = data.validade ?? undefined;
+      if ('origem' in data) updateData.origem = data.origem ?? null;
       if ('setor' in data) updateData.setor = data.setor;
       if ('lote' in data) updateData.lote = data.lote ?? null;
       if ('casela_id' in data) updateData.casela_id = data.casela_id ?? null;
-      if (data.tipo) updateData.tipo = data.tipo;
+      if ('observacao' in data) updateData.observacao = data.observacao ?? null;
+      if ('dias_para_repor' in data)
+        updateData.dias_para_repor = data.dias_para_repor ?? null;
+      if ('tipo' in data) updateData.tipo = data.tipo;
 
       if (updateData.armario_id != null && updateData.gaveta_id != null) {
         throw new Error(
@@ -811,8 +818,15 @@ export class StockRepository {
         );
       }
 
+      if (
+        updateData.dias_para_repor != null &&
+        updateData.dias_para_repor < 0
+      ) {
+        throw new Error('Dias para repor não pode ser negativo');
+      }
+
       if (updateData.quantidade != null && updateData.quantidade < 1) {
-        throw new Error('A quantidade não pode ser menor que 0');
+        throw new Error('A quantidade não pode ser menor que 1');
       }
 
       if (
@@ -822,7 +836,7 @@ export class StockRepository {
         throw new Error('A casela só pode ser preenchida para tipo individual');
       }
 
-      if (updateData.validade == null) {
+      if ('validade' in data && updateData.validade == null) {
         throw new Error('A data de validade é obrigatória');
       }
 
@@ -838,7 +852,9 @@ export class StockRepository {
         throw new Error('O tipo não pode ser vazio');
       }
 
-      await MedicineStockModel.update(updateData, { where: { id: estoqueId } });
+      await MedicineStockModel.update(updateData, {
+        where: { id: estoqueId },
+      });
     } else {
       const stock = await this.findInputStockById(estoqueId);
       if (!stock) {
@@ -850,18 +866,27 @@ export class StockRepository {
       if ('quantidade' in data) updateData.quantidade = data.quantidade;
       if ('armario_id' in data) updateData.armario_id = data.armario_id ?? null;
       if ('gaveta_id' in data) updateData.gaveta_id = data.gaveta_id ?? null;
-      if ('validade' in data) updateData.validade = data.validade as Date;
+      if ('validade' in data) updateData.validade = data.validade ?? undefined;
       if ('setor' in data) updateData.setor = data.setor;
       if ('lote' in data) updateData.lote = data.lote ?? null;
       if ('casela_id' in data) updateData.casela_id = data.casela_id ?? null;
-      if (data.tipo != null && data.tipo !== '') {
-        updateData.tipo = data.tipo;
-      }
+      if ('observacao' in data)
+        updateData.observacao = data.observacao ?? null;
+      if ('dias_para_repor' in data)
+        updateData.dias_para_repor = data.dias_para_repor ?? null;
+      if ('tipo' in data) updateData.tipo = data.tipo;
 
       if (updateData.armario_id != null && updateData.gaveta_id != null) {
         throw new Error(
           'Não é permitido preencher armário e gaveta ao mesmo tempo',
         );
+      }
+
+      if (
+        updateData.dias_para_repor != null &&
+        updateData.dias_para_repor < 0
+      ) {
+        throw new Error('Dias para repor não pode ser negativo');
       }
 
       if (updateData.quantidade != null && updateData.quantidade < 1) {
@@ -875,7 +900,8 @@ export class StockRepository {
         throw new Error('A casela só pode ser preenchida para tipo individual');
       }
 
-      if (updateData.validade == null && !stock.validade) {
+      // 🔑 mesma regra: só valida se vier no update
+      if ('validade' in data && updateData.validade == null) {
         throw new Error('A data de validade é obrigatória');
       }
 
@@ -886,7 +912,10 @@ export class StockRepository {
       if (updateData.tipo != null && updateData.tipo.trim() === '') {
         throw new Error('O tipo não pode ser vazio');
       }
-      await InputStockModel.update(updateData, { where: { id: estoqueId } });
+
+      await InputStockModel.update(updateData, {
+        where: { id: estoqueId },
+      });
     }
 
     return {
@@ -955,6 +984,7 @@ export class StockRepository {
     bypassCasela: boolean,
     casela_id: number,
     observacao?: string | null,
+    dias_para_repor?: number | null,
   ) {
     const stock = await MedicineStockModel.findByPk(estoqueId);
 
@@ -980,6 +1010,16 @@ export class StockRepository {
 
     if (!stock.origem) {
       throw new Error('Origem é obrigatória para medicamentos');
+    }
+
+    if (!casela_id && dias_para_repor != null) {
+      throw new Error(
+        'Dias para reposição só pode ser definido para estoque individual',
+      );
+    }
+
+    if(dias_para_repor && (isNaN(dias_para_repor) || dias_para_repor < 0)) {
+      throw new Error('Dias para repor deve ser um número positivo ou zero');
     }
 
     const finalCaselaId = bypassCasela ? null : casela_id;
@@ -1008,6 +1048,12 @@ export class StockRepository {
         existing.observacao = observacao;
       }
 
+      if (dias_para_repor != null) {
+        existing.dias_para_repor = dias_para_repor;
+      }
+
+      existing.ultima_reposicao = getTodayAtNoonBrazil();
+
       await existing.save();
     } else {
       await MedicineStockModel.create({
@@ -1023,6 +1069,8 @@ export class StockRepository {
         lote: stock.lote,
         status: stock.status,
         observacao: finalDetails,
+        dias_para_repor: dias_para_repor ?? null,
+        ultima_reposicao: getTodayAtNoonBrazil(),
       });
     }
 
@@ -1038,7 +1086,8 @@ export class StockRepository {
     casela_id?: number | null,
     destino?: string | null,
     observacao?: string | null,
-  ) {
+    dias_para_repor?: number | null,
+    ) {
     const stock = await InputStockModel.findByPk(estoqueId);
 
     if (!stock) {
@@ -1061,6 +1110,16 @@ export class StockRepository {
 
     if (quantidade > stock.quantidade) {
       throw new Error(`Quantidade não pode ser maior que ${stock.quantidade}`);
+    }
+
+    if(!casela_id && dias_para_repor != null) {
+      throw new Error(
+        'Dias para reposição só pode ser definido para estoque individual',
+      );
+    }
+
+    if(dias_para_repor && (isNaN(dias_para_repor) || dias_para_repor < 0)) {
+      throw new Error('Dias para repor deve ser um número positivo ou zero');
     }
 
     const finalTipo = hasDestino
@@ -1086,6 +1145,12 @@ export class StockRepository {
         existing.observacao = observacao;
       }
 
+      if (dias_para_repor != null) {
+        existing.dias_para_repor = dias_para_repor;
+      }
+
+      existing.ultima_reposicao = getTodayAtNoonBrazil();
+
       await existing.save();
     } else {
       await InputStockModel.create({
@@ -1101,6 +1166,8 @@ export class StockRepository {
         status: stock.status,
         destino: hasDestino ? destino : null,
         observacao: observacao ?? stock.observacao,
+        dias_para_repor: dias_para_repor ?? null,
+        ultima_reposicao: getTodayAtNoonBrazil(),
       });
     }
 
@@ -1108,4 +1175,5 @@ export class StockRepository {
 
     return { message: 'Insumo transferido de setor com sucesso' };
   }
+
 }

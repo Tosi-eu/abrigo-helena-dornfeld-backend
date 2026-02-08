@@ -2,14 +2,14 @@ import { Request, Response } from 'express';
 import { NotificationEventService } from '../../../core/services/notificacao.service';
 import { sendErrorResponse } from '../../helpers/error-response.helper';
 import { getTodayInBrazil } from '../../database/repositories/notificacao.repository';
+import { EventStatus, NotificationEventType } from '../../database/models/notificacao.model';
 
 export class NotificationEventController {
   constructor(private readonly service: NotificationEventService) {}
 
   async create(req: Request, res: Response) {
     try {
-      const body = req.body;
-      const created = await this.service.create(body);
+      const created = await this.service.create(req.body);
       return res.status(201).json(created);
     } catch (error: unknown) {
       return sendErrorResponse(res, 400, error, 'Erro ao criar notificação');
@@ -17,12 +17,29 @@ export class NotificationEventController {
   }
 
   async getAll(req: Request, res: Response) {
-    const page = Number(req.query.page) || 1;
-    const limit = Number(req.query.limit) || 10;
-    const status = req.query.status?.toString();
-
-    const result = await this.service.list(page, limit, status);
-    return res.json(result);
+    try {
+      const {
+        page = 1,
+        limit = 10,
+        type,
+        date,
+        status,
+      } = req.query;
+  
+      if (!type) throw new Error('Tipo deve ser informado');
+  
+      const result = await this.service.list({
+        page: Number(page),
+        limit: Number(limit),
+        tipo: type as NotificationEventType,
+        status: status as EventStatus | undefined,
+        date: date?.toString(),
+      });
+  
+      return res.json(result);
+    } catch (err) {
+      return sendErrorResponse(res, 400, err, 'Erro ao buscar notificações');
+    }
   }
 
   async getById(req: Request, res: Response) {
@@ -68,20 +85,6 @@ export class NotificationEventController {
       return res.sendStatus(204);
     } catch (error: unknown) {
       return sendErrorResponse(res, 400, error, 'Erro ao deletar notificação');
-    }
-  }
-
-  async getToday(req: Request, res: Response) {
-    try {
-      const data = await this.service.getTodayPending();
-
-      return res.json({
-        date: getTodayInBrazil(),
-        count: data.length,
-        data,
-      });
-    } catch (error: unknown) {
-      return sendErrorResponse(res, 500, error, 'Erro ao buscar notificações');
     }
   }
 }

@@ -522,7 +522,7 @@ export class ReportRepository {
         { model: LoginModel, attributes: ['login'], required: true },
       ],
       where: {
-        tipo: MovementType.TRANSFER,
+        tipo: MovementType.TRANSFERENCIA,
         setor: 'enfermagem',
         data: { [Op.gte]: startOfDay, [Op.lte]: endOfDay },
       },

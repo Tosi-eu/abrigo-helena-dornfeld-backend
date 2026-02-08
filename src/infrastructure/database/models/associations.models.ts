@@ -191,4 +191,32 @@ export function setupAssociations() {
     onDelete: 'SET NULL',
     onUpdate: 'CASCADE',
   });
+
+  NotificationEventModel.hasMany(MovementModel, {
+    as: 'movimentacoes',
+    foreignKey: 'medicamento_id',
+    sourceKey: 'medicamento_id',
+    constraints: false,
+  });
+  
+  MovementModel.belongsTo(NotificationEventModel, {
+    foreignKey: 'medicamento_id',
+    targetKey: 'medicamento_id',
+    constraints: false,
+  });
+
+  NotificationEventModel.hasOne(StockMedicineAttrs, {
+    as: 'estoque',
+    foreignKey: 'medicamento_id',
+    sourceKey: 'medicamento_id',
+    constraints: false,
+  });
+
+  StockMedicineAttrs.belongsTo(NotificationEventModel, {
+    foreignKey: 'medicamento_id',
+    targetKey: 'medicamento_id',
+    constraints: false,
+  });
+
 }
+
