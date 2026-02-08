@@ -20,23 +20,24 @@ export class NotificationEventController {
 
   async getAll(req: Request, res: Response) {
     try {
-      const { page = 1, limit = 10, type, date, status } = req.query;
-
+      const { page = 1, limit = 10, type, date, status, residente_nome } = req.query;
+  
       if (!type) throw new Error('Tipo deve ser informado');
-
+  
       const result = await this.service.list({
         page: Number(page),
         limit: Number(limit),
         tipo: type as NotificationEventType,
         status: status as EventStatus | undefined,
         date: date?.toString(),
+        residente_nome: residente_nome?.toString(),
       });
-
+  
       return res.json(result);
     } catch (err) {
       return sendErrorResponse(res, 400, err, 'Erro ao buscar notificações');
     }
-  }
+  }  
 
   async getById(req: Request, res: Response) {
     const id = Number(req.params.id);

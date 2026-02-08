@@ -617,6 +617,90 @@ export class ReportRepository {
     });
   }
 
+  async getTransfersDataByInterval(
+    data_inicial: string,
+    data_final: string,
+  ): Promise<TransferReport[]> {
+    const start = new Date(data_inicial);
+    start.setHours(0, 0, 0, 0);
+  
+    const end = new Date(data_final);
+    end.setHours(23, 59, 59, 999);
+  
+    const results = await MovementModel.findAll({
+      attributes: [
+        'data',
+        'quantidade',
+        'lote',
+        'casela_id',
+        'armario_id',
+        'medicamento_id',
+        'insumo_id',
+        'destino',
+      ],
+      include: [
+        { model: MedicineModel, attributes: ['nome', 'principio_ativo'], required: false },
+        { model: InputModel, attributes: ['nome', 'descricao'], required: false },
+        { model: ResidentModel, attributes: ['nome', 'num_casela'], required: false },
+        { model: CabinetModel, attributes: ['num_armario'], required: false },
+        { model: LoginModel, attributes: ['login'], required: true },
+        {
+          model: MedicineStockModel,
+          attributes: ['observacao'],
+          required: false,
+          on: {
+            [Op.and]: [
+              where(col('MedicineStockModel.medicamento_id'), Op.eq, col('MovementModel.medicamento_id')),
+              where(col('MedicineStockModel.armario_id'), Op.eq, col('MovementModel.armario_id')),
+              where(col('MedicineStockModel.casela_id'), Op.eq, col('MovementModel.casela_id')),
+              where(col('MedicineStockModel.lote'), Op.eq, col('MovementModel.lote')),
+            ],
+          },
+        },
+        {
+          model: InputStockModel,
+          attributes: ['observacao'],
+          required: false,
+          on: {
+            [Op.and]: [
+              where(col('InputStockModel.insumo_id'), Op.eq, col('MovementModel.insumo_id')),
+              where(col('InputStockModel.armario_id'), Op.eq, col('MovementModel.armario_id')),
+              where(col('InputStockModel.casela_id'), Op.eq, col('MovementModel.casela_id')),
+              where(col('InputStockModel.lote'), Op.eq, col('MovementModel.lote')),
+            ],
+          },
+        },
+      ],
+      where: {
+        tipo: MovementType.TRANSFERENCIA,
+        setor: 'enfermagem',
+        data: {
+          [Op.between]: [start, end],
+        },
+      },
+      order: [['data', 'DESC']],
+    });
+  
+    return results.map(row => {
+      const plain = row.get({ plain: true }) as any;
+      const observacao = plain.MedicineStockModel?.observacao ?? plain.InputStockModel?.observacao ?? null;
+  
+      return {
+        data: formatDateToPtBr(plain.data),
+        nome: plain.MedicineModel?.nome || plain.InputModel?.nome || '',
+        principio_ativo: plain.MedicineModel?.principio_ativo || null,
+        descricao: plain.InputModel?.descricao || null,
+        quantidade: Number(plain.quantidade) || 0,
+        casela: plain.ResidentModel?.num_casela || null,
+        residente: plain.ResidentModel?.nome || null,
+        armario: plain.CabinetModel?.num_armario || null,
+        lote: plain.lote || null,
+        destino: plain.destino || null,
+        observacao,
+      };
+    });
+  }  
+
   async getMovementsByPeriod(
     params: MovementsParams,
   ): Promise<MovementReport[]> {

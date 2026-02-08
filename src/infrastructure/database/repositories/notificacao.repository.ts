@@ -44,44 +44,44 @@ export class NotificationEventRepository {
     tipo,
     status = EventStatus.PENDENTE,
     date,
+    residente_nome,
   }: {
     page?: number;
     limit?: number;
     tipo: NotificationEventType;
     status?: EventStatus;
     date?: 'today' | 'tomorrow' | string;
+    residente_nome?: string;
+    casela?: string | number;
   }) {
     const offset = (page - 1) * limit;
-
+  
     const where: NotificationWhereOptions = {
       tipo_evento: tipo,
       status,
     };
-
-    if (date === 'today') {
-      where.data_prevista = getTodayInBrazil();
-    }
-
+  
+    if (date === 'today') where.data_prevista = getTodayInBrazil();
     if (date === 'tomorrow') {
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
       where.data_prevista = toBrazilDateOnly(tomorrow);
     }
-
-    if (date && !['today', 'tomorrow'].includes(date)) {
-      where.data_prevista = date;
-    }
-
+    if (date && !['today', 'tomorrow'].includes(date)) where.data_prevista = date;
+  
     const include: any[] = [
-      { model: ResidentModel, as: 'residente', attributes: ['nome'] },
-      { model: MedicineModel, as: 'medicamento', attributes: ['nome'] },
       {
-        model: LoginModel,
-        as: 'usuario',
-        attributes: ['first_name', 'last_name'],
+        model: ResidentModel,
+        as: 'residente',
+        attributes: ['nome'],
+        where: residente_nome
+          ? { nome: { [Op.iLike]: `%${residente_nome}%` } } 
+          : undefined,
       },
+      { model: MedicineModel, as: 'medicamento', attributes: ['nome'] },
+      { model: LoginModel, as: 'usuario', attributes: ['first_name', 'last_name'] },
     ];
-
+  
     if (tipo === NotificationEventType.REPOSICAO_ESTOQUE) {
       include.push(
         {
@@ -90,9 +90,7 @@ export class NotificationEventRepository {
           attributes: ['dias_para_repor'],
           required: false,
           on: {
-            medicamento_id: {
-              [Op.col]: 'NotificationEventModel.medicamento_id',
-            },
+            medicamento_id: { [Op.col]: 'NotificationEventModel.medicamento_id' },
             casela_id: { [Op.col]: 'NotificationEventModel.residente_id' },
           },
         },
@@ -101,14 +99,9 @@ export class NotificationEventRepository {
           as: 'movimentacoes',
           attributes: ['quantidade'],
           required: false,
-          where: {
-            tipo: MovementType.TRANSFERENCIA,
-            setor: 'enfermagem',
-          },
+          where: { tipo: MovementType.TRANSFERENCIA, setor: 'enfermagem' },
           on: {
-            medicamento_id: {
-              [Op.col]: 'NotificationEventModel.medicamento_id',
-            },
+            medicamento_id: { [Op.col]: 'NotificationEventModel.medicamento_id' },
             casela_id: { [Op.col]: 'NotificationEventModel.residente_id' },
           },
           order: [['createdAt', 'DESC']],
@@ -116,7 +109,7 @@ export class NotificationEventRepository {
         },
       );
     }
-
+  
     const { rows, count } = await NotificationEventModel.findAndCountAll({
       distinct: true,
       where,
@@ -125,7 +118,7 @@ export class NotificationEventRepository {
       order: [['data_prevista', 'ASC']],
       include,
     });
-
+  
     return {
       items: rows.map((row: any) => ({
         id: row.id,
@@ -137,18 +130,16 @@ export class NotificationEventRepository {
         medicamento_nome: row.medicamento?.nome,
         medicamento_id: row.medicamento_id,
         residente_id: row.residente_id,
-        usuario: row.usuario
-          ? `${row.usuario.first_name} ${row.usuario.last_name}`
-          : 'Sistema',
+        usuario: row.usuario ? `${row.usuario.first_name} ${row.usuario.last_name}` : 'Sistema',
         quantidade:
           tipo === NotificationEventType.REPOSICAO_ESTOQUE
-            ? (row.movimentacoes?.[0]?.quantidade ?? null)
+            ? row.movimentacoes?.[0]?.quantidade ?? null
             : undefined,
         visto: row.visto,
         tipo_evento: row.tipo_evento,
         dias_para_repor:
           tipo === NotificationEventType.REPOSICAO_ESTOQUE
-            ? (Number(row.estoque?.dias_para_repor) ?? null)
+            ? Number(row.estoque?.dias_para_repor) ?? null
             : null,
       })),
       total: count,
@@ -157,7 +148,7 @@ export class NotificationEventRepository {
       hasNext: offset + rows.length < count,
     };
   }
-
+  
   async findById(id: number) {
     return NotificationEventModel.findByPk(id);
   }
@@ -165,44 +156,39 @@ export class NotificationEventRepository {
   async bootstrapReplacementNotifications(): Promise<number> {
     const today = toBrazilDateOnly(new Date());
     let created = 0;
-
+  
     const medicineStocks = await MedicineStockModel.findAll({
       where: {
         dias_para_repor: { [Op.ne]: null },
         status: StockItemStatus.ATIVO,
-        quantidade: { [Op.gt]: 0 },
+        quantidade: { [Op.gte]: 0 },
       },
     });
-
+  
     for (const stock of medicineStocks) {
       if (!stock.ultima_reposicao) continue;
-
+  
       const lastReposition = toBrazilDateOnly(stock.ultima_reposicao);
-
-      // 📅 data da próxima reposição
+  
       const nextReposition = new Date(lastReposition);
-      nextReposition.setDate(
-        nextReposition.getDate() + Number(stock.dias_para_repor),
-      );
-
-      // 🔔 dia em que a notificação deve ser criada (dia anterior)
+      nextReposition.setDate(nextReposition.getDate() + Number(stock.dias_para_repor));
+  
       const notifyDate = new Date(nextReposition);
       notifyDate.setDate(notifyDate.getDate() - 1);
-
-      // ✅ regra de negócio EXATA
+  
       if (notifyDate.getTime() !== today.getTime()) continue;
-
-      const exists = await NotificationEventModel.findOne({
+  
+      const existsSomeNotificationCard = await NotificationEventModel.findOne({
         where: {
           tipo_evento: NotificationEventType.REPOSICAO_ESTOQUE,
           medicamento_id: stock.medicamento_id,
           residente_id: stock.casela_id,
-          status: EventStatus.PENDENTE,
+          data_prevista: nextReposition,
         },
       });
-
-      if (exists) continue;
-
+  
+      if (existsSomeNotificationCard) continue;
+  
       await NotificationEventModel.create({
         tipo_evento: NotificationEventType.REPOSICAO_ESTOQUE,
         destino: NotificationDestinoType.ESTOQUE,
@@ -213,13 +199,13 @@ export class NotificationEventRepository {
         visto: false,
         status: EventStatus.PENDENTE,
       });
-
+  
       created++;
     }
-
+  
     return created;
   }
-
+  
   async update(id: number, updates: NotificationUpdateData) {
     const event = await NotificationEventModel.findByPk(id);
     if (!event) return null;

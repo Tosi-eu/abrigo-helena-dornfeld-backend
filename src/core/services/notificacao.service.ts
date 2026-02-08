@@ -31,9 +31,10 @@ export class NotificationEventService {
     tipo: NotificationEventType;
     status?: EventStatus;
     date?: string;
+    residente_nome?: string;
   }) {
     return this.repo.listWithFilters(filters);
-  }
+  }  
 
   async update(id: number, updates: NotificationUpdateData) {
     return this.repo.update(id, updates);

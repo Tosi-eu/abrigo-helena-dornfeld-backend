@@ -23,12 +23,6 @@ export class ReportController {
         return res.status(400).json({ error: 'Tipo obrigatório' });
       }
 
-      if (type === 'transferencias' && !data) {
-        return res
-          .status(400)
-          .json({ error: 'Data é obrigatória para transferências' });
-      }
-
       if (type === 'movimentacoes') {
         if (!periodo) {
           return res.status(400).json({
@@ -55,6 +49,15 @@ export class ReportController {
           });
         }
       }
+
+      if (type === 'transferencias') {
+        if (!data && (!data_inicial || !data_final)) {
+          return res.status(400).json({
+            error:
+              'Informe uma data ou um intervalo para transferências',
+          });
+        }
+      }      
 
       const casela = req.query.casela
         ? parseInt(req.query.casela as string)
