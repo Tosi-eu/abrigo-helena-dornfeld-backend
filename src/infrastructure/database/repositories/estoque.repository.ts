@@ -902,7 +902,6 @@ export class StockRepository {
         throw new Error('A casela só pode ser preenchida para tipo individual');
       }
 
-      // 🔑 mesma regra: só valida se vier no update
       if ('validade' in data && updateData.validade == null) {
         throw new Error('A data de validade é obrigatória');
       }

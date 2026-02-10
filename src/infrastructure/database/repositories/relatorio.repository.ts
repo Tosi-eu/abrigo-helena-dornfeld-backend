@@ -532,7 +532,6 @@ export class ReportRepository {
           [Op.lte]: endOfDay,
         },
       },
-      distinct: true,
       order: [['data', 'DESC']],
     });
 
@@ -592,7 +591,6 @@ export class ReportRepository {
           [Op.between]: [start, end],
         },
       },
-      distinct: true,
       order: [['data', 'DESC']],
     });
   
@@ -667,7 +665,6 @@ export class ReportRepository {
 
     return results.map(row => {
       const plain = row.get({ plain: true }) as any;
-      // Use createdAt if available, otherwise use data field
       const dateTime = plain.createdAt || plain.data;
 
       return {
@@ -957,7 +954,6 @@ export class ReportRepository {
       });
     });
 
-    // Ordenar por dias para vencer (menor primeiro)
     return results.sort((a, b) => a.dias_para_vencer - b.dias_para_vencer);
   }
 }

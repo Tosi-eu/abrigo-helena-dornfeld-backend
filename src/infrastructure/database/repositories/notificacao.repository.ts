@@ -172,7 +172,6 @@ export class NotificationEventRepository {
       const nextReposition = new Date(lastReposition);
       nextReposition.setDate(nextReposition.getDate() + Number(stock.dias_para_repor));
   
-      // Verificar se já existe uma notificação para este medicamento, residente e data prevista
       const existsNotification = await NotificationEventModel.findOne({
         where: {
           tipo_evento: NotificationEventType.REPOSICAO_ESTOQUE,
@@ -184,7 +183,6 @@ export class NotificationEventRepository {
   
       if (existsNotification) continue;
   
-      // Criar a notificação
       await NotificationEventModel.create({
         tipo_evento: NotificationEventType.REPOSICAO_ESTOQUE,
         destino: NotificationDestinoType.ESTOQUE,
