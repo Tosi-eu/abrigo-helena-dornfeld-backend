@@ -125,3 +125,18 @@ export interface ExpiredMedicineReport {
   lote: string | null;
   setor: string;
 }
+
+export interface ExpiringSoonReport {
+  tipo: 'medicamento' | 'insumo';
+  nome: string;
+  principio_ativo?: string | null;
+  descricao?: string | null;
+  quantidade: number;
+  validade: string;
+  dias_para_vencer: number;
+  residente: string | null;
+  lote: string | null;
+  setor: string;
+  armario?: number | null;
+  gaveta?: number | null;
+}

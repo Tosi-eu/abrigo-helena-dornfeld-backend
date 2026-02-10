@@ -15,6 +15,7 @@ interface MovementAttrs {
   setor: string;
   destino?: string | null;
   lote?: string | null;
+  observacao?: string | null;
 }
 
 type MovementCreation = Optional<
@@ -27,6 +28,7 @@ type MovementCreation = Optional<
   | 'armario_id'
   | 'lote'
   | 'destino'
+  | 'observacao'
 >;
 
 export class MovementModel
@@ -46,6 +48,7 @@ export class MovementModel
   declare setor: string;
   declare destino?: string | null;
   declare lote?: string | null;
+  declare observacao?: string | null;
 }
 
 MovementModel.init(
@@ -63,6 +66,7 @@ MovementModel.init(
     setor: { type: DataTypes.STRING, allowNull: false },
     lote: { type: DataTypes.STRING, allowNull: true },
     destino: { type: DataTypes.TEXT, allowNull: true },
+    observacao: { type: DataTypes.TEXT, allowNull: true },
   },
   {
     sequelize,

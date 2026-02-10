@@ -166,19 +166,14 @@ export class NotificationEventRepository {
     });
   
     for (const stock of medicineStocks) {
-      if (!stock.ultima_reposicao) continue;
+      if (!stock.ultima_reposicao || !stock.casela_id) continue;
   
       const lastReposition = toBrazilDateOnly(stock.ultima_reposicao);
-  
       const nextReposition = new Date(lastReposition);
       nextReposition.setDate(nextReposition.getDate() + Number(stock.dias_para_repor));
   
-      const notifyDate = new Date(nextReposition);
-      notifyDate.setDate(notifyDate.getDate() - 1);
-  
-      if (notifyDate.getTime() !== today.getTime()) continue;
-  
-      const existsSomeNotificationCard = await NotificationEventModel.findOne({
+      // Verificar se já existe uma notificação para este medicamento, residente e data prevista
+      const existsNotification = await NotificationEventModel.findOne({
         where: {
           tipo_evento: NotificationEventType.REPOSICAO_ESTOQUE,
           medicamento_id: stock.medicamento_id,
@@ -187,15 +182,16 @@ export class NotificationEventRepository {
         },
       });
   
-      if (existsSomeNotificationCard) continue;
+      if (existsNotification) continue;
   
+      // Criar a notificação
       await NotificationEventModel.create({
         tipo_evento: NotificationEventType.REPOSICAO_ESTOQUE,
         destino: NotificationDestinoType.ESTOQUE,
         medicamento_id: stock.medicamento_id,
         residente_id: stock.casela_id,
         data_prevista: nextReposition,
-        criado_por: 1,
+        criado_por: 1, // Sistema
         visto: false,
         status: EventStatus.PENDENTE,
       });

@@ -60,3 +60,23 @@ export function formatDateToPtBr(
 
   return str;
 }
+
+export function formatDateTimeToPtBr(
+  input: string | Date | undefined | null,
+): string {
+  if (!input) return '';
+
+  const date = input instanceof Date ? input : new Date(input);
+  
+  if (isNaN(date.getTime())) {
+    return '';
+  }
+
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+
+  return `${day}/${month}/${year} ${hours}:${minutes}`;
+}

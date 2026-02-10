@@ -146,6 +146,9 @@ export class ReportService {
       case 'medicamentos_vencidos':
         return this.repo.getExpiredMedicinesData();
 
+      case 'expiringSoon':
+        return this.repo.getExpiringSoonData();
+
       default:
         throw new Error('Tipo inválido');
     }

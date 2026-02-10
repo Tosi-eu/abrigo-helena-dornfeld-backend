@@ -14,12 +14,12 @@ import ResidentModel from './residente.model';
 
 export function setupAssociations() {
   DrawerCategoryModel.hasMany(DrawerModel, { foreignKey: 'categoria_id', onDelete: 'RESTRICT', onUpdate: 'CASCADE' });
-  DrawerModel.belongsTo(DrawerCategoryModel, { foreignKey: 'categoria_id', onDelete: 'RESTRICT', onUpdate: 'CASCADE', as: 'categoria' });
-  DrawerCategoryModel.hasMany(DrawerModel, { foreignKey: 'categoria_id', as: 'gavetas' });
+  DrawerModel.belongsTo(DrawerCategoryModel, { foreignKey: 'categoria_id', onDelete: 'RESTRICT', onUpdate: 'CASCADE' });
+  DrawerCategoryModel.hasMany(DrawerModel, { foreignKey: 'categoria_id' });
 
   CabinetCategoryModel.hasMany(CabinetModel, { foreignKey: 'categoria_id', onDelete: 'RESTRICT', onUpdate: 'CASCADE' });
-  CabinetModel.belongsTo(CabinetCategoryModel, { foreignKey: 'categoria_id', onDelete: 'RESTRICT', onUpdate: 'CASCADE', as: 'categoria' });
-  CabinetCategoryModel.hasMany(CabinetModel, { foreignKey: 'categoria_id', as: 'armarios' });
+  CabinetModel.belongsTo(CabinetCategoryModel, { foreignKey: 'categoria_id', onDelete: 'RESTRICT', onUpdate: 'CASCADE' });
+  CabinetCategoryModel.hasMany(CabinetModel, { foreignKey: 'categoria_id' });
 
   NotificationEventModel.belongsTo(ResidentModel, { foreignKey: 'residente_id', as: 'residente' });
   NotificationEventModel.belongsTo(MedicineModel, { foreignKey: 'medicamento_id', as: 'medicamento' });

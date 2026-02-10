@@ -315,6 +315,7 @@ export class StockService {
       armario_id: stock.armario_id ?? undefined,
       gaveta_id: stock.gaveta_id ?? undefined,
       lote: stock.lote ?? null,
+      observacao: observacao || null,
     });
 
     await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
@@ -407,6 +408,7 @@ export class StockService {
       gaveta_id: stock.gaveta_id ?? undefined,
       lote: stock.lote ?? null,
       destino: targetDestino,
+      observacao: observacao || null,
     });
 
     await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
