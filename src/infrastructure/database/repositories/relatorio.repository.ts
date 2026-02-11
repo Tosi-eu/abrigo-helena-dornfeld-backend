@@ -439,9 +439,18 @@ export class ReportRepository {
       const custoMensal = preco;
       const custoAnual = custoMensal * 12;
 
+      const nomeCompleto = [
+        med.nome,
+        med.dosagem,
+        med.unidade_medida,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .trim() || med.nome;
+
       return {
         item: 'Medicamento',
-        nome: med.nome,
+        nome: nomeCompleto,
         custo_mensal: Math.round(custoMensal * 100) / 100,
         custo_anual: Math.round(custoAnual * 100) / 100,
       };
@@ -508,7 +517,7 @@ export class ReportRepository {
       include: [
         {
           model: MedicineModel,
-          attributes: ['nome', 'principio_ativo'],
+          attributes: ['nome', 'principio_ativo', 'dosagem', 'unidade_medida'],
           required: false,
         },
         {
@@ -538,9 +547,23 @@ export class ReportRepository {
     return results.map(row => {
       const plain = row.get({ plain: true }) as any;
 
+      // Combinar nome, dosagem e unidade_medida para medicamentos
+      let nomeCompleto = '';
+      if (plain.MedicineModel) {
+        const nome = plain.MedicineModel.nome || '';
+        const dosagem = plain.MedicineModel.dosagem || '';
+        const unidadeMedida = plain.MedicineModel.unidade_medida || '';
+        nomeCompleto = [nome, dosagem, unidadeMedida]
+          .filter(Boolean)
+          .join(' ')
+          .trim() || nome;
+      } else if (plain.InputModel) {
+        nomeCompleto = plain.InputModel.nome || '';
+      }
+
       return {
         data: formatDateToPtBr(plain.data),
-        nome: plain.MedicineModel?.nome || plain.InputModel?.nome || '',
+        nome: nomeCompleto,
         principio_ativo: plain.MedicineModel?.principio_ativo || null,
         descricao: plain.InputModel?.descricao || null,
         quantidade: Number(plain.quantidade) || 0,
@@ -578,7 +601,7 @@ export class ReportRepository {
         'observacao',
       ],
       include: [
-        { model: MedicineModel, attributes: ['nome', 'principio_ativo'], required: false },
+        { model: MedicineModel, attributes: ['nome', 'principio_ativo', 'dosagem', 'unidade_medida'], required: false },
         { model: InputModel, attributes: ['nome', 'descricao'], required: false },
         { model: ResidentModel, attributes: ['nome', 'num_casela'], required: false },
         { model: CabinetModel, attributes: ['num_armario'], required: false },
@@ -597,9 +620,23 @@ export class ReportRepository {
     return results.map(row => {
       const plain = row.get({ plain: true }) as any;
 
+      // Combinar nome, dosagem e unidade_medida para medicamentos
+      let nomeCompleto = '';
+      if (plain.MedicineModel) {
+        const nome = plain.MedicineModel.nome || '';
+        const dosagem = plain.MedicineModel.dosagem || '';
+        const unidadeMedida = plain.MedicineModel.unidade_medida || '';
+        nomeCompleto = [nome, dosagem, unidadeMedida]
+          .filter(Boolean)
+          .join(' ')
+          .trim() || nome;
+      } else if (plain.InputModel) {
+        nomeCompleto = plain.InputModel.nome || '';
+      }
+
       return {
         data: formatDateToPtBr(plain.data),
-        nome: plain.MedicineModel?.nome || plain.InputModel?.nome || '',
+        nome: nomeCompleto,
         principio_ativo: plain.MedicineModel?.principio_ativo || null,
         descricao: plain.InputModel?.descricao || null,
         quantidade: Number(plain.quantidade) || 0,
@@ -731,16 +768,30 @@ export class ReportRepository {
       nest: true,
     });
 
-    return results.map((row: any) => ({
-      residente: row.ResidentModel?.nome || '',
-      casela: row.ResidentModel?.num_casela || casela,
-      medicamento: row.MedicineModel?.nome || '',
-      principio_ativo: row.MedicineModel?.principio_ativo || null,
-      dosagem:
-        `${row.MedicineModel?.dosagem || ''}${row.MedicineModel?.unidade_medida || ''}`.trim(),
-      quantidade: Number(row.quantidade) || 0,
-      validade: formatDateToPtBr(new Date(row.validade)),
-    }));
+    return results.map((row: any) => {
+      const nomeMedicamento = row.MedicineModel?.nome || '';
+      const dosagem = row.MedicineModel?.dosagem || '';
+      const unidadeMedida = row.MedicineModel?.unidade_medida || '';
+      
+      const medicamentoCompleto = [
+        nomeMedicamento,
+        dosagem,
+        unidadeMedida,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .trim() || nomeMedicamento;
+
+      return {
+        residente: row.ResidentModel?.nome || '',
+        casela: row.ResidentModel?.num_casela || casela,
+        medicamento: medicamentoCompleto,
+        principio_ativo: row.MedicineModel?.principio_ativo || null,
+        dosagem: '', // Mantido vazio para compatibilidade, mas não será usado
+        quantidade: Number(row.quantidade) || 0,
+        validade: formatDateToPtBr(new Date(row.validade)),
+      };
+    });
   }
 
   async getExpiredMedicinesData(): Promise<ExpiredMedicineReport[]> {
