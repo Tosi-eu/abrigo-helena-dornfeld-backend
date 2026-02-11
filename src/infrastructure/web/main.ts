@@ -10,6 +10,7 @@ import { setupAssociations } from '../database/models/associations.models';
 import { errorHandler } from '../../middleware/error-handler.middleware';
 import { sanitizeInput } from '../../middleware/sanitize.middleware';
 import { logger } from '../helpers/logger.helper';
+import { startNotificationBootstrapJob } from './jobs/reposicao-estoque.job';
 
 dotenv.config();
 
@@ -91,6 +92,11 @@ void (async () => {
       operation: 'database',
       status: 'synced',
     });
+
+    if (process.env.ENABLE_CRON === 'true') {
+      startNotificationBootstrapJob();
+    }
+
     app.listen(port, () => {
       logger.info('Servidor iniciado', {
         operation: 'server',

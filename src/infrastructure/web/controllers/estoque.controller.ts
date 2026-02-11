@@ -60,6 +60,7 @@ export class StockController {
         drawer,
         casela,
         sector,
+        lot,
       } = req.query;
 
       const data = await this.service.listStock({
@@ -73,6 +74,7 @@ export class StockController {
         drawer: drawer ? String(drawer) : undefined,
         casela: casela ? String(casela) : undefined,
         sector: sector ? String(sector) : undefined,
+        lot: lot ? String(lot) : undefined,
       });
 
       if (handleETagResponse(req, res, data)) {
@@ -200,14 +202,21 @@ export class StockController {
   async transferMedicineSector(req: ValidatedRequest, res: Response) {
     try {
       const { estoque_id } = req.params;
-      const { setor, quantidade, casela_id, observacao, bypassCasela } =
-        req.body as {
-          setor: 'farmacia' | 'enfermagem';
-          quantidade: number;
-          casela_id?: number;
-          observacao?: string;
-          bypassCasela: boolean;
-        };
+      const {
+        setor,
+        quantidade,
+        casela_id,
+        observacao,
+        bypassCasela,
+        dias_para_repor,
+      } = req.body as {
+        setor: 'farmacia' | 'enfermagem';
+        quantidade: number;
+        casela_id?: number;
+        observacao?: string;
+        bypassCasela: boolean;
+        dias_para_repor?: number | null;
+      };
 
       const login_id = req.user?.id;
 
@@ -237,6 +246,7 @@ export class StockController {
         bypassCasela,
         casela_id ?? null,
         observacao ?? null,
+        dias_para_repor ?? null,
       );
 
       return res.json(result);
@@ -253,14 +263,21 @@ export class StockController {
   async transferInputSector(req: ValidatedRequest, res: Response) {
     try {
       const { estoque_id } = req.params;
-      const { setor, quantidade, casela_id, destino, observacao } =
-        req.body as {
-          setor: 'farmacia' | 'enfermagem';
-          quantidade: number;
-          casela_id?: number;
-          destino?: string;
-          observacao?: string;
-        };
+      const {
+        setor,
+        quantidade,
+        casela_id,
+        destino,
+        observacao,
+        dias_para_repor,
+      } = req.body as {
+        setor: 'farmacia' | 'enfermagem';
+        quantidade: number;
+        casela_id?: number;
+        destino?: string;
+        observacao?: string;
+        dias_para_repor?: number | null;
+      };
 
       const login_id = req.user?.id;
 
@@ -290,6 +307,7 @@ export class StockController {
         casela_id,
         destino ?? null,
         observacao ?? null,
+        dias_para_repor ?? null,
       );
 
       return res.json(result);
@@ -313,6 +331,8 @@ export class StockController {
         lote?: string | null;
         casela_id?: number | null;
         preco?: number | null;
+        observacao?: string | null;
+        dias_para_repor?: number | null;
       };
 
       const itemTipo = body.tipo;

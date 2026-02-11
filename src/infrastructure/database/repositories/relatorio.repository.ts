@@ -13,9 +13,10 @@ import {
   MovementReport,
   ResidentMedicinesReport,
   ExpiredMedicineReport,
+  ExpiringSoonReport,
 } from '../models/relatorio.model';
 import { ResidentMonthlyUsage, MovementType } from '../../../core/utils/utils';
-import { formatDateToPtBr } from '../../helpers/date.helper';
+import { formatDateToPtBr, formatDateTimeToPtBr } from '../../helpers/date.helper';
 import MedicineStockModel from '../models/estoque-medicamento.model';
 import InputStockModel from '../models/estoque-insumo.model';
 import MedicineModel from '../models/medicamento.model';
@@ -493,6 +494,7 @@ export class ReportRepository {
 
     const results = await MovementModel.findAll({
       attributes: [
+        'id',
         'data',
         'quantidade',
         'lote',
@@ -501,6 +503,7 @@ export class ReportRepository {
         'medicamento_id',
         'insumo_id',
         'destino',
+        'observacao',
       ],
       include: [
         {
@@ -519,71 +522,10 @@ export class ReportRepository {
           required: false,
         },
         { model: CabinetModel, attributes: ['num_armario'], required: false },
-        { model: LoginModel, attributes: ['login'], required: true },
-
-        {
-          model: MedicineStockModel,
-          attributes: ['observacao'],
-          required: false,
-          on: {
-            [Op.and]: [
-              where(
-                col('MedicineStockModel.medicamento_id'),
-                Op.eq,
-                col('MovementModel.medicamento_id'),
-              ),
-              where(
-                col('MedicineStockModel.armario_id'),
-                Op.eq,
-                col('MovementModel.armario_id'),
-              ),
-              where(
-                col('MedicineStockModel.casela_id'),
-                Op.eq,
-                col('MovementModel.casela_id'),
-              ),
-              where(
-                col('MedicineStockModel.lote'),
-                Op.eq,
-                col('MovementModel.lote'),
-              ),
-            ],
-          },
-        },
-
-        {
-          model: InputStockModel,
-          attributes: ['observacao'],
-          required: false,
-          on: {
-            [Op.and]: [
-              where(
-                col('InputStockModel.insumo_id'),
-                Op.eq,
-                col('MovementModel.insumo_id'),
-              ),
-              where(
-                col('InputStockModel.armario_id'),
-                Op.eq,
-                col('MovementModel.armario_id'),
-              ),
-              where(
-                col('InputStockModel.casela_id'),
-                Op.eq,
-                col('MovementModel.casela_id'),
-              ),
-              where(
-                col('InputStockModel.lote'),
-                Op.eq,
-                col('MovementModel.lote'),
-              ),
-            ],
-          },
-        }
-
+        { model: LoginModel, attributes: ['login'], required: false },
       ],
       where: {
-        tipo: MovementType.TRANSFER,
+        tipo: MovementType.TRANSFERENCIA,
         setor: 'enfermagem',
         data: {
           [Op.gte]: startOfDay,
@@ -596,10 +538,64 @@ export class ReportRepository {
     return results.map(row => {
       const plain = row.get({ plain: true }) as any;
 
-      const observacao =
-        plain.MedicineStockModel?.observacao ??
-        plain.InputStockModel?.observacao ??
-        null;
+      return {
+        data: formatDateToPtBr(plain.data),
+        nome: plain.MedicineModel?.nome || plain.InputModel?.nome || '',
+        principio_ativo: plain.MedicineModel?.principio_ativo || null,
+        descricao: plain.InputModel?.descricao || null,
+        quantidade: Number(plain.quantidade) || 0,
+        casela: plain.ResidentModel?.num_casela || null,
+        residente: plain.ResidentModel?.nome || null,
+        armario: plain.CabinetModel?.num_armario || null,
+        lote: plain.lote || null,
+        destino: plain.destino || null,
+        observacao: plain.observacao || null,
+      };
+    });
+  }
+
+  async getTransfersDataByInterval(
+    data_inicial: string,
+    data_final: string,
+  ): Promise<TransferReport[]> {
+    const start = new Date(data_inicial);
+    start.setHours(0, 0, 0, 0);
+  
+    const end = new Date(data_final);
+    end.setHours(23, 59, 59, 999);
+  
+    const results = await MovementModel.findAll({
+      attributes: [
+        'id',
+        'data',
+        'quantidade',
+        'lote',
+        'casela_id',
+        'armario_id',
+        'medicamento_id',
+        'insumo_id',
+        'destino',
+        'observacao',
+      ],
+      include: [
+        { model: MedicineModel, attributes: ['nome', 'principio_ativo'], required: false },
+        { model: InputModel, attributes: ['nome', 'descricao'], required: false },
+        { model: ResidentModel, attributes: ['nome', 'num_casela'], required: false },
+        { model: CabinetModel, attributes: ['num_armario'], required: false },
+        { model: LoginModel, attributes: ['login'], required: false },
+      ],
+      where: {
+        tipo: MovementType.TRANSFERENCIA,
+        setor: 'enfermagem',
+        data: {
+          [Op.between]: [start, end],
+        },
+      },
+      order: [['data', 'DESC']],
+    });
+  
+    return results.map(row => {
+      const plain = row.get({ plain: true }) as any;
 
       return {
         data: formatDateToPtBr(plain.data),
@@ -612,10 +608,10 @@ export class ReportRepository {
         armario: plain.CabinetModel?.num_armario || null,
         lote: plain.lote || null,
         destino: plain.destino || null,
-        observacao,
+        observacao: plain.observacao || null,
       };
     });
-  }
+  }  
 
   async getMovementsByPeriod(
     params: MovementsParams,
@@ -669,9 +665,10 @@ export class ReportRepository {
 
     return results.map(row => {
       const plain = row.get({ plain: true }) as any;
+      const dateTime = plain.createdAt || plain.data;
 
       return {
-        data: formatDateToPtBr(plain.data),
+        data: formatDateTimeToPtBr(dateTime),
         tipo_movimentacao: plain.tipo,
         nome: plain.MedicineModel?.nome || plain.InputModel?.nome || '',
         principio_ativo: plain.MedicineModel?.principio_ativo || null,
@@ -807,5 +804,156 @@ export class ReportRepository {
         setor: row.setor || '',
       };
     });
+  }
+
+  async getExpiringSoonData(): Promise<ExpiringSoonReport[]> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const in45Days = new Date(today);
+    in45Days.setDate(today.getDate() + 45);
+
+    const results: ExpiringSoonReport[] = [];
+
+    // Buscar medicamentos próximos ao vencimento
+    const medicines = await MedicineStockModel.findAll({
+      attributes: [
+        [col('validade'), 'validade'],
+        [col('lote'), 'lote'],
+        [col('setor'), 'setor'],
+        [col('armario_id'), 'armario'],
+        [col('gaveta_id'), 'gaveta'],
+        [fn('SUM', col('quantidade')), 'quantidade'],
+      ],
+      include: [
+        {
+          model: MedicineModel,
+          attributes: ['nome', 'principio_ativo'],
+          required: true,
+        },
+        {
+          model: ResidentModel,
+          attributes: ['nome'],
+          required: false,
+        },
+      ],
+      where: {
+        validade: {
+          [Op.gte]: today,
+          [Op.lte]: in45Days,
+        },
+        quantidade: {
+          [Op.gt]: 0,
+        },
+      },
+      group: [
+        'MedicineModel.nome',
+        'MedicineModel.principio_ativo',
+        'MedicineStockModel.validade',
+        'MedicineStockModel.lote',
+        'MedicineStockModel.setor',
+        'MedicineStockModel.armario_id',
+        'MedicineStockModel.gaveta_id',
+        'ResidentModel.nome',
+      ],
+      order: [
+        ['validade', 'ASC'],
+        ['MedicineModel', 'nome', 'ASC'],
+      ],
+      raw: true,
+      nest: true,
+    });
+
+    medicines.forEach((row: any) => {
+      const expiryDate = new Date(row.validade);
+      const daysUntilExpiry = Math.ceil(
+        (expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
+      );
+
+      results.push({
+        tipo: 'medicamento',
+        nome: row.MedicineModel?.nome || '',
+        principio_ativo: row.MedicineModel?.principio_ativo || null,
+        quantidade: Number(row.quantidade) || 0,
+        validade: formatDateToPtBr(expiryDate),
+        dias_para_vencer: daysUntilExpiry,
+        residente: row.ResidentModel?.nome || null,
+        lote: row.lote || null,
+        setor: row.setor || '',
+        armario: row.armario || null,
+        gaveta: row.gaveta || null,
+      });
+    });
+
+    // Buscar insumos próximos ao vencimento
+    const inputs = await InputStockModel.findAll({
+      attributes: [
+        [col('validade'), 'validade'],
+        [col('lote'), 'lote'],
+        [col('setor'), 'setor'],
+        [col('armario_id'), 'armario'],
+        [col('gaveta_id'), 'gaveta'],
+        [fn('SUM', col('quantidade')), 'quantidade'],
+      ],
+      include: [
+        {
+          model: InputModel,
+          attributes: ['nome', 'descricao'],
+          required: true,
+        },
+        {
+          model: ResidentModel,
+          attributes: ['nome'],
+          required: false,
+        },
+      ],
+      where: {
+        validade: {
+          [Op.gte]: today,
+          [Op.lte]: in45Days,
+        },
+        quantidade: {
+          [Op.gt]: 0,
+        },
+      },
+      group: [
+        'InputModel.nome',
+        'InputModel.descricao',
+        'InputStockModel.validade',
+        'InputStockModel.lote',
+        'InputStockModel.setor',
+        'InputStockModel.armario_id',
+        'InputStockModel.gaveta_id',
+        'ResidentModel.nome',
+      ],
+      order: [
+        ['validade', 'ASC'],
+        ['InputModel', 'nome', 'ASC'],
+      ],
+      raw: true,
+      nest: true,
+    });
+
+    inputs.forEach((row: any) => {
+      const expiryDate = new Date(row.validade);
+      const daysUntilExpiry = Math.ceil(
+        (expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
+      );
+
+      results.push({
+        tipo: 'insumo',
+        nome: row.InputModel?.nome || '',
+        descricao: row.InputModel?.descricao || null,
+        quantidade: Number(row.quantidade) || 0,
+        validade: formatDateToPtBr(expiryDate),
+        dias_para_vencer: daysUntilExpiry,
+        residente: row.ResidentModel?.nome || null,
+        lote: row.lote || null,
+        setor: row.setor || '',
+        armario: row.armario || null,
+        gaveta: row.gaveta || null,
+      });
+    });
+
+    return results.sort((a, b) => a.dias_para_vencer - b.dias_para_vencer);
   }
 }

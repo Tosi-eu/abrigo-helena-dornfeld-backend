@@ -13,6 +13,7 @@ export interface Movement {
   setor: string;
   destino?: string | null;
   lote?: string | null;
+  observacao?: string | null;
 }
 
 export default Movement;

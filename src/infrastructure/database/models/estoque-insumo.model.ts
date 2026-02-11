@@ -17,6 +17,8 @@ export interface InputStockAttributes {
   observacao?: string | null;
   status?: StockItemStatus;
   suspended_at?: Date | null;
+  dias_para_repor?: number | null;
+  ultima_reposicao?: Date | null;
 }
 
 export class InputStockModel
@@ -37,6 +39,8 @@ export class InputStockModel
   declare observacao?: string | null;
   declare status: StockItemStatus;
   declare suspended_at?: Date | null;
+  declare dias_para_repor?: number | null;
+  declare ultima_reposicao?: Date | null;
 }
 
 InputStockModel.init(
@@ -79,6 +83,14 @@ InputStockModel.init(
       type: DataTypes.DATE,
       allowNull: true,
     },
+    dias_para_repor: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+    ultima_reposicao: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
   },
   {
     sequelize,
@@ -94,6 +106,10 @@ InputStockModel.init(
       { fields: ['setor'], name: 'idx_estoque_insumo_setor' },
       { fields: ['validade'], name: 'idx_estoque_insumo_validade' },
       {
+        fields: ['ultima_reposicao'],
+        name: 'idx_estoque_insumo_ultima_reposicao',
+      },
+      {
         fields: ['tipo', 'setor'],
         name: 'idx_estoque_insumo_tipo_setor',
       },
@@ -106,6 +122,8 @@ InputStockModel.init(
           'tipo',
           'casela_id',
           'lote',
+          'dias_para_repor',
+          'ultima_reposicao',
         ],
         name: 'idx_estoque_insumo_composite_lookup',
       },

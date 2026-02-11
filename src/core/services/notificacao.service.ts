@@ -1,6 +1,10 @@
 import { NotificationEventRepository } from '../../infrastructure/database/repositories/notificacao.repository';
 import { NotificationUpdateData } from '../../infrastructure/types/notificacao.types';
-import { NotificationDestinoType } from '../../infrastructure/database/models/notificacao.model';
+import {
+  EventStatus,
+  NotificationDestinoType,
+  NotificationEventType,
+} from '../../infrastructure/database/models/notificacao.model';
 
 export class NotificationEventService {
   constructor(private readonly repo: NotificationEventRepository) {}
@@ -12,17 +16,25 @@ export class NotificationEventService {
     data_prevista: Date;
     criado_por: number;
     visto: boolean;
+    tipo_evento: NotificationEventType;
   }) {
     return this.repo.create(data);
-  }
-
-  async list(page = 1, limit = 10, status?: string) {
-    return this.repo.list(page, limit, status);
   }
 
   async get(id: number) {
     return this.repo.findById(id);
   }
+
+  async list(filters: {
+    page: number;
+    limit: number;
+    tipo: NotificationEventType;
+    status?: EventStatus;
+    date?: string;
+    residente_nome?: string;
+  }) {
+    return this.repo.listWithFilters(filters);
+  }  
 
   async update(id: number, updates: NotificationUpdateData) {
     return this.repo.update(id, updates);
@@ -32,7 +44,7 @@ export class NotificationEventService {
     return this.repo.delete(id);
   }
 
-  async getTodayPending() {
-    return this.repo.getTodayPendingNotifications();
+  async bootstrapReplacementNotifications() {
+    return this.repo.bootstrapReplacementNotifications();
   }
 }
