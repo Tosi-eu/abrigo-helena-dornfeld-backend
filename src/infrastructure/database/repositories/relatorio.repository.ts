@@ -350,7 +350,6 @@ export class ReportRepository {
 
     const medicinesRows = await MedicineStockModel.findAll({
       attributes: [
-        [fn('AVG', col('preco')), 'preco'],
         [
           sequelize.literal('COALESCE(SUM(quantidade), 0)'),
           'quantidade_estoque',
@@ -371,6 +370,7 @@ export class ReportRepository {
             'dosagem',
             'unidade_medida',
             'principio_ativo',
+            'preco',
           ],
           required: true,
         },
@@ -384,6 +384,7 @@ export class ReportRepository {
         'MedicineModel.dosagem',
         'MedicineModel.unidade_medida',
         'MedicineModel.principio_ativo',
+        'MedicineModel.preco',
       ],
       order: [['MedicineModel', 'nome', 'ASC']],
       raw: true,
@@ -392,7 +393,6 @@ export class ReportRepository {
 
     const inputsRows = await InputStockModel.findAll({
       attributes: [
-        [fn('AVG', col('preco')), 'preco'],
         [
           sequelize.literal('COALESCE(SUM(quantidade), 0)'),
           'quantidade_estoque',
@@ -401,14 +401,14 @@ export class ReportRepository {
       include: [
         {
           model: InputModel,
-          attributes: ['id', 'nome', 'descricao'],
+          attributes: ['id', 'nome', 'descricao', 'preco'],
           required: true,
         },
       ],
       where: {
         casela_id: casela,
       },
-      group: ['InputModel.id', 'InputModel.nome', 'InputModel.descricao'],
+      group: ['InputModel.id', 'InputModel.nome', 'InputModel.descricao', 'InputModel.preco'],
       order: [['InputModel', 'nome', 'ASC']],
       raw: true,
       nest: true,
@@ -420,7 +420,7 @@ export class ReportRepository {
         dosagem: row.MedicineModel?.dosagem || '',
         unidade_medida: row.MedicineModel?.unidade_medida || '',
         principio_ativo: row.MedicineModel?.principio_ativo || '',
-        preco: row.preco ? parseFloat(String(row.preco)) : null,
+        preco: row.MedicineModel?.preco ? parseFloat(String(row.MedicineModel.preco)) : null,
         quantidade_estoque: Number(row.quantidade_estoque) || 0,
         observacao: row.observacao || null,
       }),
@@ -429,7 +429,7 @@ export class ReportRepository {
     const inputs: ResidentConsumptionInput[] = inputsRows.map((row: any) => ({
       nome: row.InputModel?.nome || '',
       descricao: row.InputModel?.descricao || null,
-      preco: row.preco ? parseFloat(String(row.preco)) : null,
+      preco: row.InputModel?.preco ? parseFloat(String(row.InputModel.preco)) : null,
       quantidade_estoque: Number(row.quantidade_estoque) || 0,
     }));
 
@@ -672,6 +672,7 @@ export class ReportRepository {
         setor: plain.setor,
         lote: plain.lote || null,
         destino: plain.destino || null,
+        observacao: plain.observacao || null,
       };
     });
   }

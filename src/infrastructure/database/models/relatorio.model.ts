@@ -83,11 +83,14 @@ export interface TransferReport {
   data: string;
   nome: string;
   principio_ativo?: string | null;
+  descricao?: string | null;
   quantidade: number;
   casela: number | null;
   residente: string | null;
   armario: number | null;
   lote: string | null;
+  destino: string | null;
+  observacao: string | null;
 }
 
 export interface MovementReport {
@@ -103,6 +106,8 @@ export interface MovementReport {
   gaveta: number | null;
   setor: string;
   lote: string | null;
+  destino: string | null;
+  observacao: string | null;
 }
 
 export interface ResidentMedicinesReport {
