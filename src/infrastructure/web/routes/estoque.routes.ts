@@ -3,13 +3,15 @@ import { StockRepository } from '../../database/repositories/estoque.repository'
 import { StockService } from '../../../core/services/estoque.service';
 import { StockController } from '../controllers/estoque.controller';
 import { cacheService } from '../../database/redis/client.redis';
+import { NotificationEventRepository } from '../../database/repositories/notificacao.repository';
 import {
   validatePagination,
   validateEstoqueIdParam,
 } from '../../../middleware/validation.middleware';
 
 const repo = new StockRepository();
-const service = new StockService(repo, cacheService);
+const notificationRepo = new NotificationEventRepository();
+const service = new StockService(repo, cacheService, notificationRepo);
 const controller = new StockController(service);
 
 const router = Router();

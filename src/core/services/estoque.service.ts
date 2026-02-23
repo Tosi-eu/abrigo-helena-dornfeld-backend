@@ -13,6 +13,8 @@ import { MovementRepository } from '../../infrastructure/database/repositories/m
 import { CacheService } from './redis.service';
 import { MedicineRepository } from '../../infrastructure/database/repositories/medicamento.repository';
 import { InputRepository } from '../../infrastructure/database/repositories/insumo.repository';
+import { NotificationEventRepository } from '../../infrastructure/database/repositories/notificacao.repository';
+import { NotificationDestinoType } from '../../infrastructure/database/models/notificacao.model';
 
 export class StockService {
   private medicineRepo: MedicineRepository;
@@ -21,7 +23,8 @@ export class StockService {
 
   constructor(
     private readonly repo: StockRepository,
-    private readonly cache: CacheService
+    private readonly cache: CacheService,
+    private readonly notificationRepo?: NotificationEventRepository,
   ) {
     this.medicineRepo = new MedicineRepository();
     this.inputRepo = new InputRepository();
@@ -251,6 +254,7 @@ export class StockService {
     bypassCasela: boolean,
     casela_id?: number | null,
     observacao?: string | null,
+    dias_para_repor?: number | null,
   ) {
     const stock = await this.repo.findMedicineStockById(estoque_id);
   
@@ -315,6 +319,26 @@ export class StockService {
       gaveta_id: stock.gaveta_id ?? undefined,
       lote: stock.lote ?? null
     });
+  
+    if (
+      this.notificationRepo &&
+      dias_para_repor != null &&
+      dias_para_repor > 0 &&
+      targetCaselaId != null
+    ) {
+      const dataPrevista = new Date();
+      dataPrevista.setDate(dataPrevista.getDate() + dias_para_repor);
+      await this.notificationRepo.create({
+        medicamento_id: stock.medicamento_id,
+        residente_id: targetCaselaId as number,
+        destino: NotificationDestinoType.ESTOQUE,
+        data_prevista: dataPrevista,
+        criado_por: login_id,
+        visto: false,
+        quantidade,
+        dias_para_repor,
+      });
+    }
   
     await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
   

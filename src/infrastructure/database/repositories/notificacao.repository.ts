@@ -17,6 +17,8 @@ export class NotificationEventRepository {
     data_prevista: Date;
     criado_por: number;
     visto: boolean;
+    quantidade?: number | null;
+    dias_para_repor?: number | null;
   }) {
     return NotificationEventModel.create(data);
   }
@@ -46,7 +48,7 @@ export class NotificationEventRepository {
         {
           model: LoginModel,
           as: 'usuario',
-          attributes: { exclude: ['password'] },
+          attributes: ['first_name', 'last_name'],
         },
       ],
     });
@@ -61,7 +63,9 @@ export class NotificationEventRepository {
       medicamento_nome: row.medicamento?.nome,
       medicamento_id: row.medicamento_id,
       residente_id: row.residente_id,
-      usuario: row.usuario,
+      usuario: row.usuario?.first_name + ' ' + row.usuario?.last_name,
+      quantidade: row.quantidade ?? null,
+      dias_para_repor: row.dias_para_repor ?? null,
     }));
 
     return {

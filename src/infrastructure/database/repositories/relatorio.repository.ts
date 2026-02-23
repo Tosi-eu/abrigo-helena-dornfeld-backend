@@ -16,6 +16,7 @@ import {
 } from '../models/relatorio.model';
 import { ResidentMonthlyUsage, MovementType } from '../../../core/utils/utils';
 import { formatDateToPtBr } from '../../helpers/date.helper';
+import { formatCurrency, formatMedicineName } from '../../helpers/format.helper';
 import MedicineStockModel from '../models/estoque-medicamento.model';
 import InputStockModel from '../models/estoque-insumo.model';
 import MedicineModel from '../models/medicamento.model';
@@ -415,53 +416,71 @@ export class ReportRepository {
     });
 
     const medicines: ResidentConsumptionMedicine[] = medicinesRows.map(
-      (row: any) => ({
-        nome: row.MedicineModel?.nome || '',
-        dosagem: row.MedicineModel?.dosagem || '',
-        unidade_medida: row.MedicineModel?.unidade_medida || '',
-        principio_ativo: row.MedicineModel?.principio_ativo || '',
-        preco: row.MedicineModel?.preco ? parseFloat(String(row.MedicineModel.preco)) : null,
-        quantidade_estoque: Number(row.quantidade_estoque) || 0,
-        observacao: row.observacao || null,
-      }),
+      (row: any) => {
+        const nome = row.MedicineModel?.nome || '';
+        const dosagem = row.MedicineModel?.dosagem || '';
+        const unidadeMedida = row.MedicineModel?.unidade_medida || '';
+        const preco = row.MedicineModel?.preco ? parseFloat(String(row.MedicineModel.preco)) : null;
+
+        return {
+          nome: formatMedicineName(nome, dosagem, unidadeMedida),
+          principio_ativo: row.MedicineModel?.principio_ativo || '',
+          preco_formatado: formatCurrency(preco),
+          quantidade_estoque: Number(row.quantidade_estoque) || 0,
+          observacao: row.observacao || null,
+        };
+      },
     );
 
-    const inputs: ResidentConsumptionInput[] = inputsRows.map((row: any) => ({
-      nome: row.InputModel?.nome || '',
-      descricao: row.InputModel?.descricao || null,
-      preco: row.InputModel?.preco ? parseFloat(String(row.InputModel.preco)) : null,
-      quantidade_estoque: Number(row.quantidade_estoque) || 0,
-    }));
+    const inputs: ResidentConsumptionInput[] = inputsRows.map((row: any) => {
+      const preco = row.InputModel?.preco ? parseFloat(String(row.InputModel.preco)) : null;
 
-    const custosMedicamentos = medicines.map(med => {
-      const preco = med.preco || 0;
+      return {
+        nome: row.InputModel?.nome || '',
+        descricao: row.InputModel?.descricao || null,
+        preco_formatado: formatCurrency(preco),
+        quantidade_estoque: Number(row.quantidade_estoque) || 0,
+      };
+    });
+
+    const custosMedicamentos = medicinesRows.map((row: any) => {
+      const nome = row.MedicineModel?.nome || '';
+      const dosagem = row.MedicineModel?.dosagem || '';
+      const unidadeMedida = row.MedicineModel?.unidade_medida || '';
+      const preco = row.MedicineModel?.preco ? parseFloat(String(row.MedicineModel.preco)) : 0;
       const custoMensal = preco;
       const custoAnual = custoMensal * 12;
 
       return {
         item: 'Medicamento',
-        nome: med.nome,
-        custo_mensal: Math.round(custoMensal * 100) / 100,
-        custo_anual: Math.round(custoAnual * 100) / 100,
+        nome: formatMedicineName(nome, dosagem, unidadeMedida),
+        custo_mensal_formatado: formatCurrency(custoMensal),
+        custo_anual_formatado: formatCurrency(custoAnual),
       };
     });
 
-    const custosInsumos = inputs.map(input => {
-      const preco = input.preco || 0;
+    const custosInsumos = inputsRows.map((row: any) => {
+      const preco = row.InputModel?.preco ? parseFloat(String(row.InputModel.preco)) : 0;
       const custoMensal = preco;
       const custoAnual = custoMensal * 12;
 
       return {
         item: 'Insumo',
-        nome: input.nome,
-        custo_mensal: Math.round(custoMensal * 100) / 100,
-        custo_anual: Math.round(custoAnual * 100) / 100,
+        nome: row.InputModel?.nome || '',
+        custo_mensal_formatado: formatCurrency(custoMensal),
+        custo_anual_formatado: formatCurrency(custoAnual),
       };
     });
 
     const totalEstimado =
-      custosMedicamentos.reduce((sum, c) => sum + c.custo_anual, 0) +
-      custosInsumos.reduce((sum, c) => sum + c.custo_anual, 0);
+      medicinesRows.reduce((sum, row: any) => {
+        const preco = row.MedicineModel?.preco ? parseFloat(String(row.MedicineModel.preco)) : 0;
+        return sum + preco * 12;
+      }, 0) +
+      inputsRows.reduce((sum, row: any) => {
+        const preco = row.InputModel?.preco ? parseFloat(String(row.InputModel.preco)) : 0;
+        return sum + preco * 12;
+      }, 0);
 
     return {
       residente: resident.nome,
@@ -470,7 +489,7 @@ export class ReportRepository {
       insumos: inputs,
       custos_medicamentos: custosMedicamentos,
       custos_insumos: custosInsumos,
-      total_estimado: Math.round(totalEstimado * 100) / 100,
+      total_estimado_formatado: formatCurrency(totalEstimado),
     };
   }
 
@@ -723,15 +742,20 @@ export class ReportRepository {
       nest: true,
     });
 
-    return results.map((row: any) => ({
-      residente: row.ResidentModel?.nome || '',
-      casela: row.ResidentModel?.num_casela || casela,
-      medicamento: row.MedicineModel?.nome || '',
-      principio_ativo: row.MedicineModel?.principio_ativo || null,
-      dosagem: `${row.MedicineModel?.dosagem || ''}${row.MedicineModel?.unidade_medida || ''}`.trim(),
-      quantidade: Number(row.quantidade) || 0,
-      validade: formatDateToPtBr(new Date(row.validade)),
-    }));
+    return results.map((row: any) => {
+      const nome = row.MedicineModel?.nome || '';
+      const dosagem = row.MedicineModel?.dosagem || '';
+      const unidadeMedida = row.MedicineModel?.unidade_medida || '';
+
+      return {
+        residente: row.ResidentModel?.nome || '',
+        casela: row.ResidentModel?.num_casela || casela,
+        medicamento: formatMedicineName(nome, dosagem, unidadeMedida),
+        principio_ativo: row.MedicineModel?.principio_ativo || null,
+        quantidade: Number(row.quantidade) || 0,
+        validade: formatDateToPtBr(new Date(row.validade)),
+      };
+    });
   }
 
   async getExpiredMedicinesData(): Promise<ExpiredMedicineReport[]> {

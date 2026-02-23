@@ -12,6 +12,8 @@ export class NotificationEventService {
     data_prevista: Date;
     criado_por: number;
     visto: boolean;
+    quantidade?: number | null;
+    dias_para_repor?: number | null;
   }) {
     return this.repo.create(data);
   }

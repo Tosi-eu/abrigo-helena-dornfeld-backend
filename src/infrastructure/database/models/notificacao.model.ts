@@ -8,6 +8,7 @@ export enum NotificationDestinoType {
   SUS = 'sus',
   FAMILIA = 'familia',
   FARMACIA = 'farmacia',
+  ESTOQUE = 'estoque',
 }
 
 export enum EventStatus {
@@ -25,11 +26,13 @@ interface NotificationEventAttrs {
   criado_por: number;
   status: EventStatus;
   visto: boolean;
+  quantidade?: number | null;
+  dias_para_repor?: number | null;
 }
 
 type NotificationEventCreation = Optional<
   NotificationEventAttrs,
-  'id' | 'status'
+  'id' | 'status' | 'quantidade' | 'dias_para_repor'
 >;
 
 export class NotificationEventModel
@@ -47,6 +50,8 @@ export class NotificationEventModel
   declare medicamento?: MedicineModel;
   declare usuario?: Omit<LoginModel, 'password'>;
   declare visto: boolean;
+  declare quantidade?: number | null;
+  declare dias_para_repor?: number | null;
 }
 
 NotificationEventModel.init(
@@ -79,6 +84,14 @@ NotificationEventModel.init(
       type: DataTypes.BOOLEAN,
       allowNull: false,
       defaultValue: false,
+    },
+    quantidade: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+    dias_para_repor: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
     },
   },
   {
