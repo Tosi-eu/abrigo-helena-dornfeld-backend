@@ -87,6 +87,39 @@ export class StockController {
     }
   }
 
+  async getDaysForReplacementForNursing(req: Request, res: Response) {
+    try {
+      const medicamento_id = req.query.medicamento_id;
+      const casela_id = req.query.casela_id;
+
+      if (
+        medicamento_id == null ||
+        casela_id == null ||
+        Number.isNaN(Number(medicamento_id)) ||
+        Number.isNaN(Number(casela_id))
+      ) {
+        return res.status(400).json({
+          error: 'medicamento_id e casela_id são obrigatórios',
+        });
+      }
+
+      const dias_para_repor =
+        await this.service.getDaysForReplacementForNursing(
+          Number(medicamento_id),
+          Number(casela_id),
+        );
+
+      return res.json({ dias_para_repor });
+    } catch (error: unknown) {
+      return sendErrorResponse(
+        res,
+        500,
+        error,
+        'Erro ao buscar dias para repor',
+      );
+    }
+  }
+
   async proportion(req: Request, res: Response) {
     try {
       const sectorType = toSectorType(req.query.setor as string | undefined);

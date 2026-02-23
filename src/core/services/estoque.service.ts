@@ -347,6 +347,13 @@ export class StockService {
     return result;
   }
 
+  async getDaysForReplacementForNursing(
+    medicamento_id: number,
+    casela_id: number,
+  ): Promise<number | null> {
+    return this.repo.getDaysForReplacementForNursing(medicamento_id, casela_id);
+  }
+
   async transferInputSector(
     estoque_id: number,
     setor: 'farmacia' | 'enfermagem',

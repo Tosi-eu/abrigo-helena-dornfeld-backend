@@ -706,6 +706,24 @@ export class StockRepository {
     return MedicineStockModel.findByPk(id);
   }
 
+  async getDaysForReplacementForNursing(
+    medicamento_id: number,
+    casela_id: number,
+  ): Promise<number | null> {
+    const row = await MedicineStockModel.findOne({
+      where: {
+        medicamento_id,
+        casela_id,
+        setor: 'enfermagem',
+        dias_para_repor: { [Op.ne]: null },
+      },
+      attributes: ['dias_para_repor'],
+      order: [['updatedAt', 'DESC']],
+    });
+    const value = row?.dias_para_repor;
+    return value != null ? Number(value) : null;
+  }
+
   async removeIndividualMedicine(estoqueId: number) {
     await MedicineStockModel.update(
       {
