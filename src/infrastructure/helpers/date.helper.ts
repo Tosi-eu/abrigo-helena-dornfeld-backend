@@ -5,6 +5,37 @@ export function toLocaleDateBRT(date: Date | null) {
   });
 }
 
+export function toBrazilDateOnly(date: Date | string): Date {
+  if (!date) return new Date();
+  const d = date instanceof Date ? date : new Date(date);
+
+  if (isNaN(d.getTime())) {
+    throw new Error(`Data inválida recebida: ${date}`);
+  }
+
+  return new Date(
+    d.toLocaleDateString('en-CA', {
+      timeZone: 'America/Sao_Paulo',
+    }),
+  );
+}
+
+export function getTomorrow(date: Date) {
+  const d = new Date(date);
+  d.setDate(d.getDate() + 1);
+  return d;
+}
+
+export function getTodayAtNoonBrazil(): Date {
+  const now = new Date();
+  const todayInBrazil = new Date(
+    now.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }),
+  );
+
+  todayInBrazil.setHours(12, 0, 0, 0);
+  return todayInBrazil;
+}
+
 export function formatDateToPtBr(
   input: string | Date | undefined | null,
 ): string {
@@ -28,4 +59,24 @@ export function formatDateToPtBr(
   }
 
   return str;
+}
+
+export function formatDateTimeToPtBr(
+  input: string | Date | undefined | null,
+): string {
+  if (!input) return '';
+
+  const date = input instanceof Date ? input : new Date(input);
+  
+  if (isNaN(date.getTime())) {
+    return '';
+  }
+
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+
+  return `${day}/${month}/${year} ${hours}:${minutes}`;
 }

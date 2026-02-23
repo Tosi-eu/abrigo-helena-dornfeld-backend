@@ -9,7 +9,7 @@ export function errorHandler(
   err: unknown,
   req: Request,
   res: Response,
-  next: NextFunction
+  _next: NextFunction,
 ) {
   const errorMessage =
     err instanceof Error ? err.message : 'Internal server error';

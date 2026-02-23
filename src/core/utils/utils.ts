@@ -8,7 +8,7 @@ export enum OperationType {
 export enum MovementType {
   ENTRADA = 'entrada',
   SAIDA = 'saida',
-  TRANSFER = 'transferencia',
+  TRANSFERENCIA = 'transferencia',
 }
 
 export enum ItemType {
@@ -80,6 +80,7 @@ export interface QueryPaginationParams {
   drawer?: string;
   casela?: string;
   sector?: string;
+  lot?: string;
 }
 
 export interface StockProportion {
@@ -97,4 +98,16 @@ export interface NonMovementedItem {
   detalhe: string | null;
   ultima_movimentacao: string | null;
   dias_parados: number;
+}
+
+export interface PriceSourceStrategy {
+  readonly sourceName: string;
+
+  supports(itemType: 'medicine' | 'input'): boolean;
+
+  fetchPrices(params: {
+    itemName: string;
+    dosage?: string;
+    measurementUnit?: string;
+  }): Promise<number[]>;
 }

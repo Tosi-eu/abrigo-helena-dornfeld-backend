@@ -10,7 +10,7 @@ export enum MovementPeriod {
 export type MovementsParams =
   | {
       periodo: MovementPeriod.DIARIO;
-      data: string; 
+      data: string;
     }
   | {
       periodo: MovementPeriod.MENSAL;
@@ -18,8 +18,8 @@ export type MovementsParams =
     }
   | {
       periodo: MovementPeriod.INTERVALO;
-      data_inicial: string; 
-      data_final: string; 
+      data_inicial: string;
+      data_final: string;
     };
 
 export type GenerateReportParams =
@@ -30,7 +30,7 @@ export class ReportService {
   constructor(private readonly repo: ReportRepository) {}
 
   async generateReport(type: string, params: GenerateReportParams) {
-    const { casela, data } = params;
+    const { casela } = params;
 
     switch (type) {
       case 'medicamentos': {
@@ -80,11 +80,17 @@ export class ReportService {
         return report;
       }
 
-      case 'transferencias':
-        if (!data) {
+      case 'transferencias': {
+        if ('data_inicial' in params && 'data_final' in params && params.data_inicial && params.data_final) {
+          return this.repo.getTransfersDataByInterval(params.data_inicial, params.data_final);
+        }
+        
+        if (!('data' in params) || !params.data) {
           throw new Error('Data é obrigatória para relatório de transferências');
         }
-        return this.repo.getTransfersData(data);      
+
+        return this.repo.getTransfersData(params.data);
+      }
 
       case 'movimentacoes': {
         if (!('periodo' in params)) {
@@ -98,22 +104,32 @@ export class ReportService {
         if (periodo === MovementPeriod.DIARIO) {
           return this.repo.getMovementsByPeriod({
             periodo,
-            data: params.data,
+            data: (params as { periodo: MovementPeriod.DIARIO; data: string }).data,
           });
         }
 
         if (periodo === MovementPeriod.MENSAL) {
           return this.repo.getMovementsByPeriod({
             periodo,
-            mes: params.mes,
+            mes: (params as { periodo: MovementPeriod.MENSAL; mes: string }).mes,
           });
         }
 
         if (periodo === MovementPeriod.INTERVALO) {
+          const intervaloParams = params as {
+            periodo: MovementPeriod.INTERVALO;
+            data_inicial: string;
+            data_final: string;
+          };
+
+          if (!intervaloParams.data_inicial || !intervaloParams.data_final) {
+            throw new Error('Data inicial e final são obrigatórias para relatório de movimentações por intervalo');
+          }
+
           return this.repo.getMovementsByPeriod({
             periodo,
-            data_inicial: params.data_inicial,
-            data_final: params.data_final,
+            data_inicial: intervaloParams.data_inicial,
+            data_final: intervaloParams.data_final,
           });
         }
 
@@ -129,6 +145,9 @@ export class ReportService {
 
       case 'medicamentos_vencidos':
         return this.repo.getExpiredMedicinesData();
+
+      case 'expiringSoon':
+        return this.repo.getExpiringSoonData();
 
       default:
         throw new Error('Tipo inválido');

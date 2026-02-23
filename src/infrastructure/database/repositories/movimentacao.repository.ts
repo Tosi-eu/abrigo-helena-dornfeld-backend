@@ -122,7 +122,7 @@ export class MovementRepository {
     const transfers = [];
     for (const row of rows) {
       const movement = row.get({ plain: true });
-      
+
       if (movement.medicamento_id && movement.casela_id) {
         const stockInNursing = await MedicineStockModel.findOne({
           where: {
@@ -312,10 +312,7 @@ export class MovementRepository {
         'nome',
         ['principio_ativo', 'detalhe'],
         [
-          sequelize.fn(
-            'MAX',
-            sequelize.col('MovementModels.data'),
-          ),
+          sequelize.fn('MAX', sequelize.col('MovementModels.data')),
           'ultima_movimentacao',
         ],
         [
@@ -346,17 +343,14 @@ export class MovementRepository {
       subQuery: false,
       raw: true,
     });
-  
+
     const inputs = await InputModel.findAll({
       attributes: [
         'id',
         'nome',
         ['descricao', 'detalhe'],
         [
-          sequelize.fn(
-            'MAX',
-            sequelize.col('MovementModels.data'),
-          ),
+          sequelize.fn('MAX', sequelize.col('MovementModels.data')),
           'ultima_movimentacao',
         ],
         [
@@ -387,7 +381,7 @@ export class MovementRepository {
       subQuery: false,
       raw: true,
     });
-  
+
     const results: NonMovementedItem[] = [
       ...medicines.map((m: any) => ({
         item_id: m.id,
@@ -408,9 +402,9 @@ export class MovementRepository {
         dias_parados: Number(i.dias_parados ?? 0),
       })),
     ];
-  
+
     results.sort((a, b) => b.dias_parados - a.dias_parados);
-  
+
     return results.slice(0, limit);
-  }  
+  }
 }

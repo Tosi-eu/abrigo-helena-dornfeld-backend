@@ -24,8 +24,15 @@ import {
   StockFilterType,
   StockQueryType,
 } from '../../../core/utils/utils';
-import { formatDateToPtBr } from '../../helpers/date.helper';
-import { SECTOR_CONFIG, StockGroup, StockQueryResult } from '../../types/estoque.types';
+import {
+  formatDateToPtBr,
+  getTodayAtNoonBrazil,
+} from '../../helpers/date.helper';
+import {
+  SECTOR_CONFIG,
+  StockGroup,
+  StockQueryResult,
+} from '../../types/estoque.types';
 
 interface StockModel {
   sum(
@@ -340,6 +347,11 @@ export class StockRepository {
       if (params.sector) {
         medicineWhere.setor = params.sector;
       }
+      if (params.lot) {
+        medicineWhere.lote = {
+          [Op.iLike]: `%${params.lot}%`,
+        };
+      }
 
       const medicineIncludeWhere: any = {};
       if (params.name && params.name.trim()) {
@@ -353,7 +365,14 @@ export class StockRepository {
         include: [
           {
             model: MedicineModel,
-            attributes: ['id', 'nome', 'principio_ativo', 'dosagem', 'unidade_medida', 'estoque_minimo'],
+            attributes: [
+              'id',
+              'nome',
+              'principio_ativo',
+              'dosagem',
+              'unidade_medida',
+              'estoque_minimo',
+            ],
             required: true,
             where:
               Object.keys(medicineIncludeWhere).length > 0
@@ -386,10 +405,7 @@ export class StockRepository {
           if (minStock === 0) continue;
 
           const upperLimit = minStock * 1.35;
-          if (
-            stock.quantidade < minStock ||
-            stock.quantidade > upperLimit
-          ) {
+          if (stock.quantidade < minStock || stock.quantidade > upperLimit) {
             continue;
           }
         }
@@ -417,6 +433,7 @@ export class StockRepository {
           suspenso_em: stock.suspended_at || null,
           lote: stock.lote || null,
           observacao: stock.observacao || null,
+          dias_para_repor: stock.dias_para_repor ?? null,
           destino: null,
         } as StockQueryResult);
       }
@@ -440,6 +457,11 @@ export class StockRepository {
       }
       if (params.sector) {
         inputWhere.setor = params.sector;
+      }
+      if (params.lot) {
+        inputWhere.lote = {
+          [Op.iLike]: `%${params.lot}%`,
+        };
       }
 
       const inputIncludeWhere: any = {};
@@ -488,10 +510,7 @@ export class StockRepository {
 
           const upperLimit = minStock * 1.35;
 
-          if (
-            stock.quantidade < minStock ||
-            stock.quantidade > upperLimit
-          ) {
+          if (stock.quantidade < minStock || stock.quantidade > upperLimit) {
             continue;
           }
         }
@@ -518,6 +537,7 @@ export class StockRepository {
           destino: stock.destino || null,
           lote: stock.lote || null,
           observacao: stock.observacao || null,
+          dias_para_repor: stock.dias_para_repor ?? null,
         } as StockQueryResult);
       }
     }
@@ -587,9 +607,9 @@ export class StockRepository {
         ...(options?.tipos && { tipo: { [Op.in]: options.tipos } }),
       },
     });
-  
+
     return Number(result || 0);
-  }  
+  }
 
   async getStockProportionBySector(
     setor?: SectorType,
@@ -604,17 +624,17 @@ export class StockRepository {
       carrinho_emergencia_insumos: 0,
       carrinho_psicotropicos_insumos: 0,
     };
-  
+
     if (!setor) {
       const [
         medicamentosGeral,
         medicamentosIndividual,
         insumosGeral,
         insumosIndividual,
-  
+
         carrinhoEmergenciaMedicamentos,
         carrinhoPsicotropicosMedicamentos,
-  
+
         carrinhoEmergenciaInsumos,
         carrinhoPsicotropicosInsumos,
       ] = await Promise.all([
@@ -630,14 +650,14 @@ export class StockRepository {
         this.sumStock(InputStockModel, {
           tipos: [OperationType.INDIVIDUAL],
         }),
-  
+
         this.sumStock(MedicineStockModel, {
           tipos: [OperationType.CARRINHO_EMERGENCIA],
         }),
         this.sumStock(MedicineStockModel, {
           tipos: [OperationType.CARRINHO_PSICOTROPICOS],
         }),
-  
+
         this.sumStock(InputStockModel, {
           tipos: [OperationType.CARRINHO_EMERGENCIA],
         }),
@@ -645,46 +665,43 @@ export class StockRepository {
           tipos: [OperationType.CARRINHO_PSICOTROPICOS],
         }),
       ]);
-  
+
       return {
         medicamentos_geral: medicamentosGeral,
         medicamentos_individual: medicamentosIndividual,
         insumos_geral: insumosGeral,
         insumos_individual: insumosIndividual,
-  
-        carrinho_emergencia_medicamentos:
-          carrinhoEmergenciaMedicamentos,
-        carrinho_psicotropicos_medicamentos:
-          carrinhoPsicotropicosMedicamentos,
-  
-        carrinho_emergencia_insumos:
-          carrinhoEmergenciaInsumos,
-        carrinho_psicotropicos_insumos:
-          carrinhoPsicotropicosInsumos,
+
+        carrinho_emergencia_medicamentos: carrinhoEmergenciaMedicamentos,
+        carrinho_psicotropicos_medicamentos: carrinhoPsicotropicosMedicamentos,
+
+        carrinho_emergencia_insumos: carrinhoEmergenciaInsumos,
+        carrinho_psicotropicos_insumos: carrinhoPsicotropicosInsumos,
       };
     }
-  
+
     const config = SECTOR_CONFIG[setor];
-  
+
     for (const [group, tipos] of Object.entries(config.medicines)) {
-      baseResult[group as StockGroup] =
-        await this.sumStock(MedicineStockModel, {
+      baseResult[group as StockGroup] = await this.sumStock(
+        MedicineStockModel,
+        {
           setor,
           tipos,
-        });
+        },
+      );
     }
-  
+
     for (const [group, tipos] of Object.entries(config.inputs)) {
-      baseResult[group as StockGroup] =
-        await this.sumStock(InputStockModel, {
-          setor,
-          tipos,
-        });
+      baseResult[group as StockGroup] = await this.sumStock(InputStockModel, {
+        setor,
+        tipos,
+      });
     }
-  
+
     return baseResult;
-  }  
-  
+  }
+
   async findMedicineStockById(id: number) {
     return MedicineStockModel.findByPk(id);
   }
@@ -773,6 +790,8 @@ export class StockRepository {
       casela_id?: number | null;
       tipo?: string;
       preco?: number | null;
+      observacao?: string | null;
+      dias_para_repor?: number | null;
     },
   ) {
     if (tipo === ItemType.MEDICAMENTO) {
@@ -786,12 +805,15 @@ export class StockRepository {
       if ('quantidade' in data) updateData.quantidade = data.quantidade;
       if ('armario_id' in data) updateData.armario_id = data.armario_id ?? null;
       if ('gaveta_id' in data) updateData.gaveta_id = data.gaveta_id ?? null;
-      if ('validade' in data) updateData.validade = data.validade;
-      if ('origem' in data) updateData.origem = data.origem;
+      if ('validade' in data) updateData.validade = data.validade ?? undefined;
+      if ('origem' in data) updateData.origem = data.origem ?? null;
       if ('setor' in data) updateData.setor = data.setor;
       if ('lote' in data) updateData.lote = data.lote ?? null;
       if ('casela_id' in data) updateData.casela_id = data.casela_id ?? null;
-      if (data.tipo) updateData.tipo = data.tipo;
+      if ('observacao' in data) updateData.observacao = data.observacao ?? null;
+      if ('dias_para_repor' in data)
+        updateData.dias_para_repor = data.dias_para_repor ?? null;
+      if ('tipo' in data) updateData.tipo = data.tipo;
 
       if (updateData.armario_id != null && updateData.gaveta_id != null) {
         throw new Error(
@@ -799,8 +821,15 @@ export class StockRepository {
         );
       }
 
+      if (
+        updateData.dias_para_repor != null &&
+        updateData.dias_para_repor < 0
+      ) {
+        throw new Error('Dias para repor não pode ser negativo');
+      }
+
       if (updateData.quantidade != null && updateData.quantidade < 1) {
-        throw new Error('A quantidade não pode ser menor que 0');
+        throw new Error('A quantidade não pode ser menor que 1');
       }
 
       if (
@@ -810,7 +839,7 @@ export class StockRepository {
         throw new Error('A casela só pode ser preenchida para tipo individual');
       }
 
-      if (updateData.validade == null) {
+      if ('validade' in data && updateData.validade == null) {
         throw new Error('A data de validade é obrigatória');
       }
 
@@ -826,7 +855,9 @@ export class StockRepository {
         throw new Error('O tipo não pode ser vazio');
       }
 
-      await MedicineStockModel.update(updateData, { where: { id: estoqueId } });
+      await MedicineStockModel.update(updateData, {
+        where: { id: estoqueId },
+      });
     } else {
       const stock = await this.findInputStockById(estoqueId);
       if (!stock) {
@@ -838,18 +869,26 @@ export class StockRepository {
       if ('quantidade' in data) updateData.quantidade = data.quantidade;
       if ('armario_id' in data) updateData.armario_id = data.armario_id ?? null;
       if ('gaveta_id' in data) updateData.gaveta_id = data.gaveta_id ?? null;
-      if ('validade' in data) updateData.validade = data.validade as Date;
+      if ('validade' in data) updateData.validade = data.validade ?? undefined;
       if ('setor' in data) updateData.setor = data.setor;
       if ('lote' in data) updateData.lote = data.lote ?? null;
       if ('casela_id' in data) updateData.casela_id = data.casela_id ?? null;
-      if (data.tipo != null && data.tipo !== '') {
-        updateData.tipo = data.tipo;
-      }
+      if ('observacao' in data) updateData.observacao = data.observacao ?? null;
+      if ('dias_para_repor' in data)
+        updateData.dias_para_repor = data.dias_para_repor ?? null;
+      if ('tipo' in data) updateData.tipo = data.tipo;
 
       if (updateData.armario_id != null && updateData.gaveta_id != null) {
         throw new Error(
           'Não é permitido preencher armário e gaveta ao mesmo tempo',
         );
+      }
+
+      if (
+        updateData.dias_para_repor != null &&
+        updateData.dias_para_repor < 0
+      ) {
+        throw new Error('Dias para repor não pode ser negativo');
       }
 
       if (updateData.quantidade != null && updateData.quantidade < 1) {
@@ -863,7 +902,7 @@ export class StockRepository {
         throw new Error('A casela só pode ser preenchida para tipo individual');
       }
 
-      if (updateData.validade == null && !stock.validade) {
+      if ('validade' in data && updateData.validade == null) {
         throw new Error('A data de validade é obrigatória');
       }
 
@@ -874,7 +913,10 @@ export class StockRepository {
       if (updateData.tipo != null && updateData.tipo.trim() === '') {
         throw new Error('O tipo não pode ser vazio');
       }
-      await InputStockModel.update(updateData, { where: { id: estoqueId } });
+
+      await InputStockModel.update(updateData, {
+        where: { id: estoqueId },
+      });
     }
 
     return {
@@ -937,86 +979,107 @@ export class StockRepository {
   }
 
   async transferMedicineSector(
-      estoqueId: number,
-      setor: 'farmacia' | 'enfermagem',
-      quantidade: number,
-      bypassCasela: boolean,
-      casela_id: number,
-      observacao?: string | null,
-    ) {
-      const stock = await MedicineStockModel.findByPk(estoqueId);
+    estoqueId: number,
+    setor: 'farmacia' | 'enfermagem',
+    quantidade: number,
+    bypassCasela: boolean,
+    casela_id: number,
+    observacao?: string | null,
+    dias_para_repor?: number | null,
+  ) {
+    const stock = await MedicineStockModel.findByPk(estoqueId);
 
-      if (!stock) {
-        throw new Error('Estoque não encontrado');
-      }
-    
-      if (!casela_id && !bypassCasela) {
-        throw new Error('Casela é obrigatória para transferência de setor');
-      }
-    
-      if (!quantidade || quantidade <= 0) {
-        throw new Error('Quantidade inválida, deve ser um valor positivo');
-      }
-    
-      if (quantidade > stock.quantidade) {
-        throw new Error(`Quantidade não pode ser maior que ${stock.quantidade}`);
-      }
-
-      if (stock.quantidade === 0) {
-        throw new Error('Não há estoque disponível para transferir');
-     }
-    
-      if (!stock.origem) {
-        throw new Error('Origem é obrigatória para medicamentos');
-      }
-
-      const finalCaselaId = bypassCasela ? null : casela_id;
-      const finalDetails = bypassCasela
-        ? 'para uso geral'
-        : observacao ?? stock.observacao;
-      const finalStockType = bypassCasela ? OperationType.GERAL : OperationType.INDIVIDUAL;
-    
-      const existing = await MedicineStockModel.findOne({
-        where: {
-          medicamento_id: stock.medicamento_id,
-          casela_id: finalCaselaId,
-          validade: stock.validade,
-          setor,
-          lote: stock.lote ?? null,
-          tipo: finalStockType
-        },
-      });
-    
-      if (existing) {
-        existing.quantidade += quantidade;
-
-        if (observacao != null) {
-          existing.observacao = observacao;
-        }
-
-        await existing.save();
-      } else {
-        await MedicineStockModel.create({
-          medicamento_id: stock.medicamento_id,
-          casela_id: finalCaselaId,
-          armario_id: stock.armario_id,
-          gaveta_id: stock.gaveta_id,
-          validade: stock.validade,
-          quantidade,
-          origem: stock.origem,
-          tipo: finalStockType,
-          setor,
-          lote: stock.lote,
-          status: stock.status,
-          observacao: finalDetails,
-        });
-      }
-    
-      await stock.update({ quantidade: stock.quantidade - quantidade });
-    
-      return { message: 'Medicamento transferido de setor com sucesso' };
+    if (!stock) {
+      throw new Error('Estoque não encontrado');
     }
-  
+
+    if (!casela_id && !bypassCasela) {
+      throw new Error('Casela é obrigatória para transferência de setor');
+    }
+
+    if (!quantidade || quantidade <= 0) {
+      throw new Error('Quantidade inválida, deve ser um valor positivo');
+    }
+
+    if (quantidade > stock.quantidade) {
+      throw new Error(`Quantidade não pode ser maior que ${stock.quantidade}`);
+    }
+
+    if (stock.quantidade === 0) {
+      throw new Error('Não há estoque disponível para transferir');
+    }
+
+    if (!stock.origem) {
+      throw new Error('Origem é obrigatória para medicamentos');
+    }
+
+    if (!casela_id && dias_para_repor != null) {
+      throw new Error(
+        'Dias para reposição só pode ser definido para estoque individual',
+      );
+    }
+
+    if (dias_para_repor && (isNaN(dias_para_repor) || dias_para_repor < 0)) {
+      throw new Error('Dias para repor deve ser um número positivo ou zero');
+    }
+
+    const finalCaselaId = bypassCasela ? null : casela_id;
+    const finalDetails = bypassCasela
+      ? 'para uso geral'
+      : (observacao ?? stock.observacao);
+    const finalStockType = bypassCasela
+      ? OperationType.GERAL
+      : OperationType.INDIVIDUAL;
+
+    const existing = await MedicineStockModel.findOne({
+      where: {
+        medicamento_id: stock.medicamento_id,
+        casela_id: finalCaselaId,
+        validade: stock.validade,
+        setor,
+        lote: stock.lote ?? null,
+        tipo: finalStockType,
+      },
+    });
+
+    if (existing) {
+      existing.quantidade += quantidade;
+
+      if (observacao != null) {
+        existing.observacao = observacao;
+      }
+
+      if (dias_para_repor != null) {
+        existing.dias_para_repor = dias_para_repor;
+      }
+
+      existing.ultima_reposicao = getTodayAtNoonBrazil();
+
+      await existing.save();
+    } else {
+      await MedicineStockModel.create({
+        medicamento_id: stock.medicamento_id,
+        casela_id: finalCaselaId,
+        armario_id: stock.armario_id,
+        gaveta_id: stock.gaveta_id,
+        validade: stock.validade,
+        quantidade,
+        origem: stock.origem,
+        tipo: finalStockType,
+        setor,
+        lote: stock.lote,
+        status: stock.status,
+        observacao: finalDetails,
+        dias_para_repor: dias_para_repor ?? null,
+        ultima_reposicao: getTodayAtNoonBrazil(),
+      });
+    }
+
+    await stock.update({ quantidade: stock.quantidade - quantidade });
+
+    return { message: 'Medicamento transferido de setor com sucesso' };
+  }
+
   async transferInputSector(
     estoqueId: number,
     setor: 'farmacia' | 'enfermagem',
@@ -1024,19 +1087,20 @@ export class StockRepository {
     casela_id?: number | null,
     destino?: string | null,
     observacao?: string | null,
+    dias_para_repor?: number | null,
   ) {
     const stock = await InputStockModel.findByPk(estoqueId);
-  
+
     if (!stock) {
       throw new Error('Estoque não encontrado');
     }
 
     const hasDestino = destino != null && destino.trim() !== '';
-  
+
     if (hasDestino && casela_id) {
       throw new Error('Destino e casela não podem ser informados juntos');
     }
-  
+
     if (!quantidade || quantidade <= 0) {
       throw new Error('Quantidade inválida, deve ser um valor positivo');
     }
@@ -1044,13 +1108,25 @@ export class StockRepository {
     if (stock.quantidade === 0) {
       throw new Error('Não há estoque disponível para transferir');
     }
-      
+
     if (quantidade > stock.quantidade) {
       throw new Error(`Quantidade não pode ser maior que ${stock.quantidade}`);
     }
 
-    const finalTipo = hasDestino ? OperationType.GERAL : OperationType.INDIVIDUAL;
-  
+    if (!casela_id && dias_para_repor != null) {
+      throw new Error(
+        'Dias para reposição só pode ser definido para estoque individual',
+      );
+    }
+
+    if (dias_para_repor && (isNaN(dias_para_repor) || dias_para_repor < 0)) {
+      throw new Error('Dias para repor deve ser um número positivo ou zero');
+    }
+
+    const finalTipo = hasDestino
+      ? OperationType.GERAL
+      : OperationType.INDIVIDUAL;
+
     const existing = await InputStockModel.findOne({
       where: {
         insumo_id: stock.insumo_id,
@@ -1062,13 +1138,19 @@ export class StockRepository {
         destino: hasDestino ? destino : null,
       },
     });
-  
+
     if (existing) {
       existing.quantidade += quantidade;
 
       if (observacao != null) {
         existing.observacao = observacao;
       }
+
+      if (dias_para_repor != null) {
+        existing.dias_para_repor = dias_para_repor;
+      }
+
+      existing.ultima_reposicao = getTodayAtNoonBrazil();
 
       await existing.save();
     } else {
@@ -1085,12 +1167,13 @@ export class StockRepository {
         status: stock.status,
         destino: hasDestino ? destino : null,
         observacao: observacao ?? stock.observacao,
+        dias_para_repor: dias_para_repor ?? null,
+        ultima_reposicao: getTodayAtNoonBrazil(),
       });
     }
-  
+
     await stock.update({ quantidade: stock.quantidade - quantidade });
-  
+
     return { message: 'Insumo transferido de setor com sucesso' };
   }
-
 }

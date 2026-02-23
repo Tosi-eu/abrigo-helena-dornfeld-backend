@@ -14,7 +14,7 @@ import { CacheService } from './redis.service';
 import { MedicineRepository } from '../../infrastructure/database/repositories/medicamento.repository';
 import { InputRepository } from '../../infrastructure/database/repositories/insumo.repository';
 import { NotificationEventRepository } from '../../infrastructure/database/repositories/notificacao.repository';
-import { NotificationDestinoType } from '../../infrastructure/database/models/notificacao.model';
+import { NotificationDestinoType, NotificationEventType } from '../../infrastructure/database/models/notificacao.model';
 
 export class StockService {
   private medicineRepo: MedicineRepository;
@@ -201,7 +201,7 @@ export class StockService {
       60,
     );
   }
-  
+
   async suspendIndividualMedicine(estoque_id: number) {
     const stock = await this.repo.findMedicineStockById(estoque_id);
 
@@ -257,46 +257,45 @@ export class StockService {
     dias_para_repor?: number | null,
   ) {
     const stock = await this.repo.findMedicineStockById(estoque_id);
-  
+
     if (!stock) {
       throw new Error('Medicamento não encontrado');
     }
-  
+
     if (!login_id) {
       throw new Error('Login é obrigatório');
     }
-  
+
     if (stock.status === StockItemStatus.SUSPENSO) {
       throw new Error('Medicamento suspenso não pode ser transferido');
     }
-  
+
     if (stock.setor !== 'farmacia') {
       throw new Error(
         'Transferência permitida apenas de farmácia para enfermaria',
       );
     }
-  
+
     if (setor !== 'enfermagem') {
       throw new Error('Transferência permitida apenas para enfermaria');
     }
-  
+
     if (!quantidade || quantidade <= 0) {
       throw new Error('Quantidade é obrigatória e deve ser maior que zero');
     }
-  
+
     if (quantidade > stock.quantidade) {
       throw new Error(`Quantidade não pode ser maior que ${stock.quantidade}`);
     }
-  
+
     const hasCasela = casela_id != null;
-  
-  
+
     if (!hasCasela && !bypassCasela) {
       throw new Error('Casela é obrigatória para transferir');
     }
 
     const targetCaselaId = casela_id != null ? casela_id : stock.casela_id;
-  
+
     const result = await this.repo.transferMedicineSector(
       estoque_id,
       setor,
@@ -304,10 +303,11 @@ export class StockService {
       bypassCasela,
       targetCaselaId as number,
       observacao,
+      dias_para_repor ?? null,
     );
-  
+
     await this.movementRepo.create({
-      tipo: MovementType.TRANSFER,
+      tipo: MovementType.TRANSFERENCIA,
       login_id,
       medicamento_id: stock.medicamento_id,
       insumo_id: null,
@@ -317,7 +317,8 @@ export class StockService {
       setor,
       armario_id: stock.armario_id ?? undefined,
       gaveta_id: stock.gaveta_id ?? undefined,
-      lote: stock.lote ?? null
+      lote: stock.lote ?? null,
+      observacao: observacao || null,
     });
   
     if (
@@ -335,16 +336,17 @@ export class StockService {
         data_prevista: dataPrevista,
         criado_por: login_id,
         visto: false,
+        tipo_evento: NotificationEventType.REPOSICAO_ESTOQUE,
         quantidade,
         dias_para_repor,
       });
     }
-  
+
     await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
-  
+
     return result;
   }
-  
+
   async transferInputSector(
     estoque_id: number,
     setor: 'farmacia' | 'enfermagem',
@@ -353,71 +355,72 @@ export class StockService {
     casela_id?: number,
     destino?: string | null,
     observacao?: string | null,
+    dias_para_repor?: number | null,
   ) {
     const stock = await this.repo.findInputStockById(estoque_id);
-  
+
     if (!stock) {
       throw new Error('Insumo não encontrado');
     }
-  
+
     if (!login_id) {
       throw new Error('Usuário não autenticado');
     }
-  
+
     if (stock.status === StockItemStatus.SUSPENSO) {
       throw new Error('Insumo suspenso não pode ser transferido');
     }
-  
+
     if (stock.setor !== 'farmacia') {
       throw new Error(
         'Transferência permitida apenas de farmácia para enfermaria',
       );
     }
-  
+
     if (setor !== 'enfermagem') {
       throw new Error('Transferência permitida apenas para enfermaria');
     }
-  
+
     if (!quantidade || quantidade <= 0) {
       throw new Error('Quantidade é obrigatória e deve ser maior que zero');
     }
-  
+
     if (quantidade > stock.quantidade) {
       throw new Error(`Quantidade não pode ser maior que ${stock.quantidade}`);
     }
-  
+
     const hasDestino = destino != null && destino.trim() !== '';
     const hasCasela = casela_id != null;
-  
+
     if (hasDestino && hasCasela) {
       throw new Error('Destino e casela não podem ser informados juntos');
     }
-  
+
     if (!hasDestino && !hasCasela) {
       throw new Error('Casela ou destino é obrigatório para transferir');
     }
-  
+
     const targetTipo = hasDestino
       ? OperationType.GERAL
       : OperationType.INDIVIDUAL;
-  
+
     const targetCaselaId =
       targetTipo === OperationType.INDIVIDUAL ? casela_id : null;
-  
-    const targetDestino =
-      targetTipo === OperationType.GERAL ? destino : null;
-  
+
+    const targetDestino = targetTipo === OperationType.GERAL ? destino : null;
+
     const result = await this.repo.transferInputSector(
       estoque_id,
       setor,
       quantidade,
       targetCaselaId,
       targetDestino,
-      observacao ?? null
+      observacao ?? null,
+      dias_para_repor ?? null,
     );
-  
+
     await this.movementRepo.create({
-      tipo: MovementType.TRANSFER,
+      tipo: MovementType.TRANSFERENCIA,
       login_id,
       medicamento_id: null,
       insumo_id: stock.insumo_id,
@@ -429,13 +432,14 @@ export class StockService {
       gaveta_id: stock.gaveta_id ?? undefined,
       lote: stock.lote ?? null,
       destino: targetDestino,
+      observacao: observacao || null,
     });
-  
+
     await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
-  
+
     return result;
   }
-  
+
   async updateStockItem(
     estoqueId: number,
     tipo: ItemType,
@@ -450,6 +454,8 @@ export class StockService {
       casela_id?: number | null;
       tipo?: string;
       preco?: number | null;
+      observacao?: string | null;
+      dias_para_repor?: number | null;
     },
   ) {
     if (tipo === ItemType.MEDICAMENTO) {

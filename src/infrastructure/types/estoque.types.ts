@@ -1,4 +1,4 @@
-import { OperationType, SectorType } from "../../core/utils/utils";
+import { OperationType, SectorType } from '../../core/utils/utils';
 
 export interface StockQueryResult {
   id?: number;
@@ -43,9 +43,7 @@ export const SECTOR_CONFIG: Record<SectorType, SectorConfig> = {
     medicines: {
       medicamentos_geral: [OperationType.GERAL],
       medicamentos_individual: [OperationType.INDIVIDUAL],
-      carrinho_emergencia_medicamentos: [
-        OperationType.CARRINHO_EMERGENCIA,
-      ],
+      carrinho_emergencia_medicamentos: [OperationType.CARRINHO_EMERGENCIA],
       carrinho_psicotropicos_medicamentos: [
         OperationType.CARRINHO_PSICOTROPICOS,
       ],
@@ -53,12 +51,8 @@ export const SECTOR_CONFIG: Record<SectorType, SectorConfig> = {
     inputs: {
       insumos_geral: [OperationType.GERAL],
       insumos_individual: [OperationType.INDIVIDUAL],
-      carrinho_emergencia_insumos: [
-        OperationType.CARRINHO_EMERGENCIA,
-      ],
-      carrinho_psicotropicos_insumos: [
-        OperationType.CARRINHO_PSICOTROPICOS,
-      ],
+      carrinho_emergencia_insumos: [OperationType.CARRINHO_EMERGENCIA],
+      carrinho_psicotropicos_insumos: [OperationType.CARRINHO_PSICOTROPICOS],
     },
   },
 };
