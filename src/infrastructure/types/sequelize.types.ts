@@ -13,4 +13,5 @@ export type MovementWhereOptions = WhereOptions & {
 
 export type NotificationWhereOptions = WhereOptions & {
   status?: string;
+  visto?: boolean;
 };

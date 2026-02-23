@@ -32,6 +32,7 @@ export class NotificationEventService {
     status?: EventStatus;
     date?: string;
     residente_nome?: string;
+    visto?: boolean;
   }) {
     return this.repo.listWithFilters(filters);
   }  

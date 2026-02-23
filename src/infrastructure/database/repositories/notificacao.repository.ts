@@ -47,6 +47,7 @@ export class NotificationEventRepository {
     status = EventStatus.PENDENTE,
     date,
     residente_nome,
+    visto,
   }: {
     page?: number;
     limit?: number;
@@ -55,6 +56,7 @@ export class NotificationEventRepository {
     date?: 'today' | 'tomorrow' | string;
     residente_nome?: string;
     casela?: string | number;
+    visto?: boolean;
   }) {
     const offset = (page - 1) * limit;
   
@@ -70,6 +72,7 @@ export class NotificationEventRepository {
       where.data_prevista = toBrazilDateOnly(tomorrow);
     }
     if (date && !['today', 'tomorrow'].includes(date)) where.data_prevista = date;
+    if (visto === false) where.visto = false;
   
     const include: any[] = [
       {
@@ -156,7 +159,6 @@ export class NotificationEventRepository {
   }
 
   async bootstrapReplacementNotifications(): Promise<number> {
-    const today = toBrazilDateOnly(new Date());
     let created = 0;
   
     const medicineStocks = await MedicineStockModel.findAll({
@@ -194,6 +196,8 @@ export class NotificationEventRepository {
         criado_por: 1, // Sistema
         visto: false,
         status: EventStatus.PENDENTE,
+        quantidade: stock.quantidade,
+        dias_para_repor: stock.dias_para_repor,
       });
   
       created++;
