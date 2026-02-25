@@ -39,6 +39,13 @@ export class LoginRepository {
     });
   }
 
+  async findAll() {
+    return LoginModel.findAll({
+      attributes: ['id', 'login', 'first_name', 'last_name', 'role'],
+      order: [['id', 'ASC']],
+    });
+  }
+
   async update(id: number, data: Partial<LoginModel>) {
     await LoginModel.update(data, { where: { id } });
     return this.findById(id);

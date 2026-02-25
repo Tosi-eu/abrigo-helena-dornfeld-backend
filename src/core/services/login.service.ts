@@ -139,6 +139,57 @@ export class LoginService {
     return this.repo.delete(id);
   }
 
+  /** Admin: list all users (no passwords). */
+  async listAllUsers() {
+    const rows = await this.repo.findAll();
+    return rows.map((u) => ({
+      id: u.id,
+      login: u.login,
+      firstName: u.first_name,
+      lastName: u.last_name,
+      role: u.role,
+    }));
+  }
+
+  /** Admin: update any user (including role). */
+  async updateUserByAdmin(
+    userId: number,
+    data: {
+      first_name?: string;
+      last_name?: string;
+      login?: string;
+      password?: string;
+      role?: 'admin' | 'user';
+    },
+  ) {
+    const user = await this.repo.findById(userId);
+    if (!user) return null;
+
+    const updateData: Record<string, unknown> = {};
+    if (data.first_name !== undefined) updateData.first_name = data.first_name;
+    if (data.last_name !== undefined) updateData.last_name = data.last_name;
+    if (data.login !== undefined) updateData.login = data.login;
+    if (data.role !== undefined) updateData.role = data.role;
+    if (data.password) {
+      updateData.password = await bcrypt.hash(data.password, 10);
+    }
+
+    const updated = await this.repo.update(userId, updateData as any);
+    return {
+      id: updated!.id,
+      login: updated!.login,
+      firstName: updated!.first_name,
+      lastName: updated!.last_name,
+      role: updated!.role,
+    };
+  }
+
+  /** Admin: delete a user. Returns false if trying to delete self. */
+  async deleteUserByAdmin(userId: number, adminId: number) {
+    if (userId === adminId) return false;
+    return this.repo.delete(userId);
+  }
+
   async logout(userId: number) {
     await this.repo.clearToken(userId);
   }
