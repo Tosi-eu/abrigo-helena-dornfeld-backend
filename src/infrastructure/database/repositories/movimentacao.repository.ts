@@ -1,4 +1,5 @@
 import { Op } from 'sequelize';
+import type { Transaction } from 'sequelize';
 import MovementModel from '../models/movimentacao.model';
 import Movement from '../../../core/domain/movimentacao';
 import MedicineModel from '../models/medicamento.model';
@@ -21,11 +22,14 @@ export interface MovementQueryParams {
 }
 
 export class MovementRepository {
-  async create(data: Movement) {
-    return await MovementModel.create({
-      ...data,
-      data: new Date(),
-    });
+  async create(data: Movement, transaction?: Transaction) {
+    return await MovementModel.create(
+      {
+        ...data,
+        data: new Date(),
+      },
+      { transaction },
+    );
   }
 
   async listMedicineMovements({

@@ -2,11 +2,12 @@ import { Login } from '../../../core/domain/login';
 import { LoginModel } from '../models/login.model';
 
 export class LoginRepository {
-  async create(data: Login) {
+  async create(data: Login & { role?: 'admin' | 'user' }) {
     const user = await LoginModel.create({
       ...data,
+      role: data.role ?? 'user',
     });
-    return { id: user.id, login: user.login };
+    return { id: user.id, login: user.login, role: user.role };
   }
 
   async findByLogin(login: string) {
@@ -19,6 +20,7 @@ export class LoginRepository {
         'refresh_token',
         'first_name',
         'last_name',
+        'role',
       ],
     });
   }
@@ -32,6 +34,7 @@ export class LoginRepository {
         'refresh_token',
         'first_name',
         'last_name',
+        'role',
       ],
     });
   }
@@ -50,6 +53,16 @@ export class LoginRepository {
   }
 
   async findByToken(token: string) {
-    return LoginModel.findOne({ where: { refresh_token: token } });
+    return LoginModel.findOne({
+      where: { refresh_token: token },
+      attributes: [
+        'id',
+        'login',
+        'refresh_token',
+        'first_name',
+        'last_name',
+        'role',
+      ],
+    });
   }
 }

@@ -8,6 +8,7 @@ export class LoginModel extends Model {
   declare login: string;
   declare password: string;
   declare refresh_token?: string | null;
+  declare role: 'admin' | 'user';
 }
 
 LoginModel.init(
@@ -37,6 +38,11 @@ LoginModel.init(
     refresh_token: {
       type: DataTypes.STRING,
       allowNull: true,
+    },
+    role: {
+      type: DataTypes.STRING(20),
+      allowNull: false,
+      defaultValue: 'user',
     },
   },
   {

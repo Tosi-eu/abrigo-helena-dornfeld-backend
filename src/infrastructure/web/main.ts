@@ -62,13 +62,18 @@ app.use((req, res, next) => {
   next();
 });
 
+// IP-based rate limit: limit requests per IP in a time window
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: Number(process.env.RATE_LIMIT_MAX) || 1000,
-  message: 'Too many requests from this IP, please try again later.',
+  windowMs: Number(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes
+  max: Number(process.env.RATE_LIMIT_MAX) || 200,
+  message: { error: 'Too many requests from this IP, please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
-  skip: req => req.method === 'OPTIONS',
+  skip: (req) => req.method === 'OPTIONS',
+  keyGenerator: (req) => {
+    const ip = req.ip || req.socket?.remoteAddress || 'unknown';
+    return ip;
+  },
 });
 
 app.use(limiter);

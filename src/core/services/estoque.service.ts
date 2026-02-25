@@ -15,6 +15,7 @@ import { MedicineRepository } from '../../infrastructure/database/repositories/m
 import { InputRepository } from '../../infrastructure/database/repositories/insumo.repository';
 import { NotificationEventRepository } from '../../infrastructure/database/repositories/notificacao.repository';
 import { NotificationDestinoType, NotificationEventType } from '../../infrastructure/database/models/notificacao.model';
+import type { Transaction } from 'sequelize';
 
 export class StockService {
   private medicineRepo: MedicineRepository;
@@ -34,6 +35,7 @@ export class StockService {
   async medicineStockIn(
     data: MedicineStock,
     login_id: number,
+    transaction?: Transaction,
   ): Promise<{ message: string }> {
     if (
       !data.medicamento_id ||
@@ -60,7 +62,7 @@ export class StockService {
       throw new Error('Usuário não autenticado');
     }
 
-    const result = await this.repo.createMedicineStockIn(data);
+    const result = await this.repo.createMedicineStockIn(data, transaction);
 
     await this.movementRepo.create({
       tipo: MovementType.ENTRADA,
@@ -74,7 +76,7 @@ export class StockService {
       armario_id: data.armario_id ?? undefined,
       gaveta_id: data.gaveta_id ?? undefined,
       lote: data.lote ?? null,
-    });
+    }, transaction);
 
     await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
 
@@ -84,6 +86,7 @@ export class StockService {
   async inputStockIn(
     data: InputStock,
     login_id: number,
+    transaction?: Transaction,
   ): Promise<{ message: string }> {
     if (
       !data.insumo_id ||
@@ -98,7 +101,7 @@ export class StockService {
       throw new Error('Usuário não autenticado');
     }
 
-    const result = await this.repo.createInputStockIn(data);
+    const result = await this.repo.createInputStockIn(data, transaction);
 
     await this.movementRepo.create({
       tipo: MovementType.ENTRADA,
@@ -112,7 +115,7 @@ export class StockService {
       armario_id: data.armario_id ?? undefined,
       gaveta_id: data.gaveta_id ?? undefined,
       lote: data.lote ?? null,
-    });
+    }, transaction);
 
     await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
 
@@ -126,6 +129,7 @@ export class StockService {
       quantidade: number;
     },
     login_id: number,
+    transaction?: Transaction,
   ) {
     const { estoqueId, tipo, quantidade } = data;
 
@@ -136,16 +140,16 @@ export class StockService {
 
     let stockItem;
     if (tipo === ItemType.MEDICAMENTO) {
-      stockItem = await this.repo.findMedicineStockById(estoqueId);
+      stockItem = await this.repo.findMedicineStockById(estoqueId, transaction);
     } else {
-      stockItem = await this.repo.findInputStockById(estoqueId);
+      stockItem = await this.repo.findInputStockById(estoqueId, transaction);
     }
 
     if (!stockItem) {
       throw new Error('Item de estoque não encontrado');
     }
 
-    const result = await this.repo.createStockOut(estoqueId, tipo, quantidade);
+    const result = await this.repo.createStockOut(estoqueId, tipo, quantidade, transaction);
 
     await this.movementRepo.create({
       tipo: MovementType.SAIDA,
@@ -162,20 +166,20 @@ export class StockService {
       armario_id: stockItem.armario_id ?? undefined,
       gaveta_id: stockItem.gaveta_id ?? undefined,
       lote: (stockItem as any).lote ?? null,
-    });
+    }, transaction);
 
     await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
 
     return result;
   }
 
-  async listStock(params: QueryPaginationParams) {
+  async listStock(params: QueryPaginationParams, transaction?: Transaction) {
     const cacheKey = CacheKeyHelper.stockList(params);
 
     return this.cache.getOrSet(
       cacheKey,
       async () => {
-        const data = await this.repo.listStockItems(params);
+        const data = await this.repo.listStockItems(params, transaction);
 
         return {
           ...data,
@@ -194,16 +198,16 @@ export class StockService {
     );
   }
 
-  async getProportion(setor?: SectorType) {
+  async getProportion(setor?: SectorType, transaction?: Transaction) {
     return this.cache.getOrSet(
       CacheKeyHelper.stockDashboard(setor ?? 'general'),
-      () => this.repo.getStockProportionBySector(setor),
+      () => this.repo.getStockProportionBySector(setor, transaction),
       60,
     );
   }
 
-  async suspendIndividualMedicine(estoque_id: number) {
-    const stock = await this.repo.findMedicineStockById(estoque_id);
+  async suspendIndividualMedicine(estoque_id: number, transaction?: Transaction) {
+    const stock = await this.repo.findMedicineStockById(estoque_id, transaction);
 
     if (!stock) {
       throw new Error('Medicamento não encontrado');
@@ -217,15 +221,15 @@ export class StockService {
       throw new Error('Medicamento já está suspenso');
     }
 
-    const result = await this.repo.suspendIndividualMedicine(estoque_id);
+    const result = await this.repo.suspendIndividualMedicine(estoque_id, transaction);
 
     await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
 
     return result;
   }
 
-  async resumeIndividualMedicine(estoque_id: number) {
-    const stock = await this.repo.findMedicineStockById(estoque_id);
+  async resumeIndividualMedicine(estoque_id: number, transaction?: Transaction) {
+    const stock = await this.repo.findMedicineStockById(estoque_id, transaction);
 
     if (!stock) {
       throw new Error('Medicamento não encontrado');
@@ -239,7 +243,7 @@ export class StockService {
       throw new Error('Medicamento não está suspenso');
     }
 
-    const result = await this.repo.resumeIndividualMedicine(estoque_id);
+    const result = await this.repo.resumeIndividualMedicine(estoque_id, transaction);
 
     await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
 
@@ -255,8 +259,9 @@ export class StockService {
     casela_id?: number | null,
     observacao?: string | null,
     dias_para_repor?: number | null,
+    transaction?: Transaction,
   ) {
-    const stock = await this.repo.findMedicineStockById(estoque_id);
+    const stock = await this.repo.findMedicineStockById(estoque_id, transaction);
 
     if (!stock) {
       throw new Error('Medicamento não encontrado');
@@ -304,6 +309,7 @@ export class StockService {
       targetCaselaId as number,
       observacao,
       dias_para_repor ?? null,
+      transaction,
     );
 
     await this.movementRepo.create({
@@ -319,7 +325,7 @@ export class StockService {
       gaveta_id: stock.gaveta_id ?? undefined,
       lote: stock.lote ?? null,
       observacao: observacao || null,
-    });
+    }, transaction);
   
     if (
       this.notificationRepo &&
@@ -339,7 +345,7 @@ export class StockService {
         tipo_evento: NotificationEventType.REPOSICAO_ESTOQUE,
         quantidade,
         dias_para_repor,
-      });
+      }, transaction);
     }
 
     await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
@@ -350,8 +356,9 @@ export class StockService {
   async getDaysForReplacementForNursing(
     medicamento_id: number,
     casela_id: number,
+    transaction?: Transaction,
   ): Promise<number | null> {
-    return this.repo.getDaysForReplacementForNursing(medicamento_id, casela_id);
+    return this.repo.getDaysForReplacementForNursing(medicamento_id, casela_id, transaction);
   }
 
   async transferInputSector(
@@ -363,8 +370,9 @@ export class StockService {
     destino?: string | null,
     observacao?: string | null,
     dias_para_repor?: number | null,
+    transaction?: Transaction,
   ) {
-    const stock = await this.repo.findInputStockById(estoque_id);
+    const stock = await this.repo.findInputStockById(estoque_id, transaction);
 
     if (!stock) {
       throw new Error('Insumo não encontrado');
@@ -424,6 +432,7 @@ export class StockService {
       targetDestino,
       observacao ?? null,
       dias_para_repor ?? null,
+      transaction,
     );
 
     await this.movementRepo.create({
@@ -440,7 +449,7 @@ export class StockService {
       lote: stock.lote ?? null,
       destino: targetDestino,
       observacao: observacao || null,
-    });
+    }, transaction);
 
     await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
 
@@ -464,9 +473,10 @@ export class StockService {
       observacao?: string | null;
       dias_para_repor?: number | null;
     },
+    transaction?: Transaction,
   ) {
     if (tipo === ItemType.MEDICAMENTO) {
-      const stock = await this.repo.findMedicineStockById(estoqueId);
+      const stock = await this.repo.findMedicineStockById(estoqueId, transaction);
       if (!stock) {
         throw new Error('Item de estoque não encontrado');
       }
@@ -477,7 +487,7 @@ export class StockService {
         );
       }
     } else {
-      const stock = await this.repo.findInputStockById(estoqueId);
+      const stock = await this.repo.findInputStockById(estoqueId, transaction);
       if (!stock) {
         throw new Error('Item de estoque não encontrado');
       }
@@ -493,28 +503,29 @@ export class StockService {
         estoqueId,
         tipo,
         inputData,
+        transaction,
       );
       await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
       return result;
     }
 
-    const result = await this.repo.updateStockItem(estoqueId, tipo, data);
+    const result = await this.repo.updateStockItem(estoqueId, tipo, data, transaction);
 
     await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
 
     return result;
   }
 
-  async deleteStockItem(estoqueId: number, tipo: ItemType) {
-    const result = await this.repo.deleteStockItem(estoqueId, tipo);
+  async deleteStockItem(estoqueId: number, tipo: ItemType, transaction?: Transaction) {
+    const result = await this.repo.deleteStockItem(estoqueId, tipo, transaction);
 
     await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
 
     return result;
   }
 
-  async suspendIndividualInput(estoque_id: number) {
-    const stock = await this.repo.findInputStockById(estoque_id);
+  async suspendIndividualInput(estoque_id: number, transaction?: Transaction) {
+    const stock = await this.repo.findInputStockById(estoque_id, transaction);
 
     if (!stock) {
       throw new Error('Insumo não encontrado');
@@ -528,15 +539,15 @@ export class StockService {
       throw new Error('Insumo já está suspenso');
     }
 
-    const result = await this.repo.suspendIndividualInput(estoque_id);
+    const result = await this.repo.suspendIndividualInput(estoque_id, transaction);
 
     await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
 
     return result;
   }
 
-  async resumeIndividualInput(estoque_id: number) {
-    const stock = await this.repo.findInputStockById(estoque_id);
+  async resumeIndividualInput(estoque_id: number, transaction?: Transaction) {
+    const stock = await this.repo.findInputStockById(estoque_id, transaction);
 
     if (!stock) {
       throw new Error('Insumo não encontrado');
@@ -550,15 +561,15 @@ export class StockService {
       throw new Error('Insumo não está suspenso');
     }
 
-    const result = await this.repo.resumeIndividualInput(estoque_id);
+    const result = await this.repo.resumeIndividualInput(estoque_id, transaction);
 
     await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
 
     return result;
   }
 
-  async removeIndividualMedicine(estoqueId: number) {
-    const stock = await this.repo.findMedicineStockById(estoqueId);
+  async removeIndividualMedicine(estoqueId: number, transaction?: Transaction) {
+    const stock = await this.repo.findMedicineStockById(estoqueId, transaction);
 
     if (!stock) {
       throw new Error('Medicamento não encontrado');
@@ -568,15 +579,15 @@ export class StockService {
       throw new Error('Medicamento não é individual');
     }
 
-    const result = await this.repo.removeIndividualMedicine(estoqueId);
+    const result = await this.repo.removeIndividualMedicine(estoqueId, transaction);
 
     await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
 
     return result;
   }
 
-  async removeIndividualInput(estoqueId: number) {
-    const stock = await this.repo.findInputStockById(estoqueId);
+  async removeIndividualInput(estoqueId: number, transaction?: Transaction) {
+    const stock = await this.repo.findInputStockById(estoqueId, transaction);
 
     if (!stock) {
       throw new Error('Insumo não encontrado');
@@ -586,7 +597,7 @@ export class StockService {
       throw new Error('Insumo não é individual');
     }
 
-    const result = await this.repo.removeIndividualInput(estoqueId);
+    const result = await this.repo.removeIndividualInput(estoqueId, transaction);
 
     await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
 

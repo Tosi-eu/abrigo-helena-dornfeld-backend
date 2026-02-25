@@ -26,6 +26,7 @@ export class LoginService {
       login: user.login,
       firstName: user.first_name,
       lastName: user.last_name,
+      role: user.role,
     };
   }
 
@@ -38,12 +39,18 @@ export class LoginService {
 
     const hashed = await bcrypt.hash(attrs.password, 10);
     try {
-      return await this.repo.create({
+      const created = await this.repo.create({
         login: attrs.login,
         password: hashed,
         first_name: attrs.first_name,
         last_name: attrs.last_name,
       });
+
+      if (created.id === 1) {
+        await this.repo.update(created.id, { role: 'admin' });
+        return { id: created.id, login: created.login, role: 'admin' };
+      }
+      return created;
     } catch (err: unknown) {
       if (
         err instanceof BaseError &&
@@ -75,6 +82,7 @@ export class LoginService {
       user: {
         id: user.id,
         login: user.login,
+        role: user.role,
       },
     };
   }
@@ -114,6 +122,7 @@ export class LoginService {
         login: updated!.login,
         firstName: updated!.first_name,
         lastName: updated!.last_name,
+        role: updated!.role,
       };
     } catch (err: unknown) {
       if (

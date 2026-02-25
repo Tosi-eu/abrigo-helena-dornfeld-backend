@@ -6,6 +6,8 @@ import {
   validatePagination,
   validateIdParam,
 } from '../../../middleware/validation.middleware';
+import { withRls } from '../../../middleware/rls.middleware';
+import { sequelize } from '../../database/sequelize';
 
 const repo = new NotificationEventRepository();
 const service = new NotificationEventService(repo);
@@ -13,14 +15,14 @@ const controller = new NotificationEventController(service);
 
 const router = Router();
 
-router.post('/', (req, res) => controller.create(req, res));
-router.get('/', validatePagination, (req, res) => controller.getAll(req, res));
-router.get('/:id', validateIdParam, (req, res) => controller.getById(req, res));
-router.patch('/:id', validateIdParam, (req, res) =>
+router.post('/', withRls(sequelize, (req, res) => controller.create(req, res)));
+router.get('/', validatePagination, withRls(sequelize, (req, res) => controller.getAll(req, res)));
+router.get('/:id', validateIdParam, withRls(sequelize, (req, res) => controller.getById(req, res)));
+router.patch('/:id', validateIdParam, withRls(sequelize, (req, res) =>
   controller.update(req, res),
-);
-router.delete('/:id', validateIdParam, (req, res) =>
+));
+router.delete('/:id', validateIdParam, withRls(sequelize, (req, res) =>
   controller.delete(req, res),
-);
+));
 
 export default router;

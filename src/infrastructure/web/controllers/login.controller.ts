@@ -7,7 +7,12 @@ export class LoginController {
   constructor(private readonly service: LoginService) {}
 
   async create(req: AuthRequest, res: Response) {
-    const { login, password, first_name, last_name } = req.body;
+    // Only whitelisted fields: new accounts are always created as normal user (no id/role from client)
+    const body = req.body ?? {};
+    const login = body.login;
+    const password = body.password;
+    const first_name = body.first_name;
+    const last_name = body.last_name;
 
     if (!login || !password)
       return res.status(400).json({ error: 'Login e senha obrigatórios' });
@@ -55,7 +60,13 @@ export class LoginController {
 
   async update(req: AuthRequest, res: Response) {
     const userId = req.user!.id;
-    const { currentPassword, login, password, firstName, lastName } = req.body;
+    // Only allow whitelisted fields from the client (browser) to prevent privilege escalation
+    const body = req.body ?? {};
+    const currentPassword = body.currentPassword;
+    const login = body.login;
+    const password = body.password;
+    const firstName = body.firstName;
+    const lastName = body.lastName;
 
     if (!currentPassword) {
       return res.status(400).json({ error: 'Senha atual é obrigatória' });

@@ -5,6 +5,7 @@ import {
   NotificationDestinoType,
   NotificationEventType,
 } from '../../infrastructure/database/models/notificacao.model';
+import type { Transaction } from 'sequelize';
 
 export class NotificationEventService {
   constructor(private readonly repo: NotificationEventRepository) {}
@@ -17,12 +18,12 @@ export class NotificationEventService {
     criado_por: number;
     visto: boolean;
     tipo_evento: NotificationEventType;
-  }) {
-    return this.repo.create(data);
+  }, transaction?: Transaction) {
+    return this.repo.create(data, transaction);
   }
 
-  async get(id: number) {
-    return this.repo.findById(id);
+  async get(id: number, transaction?: Transaction) {
+    return this.repo.findById(id, transaction);
   }
 
   async list(filters: {
@@ -33,16 +34,16 @@ export class NotificationEventService {
     date?: string;
     residente_nome?: string;
     visto?: boolean;
-  }) {
-    return this.repo.listWithFilters(filters);
-  }  
-
-  async update(id: number, updates: NotificationUpdateData) {
-    return this.repo.update(id, updates);
+  }, transaction?: Transaction) {
+    return this.repo.listWithFilters(filters, transaction);
   }
 
-  async delete(id: number) {
-    return this.repo.delete(id);
+  async update(id: number, updates: NotificationUpdateData, transaction?: Transaction) {
+    return this.repo.update(id, updates, transaction);
+  }
+
+  async delete(id: number, transaction?: Transaction) {
+    return this.repo.delete(id, transaction);
   }
 
   async bootstrapReplacementNotifications() {

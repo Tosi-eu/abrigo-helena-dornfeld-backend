@@ -1,4 +1,5 @@
 import { Op } from 'sequelize';
+import type { Transaction } from 'sequelize';
 import { formatDateToPtBr, toBrazilDateOnly } from '../../helpers/date.helper';
 import LoginModel from '../models/login.model';
 import MedicineModel from '../models/medicamento.model';
@@ -36,8 +37,8 @@ export class NotificationEventRepository {
     tipo_evento: NotificationEventType;
     quantidade?: number | null;
     dias_para_repor?: number | null;
-  }) {
-    return NotificationEventModel.create(data);
+  }, transaction?: Transaction) {
+    return NotificationEventModel.create(data, { transaction });
   }
 
   async listWithFilters({
@@ -57,7 +58,7 @@ export class NotificationEventRepository {
     residente_nome?: string;
     casela?: string | number;
     visto?: boolean;
-  }) {
+  }, transaction?: Transaction) {
     const offset = (page - 1) * limit;
   
     const where: NotificationWhereOptions = {
@@ -122,6 +123,7 @@ export class NotificationEventRepository {
       limit,
       order: [['data_prevista', 'ASC']],
       include,
+      transaction,
     });
   
     return {
@@ -154,8 +156,8 @@ export class NotificationEventRepository {
     };
   }
   
-  async findById(id: number) {
-    return NotificationEventModel.findByPk(id);
+  async findById(id: number, transaction?: Transaction) {
+    return NotificationEventModel.findByPk(id, { transaction });
   }
 
   async bootstrapReplacementNotifications(): Promise<number> {
@@ -206,8 +208,8 @@ export class NotificationEventRepository {
     return created;
   }
   
-  async update(id: number, updates: NotificationUpdateData) {
-    const event = await NotificationEventModel.findByPk(id);
+  async update(id: number, updates: NotificationUpdateData, transaction?: Transaction) {
+    const event = await NotificationEventModel.findByPk(id, { transaction });
     if (!event) return null;
 
     const updateData: Partial<NotificationEventModel> = {};
@@ -227,11 +229,11 @@ export class NotificationEventRepository {
       updateData.status = statusMap[updates.status] ?? EventStatus.PENDENTE;
     }
 
-    await event.update(updateData);
+    await event.update(updateData, { transaction });
     return event;
   }
 
-  async delete(id: number) {
-    return (await NotificationEventModel.destroy({ where: { id } })) > 0;
+  async delete(id: number, transaction?: Transaction) {
+    return (await NotificationEventModel.destroy({ where: { id }, transaction })) > 0;
   }
 }

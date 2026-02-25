@@ -6,6 +6,7 @@ import InputStockModel, {
   InputStockAttributes,
 } from '../models/estoque-insumo.model';
 import { Op, fn, col } from 'sequelize';
+import type { Transaction } from 'sequelize';
 import MedicineModel from '../models/medicamento.model';
 import InputModel from '../models/insumo.model';
 import ResidentModel from '../models/residente.model';
@@ -39,12 +40,13 @@ interface StockModel {
     field: string,
     options?: {
       where?: Record<string, unknown>;
+      transaction?: Transaction;
     },
   ): Promise<number | null>;
 }
 
 export class StockRepository {
-  async createMedicineStockIn(data: MedicineStock) {
+  async createMedicineStockIn(data: MedicineStock, transaction?: Transaction) {
     try {
       const existing = await MedicineStockModel.findOne({
         where: {
@@ -57,11 +59,12 @@ export class StockRepository {
           origem: data.origem,
           lote: data.lote ?? null,
         },
+        transaction,
       });
 
       if (existing) {
         existing.quantidade += data.quantidade;
-        await existing.save();
+        await existing.save({ transaction });
         return { message: 'Quantidade somada ao estoque existente.' };
       }
 
@@ -77,7 +80,7 @@ export class StockRepository {
         setor: data.setor,
         lote: data.lote ?? null,
         observacao: data.observacao ?? null,
-      });
+      }, { transaction });
 
       return { message: 'Entrada de medicamento registrada.' };
     } catch (error: unknown) {
@@ -86,7 +89,7 @@ export class StockRepository {
     }
   }
 
-  async createInputStockIn(data: InputStock) {
+  async createInputStockIn(data: InputStock, transaction?: Transaction) {
     const existing = await InputStockModel.findOne({
       where: {
         insumo_id: data.insumo_id,
@@ -97,6 +100,7 @@ export class StockRepository {
         casela_id: data.casela_id ?? null,
         lote: data.lote ?? null,
       },
+      transaction,
     });
 
     if (data.casela_id && data.tipo !== OperationType.INDIVIDUAL) {
@@ -105,7 +109,7 @@ export class StockRepository {
 
     if (existing) {
       existing.quantidade += data.quantidade;
-      await existing.save();
+      await existing.save({ transaction });
       return { message: 'Quantidade somada ao estoque existente.' };
     }
 
@@ -121,7 +125,7 @@ export class StockRepository {
       lote: data.lote ?? null,
       status: data.status ?? StockItemStatus.ATIVO,
       suspended_at: data.suspended_at ?? null,
-    });
+    }, { transaction });
 
     return { message: 'Entrada de insumo registrada.' };
   }
@@ -130,9 +134,10 @@ export class StockRepository {
     estoqueId: number,
     tipoItem: ItemType,
     quantidade: number,
+    transaction?: Transaction,
   ) {
     if (tipoItem === 'medicamento') {
-      const register = await MedicineStockModel.findByPk(estoqueId);
+      const register = await MedicineStockModel.findByPk(estoqueId, { transaction });
 
       if (!register) throw new Error('register de medicamento não encontrado.');
 
@@ -144,10 +149,10 @@ export class StockRepository {
       }
 
       register.quantidade -= quantidade;
-      await register.save();
+      await register.save({ transaction });
       return { message: 'Saída de medicamento realizada.' };
     } else {
-      const register = await InputStockModel.findByPk(estoqueId);
+      const register = await InputStockModel.findByPk(estoqueId, { transaction });
       if (!register) throw new Error('register de insumo não encontrado.');
       if (register.quantidade < quantidade)
         throw new Error('Quantidade insuficiente.');
@@ -157,12 +162,12 @@ export class StockRepository {
       }
 
       register.quantidade -= quantidade;
-      await register.save();
+      await register.save({ transaction });
       return { message: 'Saída de insumo realizada.' };
     }
   }
 
-  async listStockItems(params: QueryPaginationParams) {
+  async listStockItems(params: QueryPaginationParams, transaction?: Transaction) {
     const { filter, type, page = 1, limit = 20 } = params;
     const offset = (page - 1) * limit;
 
@@ -170,6 +175,7 @@ export class StockRepository {
       const cabinets = await CabinetModel.findAll({
         order: [['num_armario', 'ASC']],
         attributes: ['num_armario'],
+        transaction,
       });
 
       const cabinetIds = cabinets.map(c => c.num_armario);
@@ -181,6 +187,7 @@ export class StockRepository {
         },
         group: ['armario_id'],
         raw: true,
+        transaction,
       });
 
       const inputTotals = await InputStockModel.findAll({
@@ -190,6 +197,7 @@ export class StockRepository {
         },
         group: ['armario_id'],
         raw: true,
+        transaction,
       });
 
       const medicineMap = new Map(
@@ -230,6 +238,7 @@ export class StockRepository {
       const drawers = await DrawerModel.findAll({
         order: [['num_gaveta', 'ASC']],
         attributes: ['num_gaveta'],
+        transaction,
       });
 
       const drawerIds = drawers.map(d => d.num_gaveta);
@@ -241,6 +250,7 @@ export class StockRepository {
         },
         group: ['gaveta_id'],
         raw: true,
+        transaction,
       });
 
       const inputTotals = await InputStockModel.findAll({
@@ -250,6 +260,7 @@ export class StockRepository {
         },
         group: ['gaveta_id'],
         raw: true,
+        transaction,
       });
 
       const medicineMap = new Map(
@@ -388,6 +399,7 @@ export class StockRepository {
         order: [['id', 'ASC']],
         limit: !type ? undefined : limit,
         offset: !type ? undefined : offset,
+        transaction,
       });
 
       for (const stock of medicineStocks) {
@@ -492,6 +504,7 @@ export class StockRepository {
         order: [['id', 'ASC']],
         limit: !type ? undefined : limit,
         offset: !type ? undefined : offset,
+        transaction,
       });
 
       for (const stock of inputStocks) {
@@ -600,12 +613,14 @@ export class StockRepository {
       setor?: SectorType;
       tipos?: OperationType[];
     },
+    transaction?: Transaction,
   ): Promise<number> {
     const result = await model.sum('quantidade', {
       where: {
         ...(options?.setor && { setor: options.setor }),
         ...(options?.tipos && { tipo: { [Op.in]: options.tipos } }),
       },
+      transaction,
     });
 
     return Number(result || 0);
@@ -613,6 +628,7 @@ export class StockRepository {
 
   async getStockProportionBySector(
     setor?: SectorType,
+    transaction?: Transaction,
   ): Promise<Record<StockGroup, number>> {
     const baseResult: Record<StockGroup, number> = {
       medicamentos_geral: 0,
@@ -640,30 +656,30 @@ export class StockRepository {
       ] = await Promise.all([
         this.sumStock(MedicineStockModel, {
           tipos: [OperationType.GERAL],
-        }),
+        }, transaction),
         this.sumStock(MedicineStockModel, {
           tipos: [OperationType.INDIVIDUAL],
-        }),
+        }, transaction),
         this.sumStock(InputStockModel, {
           tipos: [OperationType.GERAL],
-        }),
+        }, transaction),
         this.sumStock(InputStockModel, {
           tipos: [OperationType.INDIVIDUAL],
-        }),
+        }, transaction),
 
         this.sumStock(MedicineStockModel, {
           tipos: [OperationType.CARRINHO_EMERGENCIA],
-        }),
+        }, transaction),
         this.sumStock(MedicineStockModel, {
           tipos: [OperationType.CARRINHO_PSICOTROPICOS],
-        }),
+        }, transaction),
 
         this.sumStock(InputStockModel, {
           tipos: [OperationType.CARRINHO_EMERGENCIA],
-        }),
+        }, transaction),
         this.sumStock(InputStockModel, {
           tipos: [OperationType.CARRINHO_PSICOTROPICOS],
-        }),
+        }, transaction),
       ]);
 
       return {
@@ -689,6 +705,7 @@ export class StockRepository {
           setor,
           tipos,
         },
+        transaction,
       );
     }
 
@@ -696,19 +713,20 @@ export class StockRepository {
       baseResult[group as StockGroup] = await this.sumStock(InputStockModel, {
         setor,
         tipos,
-      });
+      }, transaction);
     }
 
     return baseResult;
   }
 
-  async findMedicineStockById(id: number) {
-    return MedicineStockModel.findByPk(id);
+  async findMedicineStockById(id: number, transaction?: Transaction) {
+    return MedicineStockModel.findByPk(id, { transaction });
   }
 
   async getDaysForReplacementForNursing(
     medicamento_id: number,
     casela_id: number,
+    transaction?: Transaction,
   ): Promise<number | null> {
     const row = await MedicineStockModel.findOne({
       where: {
@@ -719,12 +737,13 @@ export class StockRepository {
       },
       attributes: ['dias_para_repor'],
       order: [['updatedAt', 'DESC']],
+      transaction,
     });
     const value = row?.dias_para_repor;
     return value != null ? Number(value) : null;
   }
 
-  async removeIndividualMedicine(estoqueId: number) {
+  async removeIndividualMedicine(estoqueId: number, transaction?: Transaction) {
     await MedicineStockModel.update(
       {
         casela_id: null,
@@ -733,6 +752,7 @@ export class StockRepository {
       },
       {
         where: { id: estoqueId },
+        transaction,
       },
     );
 
@@ -741,7 +761,7 @@ export class StockRepository {
     };
   }
 
-  async removeIndividualInput(estoqueId: number) {
+  async removeIndividualInput(estoqueId: number, transaction?: Transaction) {
     await InputStockModel.update(
       {
         casela_id: null,
@@ -750,6 +770,7 @@ export class StockRepository {
       },
       {
         where: { id: estoqueId },
+        transaction,
       },
     );
 
@@ -758,7 +779,7 @@ export class StockRepository {
     };
   }
 
-  async suspendIndividualMedicine(estoque_id: number) {
+  async suspendIndividualMedicine(estoque_id: number, transaction?: Transaction) {
     await MedicineStockModel.update(
       {
         status: StockItemStatus.SUSPENSO,
@@ -766,6 +787,7 @@ export class StockRepository {
       },
       {
         where: { id: estoque_id },
+        transaction,
       },
     );
 
@@ -774,7 +796,7 @@ export class StockRepository {
     };
   }
 
-  async resumeIndividualMedicine(estoque_id: number) {
+  async resumeIndividualMedicine(estoque_id: number, transaction?: Transaction) {
     await MedicineStockModel.update(
       {
         status: StockItemStatus.ATIVO,
@@ -782,6 +804,7 @@ export class StockRepository {
       },
       {
         where: { id: estoque_id },
+        transaction,
       },
     );
 
@@ -790,8 +813,8 @@ export class StockRepository {
     };
   }
 
-  async findInputStockById(id: number) {
-    return InputStockModel.findByPk(id);
+  async findInputStockById(id: number, transaction?: Transaction) {
+    return InputStockModel.findByPk(id, { transaction });
   }
 
   async updateStockItem(
@@ -811,9 +834,10 @@ export class StockRepository {
       observacao?: string | null;
       dias_para_repor?: number | null;
     },
+    transaction?: Transaction,
   ) {
     if (tipo === ItemType.MEDICAMENTO) {
-      const stock = await this.findMedicineStockById(estoqueId);
+      const stock = await this.findMedicineStockById(estoqueId, transaction);
       if (!stock) {
         throw new Error('Item de estoque não encontrado');
       }
@@ -875,9 +899,10 @@ export class StockRepository {
 
       await MedicineStockModel.update(updateData, {
         where: { id: estoqueId },
+        transaction,
       });
     } else {
-      const stock = await this.findInputStockById(estoqueId);
+      const stock = await this.findInputStockById(estoqueId, transaction);
       if (!stock) {
         throw new Error('Item de estoque não encontrado');
       }
@@ -934,6 +959,7 @@ export class StockRepository {
 
       await InputStockModel.update(updateData, {
         where: { id: estoqueId },
+        transaction,
       });
     }
 
@@ -942,21 +968,21 @@ export class StockRepository {
     };
   }
 
-  async deleteStockItem(estoqueId: number, tipo: ItemType) {
+  async deleteStockItem(estoqueId: number, tipo: ItemType, transaction?: Transaction) {
     if (tipo === ItemType.MEDICAMENTO) {
-      const stock = await this.findMedicineStockById(estoqueId);
+      const stock = await this.findMedicineStockById(estoqueId, transaction);
       if (!stock) {
         throw new Error('Item de estoque não encontrado');
       }
 
-      await MedicineStockModel.destroy({ where: { id: estoqueId } });
+      await MedicineStockModel.destroy({ where: { id: estoqueId }, transaction });
     } else {
-      const stock = await this.findInputStockById(estoqueId);
+      const stock = await this.findInputStockById(estoqueId, transaction);
       if (!stock) {
         throw new Error('Item de estoque não encontrado');
       }
 
-      await InputStockModel.destroy({ where: { id: estoqueId } });
+      await InputStockModel.destroy({ where: { id: estoqueId }, transaction });
     }
 
     return {
@@ -964,7 +990,7 @@ export class StockRepository {
     };
   }
 
-  async suspendIndividualInput(estoque_id: number) {
+  async suspendIndividualInput(estoque_id: number, transaction?: Transaction) {
     await InputStockModel.update(
       {
         status: StockItemStatus.SUSPENSO,
@@ -972,6 +998,7 @@ export class StockRepository {
       },
       {
         where: { id: estoque_id },
+        transaction,
       },
     );
 
@@ -980,7 +1007,7 @@ export class StockRepository {
     };
   }
 
-  async resumeIndividualInput(estoque_id: number) {
+  async resumeIndividualInput(estoque_id: number, transaction?: Transaction) {
     await InputStockModel.update(
       {
         status: StockItemStatus.ATIVO,
@@ -988,6 +1015,7 @@ export class StockRepository {
       },
       {
         where: { id: estoque_id },
+        transaction,
       },
     );
 
@@ -1004,8 +1032,9 @@ export class StockRepository {
     casela_id: number,
     observacao?: string | null,
     dias_para_repor?: number | null,
+    transaction?: Transaction,
   ) {
-    const stock = await MedicineStockModel.findByPk(estoqueId);
+    const stock = await MedicineStockModel.findByPk(estoqueId, { transaction });
 
     if (!stock) {
       throw new Error('Estoque não encontrado');
@@ -1058,6 +1087,7 @@ export class StockRepository {
         lote: stock.lote ?? null,
         tipo: finalStockType,
       },
+      transaction,
     });
 
     if (existing) {
@@ -1073,7 +1103,7 @@ export class StockRepository {
 
       existing.ultima_reposicao = getTodayAtNoonBrazil();
 
-      await existing.save();
+      await existing.save({ transaction });
     } else {
       await MedicineStockModel.create({
         medicamento_id: stock.medicamento_id,
@@ -1090,10 +1120,10 @@ export class StockRepository {
         observacao: finalDetails,
         dias_para_repor: dias_para_repor ?? null,
         ultima_reposicao: getTodayAtNoonBrazil(),
-      });
+      }, { transaction });
     }
 
-    await stock.update({ quantidade: stock.quantidade - quantidade });
+    await stock.update({ quantidade: stock.quantidade - quantidade }, { transaction });
 
     return { message: 'Medicamento transferido de setor com sucesso' };
   }
@@ -1106,8 +1136,9 @@ export class StockRepository {
     destino?: string | null,
     observacao?: string | null,
     dias_para_repor?: number | null,
+    transaction?: Transaction,
   ) {
-    const stock = await InputStockModel.findByPk(estoqueId);
+    const stock = await InputStockModel.findByPk(estoqueId, { transaction });
 
     if (!stock) {
       throw new Error('Estoque não encontrado');
@@ -1155,6 +1186,7 @@ export class StockRepository {
         tipo: finalTipo,
         destino: hasDestino ? destino : null,
       },
+      transaction,
     });
 
     if (existing) {
@@ -1170,7 +1202,7 @@ export class StockRepository {
 
       existing.ultima_reposicao = getTodayAtNoonBrazil();
 
-      await existing.save();
+      await existing.save({ transaction });
     } else {
       await InputStockModel.create({
         insumo_id: stock.insumo_id,
@@ -1187,10 +1219,10 @@ export class StockRepository {
         observacao: observacao ?? stock.observacao,
         dias_para_repor: dias_para_repor ?? null,
         ultima_reposicao: getTodayAtNoonBrazil(),
-      });
+      }, { transaction });
     }
 
-    await stock.update({ quantidade: stock.quantidade - quantidade });
+    await stock.update({ quantidade: stock.quantidade - quantidade }, { transaction });
 
     return { message: 'Insumo transferido de setor com sucesso' };
   }
