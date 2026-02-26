@@ -7,6 +7,7 @@ import InputStockModel, {
 } from '../models/estoque-insumo.model';
 import { Op, fn, col } from 'sequelize';
 import type { Transaction } from 'sequelize';
+import { sequelize } from '../sequelize';
 import MedicineModel from '../models/medicamento.model';
 import InputModel from '../models/insumo.model';
 import ResidentModel from '../models/residente.model';
@@ -334,6 +335,8 @@ export class StockRepository {
     const whereCondition = buildWhereCondition();
     const results: StockQueryResult[] = [];
 
+    // Architecture: we run two paginated queries (medicine + input) and merge in memory.
+    // Each query uses limit/offset so we never load full datasets—only one page per type.
     const shouldIncludeMedicines =
       !params.itemType || params.itemType === 'medicamento';
     const shouldIncludeInputs =
@@ -901,6 +904,11 @@ export class StockRepository {
         where: { id: estoqueId },
         transaction,
       });
+      const updated = await this.findMedicineStockById(estoqueId, transaction);
+      return {
+        message: 'Item de estoque atualizado com sucesso',
+        data: updated ? updated.get({ plain: true }) : null,
+      };
     } else {
       const stock = await this.findInputStockById(estoqueId, transaction);
       if (!stock) {
@@ -961,11 +969,12 @@ export class StockRepository {
         where: { id: estoqueId },
         transaction,
       });
+      const updated = await this.findInputStockById(estoqueId, transaction);
+      return {
+        message: 'Item de estoque atualizado com sucesso',
+        data: updated ? updated.get({ plain: true }) : null,
+      };
     }
-
-    return {
-      message: 'Item de estoque atualizado com sucesso',
-    };
   }
 
   async deleteStockItem(estoqueId: number, tipo: ItemType, transaction?: Transaction) {
@@ -1225,5 +1234,96 @@ export class StockRepository {
     await stock.update({ quantidade: stock.quantidade - quantidade }, { transaction });
 
     return { message: 'Insumo transferido de setor com sucesso' };
+  }
+
+  /**
+   * Efficient alert counts for dashboard/summary.
+   * Uses COUNT(*) with indexed columns; avoids loading full list.
+   */
+  async getAlertCounts(transaction?: Transaction): Promise<{
+    noStock: number;
+    belowMin: number;
+    expired: number;
+    expiringSoon: number;
+  }> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const in45Days = new Date(today);
+    in45Days.setDate(in45Days.getDate() + 45);
+
+    const [noStockMed, noStockInp, belowMinMed, belowMinInp, expiredMed, expiredInp, expiringMed, expiringInp] =
+      await Promise.all([
+        MedicineStockModel.count({ where: { quantidade: 0 }, transaction }),
+        InputStockModel.count({ where: { quantidade: 0 }, transaction }),
+        MedicineStockModel.count({
+          include: [
+            {
+              model: MedicineModel,
+              as: 'MedicineModel',
+              attributes: [],
+              required: true,
+            },
+          ],
+          where: {
+            quantidade: {
+              [Op.gt]: 0,
+              [Op.lt]: sequelize.col('MedicineModel.estoque_minimo'),
+            },
+          },
+          transaction,
+        }),
+        InputStockModel.count({
+          include: [
+            {
+              model: InputModel,
+              as: 'InputModel',
+              attributes: [],
+              required: true,
+            },
+          ],
+          where: {
+            quantidade: {
+              [Op.gt]: 0,
+              [Op.lt]: sequelize.col('InputModel.estoque_minimo'),
+            },
+          },
+          transaction,
+        }),
+        MedicineStockModel.count({
+          where: {
+            quantidade: { [Op.gt]: 0 },
+            validade: { [Op.lt]: today },
+          },
+          transaction,
+        }),
+        InputStockModel.count({
+          where: {
+            quantidade: { [Op.gt]: 0 },
+            validade: { [Op.lt]: today },
+          },
+          transaction,
+        }),
+        MedicineStockModel.count({
+          where: {
+            quantidade: { [Op.gt]: 0 },
+            validade: { [Op.between]: [today, in45Days] },
+          },
+          transaction,
+        }),
+        InputStockModel.count({
+          where: {
+            quantidade: { [Op.gt]: 0 },
+            validade: { [Op.between]: [today, in45Days] },
+          },
+          transaction,
+        }),
+      ]);
+
+    return {
+      noStock: noStockMed + noStockInp,
+      belowMin: belowMinMed + belowMinInp,
+      expired: expiredMed + expiredInp,
+      expiringSoon: expiringMed + expiringInp,
+    };
   }
 }

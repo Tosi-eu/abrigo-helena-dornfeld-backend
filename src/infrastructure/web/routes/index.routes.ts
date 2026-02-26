@@ -14,6 +14,7 @@ import drawerCategoryRoutes from './categoria-gaveta.routes';
 import notificationRoutes from './notificacao.routes';
 import appRoutes from './app.routes';
 import adminRoutes from './admin.routes';
+import dashboardRoutes from './dashboard.routes';
 import { authMiddleware } from '../../../middleware/auth.middleware';
 import { rlsContextMiddleware } from '../../../middleware/rls.middleware';
 import { blockNonAdminWrites } from '../../../middleware/admin.middleware';
@@ -30,6 +31,7 @@ router.use(rlsContextMiddleware);
 router.use(auditLog);
 
 router.use('/admin', adminRoutes);
+router.use('/dashboard', dashboardRoutes);
 
 router.use('/gavetas', drawerRoutes);
 router.use('/armarios', cabinetRoutes);

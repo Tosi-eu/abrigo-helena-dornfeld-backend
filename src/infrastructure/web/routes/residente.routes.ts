@@ -14,6 +14,7 @@ const controller = new ResidentController(service);
 const router = Router();
 
 router.get('/', validatePagination, (req, res) => controller.findAll(req, res));
+router.get('/count', (req, res) => controller.getCount(req, res));
 router.get('/:casela', validateCaselaParam, (req, res) =>
   controller.findByCasela(req, res),
 );

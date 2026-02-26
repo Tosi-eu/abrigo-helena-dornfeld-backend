@@ -13,6 +13,8 @@ export class AuditLogModel extends Model {
   declare status_code: number;
   declare duration_ms: number | null;
   declare created_at: Date;
+  declare old_value: string | null;
+  declare new_value: string | null;
 }
 
 AuditLogModel.init(
@@ -48,6 +50,14 @@ AuditLogModel.init(
     },
     duration_ms: {
       type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+    old_value: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    new_value: {
+      type: DataTypes.TEXT,
       allowNull: true,
     },
   },

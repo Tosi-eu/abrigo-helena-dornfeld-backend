@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import rateLimit from 'express-rate-limit';
 
 import { LoginController } from '../controllers/login.controller';
 import { LoginRepository } from '../../database/repositories/login.repository';
@@ -12,9 +13,20 @@ const repo = new LoginRepository();
 const service = new LoginService(repo);
 const controller = new LoginController(service);
 
+/** Stricter rate limit for login to mitigate brute force. */
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  message: { error: 'Muitas tentativas de login. Tente novamente em 15 minutos.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // User creation is allowed (e.g. from sign-up screen). New accounts are always "user" (id is auto; only first user can be id 1).
 router.post('/', (req, res) => controller.create(req, res));
-router.post('/authenticate', (req, res) => controller.authenticate(req, res));
+router.post('/authenticate', loginLimiter, (req, res) =>
+  controller.authenticate(req, res),
+);
 // Only admin can reset another user's password
 router.post('/reset-password', authMiddleware, requireAdmin, (req, res) =>
   controller.resetPassword(req, res),

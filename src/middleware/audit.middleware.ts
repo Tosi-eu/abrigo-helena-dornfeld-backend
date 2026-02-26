@@ -2,6 +2,7 @@ import { Response, NextFunction } from 'express';
 import { AuthRequest } from './auth.middleware';
 import { logger } from '../infrastructure/helpers/logger.helper';
 import AuditLogModel from '../infrastructure/database/models/audit-log.model';
+import { getOldValueForAudit } from './audit-old-value.helper';
 
 const SENSITIVE_METHODS = ['POST', 'PUT', 'DELETE', 'PATCH'];
 
@@ -13,24 +14,68 @@ function getOperationType(method: string): 'create' | 'update' | 'delete' {
 }
 
 function getResource(path: string): string | null {
-  const segments = path.split('/').filter(Boolean);
+  const segments = path.replace(/^\/api\/v1/, '').split('/').filter(Boolean);
   return segments[0] ?? null;
+}
+
+function safeJsonValue(value: unknown): string | null {
+  if (value == null) return null;
+  if (typeof value !== 'object') return null;
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return null;
+  }
 }
 
 export function auditLog(req: AuthRequest, res: Response, next: NextFunction) {
   const startTime = Date.now();
+  const pathForAudit = req.path.replace(/^\/api\/v1/, '') || req.path;
+
+  let capturedOld: Record<string, unknown> | null = null;
+  let capturedNew: unknown = null;
+  let auditDone = false;
+
+  const runAudit = () => {
+    if (auditDone) return;
+    auditDone = true;
+    const duration = Date.now() - startTime;
+    logAuditEvent(req, res, duration, capturedOld, capturedNew);
+  };
 
   const originalJson = res.json.bind(res);
   res.json = function (body: unknown) {
-    const duration = Date.now() - startTime;
-    logAuditEvent(req, res, duration);
+    if (body != null && typeof body === 'object') capturedNew = body;
+    runAudit();
     return originalJson(body);
   };
 
-  next();
+  res.on('finish', runAudit);
+
+  Promise.resolve()
+    .then(async () => {
+      if (
+        SENSITIVE_METHODS.includes(req.method) &&
+        ['PUT', 'PATCH', 'DELETE'].includes(req.method)
+      ) {
+        try {
+          capturedOld = await getOldValueForAudit(pathForAudit, req.method);
+        } catch {
+          // ignore
+        }
+      }
+    })
+    .then(() => next())
+    .catch(next);
 }
 
-function logAuditEvent(req: AuthRequest, res: Response, duration: number) {
+function logAuditEvent(
+  req: AuthRequest,
+  res: Response,
+  duration: number,
+  oldValue: Record<string, unknown> | null,
+  newValue: unknown,
+) {
   const method = req.method;
   const path = req.path;
   const statusCode = res.statusCode;
@@ -63,6 +108,8 @@ function logAuditEvent(req: AuthRequest, res: Response, duration: number) {
     resource,
     status_code: statusCode,
     duration_ms: duration,
+    old_value: safeJsonValue(oldValue),
+    new_value: safeJsonValue(newValue),
   }).catch((err) => {
     logger.error('Audit log persist failed', {
       path,

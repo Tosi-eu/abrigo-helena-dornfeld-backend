@@ -19,6 +19,8 @@ export interface AuditInsights {
     status_code: number;
     duration_ms: number | null;
     created_at: string;
+    old_value: string | null;
+    new_value: string | null;
   }>;
 }
 
@@ -79,6 +81,8 @@ export class AuditRepository {
           'status_code',
           'duration_ms',
           'created_at',
+          'old_value',
+          'new_value',
         ],
       }),
     ]);
@@ -101,6 +105,8 @@ export class AuditRepository {
         status_code: e.status_code,
         duration_ms: e.duration_ms,
         created_at: e.created_at.toISOString(),
+        old_value: e.old_value ?? null,
+        new_value: e.new_value ?? null,
       })),
     };
   }

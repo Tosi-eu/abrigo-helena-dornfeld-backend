@@ -49,4 +49,9 @@ export class ResidentRepository {
       where: { casela_id: casela },
     });
   }
+
+  /** Efficient count for admin/summary. Uses COUNT(*) with index on primary key. */
+  async count(): Promise<number> {
+    return ResidentModel.count();
+  }
 }

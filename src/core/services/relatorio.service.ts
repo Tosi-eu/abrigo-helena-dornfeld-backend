@@ -1,6 +1,26 @@
 import { ReportRepository } from '../../infrastructure/database/repositories/relatorio.repository';
 import { formatDateToPtBr } from '../../infrastructure/helpers/date.helper';
 
+/** Maximum rows allowed in a single report to avoid memory and response size issues. */
+export const MAX_REPORT_ROWS = 10_000;
+
+function assertReportSize(value: unknown, type: string): void {
+  if (Array.isArray(value) && value.length > MAX_REPORT_ROWS) {
+    throw new Error(
+      `RELATORIO_EXCEDE_LIMITE: O relatório "${type}" excedeu o limite de ${MAX_REPORT_ROWS} linhas. Use filtros ou período menor.`,
+    );
+  }
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    for (const v of Object.values(value)) {
+      if (Array.isArray(v) && v.length > MAX_REPORT_ROWS) {
+        throw new Error(
+          `RELATORIO_EXCEDE_LIMITE: O relatório "${type}" excedeu o limite de ${MAX_REPORT_ROWS} linhas. Use filtros ou período menor.`,
+        );
+      }
+    }
+  }
+}
+
 export enum MovementPeriod {
   DIARIO = 'diario',
   MENSAL = 'mensal',
@@ -35,6 +55,7 @@ export class ReportService {
     switch (type) {
       case 'medicamentos': {
         const data = await this.repo.getMedicinesData();
+        assertReportSize(data, type);
         return this.formatItemsWithValidity(
           data.map(item => ({ ...item, validade: new Date(item.validade) })),
         );
@@ -42,6 +63,7 @@ export class ReportService {
 
       case 'insumos': {
         const data = await this.repo.getInputsData();
+        assertReportSize(data, type);
         return this.formatItemsWithValidity(
           data.map(item => ({ ...item, validade: new Date(item.validade) })),
         );
@@ -50,6 +72,8 @@ export class ReportService {
       case 'residentes': {
         const detailed = await this.repo.getResidentsData();
         const monthly = await this.repo.getResidentsMonthlyUsage();
+        assertReportSize(detailed, type);
+        assertReportSize(monthly, type);
 
         return {
           detalhes: detailed.map(item => ({
@@ -63,11 +87,18 @@ export class ReportService {
         };
       }
 
-      case 'insumos_medicamentos':
-        return this.repo.getAllItemsData();
+      case 'insumos_medicamentos': {
+        const data = await this.repo.getAllItemsData();
+        assertReportSize(data.medicamentos, type);
+        assertReportSize(data.insumos, type);
+        return data;
+      }
 
-      case 'psicotropicos':
-        return this.repo.getPsicotropicosData();
+      case 'psicotropicos': {
+        const data = await this.repo.getPsicotropicosData();
+        assertReportSize(data?.psicotropico, type);
+        return data;
+      }
 
       case 'residente_consumo': {
         if (!casela || isNaN(casela)) {
@@ -81,15 +112,17 @@ export class ReportService {
       }
 
       case 'transferencias': {
+        let transferData: unknown;
         if ('data_inicial' in params && 'data_final' in params && params.data_inicial && params.data_final) {
-          return this.repo.getTransfersDataByInterval(params.data_inicial, params.data_final);
+          transferData = await this.repo.getTransfersDataByInterval(params.data_inicial, params.data_final);
+        } else {
+          if (!('data' in params) || !params.data) {
+            throw new Error('Data é obrigatória para relatório de transferências');
+          }
+          transferData = await this.repo.getTransfersData(params.data);
         }
-        
-        if (!('data' in params) || !params.data) {
-          throw new Error('Data é obrigatória para relatório de transferências');
-        }
-
-        return this.repo.getTransfersData(params.data);
+        assertReportSize(transferData, type);
+        return transferData;
       }
 
       case 'movimentacoes': {
@@ -100,22 +133,19 @@ export class ReportService {
         }
 
         const { periodo } = params;
+        let movData: unknown;
 
         if (periodo === MovementPeriod.DIARIO) {
-          return this.repo.getMovementsByPeriod({
+          movData = await this.repo.getMovementsByPeriod({
             periodo,
             data: (params as { periodo: MovementPeriod.DIARIO; data: string }).data,
           });
-        }
-
-        if (periodo === MovementPeriod.MENSAL) {
-          return this.repo.getMovementsByPeriod({
+        } else if (periodo === MovementPeriod.MENSAL) {
+          movData = await this.repo.getMovementsByPeriod({
             periodo,
             mes: (params as { periodo: MovementPeriod.MENSAL; mes: string }).mes,
           });
-        }
-
-        if (periodo === MovementPeriod.INTERVALO) {
+        } else if (periodo === MovementPeriod.INTERVALO) {
           const intervaloParams = params as {
             periodo: MovementPeriod.INTERVALO;
             data_inicial: string;
@@ -126,28 +156,38 @@ export class ReportService {
             throw new Error('Data inicial e final são obrigatórias para relatório de movimentações por intervalo');
           }
 
-          return this.repo.getMovementsByPeriod({
+          movData = await this.repo.getMovementsByPeriod({
             periodo,
             data_inicial: intervaloParams.data_inicial,
             data_final: intervaloParams.data_final,
           });
+        } else {
+          throw new Error('Período inválido');
         }
-
-        throw new Error('Período inválido');
+        assertReportSize(movData, type);
+        return movData;
       }
 
       case 'medicamentos_residente': {
         if (!casela || isNaN(casela)) {
           throw new Error('Casela do residente é obrigatória');
         }
-        return this.repo.getResidentMedicinesData(casela);
+        const data = await this.repo.getResidentMedicinesData(casela);
+        assertReportSize(data, type);
+        return data;
       }
 
-      case 'medicamentos_vencidos':
-        return this.repo.getExpiredMedicinesData();
+      case 'medicamentos_vencidos': {
+        const data = await this.repo.getExpiredMedicinesData();
+        assertReportSize(data, type);
+        return data;
+      }
 
-      case 'expiringSoon':
-        return this.repo.getExpiringSoonData();
+      case 'expiringSoon': {
+        const data = await this.repo.getExpiringSoonData();
+        assertReportSize(data, type);
+        return data;
+      }
 
       default:
         throw new Error('Tipo inválido');

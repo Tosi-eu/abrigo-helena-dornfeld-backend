@@ -5,6 +5,27 @@ import jwt from 'jsonwebtoken';
 import { BaseError } from 'sequelize';
 import { Login } from '../domain/login';
 
+/** Minimum length for passwords. */
+const MIN_PASSWORD_LENGTH = 8;
+
+/**
+ * Enforce strong password: min length, at least one letter and one number.
+ * Do not log or expose password in errors.
+ */
+function validateStrongPassword(password: string): void {
+  if (password.length < MIN_PASSWORD_LENGTH) {
+    throw new Error(
+      `Senha deve ter no mínimo ${MIN_PASSWORD_LENGTH} caracteres`,
+    );
+  }
+  if (!/[a-zA-Z]/.test(password)) {
+    throw new Error('Senha deve conter pelo menos uma letra');
+  }
+  if (!/[0-9]/.test(password)) {
+    throw new Error('Senha deve conter pelo menos um número');
+  }
+}
+
 type UpdateUserInput = {
   userId: number;
   currentPassword: string;
@@ -37,6 +58,7 @@ export class LoginService {
       throw new Error('Usuário já cadastrado');
     }
 
+    validateStrongPassword(attrs.password);
     const hashed = await bcrypt.hash(attrs.password, 10);
     try {
       const created = await this.repo.create({
@@ -111,6 +133,7 @@ export class LoginService {
     }
 
     if (password) {
+      validateStrongPassword(password);
       updateData.password = await bcrypt.hash(password, 10);
     }
 
@@ -171,6 +194,7 @@ export class LoginService {
     if (data.login !== undefined) updateData.login = data.login;
     if (data.role !== undefined) updateData.role = data.role;
     if (data.password) {
+      validateStrongPassword(data.password);
       updateData.password = await bcrypt.hash(data.password, 10);
     }
 
@@ -195,6 +219,7 @@ export class LoginService {
   }
 
   async resetPassword(login: string, newPassword: string) {
+    validateStrongPassword(newPassword);
     const user = await this.repo.findByLogin(login);
     if (!user) {
       throw new Error('Login não encontrado');

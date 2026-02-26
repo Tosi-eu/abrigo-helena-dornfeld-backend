@@ -79,4 +79,9 @@ export class CabinetRepository {
   async countInput(number: number): Promise<number> {
     return InputStockModel.count({ where: { armario_id: number } });
   }
+
+  /** Efficient count for admin/summary. Uses COUNT(*) with index on primary key. */
+  async count(): Promise<number> {
+    return CabinetModel.count();
+  }
 }

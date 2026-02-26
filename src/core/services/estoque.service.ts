@@ -206,6 +206,11 @@ export class StockService {
     );
   }
 
+  /** Efficient alert counts for dashboard. No cache for fresh counts. */
+  async getAlertCounts(transaction?: Transaction) {
+    return this.repo.getAlertCounts(transaction);
+  }
+
   async suspendIndividualMedicine(estoque_id: number, transaction?: Transaction) {
     const stock = await this.repo.findMedicineStockById(estoque_id, transaction);
 

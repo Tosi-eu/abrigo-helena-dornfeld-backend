@@ -20,6 +20,16 @@ export class ResidentController {
     });
   }
 
+  /** Lightweight count for admin/summary. Avoids loading full list. */
+  async getCount(_req: ValidatedRequest, res: Response) {
+    try {
+      const total = await this.service.count();
+      return res.json({ count: total });
+    } catch (error: unknown) {
+      return sendErrorResponse(res, 500, error, 'Erro ao obter total de residentes');
+    }
+  }
+
   async findByCasela(req: ValidatedRequest, res: Response) {
     const casela = Number(req.params.casela);
 
