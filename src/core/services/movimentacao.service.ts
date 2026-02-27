@@ -127,6 +127,14 @@ export class MovementService {
     return this.repo.getConsumptionByPeriod(startDate, endDate, groupBy, transaction);
   }
 
+  async getConsumptionByItem(
+    startDate: Date,
+    endDate: Date,
+    transaction?: import('sequelize').Transaction,
+  ) {
+    return this.repo.getConsumptionByItem(startDate, endDate, transaction);
+  }
+
   async getHistoryByItemId(
     itemType: 'medicamento' | 'insumo',
     itemId: number,

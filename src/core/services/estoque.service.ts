@@ -496,42 +496,69 @@ export class StockService {
       dias_para_repor?: number | null;
     },
     transaction?: Transaction,
+    loginId?: number,
   ) {
+    let stock: { quantidade: number; setor: string; armario_id?: number | null; gaveta_id?: number | null; validade?: Date | null; lote?: string | null; medicamento_id?: number; insumo_id?: number; casela_id?: number | null } | null;
+
     if (tipo === ItemType.MEDICAMENTO) {
-      const stock = await this.repo.findMedicineStockById(estoqueId, transaction);
-      if (!stock) {
+      const medStock = await this.repo.findMedicineStockById(estoqueId, transaction);
+      if (!medStock) {
         throw new Error('Item de estoque não encontrado');
       }
-
-      if (stock.status === StockItemStatus.SUSPENSO) {
+      if (medStock.status === StockItemStatus.SUSPENSO) {
         throw new Error(
           'Não é possível editar um medicamento suspenso. Reative-o primeiro.',
         );
       }
+      stock = medStock.get({ plain: true }) as typeof stock;
     } else {
-      const stock = await this.repo.findInputStockById(estoqueId, transaction);
-      if (!stock) {
+      const inpStock = await this.repo.findInputStockById(estoqueId, transaction);
+      if (!inpStock) {
         throw new Error('Item de estoque não encontrado');
       }
-
-      if (stock.status === StockItemStatus.SUSPENSO) {
+      if (inpStock.status === StockItemStatus.SUSPENSO) {
         throw new Error(
           'Não é possível editar um insumo suspenso. Reative-o primeiro.',
         );
       }
-
-      const { ...inputData } = data;
-      const result = await this.repo.updateStockItem(
-        estoqueId,
-        tipo,
-        inputData,
-        transaction,
-      );
-      await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
-      return result;
+      stock = inpStock.get({ plain: true }) as typeof stock;
     }
 
+    const oldQty = stock!.quantidade;
+
     const result = await this.repo.updateStockItem(estoqueId, tipo, data, transaction);
+
+    if (
+      data.quantidade != null &&
+      loginId != null &&
+      data.quantidade !== oldQty
+    ) {
+      const diff = data.quantidade - oldQty;
+      const updated = result.data as Record<string, unknown> | null;
+      if (updated && Math.abs(diff) > 0) {
+        const setor = (updated.setor as string) || stock!.setor;
+        const validade = updated.validade
+          ? new Date(updated.validade as string | Date)
+          : new Date();
+        await this.movementRepo.create(
+          {
+            tipo: diff > 0 ? MovementType.ENTRADA : MovementType.SAIDA,
+            login_id: loginId,
+            medicamento_id: tipo === ItemType.MEDICAMENTO ? (updated.medicamento_id as number) : null,
+            insumo_id: tipo === ItemType.INSUMO ? (updated.insumo_id as number) : null,
+            quantidade: Math.abs(diff),
+            casela_id: (updated.casela_id as number | null) ?? null,
+            validade,
+            setor,
+            armario_id: (updated.armario_id as number | undefined) ?? undefined,
+            gaveta_id: (updated.gaveta_id as number | undefined) ?? undefined,
+            lote: (updated.lote as string | null) ?? null,
+          },
+          transaction,
+        );
+        await this.cache.invalidateByPattern(CacheKeyHelper.movementWildcard());
+      }
+    }
 
     await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
 

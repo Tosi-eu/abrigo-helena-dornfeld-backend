@@ -157,4 +157,30 @@ export class MovementController {
       );
     }
   }
+
+  async getConsumptionByItem(req: ValidatedRequest, res: Response) {
+    try {
+      const start = req.query.start as string;
+      const end = req.query.end as string;
+      if (!start || !end) {
+        return res.status(400).json({
+          error: 'Parâmetros start e end (YYYY-MM-DD) são obrigatórios.',
+        });
+      }
+      const startDate = new Date(start);
+      const endDate = new Date(end);
+      if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+        return res.status(400).json({ error: 'Datas inválidas.' });
+      }
+      const result = await this.service.getConsumptionByItem(startDate, endDate);
+      return res.json(result);
+    } catch (error: unknown) {
+      return sendErrorResponse(
+        res,
+        500,
+        error,
+        'Erro ao buscar consumo por item',
+      );
+    }
+  }
 }

@@ -455,6 +455,71 @@ export class MovementRepository {
     );
     return result;
   }
+
+  async getConsumptionByItem(
+    startDate: Date,
+    endDate: Date,
+    transaction?: Transaction,
+  ): Promise<{
+    items: { tipo_item: 'medicamento' | 'insumo'; item_id: number; nome: string; entrada: number; saida: number }[];
+    subtotal: { entrada: number; saida: number };
+  }> {
+    const endOfDay = new Date(endDate);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    type Row = { tipo_item: string; item_id: number; nome: string; entrada: number; saida: number };
+    const rows = await sequelize.query<Row>(
+      `
+      SELECT * FROM (
+        SELECT
+          'medicamento'::text AS tipo_item,
+          m.id AS item_id,
+          m.nome,
+          COALESCE(SUM(CASE WHEN mov.tipo = 'entrada' THEN mov.quantidade ELSE 0 END), 0)::integer AS entrada,
+          COALESCE(SUM(CASE WHEN mov.tipo = 'saida' THEN mov.quantidade ELSE 0 END), 0)::integer AS saida
+        FROM movimentacao mov
+        JOIN medicamento m ON mov.medicamento_id = m.id
+        WHERE mov.data >= :startDate AND mov.data <= :endDate AND mov.medicamento_id IS NOT NULL
+        GROUP BY m.id, m.nome
+        UNION ALL
+        SELECT
+          'insumo'::text,
+          i.id,
+          i.nome,
+          COALESCE(SUM(CASE WHEN mov.tipo = 'entrada' THEN mov.quantidade ELSE 0 END), 0)::integer,
+          COALESCE(SUM(CASE WHEN mov.tipo = 'saida' THEN mov.quantidade ELSE 0 END), 0)::integer
+        FROM movimentacao mov
+        JOIN insumo i ON mov.insumo_id = i.id
+        WHERE mov.data >= :startDate AND mov.data <= :endDate AND mov.insumo_id IS NOT NULL
+        GROUP BY i.id, i.nome
+      ) AS u
+      ORDER BY tipo_item, nome
+      `,
+      {
+        replacements: { startDate, endDate: endOfDay },
+        type: QueryTypes.SELECT,
+        transaction,
+      },
+    );
+
+    const items = rows.map((r) => ({
+      tipo_item: r.tipo_item === 'insumo' ? ('insumo' as const) : ('medicamento' as const),
+      item_id: Number(r.item_id) || 0,
+      nome: String(r.nome ?? ''),
+      entrada: Number(r.entrada) || 0,
+      saida: Number(r.saida) || 0,
+    }));
+
+    const subtotal = items.reduce(
+      (acc, row) => ({
+        entrada: acc.entrada + row.entrada,
+        saida: acc.saida + row.saida,
+      }),
+      { entrada: 0, saida: 0 },
+    );
+
+    return { items, subtotal };
+  }
   
   async listHistoryByItemId(
     itemType: 'medicamento' | 'insumo',

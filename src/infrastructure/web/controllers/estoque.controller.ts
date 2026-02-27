@@ -399,6 +399,7 @@ export class StockController {
         itemTipo === 'medicamento' ? ItemType.MEDICAMENTO : ItemType.INSUMO,
         processedData,
         req.transaction,
+        req.user?.id,
       );
 
       return res.json(result);
