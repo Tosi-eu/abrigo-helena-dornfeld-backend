@@ -171,10 +171,11 @@ export class LoginService {
       firstName: u.first_name,
       lastName: u.last_name,
       role: u.role,
+      permissions: u.permissions ?? { read: true, create: false, update: false, delete: false },
     }));
   }
 
-  /** Admin: update any user (including role). */
+  /** Admin: update any user (including role and permissions). */
   async updateUserByAdmin(
     userId: number,
     data: {
@@ -183,6 +184,7 @@ export class LoginService {
       login?: string;
       password?: string;
       role?: 'admin' | 'user';
+      permissions?: { read?: boolean; create?: boolean; update?: boolean; delete?: boolean };
     },
   ) {
     const user = await this.repo.findById(userId);
@@ -194,6 +196,7 @@ export class LoginService {
       login: string;
       role: 'admin' | 'user';
       password: string;
+      permissions: { read: boolean; create: boolean; update: boolean; delete: boolean };
     }> = {};
     if (data.first_name !== undefined) updateData.first_name = data.first_name;
     if (data.last_name !== undefined) updateData.last_name = data.last_name;
@@ -203,6 +206,15 @@ export class LoginService {
       validateStrongPassword(data.password);
       updateData.password = await bcrypt.hash(data.password, 10);
     }
+    if (data.permissions !== undefined) {
+      const p = data.permissions;
+      updateData.permissions = {
+        read: true,
+        create: p.create ?? false,
+        update: p.update ?? false,
+        delete: p.delete ?? false,
+      };
+    }
 
     const updated = await this.repo.update(userId, updateData);
     return {
@@ -211,6 +223,7 @@ export class LoginService {
       firstName: updated!.first_name,
       lastName: updated!.last_name,
       role: updated!.role,
+      permissions: updated!.permissions ?? { read: true, create: false, update: false, delete: false },
     };
   }
 

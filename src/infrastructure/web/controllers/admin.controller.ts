@@ -40,6 +40,7 @@ export class AdminController {
       login?: string;
       password?: string;
       role?: 'admin' | 'user';
+      permissions?: { read?: boolean; create?: boolean; update?: boolean; delete?: boolean };
     } = {};
     if (body.firstName !== undefined) data.first_name = body.firstName;
     if (body.lastName !== undefined) data.last_name = body.lastName;
@@ -51,6 +52,18 @@ export class AdminController {
         return res.status(400).json({ error: 'Role deve ser admin ou user' });
       }
       data.role = body.role;
+    }
+    if (body.permissions !== undefined) {
+      const p = body.permissions;
+      if (typeof p !== 'object' || p === null) {
+        return res.status(400).json({ error: 'permissions deve ser um objeto' });
+      }
+      data.permissions = {
+        read: p.read !== false,
+        create: Boolean(p.create),
+        update: Boolean(p.update),
+        delete: Boolean(p.delete),
+      };
     }
 
     try {

@@ -16,7 +16,13 @@ export function rlsContextMiddleware(
   next: NextFunction,
 ) {
   if (req.user?.id != null) {
-    req.rlsContext = { current_user_id: req.user.id };
+    const p = req.user.permissions;
+    req.rlsContext = {
+      current_user_id: req.user.id,
+      user_can_create: p?.create ? 'true' : 'false',
+      user_can_update: p?.update ? 'true' : 'false',
+      user_can_delete: p?.delete ? 'true' : 'false',
+    };
   } else {
     req.rlsContext = {};
   }

@@ -35,13 +35,14 @@ export class LoginRepository {
         'first_name',
         'last_name',
         'role',
+        'permissions',
       ],
     });
   }
 
   async findAll() {
     return LoginModel.findAll({
-      attributes: ['id', 'login', 'first_name', 'last_name', 'role'],
+      attributes: ['id', 'login', 'first_name', 'last_name', 'role', 'permissions'],
       order: [['id', 'ASC']],
     });
   }
@@ -69,6 +70,7 @@ export class LoginRepository {
         'first_name',
         'last_name',
         'role',
+        'permissions',
       ],
     });
   }
