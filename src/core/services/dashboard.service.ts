@@ -14,7 +14,7 @@ export class DashboardService {
     private readonly movementService: MovementService,
   ) {}
 
-  async getSummary(transaction?: Transaction) {
+  async getSummary(transaction?: Transaction, expiringDays?: number) {
     const [
       alerts,
       medMovements,
@@ -27,7 +27,7 @@ export class DashboardService {
       cabinetList,
       drawerList,
     ] = await Promise.all([
-      this.stockService.getAlertCounts(transaction),
+      this.stockService.getAlertCounts(transaction, expiringDays ?? 45),
       this.movementService.findMedicineMovements({
         days: 7,
         page: 1,
@@ -149,5 +149,14 @@ export class DashboardService {
       cabinetStockData: cabinetList,
       drawerStockData: drawerList,
     };
+  }
+
+  async getExpiringItems(
+    days: number,
+    page: number,
+    limit: number,
+    transaction?: Transaction,
+  ) {
+    return this.stockService.getExpiringItems(days, page, limit, transaction);
   }
 }

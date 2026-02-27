@@ -1,5 +1,6 @@
 import { Response } from 'express';
 import { LoginService } from '../../../core/services/login.service';
+import { MovementService } from '../../../core/services/movimentacao.service';
 import { AuditRepository } from '../../database/repositories/audit.repository';
 import { AuthRequest } from '../../../middleware/auth.middleware';
 import { getErrorMessage } from '../../types/error.types';
@@ -11,6 +12,7 @@ export class AdminController {
   constructor(
     private readonly loginService: LoginService,
     private readonly auditRepo: AuditRepository,
+    private readonly movementService?: MovementService,
   ) {}
 
   async listUsers(_req: AuthRequest, res: Response) {
@@ -120,6 +122,36 @@ export class AdminController {
     } catch (error: unknown) {
       return res.status(500).json({
         error: getErrorMessage(error) || 'Erro ao buscar insights',
+      });
+    }
+  }
+
+  /** GET /admin/stock-history?itemType=medicamento|insumo&itemId=123  or  ?lote=XXX */
+  async getStockHistory(req: AuthRequest, res: Response) {
+    if (!this.movementService) {
+      return res.status(501).json({ error: 'Serviço de movimentação não disponível' });
+    }
+    try {
+      const lote = (req.query.lote as string)?.trim();
+      const itemType = req.query.itemType as 'medicamento' | 'insumo' | undefined;
+      const itemId = req.query.itemId != null ? Number(req.query.itemId) : undefined;
+      const page = Math.max(1, Number(req.query.page) || 1);
+      const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 50));
+
+      if (lote) {
+        const result = await this.movementService.getHistoryByLote(lote, page, limit);
+        return res.json(result);
+      }
+      if (itemType && itemId != null && !Number.isNaN(itemId)) {
+        const result = await this.movementService.getHistoryByItemId(itemType, itemId, page, limit);
+        return res.json(result);
+      }
+      return res.status(400).json({
+        error: 'Informe (itemType + itemId) ou lote para consultar o histórico.',
+      });
+    } catch (error: unknown) {
+      return res.status(500).json({
+        error: getErrorMessage(error) || 'Erro ao buscar histórico de estoque',
       });
     }
   }

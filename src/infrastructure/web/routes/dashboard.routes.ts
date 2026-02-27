@@ -25,4 +25,9 @@ router.get(
   withRls(sequelize, (req, res) => controller.getSummary(req, res)),
 );
 
+router.get(
+  '/expiring-items',
+  withRls(sequelize, (req, res) => controller.getExpiringItems(req, res)),
+);
+
 export default router;

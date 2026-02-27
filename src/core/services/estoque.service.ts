@@ -214,8 +214,18 @@ export class StockService {
   }
 
   /** Efficient alert counts for dashboard. No cache for fresh counts. */
-  async getAlertCounts(transaction?: Transaction) {
-    return this.repo.getAlertCounts(transaction);
+  async getAlertCounts(transaction?: Transaction, expiringDays?: number) {
+    return this.repo.getAlertCounts(transaction, expiringDays ?? 45);
+  }
+
+  /** Items (medicine + input) expiring in the next N days. */
+  async getExpiringItems(
+    days: number,
+    page?: number,
+    limit?: number,
+    transaction?: Transaction,
+  ) {
+    return this.repo.getExpiringItems(days ?? 30, page ?? 1, limit ?? 50, transaction);
   }
 
   async suspendIndividualMedicine(estoque_id: number, transaction?: Transaction) {

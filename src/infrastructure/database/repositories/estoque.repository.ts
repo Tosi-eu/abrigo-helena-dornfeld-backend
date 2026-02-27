@@ -1297,7 +1297,109 @@ export class StockRepository {
     };
   }
 
-  async getAlertCounts(transaction?: Transaction): Promise<{
+  /** List items (medicine + input) expiring in the next `days` days. */
+  async getExpiringItems(
+    days: number,
+    page: number = 1,
+    limit: number = 50,
+    transaction?: Transaction,
+  ): Promise<{ data: any[]; total: number; hasNext: boolean }> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const endDate = new Date(today);
+    endDate.setDate(endDate.getDate() + Math.min(365, Math.max(1, days)));
+
+    const [medRows, inpRows] = await Promise.all([
+      MedicineStockModel.findAll({
+        where: {
+          quantidade: { [Op.gt]: 0 },
+          validade: { [Op.between]: [today, endDate] },
+        },
+        include: [
+          { model: MedicineModel, as: 'MedicineModel', attributes: ['nome', 'principio_ativo', 'dosagem', 'unidade_medida'] },
+          { model: ResidentModel, as: 'ResidentModel', attributes: ['nome'], required: false },
+        ],
+        order: [['validade', 'ASC']],
+        limit: 500,
+        transaction,
+        raw: false,
+      }),
+      InputStockModel.findAll({
+        where: {
+          quantidade: { [Op.gt]: 0 },
+          validade: { [Op.between]: [today, endDate] },
+        },
+        include: [
+          { model: InputModel, as: 'InputModel', attributes: ['nome', 'descricao'] },
+          { model: ResidentModel, as: 'ResidentModel', attributes: ['nome'], required: false },
+        ],
+        order: [['validade', 'ASC']],
+        limit: 500,
+        transaction,
+        raw: false,
+      }),
+    ]);
+
+    const toItem = (r: any, tipo: 'medicamento' | 'insumo') => {
+      const plain = r.get ? r.get({ plain: true }) : r;
+      const validade = plain.validade ? new Date(plain.validade) : null;
+      const dias = validade
+        ? Math.ceil((validade.getTime() - today.getTime()) / 86400000)
+        : 0;
+      if (tipo === 'medicamento') {
+        return {
+          tipo_item: 'medicamento' as const,
+          item_id: plain.medicamento_id,
+          estoque_id: plain.id,
+          nome: plain.MedicineModel?.nome ?? '-',
+          principio_ativo: plain.MedicineModel?.principio_ativo ?? null,
+          dosagem: plain.MedicineModel?.dosagem ?? null,
+          unidade_medida: plain.MedicineModel?.unidade_medida ?? null,
+          descricao: null,
+          validade: validade ? formatDateToPtBr(validade) : null,
+          quantidade: plain.quantidade,
+          lote: plain.lote ?? null,
+          setor: plain.setor ?? null,
+          paciente: plain.ResidentModel?.nome ?? null,
+          dias_para_vencer: dias,
+        };
+      }
+      return {
+        tipo_item: 'insumo' as const,
+        item_id: plain.insumo_id,
+        estoque_id: plain.id,
+        nome: plain.InputModel?.nome ?? '-',
+        principio_ativo: null,
+        descricao: plain.InputModel?.descricao ?? null,
+        validade: validade ? formatDateToPtBr(validade) : null,
+        quantidade: plain.quantidade,
+        lote: plain.lote ?? null,
+        setor: plain.setor ?? null,
+        paciente: plain.ResidentModel?.nome ?? null,
+        dias_para_vencer: dias,
+      };
+    };
+
+    const all = [
+      ...medRows.map((r) => toItem(r, 'medicamento')),
+      ...inpRows.map((r) => toItem(r, 'insumo')),
+    ].sort((a, b) => (a.dias_para_vencer ?? 0) - (b.dias_para_vencer ?? 0));
+
+    const total = all.length;
+    const start = (page - 1) * limit;
+    const data = all.slice(start, start + limit);
+
+    return {
+      data,
+      total,
+      hasNext: start + data.length < total,
+    };
+  }
+
+  async getAlertCounts(
+    transaction?: Transaction,
+    expiringDays: number = 45,
+  ): Promise<{
     noStock: number;
     belowMin: number;
     expired: number;
@@ -1305,8 +1407,8 @@ export class StockRepository {
   }> {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const in45Days = new Date(today);
-    in45Days.setDate(in45Days.getDate() + 45);
+    const inDays = new Date(today);
+    inDays.setDate(inDays.getDate() + Math.min(365, Math.max(1, expiringDays)));
 
     const [noStockMed, noStockInp, belowMinMed, belowMinInp, expiredMed, expiredInp, expiringMed, expiringInp] =
       await Promise.all([
@@ -1363,14 +1465,14 @@ export class StockRepository {
         MedicineStockModel.count({
           where: {
             quantidade: { [Op.gt]: 0 },
-            validade: { [Op.between]: [today, in45Days] },
+            validade: { [Op.between]: [today, inDays] },
           },
           transaction,
         }),
         InputStockModel.count({
           where: {
             quantidade: { [Op.gt]: 0 },
-            validade: { [Op.between]: [today, in45Days] },
+            validade: { [Op.between]: [today, inDays] },
           },
           transaction,
         }),

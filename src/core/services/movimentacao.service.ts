@@ -117,4 +117,32 @@ export class MovementService {
       limit: params.limit,
     });
   }
+
+  async getConsumptionByPeriod(
+    startDate: Date,
+    endDate: Date,
+    groupBy: 'month' | 'quarter',
+    transaction?: import('sequelize').Transaction,
+  ) {
+    return this.repo.getConsumptionByPeriod(startDate, endDate, groupBy, transaction);
+  }
+
+  async getHistoryByItemId(
+    itemType: 'medicamento' | 'insumo',
+    itemId: number,
+    page?: number,
+    limit?: number,
+    transaction?: import('sequelize').Transaction,
+  ) {
+    return this.repo.listHistoryByItemId(itemType, itemId, page ?? 1, limit ?? 50, transaction);
+  }
+
+  async getHistoryByLote(
+    lote: string,
+    page?: number,
+    limit?: number,
+    transaction?: import('sequelize').Transaction,
+  ) {
+    return this.repo.listHistoryByLote(lote, page ?? 1, limit ?? 50, transaction);
+  }
 }
