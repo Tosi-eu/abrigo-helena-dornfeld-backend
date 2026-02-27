@@ -10,7 +10,6 @@ const repo = new ReportRepository();
 const service = new ReportService(repo);
 const controller = new ReportController(service);
 
-/** Stricter rate limit for report generation (heavy queries). */
 const reportLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 30,

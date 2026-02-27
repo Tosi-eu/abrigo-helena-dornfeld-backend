@@ -50,7 +50,6 @@ export class ResidentRepository {
     });
   }
 
-  /** Efficient count for admin/summary. Uses COUNT(*) with index on primary key. */
   async count(): Promise<number> {
     return ResidentModel.count();
   }

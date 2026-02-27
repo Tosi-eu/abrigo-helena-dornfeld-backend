@@ -82,10 +82,6 @@ function applyNames(
   }
 }
 
-/**
- * Batch enriches audit values with medicamento_nome and insumo_nome.
- * Uses 2 queries total (MedicineModel.findAll, InputModel.findAll) instead of N per event.
- */
 export async function enrichAuditEventsBatch(
   values: (Record<string, unknown> | null)[],
 ): Promise<(Record<string, unknown> | null)[]> {

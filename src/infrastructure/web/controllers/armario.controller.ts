@@ -23,7 +23,6 @@ export class CabinetController {
     return res.json(result);
   }
 
-  /** Lightweight count for admin/summary. Avoids loading full list. */
   async getCount(_req: Request, res: Response) {
     try {
       const total = await this.service.count();

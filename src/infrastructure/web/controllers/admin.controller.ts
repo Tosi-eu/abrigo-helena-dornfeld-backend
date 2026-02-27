@@ -140,8 +140,7 @@ export class AdminController {
       });
     }
   }
-
-  /** GET /admin/stock-history?itemType=medicamento|insumo&itemId=123  or  ?lote=XXX */
+  
   async getStockHistory(req: AuthRequest, res: Response) {
     if (!this.movementService) {
       return res

@@ -3,11 +3,6 @@ import { MovementService } from './movimentacao.service';
 import { SectorType } from '../utils/utils';
 import type { Transaction } from 'sequelize';
 
-/**
- * Dashboard summary aggregates data from stock and movement services
- * to avoid the frontend making many parallel requests and loading full lists.
- * Uses optimized count/aggregation queries where possible.
- */
 export class DashboardService {
   constructor(
     private readonly stockService: StockService,

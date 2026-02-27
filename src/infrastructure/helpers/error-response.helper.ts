@@ -3,10 +3,6 @@ import { sanitizeErrorMessage } from './sanitize.helper';
 
 const isProduction = process.env.NODE_ENV === 'production';
 
-/**
- * Standard error response: { error: string, code?: string }.
- * Do not leak stack traces in production.
- */
 export function sendErrorResponse(
   res: Response,
   statusCode: number,
@@ -23,8 +19,7 @@ export function sendErrorResponse(
 
   return res.status(statusCode).json(body);
 }
-
-/** Map known error messages to HTTP status and optional stable code. */
+  
 export function mapErrorToStatusAndCode(error: unknown): {
   status: number;
   code?: string;

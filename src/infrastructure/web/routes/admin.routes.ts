@@ -21,7 +21,6 @@ const controller = new AdminController(
   movementService,
 );
 
-/** Stricter rate limit for admin panel. */
 const adminLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,

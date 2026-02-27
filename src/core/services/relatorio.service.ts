@@ -1,7 +1,6 @@
 import { ReportRepository } from '../../infrastructure/database/repositories/relatorio.repository';
 import { formatDateToPtBr } from '../../infrastructure/helpers/date.helper';
 
-/** Maximum rows allowed in a single report to avoid memory and response size issues. */
 export const MAX_REPORT_ROWS = 10_000;
 
 function assertReportSize(value: unknown, type: string): void {

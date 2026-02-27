@@ -77,7 +77,6 @@ export class DrawerRepository {
     return deleted > 0;
   }
 
-  /** Efficient count for admin/summary. Uses COUNT(*) with index on primary key. */
   async count(): Promise<number> {
     return DrawerModel.count();
   }

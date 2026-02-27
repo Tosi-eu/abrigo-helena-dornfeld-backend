@@ -412,7 +412,6 @@ export class MovementRepository {
     return results.slice(0, limit);
   }
 
-  /** Consumption (entrada/saida) aggregated by period (month or quarter). */
   async getConsumptionByPeriod(
     startDate: Date,
     endDate: Date,
@@ -608,7 +607,6 @@ export class MovementRepository {
     return { data, total: count, hasNext: count > page * limit, page, limit };
   }
 
-  /** List movements by lote for admin audit. */
   async listHistoryByLote(
     lote: string,
     page: number = 1,

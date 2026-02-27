@@ -1401,7 +1401,6 @@ export class StockRepository {
     };
   }
 
-  /** List items (medicine + input) expiring in the next `days` days. */
   async getExpiringItems(
     days: number,
     page: number = 1,

@@ -126,7 +126,6 @@ export class MovementController {
     }
   }
 
-  /** GET /movimentacoes/consumo?start=YYYY-MM-DD&end=YYYY-MM-DD&groupBy=month|quarter */
   async getConsumption(req: ValidatedRequest, res: Response) {
     try {
       const start = req.query.start as string;

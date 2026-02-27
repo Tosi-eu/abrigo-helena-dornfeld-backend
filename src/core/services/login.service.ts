@@ -5,13 +5,9 @@ import jwt from 'jsonwebtoken';
 import { BaseError } from 'sequelize';
 import { Login } from '../domain/login';
 
-/** Minimum length for passwords. */
+
 const MIN_PASSWORD_LENGTH = 8;
 
-/**
- * Enforce strong password: min length, at least one letter and one number.
- * Do not log or expose password in errors.
- */
 function validateStrongPassword(password: string): void {
   if (password.length < MIN_PASSWORD_LENGTH) {
     throw new Error(
@@ -162,7 +158,6 @@ export class LoginService {
     return this.repo.delete(id);
   }
 
-  /** Admin: list all users (no passwords). */
   async listAllUsers() {
     const rows = await this.repo.findAll();
     return rows.map(u => ({
@@ -175,7 +170,6 @@ export class LoginService {
     }));
   }
 
-  /** Admin: update any user (including role and permissions). */
   async updateUserByAdmin(
     userId: number,
     data: {
@@ -227,7 +221,6 @@ export class LoginService {
     };
   }
 
-  /** Admin: delete a user. Returns false if trying to delete self. */
   async deleteUserByAdmin(userId: number, adminId: number) {
     if (userId === adminId) return false;
     return this.repo.delete(userId);
