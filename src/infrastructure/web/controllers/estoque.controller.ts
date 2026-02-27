@@ -20,12 +20,20 @@ export class StockController {
       }
 
       if (medicamento_id) {
-        const result = await this.service.medicineStockIn(req.body, login_id, req.transaction);
+        const result = await this.service.medicineStockIn(
+          req.body,
+          login_id,
+          req.transaction,
+        );
         return res.json(result);
       }
 
       if (insumo_id) {
-        const result = await this.service.inputStockIn(req.body, login_id, req.transaction);
+        const result = await this.service.inputStockIn(
+          req.body,
+          login_id,
+          req.transaction,
+        );
         return res.json(result);
       }
     } catch (error: unknown) {
@@ -41,7 +49,11 @@ export class StockController {
         return res.status(401).json({ error: 'Usuário não autenticado' });
       }
 
-      const result = await this.service.stockOut(req.body, login_id, req.transaction);
+      const result = await this.service.stockOut(
+        req.body,
+        login_id,
+        req.transaction,
+      );
       return res.json(result);
     } catch (error: unknown) {
       return sendErrorResponse(res, 400, error, 'Erro ao registrar saída');
@@ -64,19 +76,22 @@ export class StockController {
         lot,
       } = req.query;
 
-      const data = await this.service.listStock({
-        filter: String(filter || ''),
-        type: String(type || ''),
-        page: Number(page) || 1,
-        limit: Number(limit) || 10,
-        name: name ? String(name) : undefined,
-        itemType: itemType ? String(itemType) : undefined,
-        cabinet: cabinet ? String(cabinet) : undefined,
-        drawer: drawer ? String(drawer) : undefined,
-        casela: casela ? String(casela) : undefined,
-        sector: sector ? String(sector) : undefined,
-        lot: lot ? String(lot) : undefined,
-      }, req.transaction);
+      const data = await this.service.listStock(
+        {
+          filter: String(filter || ''),
+          type: String(type || ''),
+          page: Number(page) || 1,
+          limit: Number(limit) || 10,
+          name: name ? String(name) : undefined,
+          itemType: itemType ? String(itemType) : undefined,
+          cabinet: cabinet ? String(cabinet) : undefined,
+          drawer: drawer ? String(drawer) : undefined,
+          casela: casela ? String(casela) : undefined,
+          sector: sector ? String(sector) : undefined,
+          lot: lot ? String(lot) : undefined,
+        },
+        req.transaction,
+      );
 
       if (handleETagResponse(req, res, data)) {
         return;
@@ -132,7 +147,10 @@ export class StockController {
         });
       }
 
-      const data = await this.service.getProportion(sectorType as SectorType, req.transaction);
+      const data = await this.service.getProportion(
+        sectorType as SectorType,
+        req.transaction,
+      );
 
       const totalGeral = Object.values(data).reduce(
         (acc, v) => acc + Number(v || 0),
@@ -237,7 +255,10 @@ export class StockController {
     }
   }
 
-  async transferMedicineSector(req: RlsRequest & ValidatedRequest, res: Response) {
+  async transferMedicineSector(
+    req: RlsRequest & ValidatedRequest,
+    res: Response,
+  ) {
     try {
       const { estoque_id } = req.params;
       const {

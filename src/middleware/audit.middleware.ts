@@ -14,7 +14,10 @@ function getOperationType(method: string): 'create' | 'update' | 'delete' {
 }
 
 function getResource(path: string): string | null {
-  const segments = path.replace(/^\/api\/v1/, '').split('/').filter(Boolean);
+  const segments = path
+    .replace(/^\/api\/v1/, '')
+    .split('/')
+    .filter(Boolean);
   return segments[0] ?? null;
 }
 
@@ -60,7 +63,11 @@ export function auditLog(req: AuthRequest, res: Response, next: NextFunction) {
         ['PUT', 'PATCH', 'DELETE'].includes(req.method)
       ) {
         try {
-          capturedOld = await getOldValueForAudit(pathForAudit, req.method, req);
+          capturedOld = await getOldValueForAudit(
+            pathForAudit,
+            req.method,
+            req,
+          );
         } catch {
           // ignore
         }
@@ -112,7 +119,7 @@ function logAuditEvent(
     duration_ms: duration,
     old_value: safeJsonObject(oldValue),
     new_value: safeJsonObject(newValue),
-  }).catch((err) => {
+  }).catch(err => {
     logger.error('Audit log persist failed', {
       path,
       err: (err as Error).message,

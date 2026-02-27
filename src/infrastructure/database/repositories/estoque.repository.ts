@@ -69,24 +69,33 @@ export class StockRepository {
         existing.quantidade += data.quantidade;
         await existing.save({ transaction });
         const plain = existing.get({ plain: true });
-        return { message: 'Quantidade somada ao estoque existente.', data: plain };
+        return {
+          message: 'Quantidade somada ao estoque existente.',
+          data: plain,
+        };
       }
 
-      const created = await MedicineStockModel.create({
-        medicamento_id: data.medicamento_id,
-        casela_id: data.casela_id ?? null,
-        armario_id: data.armario_id,
-        gaveta_id: data.gaveta_id,
-        validade: data.validade,
-        quantidade: data.quantidade,
-        origem: data.origem,
-        tipo: data.tipo,
-        setor: data.setor,
-        lote: data.lote ?? null,
-        observacao: data.observacao ?? null,
-      }, { transaction });
+      const created = await MedicineStockModel.create(
+        {
+          medicamento_id: data.medicamento_id,
+          casela_id: data.casela_id ?? null,
+          armario_id: data.armario_id,
+          gaveta_id: data.gaveta_id,
+          validade: data.validade,
+          quantidade: data.quantidade,
+          origem: data.origem,
+          tipo: data.tipo,
+          setor: data.setor,
+          lote: data.lote ?? null,
+          observacao: data.observacao ?? null,
+        },
+        { transaction },
+      );
 
-      return { message: 'Entrada de medicamento registrada.', data: created.get({ plain: true }) };
+      return {
+        message: 'Entrada de medicamento registrada.',
+        data: created.get({ plain: true }),
+      };
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
       throw new Error(message);
@@ -115,24 +124,33 @@ export class StockRepository {
       existing.quantidade += data.quantidade;
       await existing.save({ transaction });
       const plain = existing.get({ plain: true });
-      return { message: 'Quantidade somada ao estoque existente.', data: plain };
+      return {
+        message: 'Quantidade somada ao estoque existente.',
+        data: plain,
+      };
     }
 
-    const created = await InputStockModel.create({
-      insumo_id: data.insumo_id,
-      casela_id: data.casela_id ?? null,
-      armario_id: data.armario_id,
-      gaveta_id: data.gaveta_id,
-      quantidade: data.quantidade,
-      validade: data.validade,
-      tipo: data.tipo,
-      setor: data.setor,
-      lote: data.lote ?? null,
-      status: data.status ?? StockItemStatus.ATIVO,
-      suspended_at: data.suspended_at ?? null,
-    }, { transaction });
+    const created = await InputStockModel.create(
+      {
+        insumo_id: data.insumo_id,
+        casela_id: data.casela_id ?? null,
+        armario_id: data.armario_id,
+        gaveta_id: data.gaveta_id,
+        quantidade: data.quantidade,
+        validade: data.validade,
+        tipo: data.tipo,
+        setor: data.setor,
+        lote: data.lote ?? null,
+        status: data.status ?? StockItemStatus.ATIVO,
+        suspended_at: data.suspended_at ?? null,
+      },
+      { transaction },
+    );
 
-    return { message: 'Entrada de insumo registrada.', data: created.get({ plain: true }) };
+    return {
+      message: 'Entrada de insumo registrada.',
+      data: created.get({ plain: true }),
+    };
   }
 
   async createStockOut(
@@ -142,7 +160,9 @@ export class StockRepository {
     transaction?: Transaction,
   ) {
     if (tipoItem === 'medicamento') {
-      const register = await MedicineStockModel.findByPk(estoqueId, { transaction });
+      const register = await MedicineStockModel.findByPk(estoqueId, {
+        transaction,
+      });
 
       if (!register) throw new Error('register de medicamento não encontrado.');
 
@@ -155,9 +175,14 @@ export class StockRepository {
 
       register.quantidade -= quantidade;
       await register.save({ transaction });
-      return { message: 'Saída de medicamento realizada.', data: register.get({ plain: true }) };
+      return {
+        message: 'Saída de medicamento realizada.',
+        data: register.get({ plain: true }),
+      };
     } else {
-      const register = await InputStockModel.findByPk(estoqueId, { transaction });
+      const register = await InputStockModel.findByPk(estoqueId, {
+        transaction,
+      });
       if (!register) throw new Error('register de insumo não encontrado.');
       if (register.quantidade < quantidade)
         throw new Error('Quantidade insuficiente.');
@@ -168,11 +193,17 @@ export class StockRepository {
 
       register.quantidade -= quantidade;
       await register.save({ transaction });
-      return { message: 'Saída de insumo realizada.', data: register.get({ plain: true }) };
+      return {
+        message: 'Saída de insumo realizada.',
+        data: register.get({ plain: true }),
+      };
     }
   }
 
-  async listStockItems(params: QueryPaginationParams, transaction?: Transaction) {
+  async listStockItems(
+    params: QueryPaginationParams,
+    transaction?: Transaction,
+  ) {
     const { filter, type, page = 1, limit = 20 } = params;
     const offset = (page - 1) * limit;
 
@@ -659,32 +690,64 @@ export class StockRepository {
         carrinhoEmergenciaInsumos,
         carrinhoPsicotropicosInsumos,
       ] = await Promise.all([
-        this.sumStock(MedicineStockModel, {
-          tipos: [OperationType.GERAL],
-        }, transaction),
-        this.sumStock(MedicineStockModel, {
-          tipos: [OperationType.INDIVIDUAL],
-        }, transaction),
-        this.sumStock(InputStockModel, {
-          tipos: [OperationType.GERAL],
-        }, transaction),
-        this.sumStock(InputStockModel, {
-          tipos: [OperationType.INDIVIDUAL],
-        }, transaction),
+        this.sumStock(
+          MedicineStockModel,
+          {
+            tipos: [OperationType.GERAL],
+          },
+          transaction,
+        ),
+        this.sumStock(
+          MedicineStockModel,
+          {
+            tipos: [OperationType.INDIVIDUAL],
+          },
+          transaction,
+        ),
+        this.sumStock(
+          InputStockModel,
+          {
+            tipos: [OperationType.GERAL],
+          },
+          transaction,
+        ),
+        this.sumStock(
+          InputStockModel,
+          {
+            tipos: [OperationType.INDIVIDUAL],
+          },
+          transaction,
+        ),
 
-        this.sumStock(MedicineStockModel, {
-          tipos: [OperationType.CARRINHO_EMERGENCIA],
-        }, transaction),
-        this.sumStock(MedicineStockModel, {
-          tipos: [OperationType.CARRINHO_PSICOTROPICOS],
-        }, transaction),
+        this.sumStock(
+          MedicineStockModel,
+          {
+            tipos: [OperationType.CARRINHO_EMERGENCIA],
+          },
+          transaction,
+        ),
+        this.sumStock(
+          MedicineStockModel,
+          {
+            tipos: [OperationType.CARRINHO_PSICOTROPICOS],
+          },
+          transaction,
+        ),
 
-        this.sumStock(InputStockModel, {
-          tipos: [OperationType.CARRINHO_EMERGENCIA],
-        }, transaction),
-        this.sumStock(InputStockModel, {
-          tipos: [OperationType.CARRINHO_PSICOTROPICOS],
-        }, transaction),
+        this.sumStock(
+          InputStockModel,
+          {
+            tipos: [OperationType.CARRINHO_EMERGENCIA],
+          },
+          transaction,
+        ),
+        this.sumStock(
+          InputStockModel,
+          {
+            tipos: [OperationType.CARRINHO_PSICOTROPICOS],
+          },
+          transaction,
+        ),
       ]);
 
       return {
@@ -715,10 +778,14 @@ export class StockRepository {
     }
 
     for (const [group, tipos] of Object.entries(config.inputs)) {
-      baseResult[group as StockGroup] = await this.sumStock(InputStockModel, {
-        setor,
-        tipos,
-      }, transaction);
+      baseResult[group as StockGroup] = await this.sumStock(
+        InputStockModel,
+        {
+          setor,
+          tipos,
+        },
+        transaction,
+      );
     }
 
     return baseResult;
@@ -761,7 +828,9 @@ export class StockRepository {
       },
     );
 
-    const updated = await MedicineStockModel.findByPk(estoqueId, { transaction });
+    const updated = await MedicineStockModel.findByPk(estoqueId, {
+      transaction,
+    });
     return {
       message: 'Medicamento removido do estoque individual',
       data: updated ? updated.get({ plain: true }) : null,
@@ -788,7 +857,10 @@ export class StockRepository {
     };
   }
 
-  async suspendIndividualMedicine(estoque_id: number, transaction?: Transaction) {
+  async suspendIndividualMedicine(
+    estoque_id: number,
+    transaction?: Transaction,
+  ) {
     await MedicineStockModel.update(
       {
         status: StockItemStatus.SUSPENSO,
@@ -800,14 +872,19 @@ export class StockRepository {
       },
     );
 
-    const updated = await MedicineStockModel.findByPk(estoque_id, { transaction });
+    const updated = await MedicineStockModel.findByPk(estoque_id, {
+      transaction,
+    });
     return {
       message: 'Medicamento suspenso com sucesso',
       data: updated ? updated.get({ plain: true }) : null,
     };
   }
 
-  async resumeIndividualMedicine(estoque_id: number, transaction?: Transaction) {
+  async resumeIndividualMedicine(
+    estoque_id: number,
+    transaction?: Transaction,
+  ) {
     await MedicineStockModel.update(
       {
         status: StockItemStatus.ATIVO,
@@ -819,7 +896,9 @@ export class StockRepository {
       },
     );
 
-    const updated = await MedicineStockModel.findByPk(estoque_id, { transaction });
+    const updated = await MedicineStockModel.findByPk(estoque_id, {
+      transaction,
+    });
     return {
       message: 'Medicamento retomado com sucesso',
       data: updated ? updated.get({ plain: true }) : null,
@@ -987,15 +1066,25 @@ export class StockRepository {
     }
   }
 
-  async deleteStockItem(estoqueId: number, tipo: ItemType, transaction?: Transaction) {
+  async deleteStockItem(
+    estoqueId: number,
+    tipo: ItemType,
+    transaction?: Transaction,
+  ) {
     if (tipo === ItemType.MEDICAMENTO) {
       const stock = await this.findMedicineStockById(estoqueId, transaction);
       if (!stock) {
         throw new Error('Item de estoque não encontrado');
       }
 
-      const deleted = stock.get({ plain: true }) as unknown as Record<string, unknown>;
-      await MedicineStockModel.destroy({ where: { id: estoqueId }, transaction });
+      const deleted = stock.get({ plain: true }) as unknown as Record<
+        string,
+        unknown
+      >;
+      await MedicineStockModel.destroy({
+        where: { id: estoqueId },
+        transaction,
+      });
       return {
         message: 'Item de estoque removido com sucesso',
         data: deleted,
@@ -1006,7 +1095,10 @@ export class StockRepository {
         throw new Error('Item de estoque não encontrado');
       }
 
-      const deleted = stock.get({ plain: true }) as unknown as Record<string, unknown>;
+      const deleted = stock.get({ plain: true }) as unknown as Record<
+        string,
+        unknown
+      >;
       await InputStockModel.destroy({ where: { id: estoqueId }, transaction });
       return {
         message: 'Item de estoque removido com sucesso',
@@ -1134,25 +1226,31 @@ export class StockRepository {
 
       await existing.save({ transaction });
     } else {
-      await MedicineStockModel.create({
-        medicamento_id: stock.medicamento_id,
-        casela_id: finalCaselaId,
-        armario_id: stock.armario_id,
-        gaveta_id: stock.gaveta_id,
-        validade: stock.validade,
-        quantidade,
-        origem: stock.origem,
-        tipo: finalStockType,
-        setor,
-        lote: stock.lote,
-        status: stock.status,
-        observacao: finalDetails,
-        dias_para_repor: dias_para_repor ?? null,
-        ultima_reposicao: getTodayAtNoonBrazil(),
-      }, { transaction });
+      await MedicineStockModel.create(
+        {
+          medicamento_id: stock.medicamento_id,
+          casela_id: finalCaselaId,
+          armario_id: stock.armario_id,
+          gaveta_id: stock.gaveta_id,
+          validade: stock.validade,
+          quantidade,
+          origem: stock.origem,
+          tipo: finalStockType,
+          setor,
+          lote: stock.lote,
+          status: stock.status,
+          observacao: finalDetails,
+          dias_para_repor: dias_para_repor ?? null,
+          ultima_reposicao: getTodayAtNoonBrazil(),
+        },
+        { transaction },
+      );
     }
 
-    await stock.update({ quantidade: stock.quantidade - quantidade }, { transaction });
+    await stock.update(
+      { quantidade: stock.quantidade - quantidade },
+      { transaction },
+    );
 
     await stock.reload({ transaction });
     const target = existing
@@ -1253,25 +1351,31 @@ export class StockRepository {
 
       await existing.save({ transaction });
     } else {
-      await InputStockModel.create({
-        insumo_id: stock.insumo_id,
-        casela_id: casela_id,
-        armario_id: stock.armario_id,
-        gaveta_id: stock.gaveta_id,
-        validade: stock.validade,
-        quantidade,
-        tipo: finalTipo,
-        setor,
-        lote: stock.lote,
-        status: stock.status,
-        destino: hasDestino ? destino : null,
-        observacao: observacao ?? stock.observacao,
-        dias_para_repor: dias_para_repor ?? null,
-        ultima_reposicao: getTodayAtNoonBrazil(),
-      }, { transaction });
+      await InputStockModel.create(
+        {
+          insumo_id: stock.insumo_id,
+          casela_id: casela_id,
+          armario_id: stock.armario_id,
+          gaveta_id: stock.gaveta_id,
+          validade: stock.validade,
+          quantidade,
+          tipo: finalTipo,
+          setor,
+          lote: stock.lote,
+          status: stock.status,
+          destino: hasDestino ? destino : null,
+          observacao: observacao ?? stock.observacao,
+          dias_para_repor: dias_para_repor ?? null,
+          ultima_reposicao: getTodayAtNoonBrazil(),
+        },
+        { transaction },
+      );
     }
 
-    await stock.update({ quantidade: stock.quantidade - quantidade }, { transaction });
+    await stock.update(
+      { quantidade: stock.quantidade - quantidade },
+      { transaction },
+    );
 
     await stock.reload({ transaction });
     const target = existing
@@ -1316,8 +1420,22 @@ export class StockRepository {
           validade: { [Op.between]: [today, endDate] },
         },
         include: [
-          { model: MedicineModel, as: 'MedicineModel', attributes: ['nome', 'principio_ativo', 'dosagem', 'unidade_medida'] },
-          { model: ResidentModel, as: 'ResidentModel', attributes: ['nome'], required: false },
+          {
+            model: MedicineModel,
+            as: 'MedicineModel',
+            attributes: [
+              'nome',
+              'principio_ativo',
+              'dosagem',
+              'unidade_medida',
+            ],
+          },
+          {
+            model: ResidentModel,
+            as: 'ResidentModel',
+            attributes: ['nome'],
+            required: false,
+          },
         ],
         order: [['validade', 'ASC']],
         limit: 500,
@@ -1330,8 +1448,17 @@ export class StockRepository {
           validade: { [Op.between]: [today, endDate] },
         },
         include: [
-          { model: InputModel, as: 'InputModel', attributes: ['nome', 'descricao'] },
-          { model: ResidentModel, as: 'ResidentModel', attributes: ['nome'], required: false },
+          {
+            model: InputModel,
+            as: 'InputModel',
+            attributes: ['nome', 'descricao'],
+          },
+          {
+            model: ResidentModel,
+            as: 'ResidentModel',
+            attributes: ['nome'],
+            required: false,
+          },
         ],
         order: [['validade', 'ASC']],
         limit: 500,
@@ -1381,8 +1508,8 @@ export class StockRepository {
     };
 
     const all = [
-      ...medRows.map((r) => toItem(r, 'medicamento')),
-      ...inpRows.map((r) => toItem(r, 'insumo')),
+      ...medRows.map(r => toItem(r, 'medicamento')),
+      ...inpRows.map(r => toItem(r, 'insumo')),
     ].sort((a, b) => (a.dias_para_vencer ?? 0) - (b.dias_para_vencer ?? 0));
 
     const total = all.length;
@@ -1410,73 +1537,81 @@ export class StockRepository {
     const inDays = new Date(today);
     inDays.setDate(inDays.getDate() + Math.min(365, Math.max(1, expiringDays)));
 
-    const [noStockMed, noStockInp, belowMinMed, belowMinInp, expiredMed, expiredInp, expiringMed, expiringInp] =
-      await Promise.all([
-        MedicineStockModel.count({ where: { quantidade: 0 }, transaction }),
-        InputStockModel.count({ where: { quantidade: 0 }, transaction }),
-        MedicineStockModel.count({
-          include: [
-            {
-              model: MedicineModel,
-              as: 'MedicineModel',
-              attributes: [],
-              required: true,
-            },
-          ],
-          where: {
-            quantidade: {
-              [Op.gt]: 0,
-              [Op.lt]: sequelize.col('MedicineModel.estoque_minimo'),
-            },
+    const [
+      noStockMed,
+      noStockInp,
+      belowMinMed,
+      belowMinInp,
+      expiredMed,
+      expiredInp,
+      expiringMed,
+      expiringInp,
+    ] = await Promise.all([
+      MedicineStockModel.count({ where: { quantidade: 0 }, transaction }),
+      InputStockModel.count({ where: { quantidade: 0 }, transaction }),
+      MedicineStockModel.count({
+        include: [
+          {
+            model: MedicineModel,
+            as: 'MedicineModel',
+            attributes: [],
+            required: true,
           },
-          transaction,
-        }),
-        InputStockModel.count({
-          include: [
-            {
-              model: InputModel,
-              as: 'InputModel',
-              attributes: [],
-              required: true,
-            },
-          ],
-          where: {
-            quantidade: {
-              [Op.gt]: 0,
-              [Op.lt]: sequelize.col('InputModel.estoque_minimo'),
-            },
+        ],
+        where: {
+          quantidade: {
+            [Op.gt]: 0,
+            [Op.lt]: sequelize.col('MedicineModel.estoque_minimo'),
           },
-          transaction,
-        }),
-        MedicineStockModel.count({
-          where: {
-            quantidade: { [Op.gt]: 0 },
-            validade: { [Op.lt]: today },
+        },
+        transaction,
+      }),
+      InputStockModel.count({
+        include: [
+          {
+            model: InputModel,
+            as: 'InputModel',
+            attributes: [],
+            required: true,
           },
-          transaction,
-        }),
-        InputStockModel.count({
-          where: {
-            quantidade: { [Op.gt]: 0 },
-            validade: { [Op.lt]: today },
+        ],
+        where: {
+          quantidade: {
+            [Op.gt]: 0,
+            [Op.lt]: sequelize.col('InputModel.estoque_minimo'),
           },
-          transaction,
-        }),
-        MedicineStockModel.count({
-          where: {
-            quantidade: { [Op.gt]: 0 },
-            validade: { [Op.between]: [today, inDays] },
-          },
-          transaction,
-        }),
-        InputStockModel.count({
-          where: {
-            quantidade: { [Op.gt]: 0 },
-            validade: { [Op.between]: [today, inDays] },
-          },
-          transaction,
-        }),
-      ]);
+        },
+        transaction,
+      }),
+      MedicineStockModel.count({
+        where: {
+          quantidade: { [Op.gt]: 0 },
+          validade: { [Op.lt]: today },
+        },
+        transaction,
+      }),
+      InputStockModel.count({
+        where: {
+          quantidade: { [Op.gt]: 0 },
+          validade: { [Op.lt]: today },
+        },
+        transaction,
+      }),
+      MedicineStockModel.count({
+        where: {
+          quantidade: { [Op.gt]: 0 },
+          validade: { [Op.between]: [today, inDays] },
+        },
+        transaction,
+      }),
+      InputStockModel.count({
+        where: {
+          quantidade: { [Op.gt]: 0 },
+          validade: { [Op.between]: [today, inDays] },
+        },
+        transaction,
+      }),
+    ]);
 
     return {
       noStock: noStockMed + noStockInp,

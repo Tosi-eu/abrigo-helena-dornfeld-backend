@@ -56,48 +56,53 @@ export class AuditRepository {
       ? { ...where, operation_type: operationType }
       : where;
 
-    const [created, updated, deleted, totalFiltered, events] = await Promise.all([
-      AuditLogModel.count({
-        where: { ...where, operation_type: 'create' },
-      }),
-      AuditLogModel.count({
-        where: { ...where, operation_type: 'update' },
-      }),
-      AuditLogModel.count({
-        where: { ...where, operation_type: 'delete' },
-      }),
-      AuditLogModel.count({ where: eventsWhere }),
-      AuditLogModel.findAll({
-        where: eventsWhere,
-        order: [['created_at', 'DESC']],
-        limit,
-        offset,
-        attributes: [
-          'id',
-          'user_id',
-          'method',
-          'path',
-          'operation_type',
-          'resource',
-          'status_code',
-          'duration_ms',
-          'created_at',
-          'old_value',
-          'new_value',
-        ],
-      }),
-    ]);
+    const [created, updated, deleted, totalFiltered, events] =
+      await Promise.all([
+        AuditLogModel.count({
+          where: { ...where, operation_type: 'create' },
+        }),
+        AuditLogModel.count({
+          where: { ...where, operation_type: 'update' },
+        }),
+        AuditLogModel.count({
+          where: { ...where, operation_type: 'delete' },
+        }),
+        AuditLogModel.count({ where: eventsWhere }),
+        AuditLogModel.findAll({
+          where: eventsWhere,
+          order: [['created_at', 'DESC']],
+          limit,
+          offset,
+          attributes: [
+            'id',
+            'user_id',
+            'method',
+            'path',
+            'operation_type',
+            'resource',
+            'status_code',
+            'duration_ms',
+            'created_at',
+            'old_value',
+            'new_value',
+          ],
+        }),
+      ]);
 
     const total = created + updated + deleted;
 
     const allValues: (Record<string, unknown> | null)[] = [];
     for (const e of events) {
       const oldVal =
-        e.old_value && typeof e.old_value === 'object' && !Array.isArray(e.old_value)
+        e.old_value &&
+        typeof e.old_value === 'object' &&
+        !Array.isArray(e.old_value)
           ? (e.old_value as Record<string, unknown>)
           : null;
       const newVal =
-        e.new_value && typeof e.new_value === 'object' && !Array.isArray(e.new_value)
+        e.new_value &&
+        typeof e.new_value === 'object' &&
+        !Array.isArray(e.new_value)
           ? (e.new_value as Record<string, unknown>)
           : null;
       allValues.push(oldVal, newVal);

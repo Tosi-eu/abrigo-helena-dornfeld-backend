@@ -5,7 +5,10 @@ import { LoginController } from '../controllers/login.controller';
 import { LoginRepository } from '../../database/repositories/login.repository';
 import { LoginService } from '../../../core/services/login.service';
 import { authMiddleware } from '../../../middleware/auth.middleware';
-import { requireAdmin, blockNonAdminWrites } from '../../../middleware/admin.middleware';
+import {
+  requireAdmin,
+  blockNonAdminWrites,
+} from '../../../middleware/admin.middleware';
 import { auditLog } from '../../../middleware/audit.middleware';
 
 const router = Router();
@@ -16,7 +19,9 @@ const controller = new LoginController(service);
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 20,
-  message: { error: 'Muitas tentativas de login. Tente novamente em 15 minutos.' },
+  message: {
+    error: 'Muitas tentativas de login. Tente novamente em 15 minutos.',
+  },
   standardHeaders: true,
   legacyHeaders: false,
 });

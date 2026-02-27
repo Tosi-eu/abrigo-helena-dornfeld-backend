@@ -15,14 +15,29 @@ const controller = new NotificationEventController(service);
 
 const router = Router();
 
-router.post('/', withRls(sequelize, (req, res) => controller.create(req, res)));
-router.get('/', validatePagination, withRls(sequelize, (req, res) => controller.getAll(req, res)));
-router.get('/:id', validateIdParam, withRls(sequelize, (req, res) => controller.getById(req, res)));
-router.patch('/:id', validateIdParam, withRls(sequelize, (req, res) =>
-  controller.update(req, res),
-));
-router.delete('/:id', validateIdParam, withRls(sequelize, (req, res) =>
-  controller.delete(req, res),
-));
+router.post(
+  '/',
+  withRls(sequelize, (req, res) => controller.create(req, res)),
+);
+router.get(
+  '/',
+  validatePagination,
+  withRls(sequelize, (req, res) => controller.getAll(req, res)),
+);
+router.get(
+  '/:id',
+  validateIdParam,
+  withRls(sequelize, (req, res) => controller.getById(req, res)),
+);
+router.patch(
+  '/:id',
+  validateIdParam,
+  withRls(sequelize, (req, res) => controller.update(req, res)),
+);
+router.delete(
+  '/:id',
+  validateIdParam,
+  withRls(sequelize, (req, res) => controller.delete(req, res)),
+);
 
 export default router;

@@ -67,7 +67,7 @@ export function formatDateTimeToPtBr(
   if (!input) return '';
 
   const date = input instanceof Date ? input : new Date(input);
-  
+
   if (isNaN(date.getTime())) {
     return '';
   }

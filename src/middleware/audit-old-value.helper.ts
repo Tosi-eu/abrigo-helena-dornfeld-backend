@@ -14,7 +14,10 @@ export async function getOldValueForAudit(
 ): Promise<Record<string, unknown> | null> {
   if (!['PUT', 'PATCH', 'DELETE'].includes(method)) return null;
 
-  const segments = path.replace(/^\/api\/v1/, '').split('/').filter(Boolean);
+  const segments = path
+    .replace(/^\/api\/v1/, '')
+    .split('/')
+    .filter(Boolean);
   const resource = segments[0] ?? null;
 
   // PUT /login: update current user (own profile), need req.user.id

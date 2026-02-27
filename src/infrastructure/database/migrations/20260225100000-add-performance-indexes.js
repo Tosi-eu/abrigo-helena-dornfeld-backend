@@ -67,7 +67,7 @@ module.exports = {
     const hasUniqueLogin =
       loginIndexes &&
       loginIndexes.some(
-        (r) =>
+        r =>
           r.indexname &&
           (r.indexname.includes('login') || r.indexname.includes('unique')),
       );

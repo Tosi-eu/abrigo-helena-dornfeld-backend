@@ -10,15 +10,18 @@ import type { Transaction } from 'sequelize';
 export class NotificationEventService {
   constructor(private readonly repo: NotificationEventRepository) {}
 
-  async create(data: {
-    medicamento_id: number;
-    residente_id: number;
-    destino: NotificationDestinoType;
-    data_prevista: Date;
-    criado_por: number;
-    visto: boolean;
-    tipo_evento: NotificationEventType;
-  }, transaction?: Transaction) {
+  async create(
+    data: {
+      medicamento_id: number;
+      residente_id: number;
+      destino: NotificationDestinoType;
+      data_prevista: Date;
+      criado_por: number;
+      visto: boolean;
+      tipo_evento: NotificationEventType;
+    },
+    transaction?: Transaction,
+  ) {
     return this.repo.create(data, transaction);
   }
 
@@ -26,19 +29,26 @@ export class NotificationEventService {
     return this.repo.findById(id, transaction);
   }
 
-  async list(filters: {
-    page: number;
-    limit: number;
-    tipo: NotificationEventType;
-    status?: EventStatus;
-    date?: string;
-    residente_nome?: string;
-    visto?: boolean;
-  }, transaction?: Transaction) {
+  async list(
+    filters: {
+      page: number;
+      limit: number;
+      tipo: NotificationEventType;
+      status?: EventStatus;
+      date?: string;
+      residente_nome?: string;
+      visto?: boolean;
+    },
+    transaction?: Transaction,
+  ) {
     return this.repo.listWithFilters(filters, transaction);
   }
 
-  async update(id: number, updates: NotificationUpdateData, transaction?: Transaction) {
+  async update(
+    id: number,
+    updates: NotificationUpdateData,
+    transaction?: Transaction,
+  ) {
     return this.repo.update(id, updates, transaction);
   }
 

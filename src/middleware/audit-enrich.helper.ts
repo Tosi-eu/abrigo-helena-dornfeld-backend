@@ -8,7 +8,11 @@ function toPositiveId(v: unknown): number | null {
   return !Number.isNaN(n) && n > 0 ? n : null;
 }
 
-function collectIds(obj: Record<string, unknown>, medicamentoIds: Set<number>, insumoIds: Set<number>): void {
+function collectIds(
+  obj: Record<string, unknown>,
+  medicamentoIds: Set<number>,
+  insumoIds: Set<number>,
+): void {
   const medId = toPositiveId(obj.medicamento_id);
   if (medId != null) medicamentoIds.add(medId);
   const inpId = toPositiveId(obj.insumo_id);
@@ -17,11 +21,27 @@ function collectIds(obj: Record<string, unknown>, medicamentoIds: Set<number>, i
   const data = obj.data;
   if (data != null && typeof data === 'object' && !Array.isArray(data)) {
     const d = data as Record<string, unknown>;
-    if (d.source != null && typeof d.source === 'object' && !Array.isArray(d.source)) {
-      collectIds(d.source as Record<string, unknown>, medicamentoIds, insumoIds);
+    if (
+      d.source != null &&
+      typeof d.source === 'object' &&
+      !Array.isArray(d.source)
+    ) {
+      collectIds(
+        d.source as Record<string, unknown>,
+        medicamentoIds,
+        insumoIds,
+      );
     }
-    if (d.target != null && typeof d.target === 'object' && !Array.isArray(d.target)) {
-      collectIds(d.target as Record<string, unknown>, medicamentoIds, insumoIds);
+    if (
+      d.target != null &&
+      typeof d.target === 'object' &&
+      !Array.isArray(d.target)
+    ) {
+      collectIds(
+        d.target as Record<string, unknown>,
+        medicamentoIds,
+        insumoIds,
+      );
     }
     if (d.medicamento_id != null || d.insumo_id != null) {
       collectIds(d, medicamentoIds, insumoIds);
@@ -42,10 +62,18 @@ function applyNames(
   const data = obj.data;
   if (data != null && typeof data === 'object' && !Array.isArray(data)) {
     const d = data as Record<string, unknown>;
-    if (d.source != null && typeof d.source === 'object' && !Array.isArray(d.source)) {
+    if (
+      d.source != null &&
+      typeof d.source === 'object' &&
+      !Array.isArray(d.source)
+    ) {
       applyNames(d.source as Record<string, unknown>, medMap, inpMap);
     }
-    if (d.target != null && typeof d.target === 'object' && !Array.isArray(d.target)) {
+    if (
+      d.target != null &&
+      typeof d.target === 'object' &&
+      !Array.isArray(d.target)
+    ) {
       applyNames(d.target as Record<string, unknown>, medMap, inpMap);
     }
     if (d.medicamento_id != null || d.insumo_id != null) {

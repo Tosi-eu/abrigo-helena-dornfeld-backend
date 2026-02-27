@@ -40,7 +40,12 @@ export class DashboardController {
       const days = Math.min(365, Math.max(1, Number(req.query.days) || 30));
       const page = Math.max(1, Number(req.query.page) || 1);
       const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 50));
-      const data = await this.service.getExpiringItems(days, page, limit, req.transaction);
+      const data = await this.service.getExpiringItems(
+        days,
+        page,
+        limit,
+        req.transaction,
+      );
       return res.json(data);
     } catch (error: unknown) {
       return sendErrorResponse(

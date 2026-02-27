@@ -24,9 +24,9 @@ export async function withRlsContext<T>(
   context: RlsContextVars,
   fn: (transaction: Transaction) => Promise<T>,
 ): Promise<T> {
-  return sequelize.transaction(async (transaction) => {
+  return sequelize.transaction(async transaction => {
     const keys = Object.keys(context).filter(
-      (k) => context[k] !== undefined && context[k] !== null,
+      k => context[k] !== undefined && context[k] !== null,
     );
     for (const key of keys) {
       const value = context[key];
@@ -42,4 +42,3 @@ export async function withRlsContext<T>(
     return fn(transaction);
   });
 }
-

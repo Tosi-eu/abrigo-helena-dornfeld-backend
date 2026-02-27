@@ -7,16 +7,14 @@
  */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.addColumn(
-      'audit_log',
-      'old_value',
-      { type: Sequelize.TEXT, allowNull: true },
-    );
-    await queryInterface.addColumn(
-      'audit_log',
-      'new_value',
-      { type: Sequelize.TEXT, allowNull: true },
-    );
+    await queryInterface.addColumn('audit_log', 'old_value', {
+      type: Sequelize.TEXT,
+      allowNull: true,
+    });
+    await queryInterface.addColumn('audit_log', 'new_value', {
+      type: Sequelize.TEXT,
+      allowNull: true,
+    });
   },
 
   async down(queryInterface) {

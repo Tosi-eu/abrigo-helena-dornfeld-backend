@@ -165,7 +165,7 @@ export class LoginService {
   /** Admin: list all users (no passwords). */
   async listAllUsers() {
     const rows = await this.repo.findAll();
-    return rows.map((u) => ({
+    return rows.map(u => ({
       id: u.id,
       login: u.login,
       firstName: u.first_name,

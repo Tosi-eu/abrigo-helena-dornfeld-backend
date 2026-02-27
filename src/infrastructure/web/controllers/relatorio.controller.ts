@@ -56,11 +56,10 @@ export class ReportController {
       if (type === 'transferencias') {
         if (!data && (!data_inicial || !data_final)) {
           return res.status(400).json({
-            error:
-              'Informe uma data ou um intervalo para transferências',
+            error: 'Informe uma data ou um intervalo para transferências',
           });
         }
-      }      
+      }
 
       const casela = req.query.casela
         ? parseInt(req.query.casela as string)

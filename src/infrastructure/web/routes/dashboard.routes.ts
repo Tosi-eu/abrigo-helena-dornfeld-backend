@@ -12,7 +12,11 @@ import { sequelize } from '../../database/sequelize';
 
 const stockRepo = new StockRepository();
 const notificationRepo = new NotificationEventRepository();
-const stockService = new StockService(stockRepo, cacheService, notificationRepo);
+const stockService = new StockService(
+  stockRepo,
+  cacheService,
+  notificationRepo,
+);
 const movementRepo = new MovementRepository();
 const movementService = new MovementService(movementRepo, cacheService);
 const dashboardService = new DashboardService(stockService, movementService);

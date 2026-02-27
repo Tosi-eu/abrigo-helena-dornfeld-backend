@@ -15,13 +15,19 @@ const loginService = new LoginService(loginRepo);
 const auditRepo = new AuditRepository();
 const movementRepo = new MovementRepository();
 const movementService = new MovementService(movementRepo, cacheService);
-const controller = new AdminController(loginService, auditRepo, movementService);
+const controller = new AdminController(
+  loginService,
+  auditRepo,
+  movementService,
+);
 
 /** Stricter rate limit for admin panel. */
 const adminLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
-  message: { error: 'Muitas requisições no painel admin. Tente novamente em breve.' },
+  message: {
+    error: 'Muitas requisições no painel admin. Tente novamente em breve.',
+  },
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -33,6 +39,8 @@ router.get('/users', (req, res) => controller.listUsers(req, res));
 router.put('/users/:id', (req, res) => controller.updateUser(req, res));
 router.delete('/users/:id', (req, res) => controller.deleteUser(req, res));
 router.get('/insights', (req, res) => controller.getInsights(req, res));
-router.get('/stock-history', (req, res) => controller.getStockHistory(req, res));
+router.get('/stock-history', (req, res) =>
+  controller.getStockHistory(req, res),
+);
 
 export default router;

@@ -14,7 +14,9 @@ const controller = new ReportController(service);
 const reportLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 30,
-  message: { error: 'Muitos relatórios gerados. Tente novamente em 15 minutos.' },
+  message: {
+    error: 'Muitos relatórios gerados. Tente novamente em 15 minutos.',
+  },
   standardHeaders: true,
   legacyHeaders: false,
 });

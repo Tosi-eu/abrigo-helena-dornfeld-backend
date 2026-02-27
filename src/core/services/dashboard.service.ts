@@ -75,7 +75,8 @@ export class DashboardService {
       if (!v) return 0;
       if (typeof v === 'string' && v.includes('/')) {
         const [d, m, y] = v.split('/');
-        if (y && m && d) return new Date(Number(y), Number(m) - 1, Number(d)).getTime();
+        if (y && m && d)
+          return new Date(Number(y), Number(m) - 1, Number(d)).getTime();
       }
       return new Date(v).getTime() || 0;
     };
@@ -144,8 +145,12 @@ export class DashboardService {
       medicineRankingMore: rankingMore,
       medicineRankingLess: rankingLess,
       nonMovementProducts: nonMovement || [],
-      nursingProportion: toProportionResponse(nursingData as Record<string, number>),
-      pharmacyProportion: toProportionResponse(pharmacyData as Record<string, number>),
+      nursingProportion: toProportionResponse(
+        nursingData as Record<string, number>,
+      ),
+      pharmacyProportion: toProportionResponse(
+        pharmacyData as Record<string, number>,
+      ),
       cabinetStockData: cabinetList,
       drawerStockData: drawerList,
     };

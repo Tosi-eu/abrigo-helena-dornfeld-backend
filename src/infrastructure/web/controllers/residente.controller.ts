@@ -26,7 +26,12 @@ export class ResidentController {
       const total = await this.service.count();
       return res.json({ count: total });
     } catch (error: unknown) {
-      return sendErrorResponse(res, 500, error, 'Erro ao obter total de residentes');
+      return sendErrorResponse(
+        res,
+        500,
+        error,
+        'Erro ao obter total de residentes',
+      );
     }
   }
 

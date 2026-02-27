@@ -427,7 +427,11 @@ export class MovementRepository {
     const dataCol = '"data"';
     const periodExpr = `date_trunc('${trunc}', ${dataCol})`;
 
-    type ConsumptionRow = { period: string | Date; entrada: number; saida: number };
+    type ConsumptionRow = {
+      period: string | Date;
+      entrada: number;
+      saida: number;
+    };
     const rows = await sequelize.query<ConsumptionRow>(
       `
       SELECT
@@ -446,13 +450,11 @@ export class MovementRepository {
       },
     );
 
-    const result = rows.map(
-      (r) => ({
-        period: r.period ? formatDateToPtBr(r.period) : '',
-        entrada: Number(r.entrada) || 0,
-        saida: Number(r.saida) || 0,
-      }),
-    );
+    const result = rows.map(r => ({
+      period: r.period ? formatDateToPtBr(r.period) : '',
+      entrada: Number(r.entrada) || 0,
+      saida: Number(r.saida) || 0,
+    }));
     return result;
   }
 
@@ -461,13 +463,25 @@ export class MovementRepository {
     endDate: Date,
     transaction?: Transaction,
   ): Promise<{
-    items: { tipo_item: 'medicamento' | 'insumo'; item_id: number; nome: string; entrada: number; saida: number }[];
+    items: {
+      tipo_item: 'medicamento' | 'insumo';
+      item_id: number;
+      nome: string;
+      entrada: number;
+      saida: number;
+    }[];
     subtotal: { entrada: number; saida: number };
   }> {
     const endOfDay = new Date(endDate);
     endOfDay.setHours(23, 59, 59, 999);
 
-    type Row = { tipo_item: string; item_id: number; nome: string; entrada: number; saida: number };
+    type Row = {
+      tipo_item: string;
+      item_id: number;
+      nome: string;
+      entrada: number;
+      saida: number;
+    };
     const rows = await sequelize.query<Row>(
       `
       SELECT * FROM (
@@ -502,8 +516,11 @@ export class MovementRepository {
       },
     );
 
-    const items = rows.map((r) => ({
-      tipo_item: r.tipo_item === 'insumo' ? ('insumo' as const) : ('medicamento' as const),
+    const items = rows.map(r => ({
+      tipo_item:
+        r.tipo_item === 'insumo'
+          ? ('insumo' as const)
+          : ('medicamento' as const),
       item_id: Number(r.item_id) || 0,
       nome: String(r.nome ?? ''),
       entrada: Number(r.entrada) || 0,
@@ -520,7 +537,7 @@ export class MovementRepository {
 
     return { items, subtotal };
   }
-  
+
   async listHistoryByItemId(
     itemType: 'medicamento' | 'insumo',
     itemId: number,
@@ -541,16 +558,36 @@ export class MovementRepository {
       limit,
       include: [
         isMed
-          ? { model: MedicineModel, as: 'MedicineModel', attributes: ['id', 'nome', 'principio_ativo'] }
-          : { model: InputModel, as: 'InputModel', attributes: ['id', 'nome', 'descricao'] },
-        { model: LoginModel, as: 'LoginModel', attributes: ['id', 'login', 'first_name'] },
-        { model: CabinetModel, as: 'CabinetModel', attributes: ['num_armario'] },
-        { model: ResidenteModel, as: 'ResidentModel', attributes: ['num_casela', 'nome'] },
+          ? {
+              model: MedicineModel,
+              as: 'MedicineModel',
+              attributes: ['id', 'nome', 'principio_ativo'],
+            }
+          : {
+              model: InputModel,
+              as: 'InputModel',
+              attributes: ['id', 'nome', 'descricao'],
+            },
+        {
+          model: LoginModel,
+          as: 'LoginModel',
+          attributes: ['id', 'login', 'first_name'],
+        },
+        {
+          model: CabinetModel,
+          as: 'CabinetModel',
+          attributes: ['num_armario'],
+        },
+        {
+          model: ResidenteModel,
+          as: 'ResidentModel',
+          attributes: ['num_casela', 'nome'],
+        },
       ],
       transaction,
     });
 
-    const data = rows.map((r) => {
+    const data = rows.map(r => {
       const plain = r.get({ plain: true }) as any;
       return {
         id: plain.id,
@@ -560,7 +597,8 @@ export class MovementRepository {
         setor: plain.setor,
         lote: plain.lote,
         nome: plain.MedicineModel?.nome ?? plain.InputModel?.nome ?? '-',
-        operador: plain.LoginModel?.first_name ?? plain.LoginModel?.login ?? '-',
+        operador:
+          plain.LoginModel?.first_name ?? plain.LoginModel?.login ?? '-',
         armario_id: plain.armario_id,
         casela_id: plain.casela_id,
         residente: plain.ResidentModel?.nome ?? null,
@@ -580,7 +618,9 @@ export class MovementRepository {
     if (!lote || String(lote).trim() === '') {
       return { data: [], total: 0, hasNext: false, page: 1, limit };
     }
-    const where: MovementWhereOptions = { lote: { [Op.iLike]: `%${String(lote).trim()}%` } };
+    const where: MovementWhereOptions = {
+      lote: { [Op.iLike]: `%${String(lote).trim()}%` },
+    };
     const offset = (page - 1) * limit;
     const { rows, count } = await MovementModel.findAndCountAll({
       where,
@@ -588,16 +628,38 @@ export class MovementRepository {
       offset,
       limit,
       include: [
-        { model: MedicineModel, as: 'MedicineModel', attributes: ['id', 'nome', 'principio_ativo'], required: false },
-        { model: InputModel, as: 'InputModel', attributes: ['id', 'nome', 'descricao'], required: false },
-        { model: LoginModel, as: 'LoginModel', attributes: ['id', 'login', 'first_name'] },
-        { model: CabinetModel, as: 'CabinetModel', attributes: ['num_armario'] },
-        { model: ResidenteModel, as: 'ResidentModel', attributes: ['num_casela', 'nome'] },
+        {
+          model: MedicineModel,
+          as: 'MedicineModel',
+          attributes: ['id', 'nome', 'principio_ativo'],
+          required: false,
+        },
+        {
+          model: InputModel,
+          as: 'InputModel',
+          attributes: ['id', 'nome', 'descricao'],
+          required: false,
+        },
+        {
+          model: LoginModel,
+          as: 'LoginModel',
+          attributes: ['id', 'login', 'first_name'],
+        },
+        {
+          model: CabinetModel,
+          as: 'CabinetModel',
+          attributes: ['num_armario'],
+        },
+        {
+          model: ResidenteModel,
+          as: 'ResidentModel',
+          attributes: ['num_casela', 'nome'],
+        },
       ],
       transaction,
     });
 
-    const data = rows.map((r) => {
+    const data = rows.map(r => {
       const plain = r.get({ plain: true }) as any;
       return {
         id: plain.id,
@@ -607,7 +669,8 @@ export class MovementRepository {
         setor: plain.setor,
         lote: plain.lote,
         nome: plain.MedicineModel?.nome ?? plain.InputModel?.nome ?? '-',
-        operador: plain.LoginModel?.first_name ?? plain.LoginModel?.login ?? '-',
+        operador:
+          plain.LoginModel?.first_name ?? plain.LoginModel?.login ?? '-',
         armario_id: plain.armario_id,
         casela_id: plain.casela_id,
         residente: plain.ResidentModel?.nome ?? null,

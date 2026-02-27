@@ -43,7 +43,7 @@ export interface PsicotropicosReport {
 }
 
 export interface ResidentConsumptionMedicine {
-  nome: string; 
+  nome: string;
   principio_ativo: string;
   preco_formatado: string;
   quantidade_estoque: number;
@@ -65,16 +65,16 @@ export interface ResidentConsumptionReport {
   custos_medicamentos: {
     item: string;
     nome: string;
-    custo_mensal_formatado: string; 
+    custo_mensal_formatado: string;
     custo_anual_formatado: string;
   }[];
   custos_insumos: {
     item: string;
     nome: string;
     custo_mensal_formatado: string;
-    custo_anual_formatado: string; 
+    custo_anual_formatado: string;
   }[];
-  total_estimado_formatado: string; 
+  total_estimado_formatado: string;
 }
 
 export interface TransferReport {
@@ -111,7 +111,7 @@ export interface MovementReport {
 export interface ResidentMedicinesReport {
   residente: string;
   casela: number;
-  medicamento: string; 
+  medicamento: string;
   principio_ativo: string;
   quantidade: number;
   validade: string;

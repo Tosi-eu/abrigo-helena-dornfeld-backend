@@ -124,7 +124,12 @@ export class MovementService {
     groupBy: 'month' | 'quarter',
     transaction?: import('sequelize').Transaction,
   ) {
-    return this.repo.getConsumptionByPeriod(startDate, endDate, groupBy, transaction);
+    return this.repo.getConsumptionByPeriod(
+      startDate,
+      endDate,
+      groupBy,
+      transaction,
+    );
   }
 
   async getConsumptionByItem(
@@ -142,7 +147,13 @@ export class MovementService {
     limit?: number,
     transaction?: import('sequelize').Transaction,
   ) {
-    return this.repo.listHistoryByItemId(itemType, itemId, page ?? 1, limit ?? 50, transaction);
+    return this.repo.listHistoryByItemId(
+      itemType,
+      itemId,
+      page ?? 1,
+      limit ?? 50,
+      transaction,
+    );
   }
 
   async getHistoryByLote(
@@ -151,6 +162,11 @@ export class MovementService {
     limit?: number,
     transaction?: import('sequelize').Transaction,
   ) {
-    return this.repo.listHistoryByLote(lote, page ?? 1, limit ?? 50, transaction);
+    return this.repo.listHistoryByLote(
+      lote,
+      page ?? 1,
+      limit ?? 50,
+      transaction,
+    );
   }
 }

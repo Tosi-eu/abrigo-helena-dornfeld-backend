@@ -23,12 +23,16 @@ export function rlsContextMiddleware(
   next();
 }
 
-type RouteHandler = (req: RlsRequest, res: Response, next?: NextFunction) => void | Promise<unknown>;
+type RouteHandler = (
+  req: RlsRequest,
+  res: Response,
+  next?: NextFunction,
+) => void | Promise<unknown>;
 
 export function withRls(sequelize: Sequelize, handler: RouteHandler) {
   return (req: RlsRequest, res: Response, next: NextFunction) => {
     const context = req.rlsContext ?? {};
-    withRlsContext(sequelize, context, async (transaction) => {
+    withRlsContext(sequelize, context, async transaction => {
       (req as RlsRequest).transaction = transaction;
       try {
         await handler(req, res, next);

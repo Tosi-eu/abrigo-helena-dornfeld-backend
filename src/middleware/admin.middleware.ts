@@ -43,7 +43,7 @@ export const ADMIN_USER_ID = 1;
 
 /** Message returned for 403 when user lacks privilege to perform write operations. */
 export const INSUFFICIENT_PRIVILEGES_MESSAGE =
-  "Você não tem os privilégios necessários. Contate o administrador.";
+  'Você não tem os privilégios necessários. Contate o administrador.';
 
 /**
  * Blocks POST, PUT, PATCH, DELETE for non-admin users.
@@ -56,7 +56,7 @@ export function blockNonAdminWrites(
   next: NextFunction,
 ) {
   if (req.user?.role === ADMIN_ROLE) return next();
-  if (!["POST", "PUT", "PATCH", "DELETE"].includes(req.method)) return next();
+  if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) return next();
 
   return res.status(403).json({
     error: INSUFFICIENT_PRIVILEGES_MESSAGE,

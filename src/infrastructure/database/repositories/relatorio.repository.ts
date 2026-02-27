@@ -16,8 +16,14 @@ import {
   ExpiringSoonReport,
 } from '../models/relatorio.model';
 import { ResidentMonthlyUsage, MovementType } from '../../../core/utils/utils';
-import { formatDateToPtBr, formatDateTimeToPtBr } from '../../helpers/date.helper';
-import { formatMedicineName, formatCurrency } from '../../helpers/format.helper';
+import {
+  formatDateToPtBr,
+  formatDateTimeToPtBr,
+} from '../../helpers/date.helper';
+import {
+  formatMedicineName,
+  formatCurrency,
+} from '../../helpers/format.helper';
 import MedicineStockModel from '../models/estoque-medicamento.model';
 import InputStockModel from '../models/estoque-insumo.model';
 import MedicineModel from '../models/medicamento.model';
@@ -42,7 +48,12 @@ interface MovementPlain {
   observacao?: string | null;
   setor?: string;
   gaveta_id?: number | null;
-  MedicineModel?: { nome?: string; principio_ativo?: string; dosagem?: string; unidade_medida?: string };
+  MedicineModel?: {
+    nome?: string;
+    principio_ativo?: string;
+    dosagem?: string;
+    unidade_medida?: string;
+  };
   InputModel?: { nome?: string; descricao?: string | null };
   ResidentModel?: { nome?: string; num_casela?: number };
   CabinetModel?: { num_armario?: number };
@@ -434,7 +445,12 @@ export class ReportRepository {
       where: {
         casela_id: casela,
       },
-      group: ['InputModel.id', 'InputModel.nome', 'InputModel.descricao', 'InputModel.preco'],
+      group: [
+        'InputModel.id',
+        'InputModel.nome',
+        'InputModel.descricao',
+        'InputModel.preco',
+      ],
       order: [['InputModel', 'nome', 'ASC']],
       raw: true,
       nest: true,
@@ -445,7 +461,9 @@ export class ReportRepository {
         const nome = row.MedicineModel?.nome || '';
         const dosagem = row.MedicineModel?.dosagem || '';
         const unidadeMedida = row.MedicineModel?.unidade_medida || '';
-        const preco = row.MedicineModel?.preco ? parseFloat(String(row.MedicineModel.preco)) : null;
+        const preco = row.MedicineModel?.preco
+          ? parseFloat(String(row.MedicineModel.preco))
+          : null;
 
         return {
           nome: formatMedicineName(nome, dosagem, unidadeMedida),
@@ -458,7 +476,9 @@ export class ReportRepository {
     );
 
     const inputs: ResidentConsumptionInput[] = inputsRows.map((row: any) => {
-      const preco = row.InputModel?.preco ? parseFloat(String(row.InputModel.preco)) : null;
+      const preco = row.InputModel?.preco
+        ? parseFloat(String(row.InputModel.preco))
+        : null;
 
       return {
         nome: row.InputModel?.nome || '',
@@ -472,7 +492,9 @@ export class ReportRepository {
       const nome = row.MedicineModel?.nome || '';
       const dosagem = row.MedicineModel?.dosagem || '';
       const unidadeMedida = row.MedicineModel?.unidade_medida || '';
-      const preco = row.MedicineModel?.preco ? parseFloat(String(row.MedicineModel.preco)) : 0;
+      const preco = row.MedicineModel?.preco
+        ? parseFloat(String(row.MedicineModel.preco))
+        : 0;
       const custoMensal = preco;
       const custoAnual = custoMensal * 12;
 
@@ -487,7 +509,9 @@ export class ReportRepository {
     });
 
     const custosInsumos = inputsRows.map((row: any) => {
-      const preco = row.InputModel?.preco ? parseFloat(String(row.InputModel.preco)) : 0;
+      const preco = row.InputModel?.preco
+        ? parseFloat(String(row.InputModel.preco))
+        : 0;
       const custoMensal = preco;
       const custoAnual = custoMensal * 12;
 
@@ -501,11 +525,15 @@ export class ReportRepository {
 
     const totalEstimado =
       medicinesRows.reduce((sum, row: any) => {
-        const preco = row.MedicineModel?.preco ? parseFloat(String(row.MedicineModel.preco)) : 0;
+        const preco = row.MedicineModel?.preco
+          ? parseFloat(String(row.MedicineModel.preco))
+          : 0;
         return sum + preco * 12;
       }, 0) +
       inputsRows.reduce((sum, row: any) => {
-        const preco = row.InputModel?.preco ? parseFloat(String(row.InputModel.preco)) : 0;
+        const preco = row.InputModel?.preco
+          ? parseFloat(String(row.InputModel.preco))
+          : 0;
         return sum + preco * 12;
       }, 0);
 
@@ -589,10 +617,9 @@ export class ReportRepository {
         const nome = plain.MedicineModel.nome || '';
         const dosagem = plain.MedicineModel.dosagem || '';
         const unidadeMedida = plain.MedicineModel.unidade_medida || '';
-        nomeCompleto = [nome, dosagem, unidadeMedida]
-          .filter(Boolean)
-          .join(' ')
-          .trim() || nome;
+        nomeCompleto =
+          [nome, dosagem, unidadeMedida].filter(Boolean).join(' ').trim() ||
+          nome;
       } else if (plain.InputModel) {
         nomeCompleto = plain.InputModel.nome || '';
       }
@@ -619,10 +646,10 @@ export class ReportRepository {
   ): Promise<TransferReport[]> {
     const start = new Date(data_inicial);
     start.setHours(0, 0, 0, 0);
-  
+
     const end = new Date(data_final);
     end.setHours(23, 59, 59, 999);
-  
+
     const results = await MovementModel.findAll({
       attributes: [
         'id',
@@ -637,9 +664,21 @@ export class ReportRepository {
         'observacao',
       ],
       include: [
-        { model: MedicineModel, attributes: ['nome', 'principio_ativo', 'dosagem', 'unidade_medida'], required: false },
-        { model: InputModel, attributes: ['nome', 'descricao'], required: false },
-        { model: ResidentModel, attributes: ['nome', 'num_casela'], required: false },
+        {
+          model: MedicineModel,
+          attributes: ['nome', 'principio_ativo', 'dosagem', 'unidade_medida'],
+          required: false,
+        },
+        {
+          model: InputModel,
+          attributes: ['nome', 'descricao'],
+          required: false,
+        },
+        {
+          model: ResidentModel,
+          attributes: ['nome', 'num_casela'],
+          required: false,
+        },
         { model: CabinetModel, attributes: ['num_armario'], required: false },
         { model: LoginModel, attributes: ['login'], required: false },
       ],
@@ -652,7 +691,7 @@ export class ReportRepository {
       },
       order: [['data', 'DESC']],
     });
-  
+
     return results.map(row => {
       const plain = row.get({ plain: true }) as MovementPlain;
 
@@ -662,10 +701,9 @@ export class ReportRepository {
         const nome = plain.MedicineModel.nome || '';
         const dosagem = plain.MedicineModel.dosagem || '';
         const unidadeMedida = plain.MedicineModel.unidade_medida || '';
-        nomeCompleto = [nome, dosagem, unidadeMedida]
-          .filter(Boolean)
-          .join(' ')
-          .trim() || nome;
+        nomeCompleto =
+          [nome, dosagem, unidadeMedida].filter(Boolean).join(' ').trim() ||
+          nome;
       } else if (plain.InputModel) {
         nomeCompleto = plain.InputModel.nome || '';
       }
@@ -684,7 +722,7 @@ export class ReportRepository {
         observacao: plain.observacao || null,
       };
     });
-  }  
+  }
 
   async getMovementsByPeriod(
     params: MovementsParams,
@@ -739,8 +777,15 @@ export class ReportRepository {
     return results.map(row => {
       const plain = row.get({ plain: true }) as MovementPlain;
       const dateTime = plain.createdAt || plain.data;
-      const tipo = plain.tipo as 'entrada' | 'saida' | 'transferencia' | undefined;
-      const tipoMov = tipo === 'entrada' || tipo === 'saida' || tipo === 'transferencia' ? tipo : 'saida';
+      const tipo = plain.tipo as
+        | 'entrada'
+        | 'saida'
+        | 'transferencia'
+        | undefined;
+      const tipoMov =
+        tipo === 'entrada' || tipo === 'saida' || tipo === 'transferencia'
+          ? tipo
+          : 'saida';
 
       return {
         data: formatDateTimeToPtBr(dateTime),

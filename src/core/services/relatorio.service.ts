@@ -113,11 +113,21 @@ export class ReportService {
 
       case 'transferencias': {
         let transferData: unknown;
-        if ('data_inicial' in params && 'data_final' in params && params.data_inicial && params.data_final) {
-          transferData = await this.repo.getTransfersDataByInterval(params.data_inicial, params.data_final);
+        if (
+          'data_inicial' in params &&
+          'data_final' in params &&
+          params.data_inicial &&
+          params.data_final
+        ) {
+          transferData = await this.repo.getTransfersDataByInterval(
+            params.data_inicial,
+            params.data_final,
+          );
         } else {
           if (!('data' in params) || !params.data) {
-            throw new Error('Data é obrigatória para relatório de transferências');
+            throw new Error(
+              'Data é obrigatória para relatório de transferências',
+            );
           }
           transferData = await this.repo.getTransfersData(params.data);
         }
@@ -138,12 +148,14 @@ export class ReportService {
         if (periodo === MovementPeriod.DIARIO) {
           movData = await this.repo.getMovementsByPeriod({
             periodo,
-            data: (params as { periodo: MovementPeriod.DIARIO; data: string }).data,
+            data: (params as { periodo: MovementPeriod.DIARIO; data: string })
+              .data,
           });
         } else if (periodo === MovementPeriod.MENSAL) {
           movData = await this.repo.getMovementsByPeriod({
             periodo,
-            mes: (params as { periodo: MovementPeriod.MENSAL; mes: string }).mes,
+            mes: (params as { periodo: MovementPeriod.MENSAL; mes: string })
+              .mes,
           });
         } else if (periodo === MovementPeriod.INTERVALO) {
           const intervaloParams = params as {
@@ -153,7 +165,9 @@ export class ReportService {
           };
 
           if (!intervaloParams.data_inicial || !intervaloParams.data_final) {
-            throw new Error('Data inicial e final são obrigatórias para relatório de movimentações por intervalo');
+            throw new Error(
+              'Data inicial e final são obrigatórias para relatório de movimentações por intervalo',
+            );
           }
 
           movData = await this.repo.getMovementsByPeriod({

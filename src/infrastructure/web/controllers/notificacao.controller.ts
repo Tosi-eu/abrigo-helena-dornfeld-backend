@@ -21,19 +21,31 @@ export class NotificationEventController {
 
   async getAll(req: RlsRequest, res: Response) {
     try {
-      const { page = 1, limit = 10, type, date, status, residente_nome, visto } = req.query;
+      const {
+        page = 1,
+        limit = 10,
+        type,
+        date,
+        status,
+        residente_nome,
+        visto,
+      } = req.query;
 
       if (!type) throw new Error('Tipo deve ser informado');
 
-      const result = await this.service.list({
-        page: Number(page),
-        limit: Number(limit),
-        tipo: type as NotificationEventType,
-        status: status as EventStatus | undefined,
-        date: date?.toString(),
-        residente_nome: residente_nome?.toString(),
-        visto: visto === 'false' ? false : visto === 'true' ? true : undefined,
-      }, req.transaction);
+      const result = await this.service.list(
+        {
+          page: Number(page),
+          limit: Number(limit),
+          tipo: type as NotificationEventType,
+          status: status as EventStatus | undefined,
+          date: date?.toString(),
+          residente_nome: residente_nome?.toString(),
+          visto:
+            visto === 'false' ? false : visto === 'true' ? true : undefined,
+        },
+        req.transaction,
+      );
 
       return res.json(result);
     } catch (err) {

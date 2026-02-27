@@ -64,7 +64,9 @@ export class AdminController {
       if (msg === 'duplicate key') {
         return res.status(409).json({ error: 'Login já cadastrado' });
       }
-      return res.status(500).json({ error: msg || 'Erro ao atualizar usuário' });
+      return res
+        .status(500)
+        .json({ error: msg || 'Erro ao atualizar usuário' });
     }
   }
 
@@ -129,25 +131,41 @@ export class AdminController {
   /** GET /admin/stock-history?itemType=medicamento|insumo&itemId=123  or  ?lote=XXX */
   async getStockHistory(req: AuthRequest, res: Response) {
     if (!this.movementService) {
-      return res.status(501).json({ error: 'Serviço de movimentação não disponível' });
+      return res
+        .status(501)
+        .json({ error: 'Serviço de movimentação não disponível' });
     }
     try {
       const lote = (req.query.lote as string)?.trim();
-      const itemType = req.query.itemType as 'medicamento' | 'insumo' | undefined;
-      const itemId = req.query.itemId != null ? Number(req.query.itemId) : undefined;
+      const itemType = req.query.itemType as
+        | 'medicamento'
+        | 'insumo'
+        | undefined;
+      const itemId =
+        req.query.itemId != null ? Number(req.query.itemId) : undefined;
       const page = Math.max(1, Number(req.query.page) || 1);
       const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 50));
 
       if (lote) {
-        const result = await this.movementService.getHistoryByLote(lote, page, limit);
+        const result = await this.movementService.getHistoryByLote(
+          lote,
+          page,
+          limit,
+        );
         return res.json(result);
       }
       if (itemType && itemId != null && !Number.isNaN(itemId)) {
-        const result = await this.movementService.getHistoryByItemId(itemType, itemId, page, limit);
+        const result = await this.movementService.getHistoryByItemId(
+          itemType,
+          itemId,
+          page,
+          limit,
+        );
         return res.json(result);
       }
       return res.status(400).json({
-        error: 'Informe (itemType + itemId) ou lote para consultar o histórico.',
+        error:
+          'Informe (itemType + itemId) ou lote para consultar o histórico.',
       });
     } catch (error: unknown) {
       return res.status(500).json({
