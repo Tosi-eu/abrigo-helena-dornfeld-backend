@@ -1,3 +1,4 @@
+import type { AuthRequest } from './auth.middleware';
 import MedicineModel from '../infrastructure/database/models/medicamento.model';
 import InputModel from '../infrastructure/database/models/insumo.model';
 import ResidentModel from '../infrastructure/database/models/residente.model';
@@ -5,20 +6,49 @@ import CabinetModel from '../infrastructure/database/models/armario.model';
 import DrawerModel from '../infrastructure/database/models/gaveta.model';
 import MedicineStockModel from '../infrastructure/database/models/estoque-medicamento.model';
 import InputStockModel from '../infrastructure/database/models/estoque-insumo.model';
-
-/**
- * Path after mount e.g. /medicamentos/5, /residentes/101, /estoque/123, /estoque/medicamento/123/suspender
- * Returns plain object for JSON storage in audit_log.old_value.
- */
+import LoginModel from '../infrastructure/database/models/login.model';
 export async function getOldValueForAudit(
   path: string,
   method: string,
+  req?: AuthRequest,
 ): Promise<Record<string, unknown> | null> {
   if (!['PUT', 'PATCH', 'DELETE'].includes(method)) return null;
 
-  const segments = path.split('/').filter(Boolean);
+  const segments = path.replace(/^\/api\/v1/, '').split('/').filter(Boolean);
+  const resource = segments[0] ?? null;
+
+  // PUT /login: update current user (own profile), need req.user.id
+  if (resource === 'login' && method === 'PUT' && req?.user?.id) {
+    try {
+      const row = await LoginModel.findByPk(req.user.id);
+      if (!row) return null;
+      const plain = row.get({ plain: true }) as Record<string, unknown>;
+      delete plain.password;
+      delete plain.refresh_token;
+      return plain;
+    } catch {
+      return null;
+    }
+  }
+
+  // PUT/DELETE /admin/users/:id: admin editing another user
+  if (resource === 'admin' && segments[1] === 'users' && segments[2]) {
+    const id = Number(segments[2]);
+    if (!Number.isNaN(id)) {
+      try {
+        const row = await LoginModel.findByPk(id);
+        if (!row) return null;
+        const plain = row.get({ plain: true }) as Record<string, unknown>;
+        delete plain.password;
+        delete plain.refresh_token;
+        return plain;
+      } catch {
+        return null;
+      }
+    }
+  }
+
   if (segments.length < 2) return null;
-  const resource = segments[0];
   const idParam =
     resource === 'estoque' &&
     (segments[1] === 'medicamento' || segments[1] === 'insumo') &&

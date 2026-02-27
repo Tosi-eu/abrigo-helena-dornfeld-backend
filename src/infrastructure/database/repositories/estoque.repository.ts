@@ -66,10 +66,11 @@ export class StockRepository {
       if (existing) {
         existing.quantidade += data.quantidade;
         await existing.save({ transaction });
-        return { message: 'Quantidade somada ao estoque existente.' };
+        const plain = existing.get({ plain: true });
+        return { message: 'Quantidade somada ao estoque existente.', data: plain };
       }
 
-      await MedicineStockModel.create({
+      const created = await MedicineStockModel.create({
         medicamento_id: data.medicamento_id,
         casela_id: data.casela_id ?? null,
         armario_id: data.armario_id,
@@ -83,7 +84,7 @@ export class StockRepository {
         observacao: data.observacao ?? null,
       }, { transaction });
 
-      return { message: 'Entrada de medicamento registrada.' };
+      return { message: 'Entrada de medicamento registrada.', data: created.get({ plain: true }) };
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
       throw new Error(message);
@@ -111,10 +112,11 @@ export class StockRepository {
     if (existing) {
       existing.quantidade += data.quantidade;
       await existing.save({ transaction });
-      return { message: 'Quantidade somada ao estoque existente.' };
+      const plain = existing.get({ plain: true });
+      return { message: 'Quantidade somada ao estoque existente.', data: plain };
     }
 
-    await InputStockModel.create({
+    const created = await InputStockModel.create({
       insumo_id: data.insumo_id,
       casela_id: data.casela_id ?? null,
       armario_id: data.armario_id,
@@ -128,7 +130,7 @@ export class StockRepository {
       suspended_at: data.suspended_at ?? null,
     }, { transaction });
 
-    return { message: 'Entrada de insumo registrada.' };
+    return { message: 'Entrada de insumo registrada.', data: created.get({ plain: true }) };
   }
 
   async createStockOut(
@@ -151,7 +153,7 @@ export class StockRepository {
 
       register.quantidade -= quantidade;
       await register.save({ transaction });
-      return { message: 'Saída de medicamento realizada.' };
+      return { message: 'Saída de medicamento realizada.', data: register.get({ plain: true }) };
     } else {
       const register = await InputStockModel.findByPk(estoqueId, { transaction });
       if (!register) throw new Error('register de insumo não encontrado.');
@@ -164,7 +166,7 @@ export class StockRepository {
 
       register.quantidade -= quantidade;
       await register.save({ transaction });
-      return { message: 'Saída de insumo realizada.' };
+      return { message: 'Saída de insumo realizada.', data: register.get({ plain: true }) };
     }
   }
 
@@ -335,8 +337,6 @@ export class StockRepository {
     const whereCondition = buildWhereCondition();
     const results: StockQueryResult[] = [];
 
-    // Architecture: we run two paginated queries (medicine + input) and merge in memory.
-    // Each query uses limit/offset so we never load full datasets—only one page per type.
     const shouldIncludeMedicines =
       !params.itemType || params.itemType === 'medicamento';
     const shouldIncludeInputs =
@@ -759,8 +759,10 @@ export class StockRepository {
       },
     );
 
+    const updated = await MedicineStockModel.findByPk(estoqueId, { transaction });
     return {
       message: 'Medicamento removido do estoque individual',
+      data: updated ? updated.get({ plain: true }) : null,
     };
   }
 
@@ -777,8 +779,10 @@ export class StockRepository {
       },
     );
 
+    const updated = await InputStockModel.findByPk(estoqueId, { transaction });
     return {
       message: 'Insumo removido do estoque individual',
+      data: updated ? updated.get({ plain: true }) : null,
     };
   }
 
@@ -794,8 +798,10 @@ export class StockRepository {
       },
     );
 
+    const updated = await MedicineStockModel.findByPk(estoque_id, { transaction });
     return {
       message: 'Medicamento suspenso com sucesso',
+      data: updated ? updated.get({ plain: true }) : null,
     };
   }
 
@@ -811,8 +817,10 @@ export class StockRepository {
       },
     );
 
+    const updated = await MedicineStockModel.findByPk(estoque_id, { transaction });
     return {
       message: 'Medicamento retomado com sucesso',
+      data: updated ? updated.get({ plain: true }) : null,
     };
   }
 
@@ -984,19 +992,25 @@ export class StockRepository {
         throw new Error('Item de estoque não encontrado');
       }
 
+      const deleted = stock.get({ plain: true }) as unknown as Record<string, unknown>;
       await MedicineStockModel.destroy({ where: { id: estoqueId }, transaction });
+      return {
+        message: 'Item de estoque removido com sucesso',
+        data: deleted,
+      };
     } else {
       const stock = await this.findInputStockById(estoqueId, transaction);
       if (!stock) {
         throw new Error('Item de estoque não encontrado');
       }
 
+      const deleted = stock.get({ plain: true }) as unknown as Record<string, unknown>;
       await InputStockModel.destroy({ where: { id: estoqueId }, transaction });
+      return {
+        message: 'Item de estoque removido com sucesso',
+        data: deleted,
+      };
     }
-
-    return {
-      message: 'Item de estoque removido com sucesso',
-    };
   }
 
   async suspendIndividualInput(estoque_id: number, transaction?: Transaction) {
@@ -1011,8 +1025,10 @@ export class StockRepository {
       },
     );
 
+    const updated = await InputStockModel.findByPk(estoque_id, { transaction });
     return {
       message: 'Insumo suspenso com sucesso',
+      data: updated ? updated.get({ plain: true }) : null,
     };
   }
 
@@ -1028,8 +1044,10 @@ export class StockRepository {
       },
     );
 
+    const updated = await InputStockModel.findByPk(estoque_id, { transaction });
     return {
       message: 'Insumo retomado com sucesso',
+      data: updated ? updated.get({ plain: true }) : null,
     };
   }
 
@@ -1134,7 +1152,27 @@ export class StockRepository {
 
     await stock.update({ quantidade: stock.quantidade - quantidade }, { transaction });
 
-    return { message: 'Medicamento transferido de setor com sucesso' };
+    await stock.reload({ transaction });
+    const target = existing
+      ? await MedicineStockModel.findByPk(existing.id, { transaction })
+      : await MedicineStockModel.findOne({
+          where: {
+            medicamento_id: stock.medicamento_id,
+            casela_id: finalCaselaId,
+            validade: stock.validade,
+            setor,
+            lote: stock.lote ?? null,
+            tipo: finalStockType,
+          },
+          transaction,
+        });
+    return {
+      message: 'Medicamento transferido de setor com sucesso',
+      data: {
+        source: stock.get({ plain: true }),
+        target: target ? target.get({ plain: true }) : null,
+      },
+    };
   }
 
   async transferInputSector(
@@ -1233,13 +1271,30 @@ export class StockRepository {
 
     await stock.update({ quantidade: stock.quantidade - quantidade }, { transaction });
 
-    return { message: 'Insumo transferido de setor com sucesso' };
+    await stock.reload({ transaction });
+    const target = existing
+      ? await InputStockModel.findByPk(existing.id, { transaction })
+      : await InputStockModel.findOne({
+          where: {
+            insumo_id: stock.insumo_id,
+            casela_id: casela_id,
+            validade: stock.validade,
+            setor,
+            lote: stock.lote ?? null,
+            tipo: finalTipo,
+            destino: hasDestino ? destino : null,
+          },
+          transaction,
+        });
+    return {
+      message: 'Insumo transferido de setor com sucesso',
+      data: {
+        source: stock.get({ plain: true }),
+        target: target ? target.get({ plain: true }) : null,
+      },
+    };
   }
 
-  /**
-   * Efficient alert counts for dashboard/summary.
-   * Uses COUNT(*) with indexed columns; avoids loading full list.
-   */
   async getAlertCounts(transaction?: Transaction): Promise<{
     noStock: number;
     belowMin: number;

@@ -18,11 +18,11 @@ function getResource(path: string): string | null {
   return segments[0] ?? null;
 }
 
-function safeJsonValue(value: unknown): string | null {
+function safeJsonObject(value: unknown): Record<string, unknown> | null {
   if (value == null) return null;
   if (typeof value !== 'object') return null;
   try {
-    return JSON.stringify(value);
+    return JSON.parse(JSON.stringify(value)) as Record<string, unknown>;
   } catch {
     return null;
   }
@@ -30,7 +30,8 @@ function safeJsonValue(value: unknown): string | null {
 
 export function auditLog(req: AuthRequest, res: Response, next: NextFunction) {
   const startTime = Date.now();
-  const pathForAudit = req.path.replace(/^\/api\/v1/, '') || req.path;
+  const rawPath = (req.originalUrl ?? req.url ?? req.path ?? '').split('?')[0];
+  const pathForAudit = rawPath.replace(/^\/api\/v1/, '') || '/';
 
   let capturedOld: Record<string, unknown> | null = null;
   let capturedNew: unknown = null;
@@ -40,7 +41,7 @@ export function auditLog(req: AuthRequest, res: Response, next: NextFunction) {
     if (auditDone) return;
     auditDone = true;
     const duration = Date.now() - startTime;
-    logAuditEvent(req, res, duration, capturedOld, capturedNew);
+    logAuditEvent(req, res, duration, capturedOld, capturedNew, pathForAudit);
   };
 
   const originalJson = res.json.bind(res);
@@ -59,7 +60,7 @@ export function auditLog(req: AuthRequest, res: Response, next: NextFunction) {
         ['PUT', 'PATCH', 'DELETE'].includes(req.method)
       ) {
         try {
-          capturedOld = await getOldValueForAudit(pathForAudit, req.method);
+          capturedOld = await getOldValueForAudit(pathForAudit, req.method, req);
         } catch {
           // ignore
         }
@@ -75,16 +76,17 @@ function logAuditEvent(
   duration: number,
   oldValue: Record<string, unknown> | null,
   newValue: unknown,
+  pathForAudit: string,
 ) {
   const method = req.method;
-  const path = req.path;
+  const path = req.originalUrl?.split('?')[0] ?? req.path;
   const statusCode = res.statusCode;
 
   if (!SENSITIVE_METHODS.includes(method)) return;
 
   const userId = req.user?.id ?? null;
   const operation_type = getOperationType(method);
-  const resource = getResource(path);
+  const resource = getResource(pathForAudit || path);
 
   const logEntry = {
     timestamp: new Date().toISOString(),
@@ -108,8 +110,8 @@ function logAuditEvent(
     resource,
     status_code: statusCode,
     duration_ms: duration,
-    old_value: safeJsonValue(oldValue),
-    new_value: safeJsonValue(newValue),
+    old_value: safeJsonObject(oldValue),
+    new_value: safeJsonObject(newValue),
   }).catch((err) => {
     logger.error('Audit log persist failed', {
       path,

@@ -6,14 +6,13 @@ import { LoginRepository } from '../../database/repositories/login.repository';
 import { LoginService } from '../../../core/services/login.service';
 import { authMiddleware } from '../../../middleware/auth.middleware';
 import { requireAdmin, blockNonAdminWrites } from '../../../middleware/admin.middleware';
+import { auditLog } from '../../../middleware/audit.middleware';
 
 const router = Router();
 
 const repo = new LoginRepository();
 const service = new LoginService(repo);
 const controller = new LoginController(service);
-
-/** Stricter rate limit for login to mitigate brute force. */
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 20,
@@ -22,18 +21,18 @@ const loginLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// User creation is allowed (e.g. from sign-up screen). New accounts are always "user" (id is auto; only first user can be id 1).
 router.post('/', (req, res) => controller.create(req, res));
 router.post('/authenticate', loginLimiter, (req, res) =>
   controller.authenticate(req, res),
 );
-// Only admin can reset another user's password
+
 router.post('/reset-password', authMiddleware, requireAdmin, (req, res) =>
   controller.resetPassword(req, res),
 );
 
 router.use(authMiddleware);
 router.use(blockNonAdminWrites);
+router.use(auditLog);
 
 router.get('/usuario-logado', (req, res) =>
   controller.getCurrentUser(req, res),
