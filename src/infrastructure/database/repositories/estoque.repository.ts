@@ -34,6 +34,8 @@ import {
   SECTOR_CONFIG,
   StockGroup,
   StockQueryResult,
+  MedicineStockPlain,
+  InputStockPlain,
 } from '../../types/estoque.types';
 
 interface StockModel {
@@ -406,9 +408,9 @@ export class StockRepository {
       });
 
       for (const stock of medicineStocks) {
-        const plainStock = stock.get({ plain: true }) as any;
-        const medicine = plainStock.MedicineModel as MedicineModel | undefined;
-        const resident = plainStock.ResidentModel as ResidentModel | undefined;
+        const plainStock = stock.get({ plain: true }) as MedicineStockPlain;
+        const medicine = plainStock.MedicineModel;
+        const resident = plainStock.ResidentModel;
 
         if (filter === 'belowMin') {
           const minStock = medicine?.estoque_minimo ?? 0;
@@ -511,9 +513,9 @@ export class StockRepository {
       });
 
       for (const stock of inputStocks) {
-        const plainStock = stock.get({ plain: true }) as any;
-        const input = plainStock.InputModel as InputModel | undefined;
-        const resident = plainStock.ResidentModel as ResidentModel | undefined;
+        const plainStock = stock.get({ plain: true }) as InputStockPlain;
+        const input = plainStock.InputModel;
+        const resident = plainStock.ResidentModel;
 
         if (filter === StockFilterType.BELOW_MIN) {
           const minStock = input?.estoque_minimo ?? 0;

@@ -151,21 +151,28 @@ export class StockService {
 
     const result = await this.repo.createStockOut(estoqueId, tipo, quantidade, transaction);
 
+    type MedicineStock = { medicamento_id: number; lote?: string | null };
+    type InputStock = { insumo_id: number; lote?: string | null };
+    const medicamentoId = tipo === ItemType.MEDICAMENTO
+      ? (stockItem as MedicineStock).medicamento_id
+      : null;
+    const insumoId = tipo === ItemType.INSUMO
+      ? (stockItem as InputStock).insumo_id
+      : null;
+    const lote = (stockItem as { lote?: string | null }).lote ?? null;
+
     await this.movementRepo.create({
       tipo: MovementType.SAIDA,
       login_id,
-      medicamento_id:
-        tipo === ItemType.MEDICAMENTO
-          ? (stockItem as any).medicamento_id
-          : null,
-      insumo_id: tipo === ItemType.INSUMO ? (stockItem as any).insumo_id : null,
+      medicamento_id: medicamentoId,
+      insumo_id: insumoId,
       quantidade,
       casela_id: stockItem.casela_id ?? null,
       validade: stockItem.validade ?? new Date(),
       setor: stockItem.setor,
       armario_id: stockItem.armario_id ?? undefined,
       gaveta_id: stockItem.gaveta_id ?? undefined,
-      lote: (stockItem as any).lote ?? null,
+      lote,
     }, transaction);
 
     await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());

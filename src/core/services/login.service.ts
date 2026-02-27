@@ -188,7 +188,13 @@ export class LoginService {
     const user = await this.repo.findById(userId);
     if (!user) return null;
 
-    const updateData: Record<string, unknown> = {};
+    const updateData: Partial<{
+      first_name: string;
+      last_name: string;
+      login: string;
+      role: 'admin' | 'user';
+      password: string;
+    }> = {};
     if (data.first_name !== undefined) updateData.first_name = data.first_name;
     if (data.last_name !== undefined) updateData.last_name = data.last_name;
     if (data.login !== undefined) updateData.login = data.login;
@@ -198,7 +204,7 @@ export class LoginService {
       updateData.password = await bcrypt.hash(data.password, 10);
     }
 
-    const updated = await this.repo.update(userId, updateData as any);
+    const updated = await this.repo.update(userId, updateData);
     return {
       id: updated!.id,
       login: updated!.login,

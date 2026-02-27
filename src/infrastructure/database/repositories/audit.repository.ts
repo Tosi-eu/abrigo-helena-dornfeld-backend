@@ -1,6 +1,6 @@
 import { Op } from 'sequelize';
 import AuditLogModel, { AuditOperationType } from '../models/audit-log.model';
-import { enrichAuditValue } from '../../../middleware/audit-enrich.helper';
+import { enrichAuditEventsBatch } from '../../../middleware/audit-enrich.helper';
 
 export type AuditOperationFilter = 'create' | 'update' | 'delete';
 
@@ -90,35 +90,39 @@ export class AuditRepository {
 
     const total = created + updated + deleted;
 
-    const enrichedEvents = await Promise.all(
-      events.map(async (e) => {
-        const oldVal =
-          e.old_value && typeof e.old_value === 'object' && !Array.isArray(e.old_value)
-            ? (e.old_value as Record<string, unknown>)
-            : null;
-        const newVal =
-          e.new_value && typeof e.new_value === 'object' && !Array.isArray(e.new_value)
-            ? (e.new_value as Record<string, unknown>)
-            : null;
-        const [enrichedOld, enrichedNew] = await Promise.all([
-          enrichAuditValue(oldVal),
-          enrichAuditValue(newVal),
-        ]);
-        return {
-          id: e.id,
-          user_id: e.user_id,
-          method: e.method,
-          path: e.path,
-          operation_type: e.operation_type,
-          resource: e.resource,
-          status_code: e.status_code,
-          duration_ms: e.duration_ms,
-          created_at: e.created_at.toISOString(),
-          old_value: enrichedOld ?? null,
-          new_value: enrichedNew ?? null,
-        };
-      }),
-    );
+    const allValues: (Record<string, unknown> | null)[] = [];
+    for (const e of events) {
+      const oldVal =
+        e.old_value && typeof e.old_value === 'object' && !Array.isArray(e.old_value)
+          ? (e.old_value as Record<string, unknown>)
+          : null;
+      const newVal =
+        e.new_value && typeof e.new_value === 'object' && !Array.isArray(e.new_value)
+          ? (e.new_value as Record<string, unknown>)
+          : null;
+      allValues.push(oldVal, newVal);
+    }
+
+    const enrichedValues = await enrichAuditEventsBatch(allValues);
+
+    const enrichedEvents = events.map((e, i) => {
+      const idx = i * 2;
+      const enrichedOld = enrichedValues[idx] ?? null;
+      const enrichedNew = enrichedValues[idx + 1] ?? null;
+      return {
+        id: e.id,
+        user_id: e.user_id,
+        method: e.method,
+        path: e.path,
+        operation_type: e.operation_type,
+        resource: e.resource,
+        status_code: e.status_code,
+        duration_ms: e.duration_ms,
+        created_at: e.created_at.toISOString(),
+        old_value: enrichedOld,
+        new_value: enrichedNew,
+      };
+    });
 
     return {
       created,

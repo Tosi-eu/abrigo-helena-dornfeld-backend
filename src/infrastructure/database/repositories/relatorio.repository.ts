@@ -32,6 +32,29 @@ import {
   MovementsParams,
 } from '../../../core/services/relatorio.service';
 
+interface MovementPlain {
+  data?: Date;
+  createdAt?: Date;
+  tipo?: string;
+  quantidade?: number;
+  lote?: string | null;
+  destino?: string | null;
+  observacao?: string | null;
+  setor?: string;
+  gaveta_id?: number | null;
+  MedicineModel?: { nome?: string; principio_ativo?: string; dosagem?: string; unidade_medida?: string };
+  InputModel?: { nome?: string; descricao?: string | null };
+  ResidentModel?: { nome?: string; num_casela?: number };
+  CabinetModel?: { num_armario?: number };
+}
+
+interface ResidentRow {
+  ResidentModel?: { nome?: string; num_casela?: number };
+  MedicineModel?: { nome?: string; principio_ativo?: string };
+  data?: Date;
+  consumo_mensal?: number;
+}
+
 export class ReportRepository {
   async getMedicinesData(): Promise<MedicineReport[]> {
     const results = await MedicineStockModel.findAll({
@@ -201,6 +224,7 @@ export class ReportRepository {
         'MedicineModel.id',
         'MedicineModel.nome',
         'MedicineModel.principio_ativo',
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Sequelize literal typing
         sequelize.literal(
           'DATE_TRUNC(\'month\', "MovementModel"."data")',
         ) as any,
@@ -557,7 +581,7 @@ export class ReportRepository {
     });
 
     return results.map(row => {
-      const plain = row.get({ plain: true }) as any;
+      const plain = row.get({ plain: true }) as MovementPlain;
 
       // Combinar nome, dosagem e unidade_medida para medicamentos
       let nomeCompleto = '';
@@ -630,7 +654,7 @@ export class ReportRepository {
     });
   
     return results.map(row => {
-      const plain = row.get({ plain: true }) as any;
+      const plain = row.get({ plain: true }) as MovementPlain;
 
       // Combinar nome, dosagem e unidade_medida para medicamentos
       let nomeCompleto = '';
@@ -713,12 +737,14 @@ export class ReportRepository {
     });
 
     return results.map(row => {
-      const plain = row.get({ plain: true }) as any;
+      const plain = row.get({ plain: true }) as MovementPlain;
       const dateTime = plain.createdAt || plain.data;
+      const tipo = plain.tipo as 'entrada' | 'saida' | 'transferencia' | undefined;
+      const tipoMov = tipo === 'entrada' || tipo === 'saida' || tipo === 'transferencia' ? tipo : 'saida';
 
       return {
         data: formatDateTimeToPtBr(dateTime),
-        tipo_movimentacao: plain.tipo,
+        tipo_movimentacao: tipoMov,
         nome: plain.MedicineModel?.nome || plain.InputModel?.nome || '',
         principio_ativo: plain.MedicineModel?.principio_ativo || null,
         descricao: plain.InputModel?.descricao || null,
@@ -727,7 +753,7 @@ export class ReportRepository {
         residente: plain.ResidentModel?.nome || null,
         armario: plain.CabinetModel?.num_armario || null,
         gaveta: plain.gaveta_id || null,
-        setor: plain.setor,
+        setor: plain.setor ?? '',
         lote: plain.lote || null,
         destino: plain.destino || null,
         observacao: plain.observacao || null,

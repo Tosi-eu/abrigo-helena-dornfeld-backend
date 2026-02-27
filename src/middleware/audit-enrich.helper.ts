@@ -1,3 +1,4 @@
+import { Op } from 'sequelize';
 import MedicineModel from '../infrastructure/database/models/medicamento.model';
 import InputModel from '../infrastructure/database/models/insumo.model';
 
@@ -7,71 +8,103 @@ function toPositiveId(v: unknown): number | null {
   return !Number.isNaN(n) && n > 0 ? n : null;
 }
 
-async function addMedicamentoNome(obj: Record<string, unknown>): Promise<void> {
-  const medicamentoId = toPositiveId(obj.medicamento_id);
-  if (medicamentoId == null) return;
-  try {
-    const med = await MedicineModel.findByPk(medicamentoId);
-    if (med) {
-      const m = med.get({ plain: true }) as { nome?: string };
-      obj.medicamento_nome = m.nome ?? null;
-    }
-  } catch {
-    obj.medicamento_nome = null;
-  }
-}
+function collectIds(obj: Record<string, unknown>, medicamentoIds: Set<number>, insumoIds: Set<number>): void {
+  const medId = toPositiveId(obj.medicamento_id);
+  if (medId != null) medicamentoIds.add(medId);
+  const inpId = toPositiveId(obj.insumo_id);
+  if (inpId != null) insumoIds.add(inpId);
 
-async function addInsumoNome(obj: Record<string, unknown>): Promise<void> {
-  const insumoId = toPositiveId(obj.insumo_id);
-  if (insumoId == null) return;
-  try {
-    const inp = await InputModel.findByPk(insumoId);
-    if (inp) {
-      const i = inp.get({ plain: true }) as { nome?: string };
-      obj.insumo_nome = i.nome ?? null;
-    }
-  } catch {
-    obj.insumo_nome = null;
-  }
-}
-
-async function enrichOne(val: Record<string, unknown>): Promise<Record<string, unknown>> {
-  const obj = { ...val };
-  await Promise.all([addMedicamentoNome(obj), addInsumoNome(obj)]);
-  return obj;
-}
-
-/**
- * Enriches audit values with medicamento_nome and insumo_nome when medicamento_id
- * or insumo_id are present, so users see the medicine/input name instead of just the ID.
- * Handles plain objects, { message, data }, and { data: { source, target } }.
- */
-export async function enrichAuditValue(
-  val: Record<string, unknown> | null | undefined,
-): Promise<Record<string, unknown> | null> {
-  if (val == null || typeof val !== 'object' || Array.isArray(val)) {
-    return val as Record<string, unknown> | null;
-  }
-
-  const obj = { ...val };
-
-  // { message, data } - data can be entity or { source, target }
   const data = obj.data;
   if (data != null && typeof data === 'object' && !Array.isArray(data)) {
     const d = data as Record<string, unknown>;
     if (d.source != null && typeof d.source === 'object' && !Array.isArray(d.source)) {
-      d.source = await enrichOne(d.source as Record<string, unknown>);
+      collectIds(d.source as Record<string, unknown>, medicamentoIds, insumoIds);
     }
     if (d.target != null && typeof d.target === 'object' && !Array.isArray(d.target)) {
-      d.target = await enrichOne(d.target as Record<string, unknown>);
+      collectIds(d.target as Record<string, unknown>, medicamentoIds, insumoIds);
     }
     if (d.medicamento_id != null || d.insumo_id != null) {
-      const enriched = await enrichOne(d);
-      d.medicamento_nome = enriched.medicamento_nome;
-      d.insumo_nome = enriched.insumo_nome;
+      collectIds(d, medicamentoIds, insumoIds);
     }
-    return obj;
+  }
+}
+
+function applyNames(
+  obj: Record<string, unknown>,
+  medMap: Map<number, string>,
+  inpMap: Map<number, string>,
+): void {
+  const medId = toPositiveId(obj.medicamento_id);
+  if (medId != null) obj.medicamento_nome = medMap.get(medId) ?? null;
+  const inpId = toPositiveId(obj.insumo_id);
+  if (inpId != null) obj.insumo_nome = inpMap.get(inpId) ?? null;
+
+  const data = obj.data;
+  if (data != null && typeof data === 'object' && !Array.isArray(data)) {
+    const d = data as Record<string, unknown>;
+    if (d.source != null && typeof d.source === 'object' && !Array.isArray(d.source)) {
+      applyNames(d.source as Record<string, unknown>, medMap, inpMap);
+    }
+    if (d.target != null && typeof d.target === 'object' && !Array.isArray(d.target)) {
+      applyNames(d.target as Record<string, unknown>, medMap, inpMap);
+    }
+    if (d.medicamento_id != null || d.insumo_id != null) {
+      applyNames(d, medMap, inpMap);
+    }
+  }
+}
+
+/**
+ * Batch enriches audit values with medicamento_nome and insumo_nome.
+ * Uses 2 queries total (MedicineModel.findAll, InputModel.findAll) instead of N per event.
+ */
+export async function enrichAuditEventsBatch(
+  values: (Record<string, unknown> | null)[],
+): Promise<(Record<string, unknown> | null)[]> {
+  const medicamentoIds = new Set<number>();
+  const insumoIds = new Set<number>();
+
+  for (const val of values) {
+    if (val != null && typeof val === 'object' && !Array.isArray(val)) {
+      collectIds(val, medicamentoIds, insumoIds);
+    }
   }
 
-  return enrichOne(obj);
+  const [medicines, inputs] = await Promise.all([
+    medicamentoIds.size > 0
+      ? MedicineModel.findAll({
+          where: { id: { [Op.in]: Array.from(medicamentoIds) } },
+          attributes: ['id', 'nome'],
+        })
+      : [],
+    insumoIds.size > 0
+      ? InputModel.findAll({
+          where: { id: { [Op.in]: Array.from(insumoIds) } },
+          attributes: ['id', 'nome'],
+        })
+      : [],
+  ]);
+
+  const medMap = new Map<number, string>();
+  for (const m of medicines) {
+    const plain = m.get({ plain: true }) as { id: number; nome: string };
+    medMap.set(plain.id, plain.nome);
+  }
+  const inpMap = new Map<number, string>();
+  for (const i of inputs) {
+    const plain = i.get({ plain: true }) as { id: number; nome: string };
+    inpMap.set(plain.id, plain.nome);
+  }
+
+  const result: (Record<string, unknown> | null)[] = [];
+  for (const val of values) {
+    if (val == null || typeof val !== 'object' || Array.isArray(val)) {
+      result.push(val as Record<string, unknown> | null);
+    } else {
+      const obj = { ...val };
+      applyNames(obj, medMap, inpMap);
+      result.push(obj);
+    }
+  }
+  return result;
 }
