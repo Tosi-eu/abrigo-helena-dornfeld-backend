@@ -49,6 +49,7 @@ export class LoginController {
       sameSite: 'lax' as const,
       maxAge: 24 * 60 * 60 * 1000, // 24 hours in milliseconds
       path: '/',
+      secure: process.env.NODE_ENV === 'production',
     };
 
     res.cookie('authToken', result.token, cookieOptions);
@@ -146,6 +147,7 @@ export class LoginController {
       httpOnly: true,
       sameSite: 'lax',
       path: '/',
+      secure: process.env.NODE_ENV === 'production',
     });
 
     return res.status(204).send();

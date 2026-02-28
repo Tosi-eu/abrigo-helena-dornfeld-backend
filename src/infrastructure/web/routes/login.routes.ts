@@ -26,7 +26,17 @@ const loginLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-router.post('/', (req, res) => controller.create(req, res));
+const registerLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hora
+  max: 2,
+  message: {
+    error: 'Muitas tentativas de cadastro. Tente novamente em 1 hora.',
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+router.post('/', registerLimiter, (req, res) => controller.create(req, res));
 router.post('/authenticate', loginLimiter, (req, res) =>
   controller.authenticate(req, res),
 );

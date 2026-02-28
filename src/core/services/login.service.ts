@@ -63,11 +63,6 @@ export class LoginService {
         first_name: attrs.first_name,
         last_name: attrs.last_name,
       });
-
-      if (created.id === 1) {
-        await this.repo.update(created.id, { role: 'admin' });
-        return { id: created.id, login: created.login, role: 'admin' };
-      }
       return created;
     } catch (err: unknown) {
       if (
