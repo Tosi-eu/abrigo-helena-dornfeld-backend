@@ -157,16 +157,25 @@ backend/
 
 ## 🧪 Testes
 
+A configuração do ambiente de teste fica no **`jest.config.ts`** (raiz do backend), que carrega as variáveis de teste em **`jest.env.js`**. A variável **`NODE_ENV`** (test | development | production) define qual banco usar; o pipeline de testes só roda quando `NODE_ENV=test` (os scripts `npm test` e `npm run test:e2e` já setam isso).
+
+Os testes usam um **banco dedicado** (`estoque_test`) para não afetar o ambiente de desenvolvimento. Crie o banco uma vez antes de rodar os testes:
+
 ```bash
-npm test
+npm run test:db:create
+```
 
-npm run test:unit
+Depois execute:
 
-npm run test:e2e
+```bash
+npm test              # testes unitários
+npm run test:e2e       # testes e2e
 
 # Modo watch
 npm run test:watch
 ```
+
+Variáveis opcionais para testes: `TEST_DB_NAME` (nome do banco de testes), `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD` (se diferente do .env).
 
 ## 🔧 Scripts Disponíveis
 
@@ -177,6 +186,7 @@ npm run test:watch
 | `npm start` | Inicia servidor em produção |
 | `npm test` | Executa testes unitários |
 | `npm run test:e2e` | Executa testes end-to-end |
+| `npm run test:db:create` | Cria o banco `estoque_test` (uma vez antes dos e2e) |
 | `npm run lint` | Verifica e corrige problemas de lint |
 | `npm run format` | Formata código com Prettier |
 

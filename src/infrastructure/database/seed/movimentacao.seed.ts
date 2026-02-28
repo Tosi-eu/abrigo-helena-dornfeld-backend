@@ -11,7 +11,10 @@ export async function seedEntriesDB(
   app: App,
   seed: SeedResult,
 ): Promise<SeedEntries> {
-  const medEntry = await request(app).post('/api/estoque/entrada').send({
+  const medEntry = await request(app)
+    .post('/api/v1/estoque/entrada')
+    .set('Cookie', seed.cookie)
+    .send({
     medicamento_id: seed.medicineId,
     armario_id: seed.cabinetId,
     validade: '2099-12-31',
@@ -24,19 +27,22 @@ export async function seedEntriesDB(
   if (medEntry.status !== 200)
     throw new Error('Erro ao criar entrada de medicamento no seedEntriesDB');
 
-  const inputEntry = await request(app).post('/api/estoque/entrada').send({
-    insumo_id: seed.inputId,
-    armario_id: seed.cabinetId,
-    validade: '2099-12-31',
-    quantidade: 50,
-    tipo: 'geral',
-  });
+  const inputEntry = await request(app)
+    .post('/api/v1/estoque/entrada')
+    .set('Cookie', seed.cookie)
+    .send({
+      insumo_id: seed.inputId,
+      armario_id: seed.cabinetId,
+      validade: '2099-12-31',
+      quantidade: 50,
+      tipo: 'geral',
+    });
 
   if (inputEntry.status !== 200)
     throw new Error('Erro ao criar entrada de insumo no seedEntriesDB');
 
   return {
-    medStockId: medEntry.body.estoque_id,
-    inputStockId: inputEntry.body.estoque_id,
+    medStockId: medEntry.body.data?.id ?? medEntry.body.estoque_id,
+    inputStockId: inputEntry.body.data?.id ?? inputEntry.body.estoque_id,
   };
 }

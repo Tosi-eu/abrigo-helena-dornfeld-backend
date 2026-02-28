@@ -24,7 +24,10 @@ describe('Input Stock E2E - CRUD', () => {
   let createdInputStockId: number;
 
   it('deve registrar entrada de insumo', async () => {
-    const res = await request(app).post('/api/v1/estoque/entrada').send({
+    const res = await request(app)
+      .post('/api/v1/estoque/entrada')
+      .set('Cookie', seed.cookie)
+      .send({
       insumo_id: seed.inputId,
       armario_id: seed.cabinetId,
       validade: '2099-12-31',
@@ -51,7 +54,10 @@ describe('Input Stock E2E - CRUD', () => {
   });
 
   it('deve registrar saída de insumo', async () => {
-    const res = await request(app).post('/api/v1/estoque/saida').send({
+    const res = await request(app)
+      .post('/api/v1/estoque/saida')
+      .set('Cookie', seed.cookie)
+      .send({
       estoqueId: createdInputStockId,
       tipo: ItemType.INSUMO,
       quantidade: 5,
@@ -62,7 +68,10 @@ describe('Input Stock E2E - CRUD', () => {
   });
 
   it('não deve permitir saída maior que o estoque de insumo', async () => {
-    const res = await request(app).post('/api/v1/estoque/saida').send({
+    const res = await request(app)
+      .post('/api/v1/estoque/saida')
+      .set('Cookie', seed.cookie)
+      .send({
       estoqueId: createdInputStockId,
       tipo: ItemType.INSUMO,
       quantidade: 9999,

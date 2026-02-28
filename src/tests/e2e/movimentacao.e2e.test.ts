@@ -29,6 +29,7 @@ describe('E2E Movimentação', () => {
   it('deve criar movimentação de medicamento', async () => {
     const res = await request(app)
       .post('/api/v1/movimentacoes')
+      .set('Cookie', seed.cookie)
       .send({
         tipo: 'entrada',
         data: new Date(),
@@ -47,6 +48,7 @@ describe('E2E Movimentação', () => {
   it('deve criar movimentação de insumo', async () => {
     const res = await request(app)
       .post('/api/v1/movimentacoes')
+      .set('Cookie', seed.cookie)
       .send({
         tipo: 'entrada',
         data: new Date(),

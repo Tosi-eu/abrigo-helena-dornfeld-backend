@@ -1,2 +1,8 @@
-// define which environment will be used for testing
-process.env.NODE_ENV = 'test';
+/**
+ * Pipeline de testes: variáveis e regras em jest.env.js (comandadas pelo jest.config.ts).
+ */
+const { requireTestEnv, testEnvVars } = require('./jest.env.js');
+
+requireTestEnv();
+
+Object.assign(process.env, testEnvVars);
