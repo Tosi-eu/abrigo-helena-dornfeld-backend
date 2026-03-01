@@ -105,12 +105,14 @@ export class NotificationEventRepository {
           model: MedicineStockModel,
           as: 'estoque',
           attributes: ['dias_para_repor'],
-          required: false,
+          required: true,
           on: {
             medicamento_id: {
               [Op.col]: 'NotificationEventModel.medicamento_id',
             },
             casela_id: { [Op.col]: 'NotificationEventModel.residente_id' },
+            setor: 'enfermagem',
+            status: StockItemStatus.ATIVO,
           },
         },
         {

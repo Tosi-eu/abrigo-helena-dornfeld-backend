@@ -1,5 +1,8 @@
-import { sequelize } from "./src/infrastructure/database/sequelize.hml";
-
 export default async function globalTeardown() {
-  await sequelize.close();
+  try {
+    const { sequelize } = await import('./src/infrastructure/database/sequelize');
+    await sequelize.close();
+  } catch {
+    // Unit tests may not load Sequelize; ignore.
+  }
 }

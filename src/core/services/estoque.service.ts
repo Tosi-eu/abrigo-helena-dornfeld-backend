@@ -53,9 +53,21 @@ export class StockService {
       throw new Error('Quantidade inválida.');
     }
 
-    if (data.validade < new Date()) {
+    const validadeDate =
+      data.validade instanceof Date
+        ? data.validade
+        : data.validade
+          ? new Date(data.validade as string)
+          : new Date();
+    if (validadeDate < new Date()) {
       throw new Error('Produto está vencido.');
     }
+
+    const normalized = {
+      ...data,
+      setor: data.setor || 'farmacia',
+      validade: validadeDate,
+    };
 
     if (data.casela_id && data.gaveta_id) {
       throw new Error('Casela e gaveta não podem ser informados juntos.');
@@ -65,21 +77,21 @@ export class StockService {
       throw new Error('Usuário não autenticado');
     }
 
-    const result = await this.repo.createMedicineStockIn(data, transaction);
+    const result = await this.repo.createMedicineStockIn(normalized, transaction);
 
     await this.movementRepo.create(
       {
         tipo: MovementType.ENTRADA,
         login_id,
-        medicamento_id: data.medicamento_id,
+        medicamento_id: normalized.medicamento_id,
         insumo_id: null,
-        quantidade: data.quantidade,
-        casela_id: data.casela_id ?? null,
-        validade: data.validade ?? new Date(),
-        setor: data.setor,
-        armario_id: data.armario_id ?? undefined,
-        gaveta_id: data.gaveta_id ?? undefined,
-        lote: data.lote ?? null,
+        quantidade: normalized.quantidade,
+        casela_id: normalized.casela_id ?? null,
+        validade: normalized.validade ?? new Date(),
+        setor: normalized.setor,
+        armario_id: normalized.armario_id ?? undefined,
+        gaveta_id: normalized.gaveta_id ?? undefined,
+        lote: normalized.lote ?? null,
       },
       transaction,
     );
@@ -107,21 +119,32 @@ export class StockService {
       throw new Error('Usuário não autenticado');
     }
 
-    const result = await this.repo.createInputStockIn(data, transaction);
+    const normalized = {
+      ...data,
+      setor: data.setor || 'farmacia',
+      validade:
+        data.validade instanceof Date
+          ? data.validade
+          : data.validade
+            ? new Date(data.validade as string)
+            : new Date(),
+    };
+
+    const result = await this.repo.createInputStockIn(normalized, transaction);
 
     await this.movementRepo.create(
       {
         tipo: MovementType.ENTRADA,
         login_id,
         medicamento_id: null,
-        insumo_id: data.insumo_id,
-        quantidade: data.quantidade,
-        casela_id: data.casela_id ?? null,
-        validade: data.validade ?? new Date(),
-        setor: data.setor,
-        armario_id: data.armario_id ?? undefined,
-        gaveta_id: data.gaveta_id ?? undefined,
-        lote: data.lote ?? null,
+        insumo_id: normalized.insumo_id,
+        quantidade: normalized.quantidade,
+        casela_id: normalized.casela_id ?? null,
+        validade: normalized.validade ?? new Date(),
+        setor: normalized.setor,
+        armario_id: normalized.armario_id ?? undefined,
+        gaveta_id: normalized.gaveta_id ?? undefined,
+        lote: normalized.lote ?? null,
       },
       transaction,
     );

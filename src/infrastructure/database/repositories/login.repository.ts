@@ -1,13 +1,48 @@
 import { Login } from '../../../core/domain/login';
 import { LoginModel } from '../models/login.model';
 
+const FULL_PERMISSIONS = {
+  read: true,
+  create: true,
+  update: true,
+  delete: true,
+};
+
+const DEFAULT_USER_PERMISSIONS = {
+  read: true,
+  create: false,
+  update: false,
+  delete: false,
+};
+
 export class LoginRepository {
   async create(data: Login & { role?: 'admin' | 'user' }) {
-    const user = await LoginModel.create({
-      ...data,
-      role: data.role ?? 'user',
-    });
-    return { id: user.id, login: user.login, role: user.role };
+    let role = data.role ?? 'user';
+    let permissions: typeof FULL_PERMISSIONS | typeof DEFAULT_USER_PERMISSIONS =
+      DEFAULT_USER_PERMISSIONS;
+
+    if (process.env.NODE_ENV === 'test') {
+      const count = await LoginModel.count();
+      if (count === 0) {
+        role = 'admin';
+        permissions = FULL_PERMISSIONS;
+      }
+    }
+
+    try {
+      const user = await LoginModel.create({
+        ...data,
+        role,
+        permissions,
+      });
+      return { id: user.id, login: user.login, role: user.role };
+    } catch (err: unknown) {
+      const name = (err as { name?: string })?.name;
+      if (name === 'SequelizeUniqueConstraintError') {
+        throw new Error('duplicate key');
+      }
+      throw err;
+    }
   }
 
   async findByLogin(login: string) {

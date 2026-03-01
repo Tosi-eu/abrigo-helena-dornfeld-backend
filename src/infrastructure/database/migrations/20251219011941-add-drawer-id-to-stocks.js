@@ -1,9 +1,11 @@
 'use strict';
 
+const { addColumnIfNotExists, removeColumnIfExists } = require('../migration-helpers');
+
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.addColumn('estoque_insumo', 'gaveta_id', {
+    await addColumnIfNotExists(queryInterface, 'estoque_insumo', 'gaveta_id', {
       type: Sequelize.INTEGER,
       allowNull: true,
       references: {
@@ -14,7 +16,7 @@ module.exports = {
       onDelete: 'SET NULL',
     });
 
-    await queryInterface.addColumn('estoque_medicamento', 'gaveta_id', {
+    await addColumnIfNotExists(queryInterface, 'estoque_medicamento', 'gaveta_id', {
       type: Sequelize.INTEGER,
       allowNull: true,
       references: {
@@ -27,7 +29,7 @@ module.exports = {
   },
 
   async down(queryInterface) {
-    await queryInterface.removeColumn('estoque_insumo', 'gaveta_id');
-    await queryInterface.removeColumn('estoque_medicamento', 'gaveta_id');
+    await removeColumnIfExists(queryInterface, 'estoque_insumo', 'gaveta_id');
+    await removeColumnIfExists(queryInterface, 'estoque_medicamento', 'gaveta_id');
   },
 };

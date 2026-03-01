@@ -14,7 +14,7 @@ describe('Login E2E - CRUD', () => {
   it('deve criar um usuário', async () => {
     const res = await request(app)
       .post('/api/v1/login')
-      .send({ login: 'joao', password: '1234' });
+      .send({ login: 'joao', password: 'senha1234' });
 
     expect(res.status).toBe(201);
     expect(res.body.login).toBe('joao');
@@ -26,7 +26,7 @@ describe('Login E2E - CRUD', () => {
   it('não deve criar login duplicado', async () => {
     const res = await request(app)
       .post('/api/v1/login')
-      .send({ login: 'joao', password: 'abcd' });
+      .send({ login: 'joao', password: 'abcd1234' });
 
     expect(res.status).toBe(409);
   });
@@ -34,7 +34,7 @@ describe('Login E2E - CRUD', () => {
   it('deve autenticar com sucesso', async () => {
     const res = await request(app)
       .post('/api/v1/login/authenticate')
-      .send({ login: 'joao', password: '1234' });
+      .send({ login: 'joao', password: 'senha1234' });
 
     expect(res.status).toBe(200);
     expect(res.body.user?.login).toBe('joao');
@@ -44,7 +44,7 @@ describe('Login E2E - CRUD', () => {
   it('não deve autenticar com senha errada', async () => {
     const res = await request(app)
       .post('/api/v1/login/authenticate')
-      .send({ login: 'joao', password: 'senha_errada' });
+      .send({ login: 'joao', password: 'senhaerrada1' });
 
     expect(res.status).toBe(401);
   });
@@ -54,9 +54,9 @@ describe('Login E2E - CRUD', () => {
       .put('/api/v1/login')
       .set('Cookie', authCookie ?? '')
       .send({
-        currentPassword: '1234',
+        currentPassword: 'senha1234',
         login: 'joao2',
-        password: 'nova123',
+        password: 'nova1234',
       });
 
     expect(res.status).toBe(200);
@@ -68,9 +68,9 @@ describe('Login E2E - CRUD', () => {
       .put('/api/v1/login')
       .set('Cookie', authCookie ?? '')
       .send({
-        currentPassword: 'errada',
+        currentPassword: 'errada123',
         login: 'zz',
-        password: 'abc',
+        password: 'abc12345',
       });
 
     expect(res.status).toBe(401);
@@ -82,7 +82,7 @@ describe('Login E2E - CRUD', () => {
       .set('Cookie', authCookie ?? '')
       .send({
         login: 'joao2',
-        newPassword: 'senha_resettada',
+        newPassword: 'senha_resettada1',
       });
 
     expect(res.status).toBe(200);
@@ -95,7 +95,7 @@ describe('Login E2E - CRUD', () => {
       .set('Cookie', authCookie ?? '')
       .send({
         login: 'usuario_inexistente',
-        newPassword: 'nova_senha',
+        newPassword: 'nova_senha1',
       });
 
     expect(res.status).toBe(404);

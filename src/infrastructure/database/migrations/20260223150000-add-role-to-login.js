@@ -1,5 +1,7 @@
 'use strict';
 
+const { addColumnIfNotExists, removeColumnIfExists } = require('../migration-helpers');
+
 /**
  * Adds a `role` column to the login table.
  * - Default for new rows: 'user'.
@@ -10,7 +12,7 @@
  */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.addColumn('login', 'role', {
+    await addColumnIfNotExists(queryInterface, 'login', 'role', {
       type: Sequelize.STRING(20),
       allowNull: false,
       defaultValue: 'user',
@@ -22,6 +24,6 @@ module.exports = {
   },
 
   async down(queryInterface) {
-    await queryInterface.removeColumn('login', 'role');
+    await removeColumnIfExists(queryInterface, 'login', 'role');
   },
 };

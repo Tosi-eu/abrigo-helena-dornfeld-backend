@@ -1,16 +1,18 @@
 'use strict';
 
+const { addColumnIfNotExists, removeColumnIfExists } = require('../migration-helpers');
+
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.addColumn('notificacao', 'tipo_evento', {
+    await addColumnIfNotExists(queryInterface, 'notificacao', 'tipo_evento', {
       type: Sequelize.ENUM('medicamento', 'reposicao_estoque'),
       allowNull: false,
       defaultValue: 'medicamento',
     });
   },
 
-  async down(queryInterface, Sequelize) {
-    await queryInterface.removeColumn('notificacao', 'tipo_evento');
+  async down(queryInterface) {
+    await removeColumnIfExists(queryInterface, 'notificacao', 'tipo_evento');
   },
 };

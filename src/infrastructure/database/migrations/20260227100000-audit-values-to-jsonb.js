@@ -10,12 +10,12 @@ module.exports = {
     await queryInterface.sequelize.query(`
       ALTER TABLE audit_log
       ALTER COLUMN old_value TYPE jsonb
-      USING (CASE WHEN old_value IS NULL OR trim(old_value) = '' THEN NULL ELSE old_value::jsonb END);
+      USING (CASE WHEN old_value IS NULL OR trim(old_value::text) = '' THEN NULL ELSE old_value::text::jsonb END);
     `);
     await queryInterface.sequelize.query(`
       ALTER TABLE audit_log
       ALTER COLUMN new_value TYPE jsonb
-      USING (CASE WHEN new_value IS NULL OR trim(new_value) = '' THEN NULL ELSE new_value::jsonb END);
+      USING (CASE WHEN new_value IS NULL OR trim(new_value::text) = '' THEN NULL ELSE new_value::text::jsonb END);
     `);
   },
 
