@@ -25,6 +25,7 @@ describe('InsumoController', () => {
   it('não deve criar insumo sem nome', async () => {
     const res = await request(app)
       .post('/api/v1/insumos')
+      .set('Cookie', authCookie)
       .send({ descricao: 'Sem nome' });
 
     expect(res.status).toBe(400);

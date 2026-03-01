@@ -26,8 +26,14 @@ export class LoginController {
       });
       return res.status(201).json(user);
     } catch (error: unknown) {
+      const err = error as { message?: string; name?: string; original?: { code?: string } };
       const message = getErrorMessage(error);
-      if (message === 'duplicate key') {
+      const isDuplicate =
+        message === 'duplicate key' ||
+        message.includes('duplicate key') ||
+        err?.name === 'SequelizeUniqueConstraintError' ||
+        err?.original?.code === '23505';
+      if (isDuplicate) {
         return res.status(409).json({ error: 'Login já cadastrado' });
       }
       return res.status(500).json({ error: 'Erro ao criar usuário' });
@@ -121,10 +127,9 @@ export class LoginController {
       const message =
         error instanceof Error ? error.message : 'Erro ao redefinir senha';
 
-      if (message === 'Login não encontrado') {
+      if (message === 'Login não encontrado' || String(message).includes('não encontrado')) {
         return res.status(404).json({ error: 'Login não encontrado' });
       }
-
       return res.status(400).json({ error: message });
     }
   }

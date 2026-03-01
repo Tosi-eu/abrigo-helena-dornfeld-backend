@@ -53,7 +53,9 @@ describe('Drawer E2E - CRUD básico', () => {
   });
 
   it('deve remover uma gaveta', async () => {
-    const res = await request(app).delete(`/api/v1/gavetas/${createdNumber}`);
+    const res = await request(app)
+      .delete(`/api/v1/gavetas/${createdNumber}`)
+      .set('Cookie', authCookie);
     expect(res.status).toBe(204);
   });
 

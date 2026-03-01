@@ -18,12 +18,12 @@ describe('Medicines E2E - CRUD básico', () => {
       .post('/api/v1/medicamentos')
       .set('Cookie', authCookie)
       .send({
-      nome: 'Dipirona Sódica',
-      dosagem: 500,
-      unidade_medida: 'mg',
-      estoque_minimo: 10,
-      principio_ativo: 'Dipirona',
-    });
+        nome: 'Dipirona Sódica',
+        dosagem: '500',
+        unidade_medida: 'mg',
+        estoque_minimo: 10,
+        principio_ativo: 'Dipirona',
+      });
 
     expect(response.status).toBe(201);
 
@@ -33,9 +33,10 @@ describe('Medicines E2E - CRUD básico', () => {
   it('deve atualizar um medicamento', async () => {
     const response = await request(app)
       .put(`/api/v1/medicamentos/${createdId}`)
+      .set('Cookie', authCookie)
       .send({
         nome: 'Dipirona Atualizada',
-        dosagem: 500,
+        dosagem: '500',
         unidade_medida: 'mg',
         estoque_minimo: 5,
         principio_ativo: 'Dipirona',

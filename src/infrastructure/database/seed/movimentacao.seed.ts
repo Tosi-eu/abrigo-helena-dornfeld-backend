@@ -15,14 +15,15 @@ export async function seedEntriesDB(
     .post('/api/v1/estoque/entrada')
     .set('Cookie', seed.cookie)
     .send({
-    medicamento_id: seed.medicineId,
-    armario_id: seed.cabinetId,
-    validade: '2099-12-31',
-    quantidade: 20,
-    origem: 'UBS',
-    tipo: 'geral',
-    casela_id: null,
-  });
+      medicamento_id: seed.medicineId,
+      armario_id: seed.cabinetId,
+      validade: '2099-12-31',
+      quantidade: 20,
+      origem: 'UBS',
+      tipo: 'geral',
+      setor: 'farmacia',
+      casela_id: null,
+    });
 
   if (medEntry.status !== 200)
     throw new Error('Erro ao criar entrada de medicamento no seedEntriesDB');
@@ -36,6 +37,7 @@ export async function seedEntriesDB(
       validade: '2099-12-31',
       quantidade: 50,
       tipo: 'geral',
+      setor: 'farmacia',
     });
 
   if (inputEntry.status !== 200)

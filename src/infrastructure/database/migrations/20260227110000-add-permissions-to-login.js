@@ -1,5 +1,7 @@
 'use strict';
 
+const { removeColumnIfExists } = require('../migration-helpers');
+
 /**
  * Adds granular permissions to login.
  * Structure: { read: true, create: boolean, update: boolean, delete: boolean }
@@ -29,6 +31,6 @@ module.exports = {
   },
 
   async down(queryInterface) {
-    await queryInterface.removeColumn('login', 'permissions');
+    await removeColumnIfExists(queryInterface, 'login', 'permissions');
   },
 };

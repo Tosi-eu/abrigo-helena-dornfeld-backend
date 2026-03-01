@@ -1,5 +1,7 @@
 'use strict';
 
+const { createTableIfNotExists } = require('../migration-helpers');
+
 /**
  * Creates audit_log table for storing API operation events (create, update, delete).
  * Used by the admin panel insights.
@@ -8,7 +10,7 @@
  */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('audit_log', {
+    await createTableIfNotExists(queryInterface, 'audit_log', {
       id: {
         type: Sequelize.INTEGER,
         autoIncrement: true,
@@ -54,9 +56,16 @@ module.exports = {
       },
     });
 
-    await queryInterface.addIndex('audit_log', ['created_at']);
-    await queryInterface.addIndex('audit_log', ['operation_type']);
-    await queryInterface.addIndex('audit_log', ['user_id']);
+    const addIndexIfNotExists = async (table, fields) => {
+      try {
+        await queryInterface.addIndex(table, fields);
+      } catch (e) {
+        if (!e.message || !e.message.includes('already exists')) throw e;
+      }
+    };
+    await addIndexIfNotExists('audit_log', ['created_at']);
+    await addIndexIfNotExists('audit_log', ['operation_type']);
+    await addIndexIfNotExists('audit_log', ['user_id']);
   },
 
   async down(queryInterface) {
