@@ -15,7 +15,8 @@ export async function getAuthCookie(app: App): Promise<string> {
   if (res.status !== 200) {
     throw new Error(`Falha ao autenticar no e2e: ${res.body?.error ?? res.status}`);
   }
-  const cookie = res.headers['set-cookie']?.[0];
-  if (!cookie) throw new Error('Cookie de auth não retornado');
-  return cookie;
+  const setCookie = res.headers['set-cookie']?.[0];
+  if (!setCookie) throw new Error('Cookie de auth não retornado');
+  // Cookie request header must be only "name=value" (no Path; HttpOnly; etc.)
+  return setCookie.split(';')[0].trim();
 }

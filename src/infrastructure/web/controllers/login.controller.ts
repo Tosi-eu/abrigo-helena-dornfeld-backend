@@ -31,6 +31,8 @@ export class LoginController {
       const isDuplicate =
         message === 'duplicate key' ||
         message.includes('duplicate key') ||
+        message === 'Usuário já cadastrado' ||
+        message.includes('Usuário já cadastrado') ||
         err?.name === 'SequelizeUniqueConstraintError' ||
         err?.original?.code === '23505';
       if (isDuplicate) {

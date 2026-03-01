@@ -8,10 +8,18 @@ const FULL_PERMISSIONS = {
   delete: true,
 };
 
+const DEFAULT_USER_PERMISSIONS = {
+  read: true,
+  create: false,
+  update: false,
+  delete: false,
+};
+
 export class LoginRepository {
   async create(data: Login & { role?: 'admin' | 'user' }) {
     let role = data.role ?? 'user';
-    let permissions: typeof FULL_PERMISSIONS | undefined;
+    let permissions: typeof FULL_PERMISSIONS | typeof DEFAULT_USER_PERMISSIONS =
+      DEFAULT_USER_PERMISSIONS;
 
     if (process.env.NODE_ENV === 'test') {
       const count = await LoginModel.count();
@@ -25,7 +33,7 @@ export class LoginRepository {
       const user = await LoginModel.create({
         ...data,
         role,
-        ...(permissions && { permissions }),
+        permissions,
       });
       return { id: user.id, login: user.login, role: user.role };
     } catch (err: unknown) {

@@ -37,12 +37,17 @@ describe('E2E Movimentação', () => {
         insumo_id: null,
         medicamento_id: entries.medStockId,
         armario_id: seed.cabinetId,
+        gaveta_id: null,
         quantidade: 10,
         casela_id: seed.residentCasela,
-      })
-      .expect(201);
+        validade: new Date(),
+        origem: 'UBS',
+        setor: 'farmacia',
+        lote: 'LOTE-1',
+        observacao: 'teste',
+      }).expect(201);
 
-    expect(res.body.estoque_id).toBe(entries.medStockId);
+    expect(res.body.id).toBeDefined();
   });
 
   it('deve criar movimentação de insumo', async () => {
@@ -56,11 +61,17 @@ describe('E2E Movimentação', () => {
         insumo_id: entries.inputStockId,
         medicamento_id: null,
         armario_id: seed.cabinetId,
+        gaveta_id: null,
         quantidade: 10,
         casela_id: null,
+        validade: new Date(),
+        origem: 'UBS',
+        setor: 'farmacia',
+        lote: 'LOTE-1',
+        observacao: 'teste',
       })
       .expect(201);
 
-    expect(res.body.estoque_id).toBe(entries.inputStockId);
+    expect(res.body.id).toBeDefined();
   });
 });

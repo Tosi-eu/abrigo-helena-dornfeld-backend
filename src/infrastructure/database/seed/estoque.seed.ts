@@ -17,7 +17,8 @@ export async function seedDB(app: App): Promise<SeedResult> {
   const authRes = await request(app)
     .post('/api/v1/login/authenticate')
     .send(SEED_USER);
-  const cookie = authRes.headers['set-cookie']?.[0] ?? '';
+  const setCookie = authRes.headers['set-cookie']?.[0] ?? '';
+  const cookie = setCookie ? setCookie.split(';')[0].trim() : '';
 
   const catRes = await request(app)
     .post('/api/v1/categoria-armario')

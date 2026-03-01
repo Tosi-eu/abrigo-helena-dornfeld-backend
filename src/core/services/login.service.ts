@@ -8,6 +8,28 @@ import { Login } from '../domain/login';
 
 const MIN_PASSWORD_LENGTH = 8;
 
+const FULL_PERMISSIONS = {
+  read: true,
+  create: true,
+  update: true,
+  delete: true,
+} as const;
+
+const DEFAULT_PERMISSIONS = {
+  read: true,
+  create: false,
+  update: false,
+  delete: false,
+} as const;
+
+function effectivePermissions(
+  role: 'admin' | 'user',
+  stored: { read?: boolean; create?: boolean; update?: boolean; delete?: boolean } | null | undefined,
+) {
+  if (role === 'admin') return { ...FULL_PERMISSIONS };
+  return { ...DEFAULT_PERMISSIONS, ...(stored ?? {}) };
+}
+
 function validateStrongPassword(password: string): void {
   if (password.length < MIN_PASSWORD_LENGTH) {
     throw new Error(
@@ -44,6 +66,7 @@ export class LoginService {
       firstName: user.first_name,
       lastName: user.last_name,
       role: user.role,
+      permissions: effectivePermissions(user.role, user.permissions),
     };
   }
 
@@ -161,7 +184,7 @@ export class LoginService {
       firstName: u.first_name,
       lastName: u.last_name,
       role: u.role,
-      permissions: u.permissions ?? { read: true, create: false, update: false, delete: false },
+      permissions: effectivePermissions(u.role, u.permissions),
     }));
   }
 
@@ -195,7 +218,11 @@ export class LoginService {
       validateStrongPassword(data.password);
       updateData.password = await bcrypt.hash(data.password, 10);
     }
-    if (data.permissions !== undefined) {
+
+    const resultingRole = (data.role ?? user.role) as 'admin' | 'user';
+    if (resultingRole === 'admin') {
+      updateData.permissions = { ...FULL_PERMISSIONS };
+    } else if (data.permissions !== undefined) {
       const p = data.permissions;
       updateData.permissions = {
         read: true,
@@ -212,7 +239,7 @@ export class LoginService {
       firstName: updated!.first_name,
       lastName: updated!.last_name,
       role: updated!.role,
-      permissions: updated!.permissions ?? { read: true, create: false, update: false, delete: false },
+      permissions: effectivePermissions(updated!.role, updated!.permissions),
     };
   }
 

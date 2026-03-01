@@ -17,6 +17,7 @@ export async function seedEntriesDB(
     .send({
       medicamento_id: seed.medicineId,
       armario_id: seed.cabinetId,
+      gaveta_id: null,
       validade: '2099-12-31',
       quantidade: 20,
       origem: 'UBS',
@@ -34,6 +35,7 @@ export async function seedEntriesDB(
     .send({
       insumo_id: seed.inputId,
       armario_id: seed.cabinetId,
+      gaveta_id: null,
       validade: '2099-12-31',
       quantidade: 50,
       tipo: 'geral',

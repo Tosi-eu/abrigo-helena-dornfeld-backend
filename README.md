@@ -159,7 +159,22 @@ backend/
 
 A configuração do ambiente de teste fica no **`jest.config.ts`** (raiz do backend), que carrega as variáveis de teste em **`jest.env.js`**. A variável **`NODE_ENV`** (test | development | production) define qual banco usar; o pipeline de testes só roda quando `NODE_ENV=test` (os scripts `npm test` e `npm run test:e2e` já setam isso).
 
-Os testes usam um **banco dedicado** (`estoque_test`) para não afetar o ambiente de desenvolvimento. Crie o banco uma vez antes de rodar os testes:
+Os testes usam um **banco dedicado** (`estoque_test`) para não afetar o ambiente de desenvolvimento.
+
+### Configurar o .env para o banco de testes
+
+No **`backend/.env`** (ou na raiz, se o backend carregar de lá) use as mesmas credenciais do Postgres de dev e inclua o nome do banco de testes:
+
+- **`DB_HOST`** – host do Postgres (ex.: `localhost` se rodar fora do Docker)
+- **`DB_PORT`** – porta (ex.: `5433` se o Postgres estiver no Docker na 5433)
+- **`DB_USER`** e **`DB_PASSWORD`** – iguais ao ambiente de dev
+- **`TEST_DB_NAME=estoque_test`** – nome do banco usado em `NODE_ENV=test` (opcional; padrão é `estoque_test`)
+
+Com isso, os testes conectam no mesmo servidor, mas no banco `estoque_test`.
+
+### Rodar os testes
+
+Crie o banco de testes **uma vez** (se ainda não existir):
 
 ```bash
 npm run test:db:create
@@ -174,8 +189,6 @@ npm run test:e2e       # testes e2e
 # Modo watch
 npm run test:watch
 ```
-
-Variáveis opcionais para testes: `TEST_DB_NAME` (nome do banco de testes), `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD` (se diferente do .env).
 
 ## 🔧 Scripts Disponíveis
 

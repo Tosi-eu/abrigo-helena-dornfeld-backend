@@ -451,11 +451,9 @@ export class StockRepository {
         if (filter === 'nearMin') {
           const minStock = medicine?.estoque_minimo ?? 0;
           if (minStock === 0) continue;
-
+          if (stock.quantidade <= minStock) continue;
           const upperLimit = minStock * 1.35;
-          if (stock.quantidade < minStock || stock.quantidade > upperLimit) {
-            continue;
-          }
+          if (stock.quantidade > upperLimit) continue;
         }
 
         results.push({
@@ -556,12 +554,10 @@ export class StockRepository {
         if (filter === StockFilterType.NEAR_MIN) {
           const minStock = input?.estoque_minimo ?? 0;
           if (minStock === 0) continue;
-
-          const upperLimit = minStock * 1.35;
-
-          if (stock.quantidade < minStock || stock.quantidade > upperLimit) {
-            continue;
-          }
+          // Só acima do mínimo, dentro de 20% (borda positiva)
+          if (stock.quantidade <= minStock) continue;
+          const upperLimit = minStock * 1.2;
+          if (stock.quantidade > upperLimit) continue;
         }
 
         results.push({
@@ -1528,6 +1524,7 @@ export class StockRepository {
   ): Promise<{
     noStock: number;
     belowMin: number;
+    nearMin: number;
     expired: number;
     expiringSoon: number;
   }> {
@@ -1541,6 +1538,8 @@ export class StockRepository {
       noStockInp,
       belowMinMed,
       belowMinInp,
+      nearMinMed,
+      nearMinInp,
       expiredMed,
       expiredInp,
       expiringMed,
@@ -1582,6 +1581,45 @@ export class StockRepository {
         },
         transaction,
       }),
+      // Próximos do mínimo = acima do mínimo, dentro de 20% (só borda positiva)
+      MedicineStockModel.count({
+        include: [
+          {
+            model: MedicineModel,
+            as: 'MedicineModel',
+            attributes: [],
+            required: true,
+          },
+        ],
+        where: {
+          quantidade: {
+            [Op.gt]: sequelize.col('MedicineModel.estoque_minimo'),
+            [Op.lte]: sequelize.literal(
+              '("MedicineModel"."estoque_minimo" * 1.2)',
+            ),
+          },
+        },
+        transaction,
+      }),
+      InputStockModel.count({
+        include: [
+          {
+            model: InputModel,
+            as: 'InputModel',
+            attributes: [],
+            required: true,
+          },
+        ],
+        where: {
+          quantidade: {
+            [Op.gt]: sequelize.col('InputModel.estoque_minimo'),
+            [Op.lte]: sequelize.literal(
+              '("InputModel"."estoque_minimo" * 1.2)',
+            ),
+          },
+        },
+        transaction,
+      }),
       MedicineStockModel.count({
         where: {
           quantidade: { [Op.gt]: 0 },
@@ -1615,6 +1653,7 @@ export class StockRepository {
     return {
       noStock: noStockMed + noStockInp,
       belowMin: belowMinMed + belowMinInp,
+      nearMin: nearMinMed + nearMinInp,
       expired: expiredMed + expiredInp,
       expiringSoon: expiringMed + expiringInp,
     };

@@ -133,6 +133,7 @@ export class DashboardService {
       alerts: {
         noStock: alerts.noStock,
         belowMin: alerts.belowMin,
+        nearMin: alerts.nearMin,
         expired: alerts.expired,
         expiringSoon: alerts.expiringSoon,
       },
