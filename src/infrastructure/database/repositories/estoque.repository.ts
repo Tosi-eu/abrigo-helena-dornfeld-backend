@@ -344,7 +344,7 @@ export class StockRepository {
 
       switch (filter) {
         case 'belowMin':
-          baseWhere.quantidade = { [Op.gt]: 0 };
+          baseWhere.quantidade = { [Op.gte]: 0 };
           break;
 
         case 'expired':
@@ -377,10 +377,6 @@ export class StockRepository {
 
     if ((!type || type === 'medicamento') && shouldIncludeMedicines) {
       const medicineWhere: any = { ...whereCondition };
-
-      if (filter === 'belowMin') {
-        medicineWhere.quantidade = { [Op.gt]: 0 };
-      }
 
       if (params.cabinet) {
         medicineWhere.armario_id = Number(params.cabinet);
@@ -445,7 +441,7 @@ export class StockRepository {
 
         if (filter === 'belowMin') {
           const minStock = medicine?.estoque_minimo ?? 0;
-          if (stock.quantidade > minStock) continue;
+          if (stock.quantidade >= minStock) continue;
         }
 
         if (filter === 'nearMin') {
@@ -548,13 +544,12 @@ export class StockRepository {
 
         if (filter === StockFilterType.BELOW_MIN) {
           const minStock = input?.estoque_minimo ?? 0;
-          if (stock.quantidade > minStock) continue;
+          if (stock.quantidade >= minStock) continue;
         }
 
         if (filter === StockFilterType.NEAR_MIN) {
           const minStock = input?.estoque_minimo ?? 0;
           if (minStock === 0) continue;
-          // Só acima do mínimo, dentro de 20% (borda positiva)
           if (stock.quantidade <= minStock) continue;
           const upperLimit = minStock * 1.2;
           if (stock.quantidade > upperLimit) continue;
@@ -1558,7 +1553,7 @@ export class StockRepository {
         ],
         where: {
           quantidade: {
-            [Op.gt]: 0,
+            [Op.gte]: 0,
             [Op.lt]: sequelize.col('MedicineModel.estoque_minimo'),
           },
         },
@@ -1575,7 +1570,7 @@ export class StockRepository {
         ],
         where: {
           quantidade: {
-            [Op.gt]: 0,
+            [Op.gte]: 0,
             [Op.lt]: sequelize.col('InputModel.estoque_minimo'),
           },
         },
@@ -1623,28 +1618,48 @@ export class StockRepository {
       MedicineStockModel.count({
         where: {
           quantidade: { [Op.gt]: 0 },
-          validade: { [Op.lt]: today },
+          validade: { [Op.lt]: sequelize.literal('CURRENT_DATE') },
         },
         transaction,
       }),
       InputStockModel.count({
         where: {
           quantidade: { [Op.gt]: 0 },
-          validade: { [Op.lt]: today },
+          validade: { [Op.lt]: sequelize.literal('CURRENT_DATE') },
         },
         transaction,
       }),
       MedicineStockModel.count({
         where: {
           quantidade: { [Op.gt]: 0 },
-          validade: { [Op.between]: [today, inDays] },
+          validade: {
+            [Op.and]: [
+              { [Op.gte]: sequelize.literal('CURRENT_DATE') },
+              {
+                [Op.lte]: sequelize.literal(
+                  'CURRENT_DATE + ' +
+                    Math.min(365, Math.max(1, expiringDays)),
+                ),
+              },
+            ],
+          },
         },
         transaction,
       }),
       InputStockModel.count({
         where: {
           quantidade: { [Op.gt]: 0 },
-          validade: { [Op.between]: [today, inDays] },
+          validade: {
+            [Op.and]: [
+              { [Op.gte]: sequelize.literal('CURRENT_DATE') },
+              {
+                [Op.lte]: sequelize.literal(
+                  'CURRENT_DATE + ' +
+                    Math.min(365, Math.max(1, expiringDays)),
+                ),
+              },
+            ],
+          },
         },
         transaction,
       }),
