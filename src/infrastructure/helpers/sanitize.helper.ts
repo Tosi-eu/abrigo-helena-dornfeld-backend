@@ -56,19 +56,6 @@ export function sanitizeErrorMessage(
       }
       return validationError.message || 'Erro de validação';
     }
-
-    if (error.name === 'SequelizeUniqueConstraintError') {
-      const uniqueError = error as {
-        errors?: Array<{ message?: string; path?: string }>;
-        message?: string;
-      };
-      if (uniqueError.errors && uniqueError.errors.length > 0) {
-        const firstError = uniqueError.errors[0];
-        const field = firstError.path || 'campo';
-        return `Já existe uma categoria com este ${field === 'nome' ? 'nome' : field}`;
-      }
-      return 'Já existe uma categoria com este nome';
-    }
   }
 
   const errorMessage = error instanceof Error ? error.message : String(error);
