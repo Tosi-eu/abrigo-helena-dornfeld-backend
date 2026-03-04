@@ -46,6 +46,9 @@ router.post('/reset-password', authMiddleware, requireAdmin, (req, res) =>
 );
 
 router.use(authMiddleware);
+
+router.post('/logout', (req, res) => controller.logout(req, res));
+
 router.use(blockNonAdminWrites);
 router.use(auditLog);
 
@@ -55,7 +58,5 @@ router.get('/usuario-logado', (req, res) =>
 
 router.put('/', (req, res) => controller.update(req, res));
 router.delete('/', (req, res) => controller.delete(req, res));
-
-router.post('/logout', (req, res) => controller.logout(req, res));
 
 export default router;
