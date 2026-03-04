@@ -15,6 +15,7 @@ const router = Router();
 
 router.post('/', (req, res) => controller.create(req, res));
 router.get('/', validatePagination, (req, res) => controller.getAll(req, res));
+router.get('/count', (req, res) => controller.getCount(req, res));
 router.get('/:numero', validateNumeroParam, (req, res) =>
   controller.getById(req, res),
 );

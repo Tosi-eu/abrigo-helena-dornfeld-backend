@@ -5,6 +5,45 @@ import jwt from 'jsonwebtoken';
 import { BaseError } from 'sequelize';
 import { Login } from '../domain/login';
 
+
+const MIN_PASSWORD_LENGTH = 8;
+
+const FULL_PERMISSIONS = {
+  read: true,
+  create: true,
+  update: true,
+  delete: true,
+} as const;
+
+const DEFAULT_PERMISSIONS = {
+  read: true,
+  create: false,
+  update: false,
+  delete: false,
+} as const;
+
+function effectivePermissions(
+  role: 'admin' | 'user',
+  stored: { read?: boolean; create?: boolean; update?: boolean; delete?: boolean } | null | undefined,
+) {
+  if (role === 'admin') return { ...FULL_PERMISSIONS };
+  return { ...DEFAULT_PERMISSIONS, ...(stored ?? {}) };
+}
+
+function validateStrongPassword(password: string): void {
+  if (password.length < MIN_PASSWORD_LENGTH) {
+    throw new Error(
+      `Senha deve ter no mínimo ${MIN_PASSWORD_LENGTH} caracteres`,
+    );
+  }
+  if (!/[a-zA-Z]/.test(password)) {
+    throw new Error('Senha deve conter pelo menos uma letra');
+  }
+  if (!/[0-9]/.test(password)) {
+    throw new Error('Senha deve conter pelo menos um número');
+  }
+}
+
 type UpdateUserInput = {
   userId: number;
   currentPassword: string;
@@ -26,6 +65,8 @@ export class LoginService {
       login: user.login,
       firstName: user.first_name,
       lastName: user.last_name,
+      role: user.role,
+      permissions: effectivePermissions(user.role, user.permissions),
     };
   }
 
@@ -36,14 +77,16 @@ export class LoginService {
       throw new Error('Usuário já cadastrado');
     }
 
+    validateStrongPassword(attrs.password);
     const hashed = await bcrypt.hash(attrs.password, 10);
     try {
-      return await this.repo.create({
+      const created = await this.repo.create({
         login: attrs.login,
         password: hashed,
         first_name: attrs.first_name,
         last_name: attrs.last_name,
       });
+      return created;
     } catch (err: unknown) {
       if (
         err instanceof BaseError &&
@@ -75,6 +118,7 @@ export class LoginService {
       user: {
         id: user.id,
         login: user.login,
+        role: user.role,
       },
     };
   }
@@ -103,6 +147,7 @@ export class LoginService {
     }
 
     if (password) {
+      validateStrongPassword(password);
       updateData.password = await bcrypt.hash(password, 10);
     }
 
@@ -114,6 +159,7 @@ export class LoginService {
         login: updated!.login,
         firstName: updated!.first_name,
         lastName: updated!.last_name,
+        role: updated!.role,
       };
     } catch (err: unknown) {
       if (
@@ -130,11 +176,84 @@ export class LoginService {
     return this.repo.delete(id);
   }
 
+  async listAllUsers() {
+    const rows = await this.repo.findAll();
+    return rows.map(u => ({
+      id: u.id,
+      login: u.login,
+      firstName: u.first_name,
+      lastName: u.last_name,
+      role: u.role,
+      permissions: effectivePermissions(u.role, u.permissions),
+    }));
+  }
+
+  async updateUserByAdmin(
+    userId: number,
+    data: {
+      first_name?: string;
+      last_name?: string;
+      login?: string;
+      password?: string;
+      role?: 'admin' | 'user';
+      permissions?: { read?: boolean; create?: boolean; update?: boolean; delete?: boolean };
+    },
+  ) {
+    const user = await this.repo.findById(userId);
+    if (!user) return null;
+
+    const updateData: Partial<{
+      first_name: string;
+      last_name: string;
+      login: string;
+      role: 'admin' | 'user';
+      password: string;
+      permissions: { read: boolean; create: boolean; update: boolean; delete: boolean };
+    }> = {};
+    if (data.first_name !== undefined) updateData.first_name = data.first_name;
+    if (data.last_name !== undefined) updateData.last_name = data.last_name;
+    if (data.login !== undefined) updateData.login = data.login;
+    if (data.role !== undefined) updateData.role = data.role;
+    if (data.password) {
+      validateStrongPassword(data.password);
+      updateData.password = await bcrypt.hash(data.password, 10);
+    }
+
+    const resultingRole = (data.role ?? user.role) as 'admin' | 'user';
+    if (resultingRole === 'admin') {
+      updateData.permissions = { ...FULL_PERMISSIONS };
+    } else if (data.permissions !== undefined) {
+      const p = data.permissions;
+      updateData.permissions = {
+        read: true,
+        create: p.create ?? false,
+        update: p.update ?? false,
+        delete: p.delete ?? false,
+      };
+    }
+
+    const updated = await this.repo.update(userId, updateData);
+    return {
+      id: updated!.id,
+      login: updated!.login,
+      firstName: updated!.first_name,
+      lastName: updated!.last_name,
+      role: updated!.role,
+      permissions: effectivePermissions(updated!.role, updated!.permissions),
+    };
+  }
+
+  async deleteUserByAdmin(userId: number, adminId: number) {
+    if (userId === adminId) return false;
+    return this.repo.delete(userId);
+  }
+
   async logout(userId: number) {
     await this.repo.clearToken(userId);
   }
 
   async resetPassword(login: string, newPassword: string) {
+    validateStrongPassword(newPassword);
     const user = await this.repo.findByLogin(login);
     if (!user) {
       throw new Error('Login não encontrado');

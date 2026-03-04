@@ -50,9 +50,12 @@ JWT_EXPIRES_IN=24h
 # CORS (Origens permitidas)
 ALLOWED_ORIGINS=http://localhost:8081,http://localhost:5173
 
-# Rate Limiting
-RATE_LIMIT_MAX=1000
+# Rate Limiting (por IP)
+RATE_LIMIT_MAX=200
+RATE_LIMIT_WINDOW_MS=900000
 ```
+
+O limite é aplicado **por IP**: cada endereço pode fazer no máximo `RATE_LIMIT_MAX` requisições a cada `RATE_LIMIT_WINDOW_MS` ms (padrão 15 min). Requisições OPTIONS são ignoradas.
 
 > ⚠️ **Importante**: Substitua os valores de exemplo pelos seus dados reais. Nunca commite o arquivo `.env` no repositório.
 
@@ -154,12 +157,34 @@ backend/
 
 ## 🧪 Testes
 
+A configuração do ambiente de teste fica no **`jest.config.ts`** (raiz do backend), que carrega as variáveis de teste em **`jest.env.js`**. A variável **`NODE_ENV`** (test | development | production) define qual banco usar; o pipeline de testes só roda quando `NODE_ENV=test` (os scripts `npm test` e `npm run test:e2e` já setam isso).
+
+Os testes usam um **banco dedicado** (`estoque_test`) para não afetar o ambiente de desenvolvimento.
+
+### Configurar o .env para o banco de testes
+
+No **`backend/.env`** (ou na raiz, se o backend carregar de lá) use as mesmas credenciais do Postgres de dev e inclua o nome do banco de testes:
+
+- **`DB_HOST`** – host do Postgres (ex.: `localhost` se rodar fora do Docker)
+- **`DB_PORT`** – porta (ex.: `5433` se o Postgres estiver no Docker na 5433)
+- **`DB_USER`** e **`DB_PASSWORD`** – iguais ao ambiente de dev
+- **`TEST_DB_NAME=estoque_test`** – nome do banco usado em `NODE_ENV=test` (opcional; padrão é `estoque_test`)
+
+Com isso, os testes conectam no mesmo servidor, mas no banco `estoque_test`.
+
+### Rodar os testes
+
+Crie o banco de testes **uma vez** (se ainda não existir):
+
 ```bash
-npm test
+npm run test:db:create
+```
 
-npm run test:unit
+Depois execute:
 
-npm run test:e2e
+```bash
+npm test              # testes unitários
+npm run test:e2e       # testes e2e
 
 # Modo watch
 npm run test:watch
@@ -174,6 +199,7 @@ npm run test:watch
 | `npm start` | Inicia servidor em produção |
 | `npm test` | Executa testes unitários |
 | `npm run test:e2e` | Executa testes end-to-end |
+| `npm run test:db:create` | Cria o banco `estoque_test` (uma vez antes dos e2e) |
 | `npm run lint` | Verifica e corrige problemas de lint |
 | `npm run format` | Formata código com Prettier |
 
@@ -219,6 +245,29 @@ A API usa JWT (JSON Web Tokens) para autenticação. Para fazer requisições au
 ### Índices de Performance
 
 O projeto inclui índices otimizados no PostgreSQL para melhorar a performance das queries. Os índices são criados automaticamente junto com as tabelas.
+
+### Row-Level Security (RLS)
+
+O sistema usa RLS no PostgreSQL com dois níveis de acesso:
+
+- **Admin** (usuário com `id = 1`): acesso total — pode ler e escrever (SELECT, INSERT, UPDATE, DELETE) em todas as tabelas.
+- **User** (demais usuários): **somente leitura** — pode apenas SELECT (ver dados); não pode criar, editar nem excluir (nenhum POST, PUT, DELETE, INSERT).
+
+- **Helper**: `src/infrastructure/database/rls.context.ts` — `withRlsContext(sequelize, { current_user_id }, fn)` define a variável de sessão `app.current_user_id` na transação.
+- **Middleware**: `rlsContextMiddleware` define `req.rlsContext` a partir do usuário autenticado; `withRls(sequelize, handler)` envolve o handler para rodar toda a lógica de DB dentro dessa transação e define `req.transaction`.
+- **Migração**: `20260223130000-enable-rls-all-tables.js` habilita RLS em todas as tabelas: política de SELECT para todos; políticas de INSERT, UPDATE e DELETE apenas para admin.
+- **Uso nas rotas**: As rotas de **notificação** e **estoque** usam `withRls(sequelize, ...)` e os controllers passam `req.transaction` aos services/repos; as demais rotas podem ser integradas do mesmo jeito (controller → service → repo com `transaction` opcional).
+
+### Proteção contra escalação de privilégios (browser)
+
+Para evitar que um usuário comum eleve o próprio nível (ex.: virar admin) via requisições manipuladas no navegador:
+
+- **Role na tabela `login`**: a coluna `role` (`'admin'` | `'user'`) define o nível de privilégio. Novos usuários recebem **default `'user'`** no banco; o **primeiro usuário criado** (id = 1) é definido como **`'admin'`** na aplicação após o insert.
+- **Admin** no middleware/API: usuários com `role === 'admin'` (não mais apenas id = 1). O RLS no PostgreSQL continua usando `current_user_id = 1` para permissões de escrita; o primeiro usuário tem id 1 e role admin.
+- **Criação de usuários** (`POST /login`): **permitida**. O backend usa apenas campos permitidos (`login`, `password`, `first_name`, `last_name`). O `id` é auto-increment; **novas contas recebem `role = 'user'`**; se o usuário criado for o primeiro (id = 1), a aplicação atualiza para `role = 'admin'`.
+- **Reset de senha** (`POST /login/reset-password`): apenas **admin** (role = 'admin').
+- **Atualização do próprio usuário** (`PUT /login`): apenas campos permitidos; `id` e `role` não podem ser alterados pelo client.
+- **Middlewares**: `requireAdmin` (403 se `role !== 'admin'`), `blockNonAdminWrites` (bloqueia POST/PUT/PATCH/DELETE para não-admin).
 
 ## 🔄 Cache
 

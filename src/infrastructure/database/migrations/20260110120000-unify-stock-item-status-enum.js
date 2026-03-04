@@ -49,6 +49,10 @@ module.exports = {
             WHERE status IS NULL OR status NOT IN ('active', 'suspended');
           `);
 
+          // Drop default so PostgreSQL can cast the column type
+          await queryInterface.sequelize.query(`
+            ALTER TABLE estoque_medicamento ALTER COLUMN status DROP DEFAULT;
+          `);
           // Convert the column type to ENUM
           await queryInterface.sequelize.query(`
             ALTER TABLE estoque_medicamento
@@ -56,13 +60,22 @@ module.exports = {
             TYPE stock_item_status
             USING status::text::stock_item_status;
           `);
+          await queryInterface.sequelize.query(`
+            ALTER TABLE estoque_medicamento ALTER COLUMN status SET DEFAULT 'active'::stock_item_status;
+          `);
         } else if (udtName && udtName !== 'stock_item_status') {
           // It's already an ENUM but different type, convert it
+          await queryInterface.sequelize.query(`
+            ALTER TABLE estoque_medicamento ALTER COLUMN status DROP DEFAULT;
+          `);
           await queryInterface.sequelize.query(`
             ALTER TABLE estoque_medicamento
             ALTER COLUMN status
             TYPE stock_item_status
             USING status::text::stock_item_status;
+          `);
+          await queryInterface.sequelize.query(`
+            ALTER TABLE estoque_medicamento ALTER COLUMN status SET DEFAULT 'active'::stock_item_status;
           `);
         }
         // If already using stock_item_status, do nothing
@@ -92,12 +105,17 @@ module.exports = {
 
         // If it's using a different enum type, convert it to the shared one
         if (udtName && udtName !== 'stock_item_status') {
-          // Convert to stock_item_status enum
+          await queryInterface.sequelize.query(`
+            ALTER TABLE estoque_insumo ALTER COLUMN status DROP DEFAULT;
+          `);
           await queryInterface.sequelize.query(`
             ALTER TABLE estoque_insumo
             ALTER COLUMN status
             TYPE stock_item_status
             USING status::text::stock_item_status;
+          `);
+          await queryInterface.sequelize.query(`
+            ALTER TABLE estoque_insumo ALTER COLUMN status SET DEFAULT 'active'::stock_item_status;
           `);
 
           // Try to drop the old enum type (if not used elsewhere)

@@ -1,5 +1,27 @@
 import { OperationType, SectorType } from '../../core/utils/utils';
 
+export interface MedicineStockPlain {
+  MedicineModel?: {
+    id: number;
+    nome: string;
+    principio_ativo?: string;
+    dosagem?: string;
+    unidade_medida?: string;
+    estoque_minimo?: number;
+  };
+  ResidentModel?: { nome: string };
+}
+
+export interface InputStockPlain {
+  InputModel?: {
+    id: number;
+    nome: string;
+    descricao?: string;
+    estoque_minimo?: number;
+  };
+  ResidentModel?: { nome: string };
+}
+
 export interface StockQueryResult {
   id?: number;
   nome?: string;

@@ -15,9 +15,11 @@ class StructuredLogger {
   private logger: winston.Logger;
 
   constructor() {
-    const logLevel =
-      process.env.LOG_LEVEL ||
-      (process.env.NODE_ENV === 'production' ? 'info' : 'debug');
+    const isTest = process.env.NODE_ENV === 'test';
+    const logLevel = isTest
+      ? 'silent'
+      : process.env.LOG_LEVEL ||
+        (process.env.NODE_ENV === 'production' ? 'info' : 'debug');
 
     this.logger = winston.createLogger({
       level: logLevel,

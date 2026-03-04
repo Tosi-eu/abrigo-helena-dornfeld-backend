@@ -3,7 +3,10 @@ import {
   MovementPeriod,
   ReportService,
 } from '../../../core/services/relatorio.service';
-import { sendErrorResponse } from '../../helpers/error-response.helper';
+import {
+  sendErrorResponse,
+  mapErrorToStatusAndCode,
+} from '../../helpers/error-response.helper';
 import { handleETagResponse } from '../../helpers/etag.helper';
 import { logger } from '../../helpers/logger.helper';
 
@@ -53,11 +56,10 @@ export class ReportController {
       if (type === 'transferencias') {
         if (!data && (!data_inicial || !data_final)) {
           return res.status(400).json({
-            error:
-              'Informe uma data ou um intervalo para transferências',
+            error: 'Informe uma data ou um intervalo para transferências',
           });
         }
-      }      
+      }
 
       const casela = req.query.casela
         ? parseInt(req.query.casela as string)
@@ -90,7 +92,18 @@ export class ReportController {
         error as Error,
       );
 
-      return sendErrorResponse(res, 500, error, 'Erro ao gerar relatório');
+      const { status, code } = mapErrorToStatusAndCode(error);
+      const message =
+        error instanceof Error && code === 'RELATORIO_EXCEDE_LIMITE'
+          ? error.message.replace(/^RELATORIO_EXCEDE_LIMITE:\s*/, '')
+          : undefined;
+      return sendErrorResponse(
+        res,
+        status,
+        error,
+        message || 'Erro ao gerar relatório',
+        code,
+      );
     }
   }
 }

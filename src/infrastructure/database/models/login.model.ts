@@ -1,6 +1,13 @@
 import { DataTypes, Model } from 'sequelize';
 import { sequelize } from '../sequelize';
 
+export interface UserPermissions {
+  read: boolean;
+  create: boolean;
+  update: boolean;
+  delete: boolean;
+}
+
 export class LoginModel extends Model {
   declare id: number;
   declare first_name: string;
@@ -8,6 +15,8 @@ export class LoginModel extends Model {
   declare login: string;
   declare password: string;
   declare refresh_token?: string | null;
+  declare role: 'admin' | 'user';
+  declare permissions?: UserPermissions | null;
 }
 
 LoginModel.init(
@@ -36,6 +45,15 @@ LoginModel.init(
     },
     refresh_token: {
       type: DataTypes.STRING,
+      allowNull: true,
+    },
+    role: {
+      type: DataTypes.STRING(20),
+      allowNull: false,
+      defaultValue: 'user',
+    },
+    permissions: {
+      type: DataTypes.JSONB,
       allowNull: true,
     },
   },

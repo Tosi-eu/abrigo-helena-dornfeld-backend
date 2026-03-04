@@ -1,4 +1,5 @@
 import './armario.model';
+import './audit-log.model';
 import './categorias-armario.model';
 import './categorias-gaveta.model';
 import './estoque-insumo.model';

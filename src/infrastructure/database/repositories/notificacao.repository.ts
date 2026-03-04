@@ -1,4 +1,5 @@
 import { Op } from 'sequelize';
+import type { Transaction } from 'sequelize';
 import { formatDateToPtBr, toBrazilDateOnly } from '../../helpers/date.helper';
 import LoginModel from '../models/login.model';
 import MedicineModel from '../models/medicamento.model';
@@ -26,72 +27,92 @@ export function getTodayInBrazil(): string {
 }
 
 export class NotificationEventRepository {
-  async create(data: {
-    medicamento_id: number;
-    residente_id: number;
-    destino: NotificationDestinoType;
-    data_prevista: Date;
-    criado_por: number;
-    visto: boolean;
-    tipo_evento: NotificationEventType;
-  }) {
-    return NotificationEventModel.create(data);
+  async create(
+    data: {
+      medicamento_id: number;
+      residente_id: number;
+      destino: NotificationDestinoType;
+      data_prevista: Date;
+      criado_por: number;
+      visto: boolean;
+      tipo_evento: NotificationEventType;
+      quantidade?: number | null;
+      dias_para_repor?: number | null;
+    },
+    transaction?: Transaction,
+  ) {
+    return NotificationEventModel.create(data, { transaction });
   }
 
-  async listWithFilters({
-    page = 1,
-    limit = 5,
-    tipo,
-    status = EventStatus.PENDENTE,
-    date,
-    residente_nome,
-  }: {
-    page?: number;
-    limit?: number;
-    tipo: NotificationEventType;
-    status?: EventStatus;
-    date?: 'today' | 'tomorrow' | string;
-    residente_nome?: string;
-    casela?: string | number;
-  }) {
+  async listWithFilters(
+    {
+      page = 1,
+      limit = 5,
+      tipo,
+      status = EventStatus.PENDENTE,
+      date,
+      residente_nome,
+      visto,
+    }: {
+      page?: number;
+      limit?: number;
+      tipo: NotificationEventType;
+      status?: EventStatus;
+      date?: 'today' | 'tomorrow' | string;
+      residente_nome?: string;
+      casela?: string | number;
+      visto?: boolean;
+    },
+    transaction?: Transaction,
+  ) {
     const offset = (page - 1) * limit;
-  
+
     const where: NotificationWhereOptions = {
       tipo_evento: tipo,
       status,
     };
-  
+
     if (date === 'today') where.data_prevista = getTodayInBrazil();
     if (date === 'tomorrow') {
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
       where.data_prevista = toBrazilDateOnly(tomorrow);
     }
-    if (date && !['today', 'tomorrow'].includes(date)) where.data_prevista = date;
-  
+    if (date && !['today', 'tomorrow'].includes(date))
+      where.data_prevista = date;
+    if (visto === false) where.visto = false;
+
     const include: any[] = [
       {
         model: ResidentModel,
         as: 'residente',
         attributes: ['nome'],
         where: residente_nome
-          ? { nome: { [Op.iLike]: `%${residente_nome}%` } } 
+          ? { nome: { [Op.iLike]: `%${residente_nome}%` } }
           : undefined,
       },
       { model: MedicineModel, as: 'medicamento', attributes: ['nome'] },
-      { model: LoginModel, as: 'usuario', attributes: ['first_name', 'last_name'] },
+      {
+        model: LoginModel,
+        as: 'usuario',
+        attributes: ['first_name', 'last_name'],
+      },
     ];
-  
+
     if (tipo === NotificationEventType.REPOSICAO_ESTOQUE) {
       include.push(
         {
           model: MedicineStockModel,
           as: 'estoque',
           attributes: ['dias_para_repor'],
-          required: false,
+          required: true,
           on: {
-            medicamento_id: { [Op.col]: 'NotificationEventModel.medicamento_id' },
+            medicamento_id: {
+              [Op.col]: 'NotificationEventModel.medicamento_id',
+            },
             casela_id: { [Op.col]: 'NotificationEventModel.residente_id' },
+            setor: 'enfermagem',
+            status: StockItemStatus.ATIVO,
           },
         },
         {
@@ -101,7 +122,9 @@ export class NotificationEventRepository {
           required: false,
           where: { tipo: MovementType.TRANSFERENCIA, setor: 'enfermagem' },
           on: {
-            medicamento_id: { [Op.col]: 'NotificationEventModel.medicamento_id' },
+            medicamento_id: {
+              [Op.col]: 'NotificationEventModel.medicamento_id',
+            },
             casela_id: { [Op.col]: 'NotificationEventModel.residente_id' },
           },
           order: [['createdAt', 'DESC']],
@@ -109,7 +132,7 @@ export class NotificationEventRepository {
         },
       );
     }
-  
+
     const { rows, count } = await NotificationEventModel.findAndCountAll({
       distinct: true,
       where,
@@ -117,8 +140,9 @@ export class NotificationEventRepository {
       limit,
       order: [['data_prevista', 'ASC']],
       include,
+      transaction,
     });
-  
+
     return {
       items: rows.map((row: any) => ({
         id: row.id,
@@ -130,16 +154,18 @@ export class NotificationEventRepository {
         medicamento_nome: row.medicamento?.nome,
         medicamento_id: row.medicamento_id,
         residente_id: row.residente_id,
-        usuario: row.usuario ? `${row.usuario.first_name} ${row.usuario.last_name}` : 'Sistema',
+        usuario: row.usuario
+          ? `${row.usuario.first_name} ${row.usuario.last_name}`
+          : 'Sistema',
         quantidade:
           tipo === NotificationEventType.REPOSICAO_ESTOQUE
-            ? row.movimentacoes?.[0]?.quantidade ?? null
+            ? (row.movimentacoes?.[0]?.quantidade ?? null)
             : undefined,
         visto: row.visto,
         tipo_evento: row.tipo_evento,
         dias_para_repor:
           tipo === NotificationEventType.REPOSICAO_ESTOQUE
-            ? Number(row.estoque?.dias_para_repor) ?? null
+            ? (Number(row.estoque?.dias_para_repor) ?? null)
             : null,
       })),
       total: count,
@@ -148,15 +174,14 @@ export class NotificationEventRepository {
       hasNext: offset + rows.length < count,
     };
   }
-  
-  async findById(id: number) {
-    return NotificationEventModel.findByPk(id);
+
+  async findById(id: number, transaction?: Transaction) {
+    return NotificationEventModel.findByPk(id, { transaction });
   }
 
   async bootstrapReplacementNotifications(): Promise<number> {
-    const today = toBrazilDateOnly(new Date());
     let created = 0;
-  
+
     const medicineStocks = await MedicineStockModel.findAll({
       where: {
         dias_para_repor: { [Op.ne]: null },
@@ -164,14 +189,16 @@ export class NotificationEventRepository {
         quantidade: { [Op.gte]: 0 },
       },
     });
-  
+
     for (const stock of medicineStocks) {
       if (!stock.ultima_reposicao || !stock.casela_id) continue;
-  
+
       const lastReposition = toBrazilDateOnly(stock.ultima_reposicao);
       const nextReposition = new Date(lastReposition);
-      nextReposition.setDate(nextReposition.getDate() + Number(stock.dias_para_repor));
-  
+      nextReposition.setDate(
+        nextReposition.getDate() + Number(stock.dias_para_repor),
+      );
+
       const existsNotification = await NotificationEventModel.findOne({
         where: {
           tipo_evento: NotificationEventType.REPOSICAO_ESTOQUE,
@@ -180,9 +207,9 @@ export class NotificationEventRepository {
           data_prevista: nextReposition,
         },
       });
-  
+
       if (existsNotification) continue;
-  
+
       await NotificationEventModel.create({
         tipo_evento: NotificationEventType.REPOSICAO_ESTOQUE,
         destino: NotificationDestinoType.ESTOQUE,
@@ -192,16 +219,22 @@ export class NotificationEventRepository {
         criado_por: 1, // Sistema
         visto: false,
         status: EventStatus.PENDENTE,
+        quantidade: stock.quantidade,
+        dias_para_repor: stock.dias_para_repor,
       });
-  
+
       created++;
     }
-  
+
     return created;
   }
-  
-  async update(id: number, updates: NotificationUpdateData) {
-    const event = await NotificationEventModel.findByPk(id);
+
+  async update(
+    id: number,
+    updates: NotificationUpdateData,
+    transaction?: Transaction,
+  ) {
+    const event = await NotificationEventModel.findByPk(id, { transaction });
     if (!event) return null;
 
     const updateData: Partial<NotificationEventModel> = {};
@@ -221,11 +254,13 @@ export class NotificationEventRepository {
       updateData.status = statusMap[updates.status] ?? EventStatus.PENDENTE;
     }
 
-    await event.update(updateData);
+    await event.update(updateData, { transaction });
     return event;
   }
 
-  async delete(id: number) {
-    return (await NotificationEventModel.destroy({ where: { id } })) > 0;
+  async delete(id: number, transaction?: Transaction) {
+    return (
+      (await NotificationEventModel.destroy({ where: { id }, transaction })) > 0
+    );
   }
 }

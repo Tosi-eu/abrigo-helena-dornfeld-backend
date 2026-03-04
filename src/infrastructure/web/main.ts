@@ -63,12 +63,16 @@ app.use((req, res, next) => {
 });
 
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
+  windowMs: Number(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes
   max: Number(process.env.RATE_LIMIT_MAX) || 1000,
-  message: 'Too many requests from this IP, please try again later.',
+  message: { error: 'Too many requests from this IP, please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
   skip: req => req.method === 'OPTIONS',
+  keyGenerator: req => {
+    const ip = req.ip || req.socket?.remoteAddress || 'unknown';
+    return ip;
+  },
 });
 
 app.use(limiter);

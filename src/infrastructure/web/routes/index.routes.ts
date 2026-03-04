@@ -13,7 +13,11 @@ import cabinetCategoryRoutes from './categoria-armario.routes';
 import drawerCategoryRoutes from './categoria-gaveta.routes';
 import notificationRoutes from './notificacao.routes';
 import appRoutes from './app.routes';
+import adminRoutes from './admin.routes';
+import dashboardRoutes from './dashboard.routes';
 import { authMiddleware } from '../../../middleware/auth.middleware';
+import { rlsContextMiddleware } from '../../../middleware/rls.middleware';
+import { blockNonAdminWrites } from '../../../middleware/admin.middleware';
 import { auditLog } from '../../../middleware/audit.middleware';
 
 const router = Router();
@@ -22,7 +26,12 @@ router.use('/login', loginRoutes);
 router.use('/', appRoutes);
 
 router.use(authMiddleware);
+router.use(blockNonAdminWrites);
+router.use(rlsContextMiddleware);
 router.use(auditLog);
+
+router.use('/admin', adminRoutes);
+router.use('/dashboard', dashboardRoutes);
 
 router.use('/gavetas', drawerRoutes);
 router.use('/armarios', cabinetRoutes);

@@ -7,7 +7,12 @@ export class LoginController {
   constructor(private readonly service: LoginService) {}
 
   async create(req: AuthRequest, res: Response) {
-    const { login, password, first_name, last_name } = req.body;
+    // Only whitelisted fields: new accounts are always created as normal user (no id/role from client)
+    const body = req.body ?? {};
+    const login = body.login;
+    const password = body.password;
+    const first_name = body.first_name;
+    const last_name = body.last_name;
 
     if (!login || !password)
       return res.status(400).json({ error: 'Login e senha obrigatórios' });
@@ -21,8 +26,16 @@ export class LoginController {
       });
       return res.status(201).json(user);
     } catch (error: unknown) {
+      const err = error as { message?: string; name?: string; original?: { code?: string } };
       const message = getErrorMessage(error);
-      if (message === 'duplicate key') {
+      const isDuplicate =
+        message === 'duplicate key' ||
+        message.includes('duplicate key') ||
+        message === 'Usuário já cadastrado' ||
+        message.includes('Usuário já cadastrado') ||
+        err?.name === 'SequelizeUniqueConstraintError' ||
+        err?.original?.code === '23505';
+      if (isDuplicate) {
         return res.status(409).json({ error: 'Login já cadastrado' });
       }
       return res.status(500).json({ error: 'Erro ao criar usuário' });
@@ -44,6 +57,7 @@ export class LoginController {
       sameSite: 'lax' as const,
       maxAge: 24 * 60 * 60 * 1000, // 24 hours in milliseconds
       path: '/',
+      secure: process.env.NODE_ENV === 'production',
     };
 
     res.cookie('authToken', result.token, cookieOptions);
@@ -55,7 +69,13 @@ export class LoginController {
 
   async update(req: AuthRequest, res: Response) {
     const userId = req.user!.id;
-    const { currentPassword, login, password, firstName, lastName } = req.body;
+    // Only allow whitelisted fields from the client (browser) to prevent privilege escalation
+    const body = req.body ?? {};
+    const currentPassword = body.currentPassword;
+    const login = body.login;
+    const password = body.password;
+    const firstName = body.firstName;
+    const lastName = body.lastName;
 
     if (!currentPassword) {
       return res.status(400).json({ error: 'Senha atual é obrigatória' });
@@ -109,10 +129,9 @@ export class LoginController {
       const message =
         error instanceof Error ? error.message : 'Erro ao redefinir senha';
 
-      if (message === 'Login não encontrado') {
+      if (message === 'Login não encontrado' || String(message).includes('não encontrado')) {
         return res.status(404).json({ error: 'Login não encontrado' });
       }
-
       return res.status(400).json({ error: message });
     }
   }
@@ -135,6 +154,7 @@ export class LoginController {
       httpOnly: true,
       sameSite: 'lax',
       path: '/',
+      secure: process.env.NODE_ENV === 'production',
     });
 
     return res.status(204).send();

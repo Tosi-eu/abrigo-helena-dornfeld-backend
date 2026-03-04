@@ -76,4 +76,8 @@ export class DrawerRepository {
 
     return deleted > 0;
   }
+
+  async count(): Promise<number> {
+    return DrawerModel.count();
+  }
 }

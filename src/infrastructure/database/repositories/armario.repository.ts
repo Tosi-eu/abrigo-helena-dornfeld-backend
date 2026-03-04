@@ -79,4 +79,8 @@ export class CabinetRepository {
   async countInput(number: number): Promise<number> {
     return InputStockModel.count({ where: { armario_id: number } });
   }
+
+  async count(): Promise<number> {
+    return CabinetModel.count();
+  }
 }

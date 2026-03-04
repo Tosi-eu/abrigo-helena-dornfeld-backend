@@ -1,12 +1,48 @@
 import { Login } from '../../../core/domain/login';
 import { LoginModel } from '../models/login.model';
 
+const FULL_PERMISSIONS = {
+  read: true,
+  create: true,
+  update: true,
+  delete: true,
+};
+
+const DEFAULT_USER_PERMISSIONS = {
+  read: true,
+  create: false,
+  update: false,
+  delete: false,
+};
+
 export class LoginRepository {
-  async create(data: Login) {
-    const user = await LoginModel.create({
-      ...data,
-    });
-    return { id: user.id, login: user.login };
+  async create(data: Login & { role?: 'admin' | 'user' }) {
+    let role = data.role ?? 'user';
+    let permissions: typeof FULL_PERMISSIONS | typeof DEFAULT_USER_PERMISSIONS =
+      DEFAULT_USER_PERMISSIONS;
+
+    if (process.env.NODE_ENV === 'test') {
+      const count = await LoginModel.count();
+      if (count === 0) {
+        role = 'admin';
+        permissions = FULL_PERMISSIONS;
+      }
+    }
+
+    try {
+      const user = await LoginModel.create({
+        ...data,
+        role,
+        permissions,
+      });
+      return { id: user.id, login: user.login, role: user.role };
+    } catch (err: unknown) {
+      const name = (err as { name?: string })?.name;
+      if (name === 'SequelizeUniqueConstraintError') {
+        throw new Error('duplicate key');
+      }
+      throw err;
+    }
   }
 
   async findByLogin(login: string) {
@@ -19,6 +55,7 @@ export class LoginRepository {
         'refresh_token',
         'first_name',
         'last_name',
+        'role',
       ],
     });
   }
@@ -32,7 +69,16 @@ export class LoginRepository {
         'refresh_token',
         'first_name',
         'last_name',
+        'role',
+        'permissions',
       ],
+    });
+  }
+
+  async findAll() {
+    return LoginModel.findAll({
+      attributes: ['id', 'login', 'first_name', 'last_name', 'role', 'permissions'],
+      order: [['id', 'ASC']],
     });
   }
 
@@ -50,6 +96,17 @@ export class LoginRepository {
   }
 
   async findByToken(token: string) {
-    return LoginModel.findOne({ where: { refresh_token: token } });
+    return LoginModel.findOne({
+      where: { refresh_token: token },
+      attributes: [
+        'id',
+        'login',
+        'refresh_token',
+        'first_name',
+        'last_name',
+        'role',
+        'permissions',
+      ],
+    });
   }
 }

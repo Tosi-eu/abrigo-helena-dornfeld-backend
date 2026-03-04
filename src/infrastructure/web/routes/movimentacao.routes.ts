@@ -29,5 +29,9 @@ router.get(
   validatePagination,
   (req, res) => controller.getPharmacyToNursingTransfers(req, res),
 );
+router.get('/consumo', (req, res) => controller.getConsumption(req, res));
+router.get('/consumo-por-item', (req, res) =>
+  controller.getConsumptionByItem(req, res),
+);
 
 export default router;

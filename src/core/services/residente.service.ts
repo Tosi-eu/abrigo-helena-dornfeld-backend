@@ -67,4 +67,8 @@ export class ResidentService {
     const ok = await this.repo.deleteResidentById(casela);
     return ok;
   }
+
+  async count(): Promise<number> {
+    return this.repo.count();
+  }
 }

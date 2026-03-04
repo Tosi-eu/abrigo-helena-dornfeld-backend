@@ -1,27 +1,35 @@
 'use strict';
 
+const { addColumnIfNotExists, removeColumnIfExists } = require('../migration-helpers');
+
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.addColumn('estoque_insumo', 'lote', {
+    await addColumnIfNotExists(queryInterface, 'estoque_insumo', 'lote', {
       type: Sequelize.STRING,
       allowNull: true,
     });
 
-    await queryInterface.addColumn('estoque_medicamento', 'lote', {
+    await addColumnIfNotExists(queryInterface, 'estoque_medicamento', 'lote', {
       type: Sequelize.STRING,
       allowNull: true,
     });
 
-    await queryInterface.addIndex('estoque_insumo', ['lote'], {
+    const addIndexIfNotExists = async (table, fields, opts) => {
+      try {
+        await queryInterface.addIndex(table, fields, opts);
+      } catch (e) {
+      
+      }
+    };
+    await addIndexIfNotExists('estoque_insumo', ['lote'], {
       unique: true,
       name: 'uniq_estoque_insumo_lote',
       where: {
         lote: { [Sequelize.Op.ne]: null },
       },
     });
-
-    await queryInterface.addIndex('estoque_medicamento', ['lote'], {
+    await addIndexIfNotExists('estoque_medicamento', ['lote'], {
       unique: true,
       name: 'uniq_estoque_medicamento_lote',
       where: {
@@ -31,16 +39,14 @@ module.exports = {
   },
 
   async down(queryInterface) {
-    await queryInterface.removeIndex(
-      'estoque_insumo',
-      'uniq_estoque_insumo_lote',
-    );
-    await queryInterface.removeIndex(
-      'estoque_medicamento',
-      'uniq_estoque_medicamento_lote',
-    );
+    try {
+      await queryInterface.removeIndex('estoque_insumo', 'uniq_estoque_insumo_lote');
+    } catch (_) {}
+    try {
+      await queryInterface.removeIndex('estoque_medicamento', 'uniq_estoque_medicamento_lote');
+    } catch (_) {}
 
-    await queryInterface.removeColumn('estoque_insumo', 'lote');
-    await queryInterface.removeColumn('estoque_medicamento', 'lote');
+    await removeColumnIfExists(queryInterface, 'estoque_insumo', 'lote');
+    await removeColumnIfExists(queryInterface, 'estoque_medicamento', 'lote');
   },
 };

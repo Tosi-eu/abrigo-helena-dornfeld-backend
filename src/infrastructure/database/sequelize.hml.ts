@@ -1,6 +1,6 @@
 import { Sequelize } from 'sequelize';
 import dotenv from 'dotenv';
-import { getDatabaseConfig } from '../helpers/database.helper';
+import { getDatabaseConfig } from '../helpers/database-config.helper';
 
 dotenv.config();
 

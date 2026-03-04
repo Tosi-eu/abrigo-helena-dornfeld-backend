@@ -35,4 +35,8 @@ export class DrawerService {
   async removeDrawer(numero: number): Promise<boolean> {
     return this.repo.delete(numero);
   }
+
+  async count(): Promise<number> {
+    return this.repo.count();
+  }
 }

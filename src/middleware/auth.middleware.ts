@@ -2,12 +2,22 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { jwtConfig } from '../infrastructure/helpers/auth.helper';
 import LoginModel from '../infrastructure/database/models/login.model';
+import type { UserPermissions } from '../infrastructure/database/models/login.model';
 import { JWTPayload } from '../infrastructure/types/jwt.types';
+
+const DEFAULT_PERMISSIONS: UserPermissions = {
+  read: true,
+  create: false,
+  update: false,
+  delete: false,
+};
 
 export interface AuthRequest extends Request {
   user?: {
     id: number;
     login: string;
+    role?: 'admin' | 'user';
+    permissions?: UserPermissions;
   };
 }
 
@@ -37,16 +47,72 @@ export async function authMiddleware(
   try {
     const decoded = jwt.verify(token, jwtConfig.secret) as JWTPayload;
 
-    const user = await LoginModel.findOne({ where: { refresh_token: token } });
+    const user = await LoginModel.findOne({
+      where: { refresh_token: token },
+      attributes: ['id', 'login', 'role', 'permissions'],
+    });
     if (!user) return res.status(401).json({ error: 'Sessão inválida' });
+
+    const role = user.role as 'admin' | 'user';
+    const permissions: UserPermissions =
+      role === 'admin'
+        ? { read: true, create: true, update: true, delete: true }
+        : { ...DEFAULT_PERMISSIONS, ...(user.permissions ?? {}) };
 
     req.user = {
       id: Number(decoded.sub),
       login: decoded.login,
+      role,
+      permissions,
     };
 
     next();
   } catch {
     return res.status(401).json({ error: 'Token expirado ou inválido' });
   }
+}
+
+export async function optionalAuthMiddleware(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) {
+  let token: string | undefined;
+
+  if (req.cookies && req.cookies.authToken) {
+    token = req.cookies.authToken;
+  } else {
+    const authHeader = req.headers.authorization;
+    if (authHeader) {
+      const [, headerToken] = authHeader.split(' ');
+      if (headerToken) token = headerToken;
+    }
+  }
+
+  if (!token) return next();
+
+  try {
+    const decoded = jwt.verify(token, jwtConfig.secret) as JWTPayload;
+    const user = await LoginModel.findOne({
+      where: { refresh_token: token },
+      attributes: ['id', 'login', 'role', 'permissions'],
+    });
+    if (!user) return next();
+
+    const role = user.role as 'admin' | 'user';
+    const permissions: UserPermissions =
+      role === 'admin'
+        ? { read: true, create: true, update: true, delete: true }
+        : { ...DEFAULT_PERMISSIONS, ...(user.permissions ?? {}) };
+
+    req.user = {
+      id: Number(decoded.sub),
+      login: decoded.login,
+      role,
+      permissions,
+    };
+  } catch {
+    // ignore invalid token; proceed without req.user
+  }
+  next();
 }

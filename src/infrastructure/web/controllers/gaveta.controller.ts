@@ -22,6 +22,20 @@ export class DrawerController {
     return res.json(result);
   }
 
+  async getCount(_req: Request, res: Response) {
+    try {
+      const total = await this.service.count();
+      return res.json({ count: total });
+    } catch (error: unknown) {
+      return sendErrorResponse(
+        res,
+        500,
+        error,
+        'Erro ao obter total de gavetas',
+      );
+    }
+  }
+
   async getById(req: Request, res: Response) {
     const number = Number(req.params.numero);
     const drawer = await this.service.findDrawerByNumber(number);

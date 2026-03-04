@@ -39,6 +39,8 @@ interface NotificationEventAttrs {
   criado_por: number;
   status: EventStatus;
   visto: boolean;
+  quantidade?: number | null;
+  dias_para_repor?: number | null;
 }
 
 type NotificationEventCreation = Optional<
@@ -118,6 +120,14 @@ NotificationEventModel.init(
       type: DataTypes.BOOLEAN,
       allowNull: false,
       defaultValue: false,
+    },
+    quantidade: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+    dias_para_repor: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
     },
   },
   {

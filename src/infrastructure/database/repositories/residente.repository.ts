@@ -49,4 +49,8 @@ export class ResidentRepository {
       where: { casela_id: casela },
     });
   }
+
+  async count(): Promise<number> {
+    return ResidentModel.count();
+  }
 }
