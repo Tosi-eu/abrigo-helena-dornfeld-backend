@@ -23,7 +23,7 @@ const controller = new AdminController(
 
 const adminLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: 400,
   message: {
     error: 'Muitas requisições no painel admin. Tente novamente em breve.',
   },

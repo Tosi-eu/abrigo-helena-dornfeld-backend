@@ -7,15 +7,7 @@ export class CabinetCategoryService {
     if (!nome || typeof nome !== 'string' || nome.trim() === '') {
       throw new Error('Nome da categoria é obrigatório');
     }
-
-    const trimmedName = nome.trim();
-
-    const existing = await this.repo.findByName(trimmedName);
-    if (existing) {
-      throw new Error('Já existe uma categoria com este nome');
-    }
-
-    return this.repo.create(trimmedName);
+    return this.repo.create(nome.trim());
   }
 
   async list(page = 1, limit = 10) {

@@ -1,9 +1,4 @@
 #!/usr/bin/env node
-/**
- * Cria o banco de dados de testes (estoque_test) no Postgres.
- * Uso: node scripts/create-test-db.js
- * Requer .env com DB_HOST, DB_USER, DB_PASSWORD (ou variáveis de ambiente).
- */
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 
