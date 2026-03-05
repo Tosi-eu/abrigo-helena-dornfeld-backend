@@ -30,13 +30,16 @@ import {
   formatDateToPtBr,
   getTodayAtNoonBrazil,
 } from '../../helpers/date.helper';
+import type { WhereOptions } from 'sequelize';
 import {
   SECTOR_CONFIG,
   StockGroup,
   StockQueryResult,
   MedicineStockPlain,
   InputStockPlain,
+  ExpiringStockItem,
 } from '../../types/estoque.types';
+import type { AggregateRow } from '../../types/sequelize.types';
 
 interface StockModel {
   sum(
@@ -237,14 +240,14 @@ export class StockRepository {
       });
 
       const medicineMap = new Map(
-        medicineTotals.map((item: any) => [
-          item.armario_id,
+        (medicineTotals as unknown as AggregateRow[]).map(item => [
+          item.armario_id as number,
           Number(item.total || 0),
         ]),
       );
       const inputMap = new Map(
-        inputTotals.map((item: any) => [
-          item.armario_id,
+        (inputTotals as unknown as AggregateRow[]).map(item => [
+          item.armario_id as number,
           Number(item.total || 0),
         ]),
       );
@@ -300,14 +303,14 @@ export class StockRepository {
       });
 
       const medicineMap = new Map(
-        medicineTotals.map((item: any) => [
-          item.gaveta_id,
+        (medicineTotals as unknown as AggregateRow[]).map(item => [
+          item.gaveta_id as number,
           Number(item.total || 0),
         ]),
       );
       const inputMap = new Map(
-        inputTotals.map((item: any) => [
-          item.gaveta_id,
+        (inputTotals as unknown as AggregateRow[]).map(item => [
+          item.gaveta_id as number,
           Number(item.total || 0),
         ]),
       );
@@ -340,7 +343,7 @@ export class StockRepository {
       const in45Days = new Date(today);
       in45Days.setDate(in45Days.getDate() + 45);
 
-      const baseWhere: any = {};
+      const baseWhere: WhereOptions = {};
 
       switch (filter) {
         case 'belowMin':
@@ -376,7 +379,7 @@ export class StockRepository {
       !params.itemType || params.itemType === 'insumo';
 
     if ((!type || type === 'medicamento') && shouldIncludeMedicines) {
-      const medicineWhere: any = { ...whereCondition };
+      const medicineWhere: WhereOptions = { ...whereCondition };
 
       if (params.cabinet) {
         medicineWhere.armario_id = Number(params.cabinet);
@@ -396,7 +399,7 @@ export class StockRepository {
         };
       }
 
-      const medicineIncludeWhere: any = {};
+      const medicineIncludeWhere: WhereOptions = {};
       if (params.name && params.name.trim()) {
         medicineIncludeWhere.nome = {
           [Op.iLike]: `%${params.name.trim()}%`,
@@ -482,7 +485,7 @@ export class StockRepository {
     }
 
     if ((!type || type === 'insumo') && shouldIncludeInputs) {
-      const inputWhere: any = { ...whereCondition };
+      const inputWhere: WhereOptions = { ...whereCondition };
 
       if (filter === 'nearMin') {
         inputWhere.quantidade = { [Op.gt]: 0 };
@@ -506,7 +509,7 @@ export class StockRepository {
         };
       }
 
-      const inputIncludeWhere: any = {};
+      const inputIncludeWhere: WhereOptions = {};
       if (params.name && params.name.trim()) {
         inputIncludeWhere.nome = {
           [Op.iLike]: `%${params.name.trim()}%`,
@@ -1397,7 +1400,7 @@ export class StockRepository {
     page: number = 1,
     limit: number = 50,
     transaction?: Transaction,
-  ): Promise<{ data: any[]; total: number; hasNext: boolean }> {
+  ): Promise<{ data: ExpiringStockItem[]; total: number; hasNext: boolean }> {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const endDate = new Date(today);
@@ -1457,8 +1460,23 @@ export class StockRepository {
       }),
     ]);
 
-    const toItem = (r: any, tipo: 'medicamento' | 'insumo') => {
-      const plain = r.get ? r.get({ plain: true }) : r;
+    type ExpiringRowPlain = Record<string, unknown> & {
+      id?: number;
+      medicamento_id?: number;
+      insumo_id?: number;
+      validade?: string | Date;
+      quantidade?: number;
+      lote?: string | null;
+      setor?: string | null;
+      MedicineModel?: { nome?: string; principio_ativo?: string; dosagem?: string; unidade_medida?: string };
+      InputModel?: { nome?: string; descricao?: string | null };
+      ResidentModel?: { nome?: string };
+    };
+    type ExpiringRow = { get?(opts: { plain: true }): ExpiringRowPlain } | ExpiringRowPlain;
+    const toItem = (r: ExpiringRow, tipo: 'medicamento' | 'insumo'): ExpiringStockItem => {
+      const plain: ExpiringRowPlain = typeof (r as { get?: (o: { plain: true }) => ExpiringRowPlain }).get === 'function'
+        ? (r as { get(o: { plain: true }): ExpiringRowPlain }).get({ plain: true })
+        : (r as ExpiringRowPlain);
       const validade = plain.validade ? new Date(plain.validade) : null;
       const dias = validade
         ? Math.ceil((validade.getTime() - today.getTime()) / 86400000)
@@ -1466,15 +1484,15 @@ export class StockRepository {
       if (tipo === 'medicamento') {
         return {
           tipo_item: 'medicamento' as const,
-          item_id: plain.medicamento_id,
-          estoque_id: plain.id,
+          item_id: Number(plain.medicamento_id) || 0,
+          estoque_id: Number(plain.id) || 0,
           nome: plain.MedicineModel?.nome ?? '-',
           principio_ativo: plain.MedicineModel?.principio_ativo ?? null,
           dosagem: plain.MedicineModel?.dosagem ?? null,
           unidade_medida: plain.MedicineModel?.unidade_medida ?? null,
           descricao: null,
           validade: validade ? formatDateToPtBr(validade) : null,
-          quantidade: plain.quantidade,
+          quantidade: Number(plain.quantidade) || 0,
           lote: plain.lote ?? null,
           setor: plain.setor ?? null,
           paciente: plain.ResidentModel?.nome ?? null,
@@ -1483,13 +1501,13 @@ export class StockRepository {
       }
       return {
         tipo_item: 'insumo' as const,
-        item_id: plain.insumo_id,
-        estoque_id: plain.id,
+        item_id: Number(plain.insumo_id) || 0,
+        estoque_id: Number(plain.id) || 0,
         nome: plain.InputModel?.nome ?? '-',
         principio_ativo: null,
         descricao: plain.InputModel?.descricao ?? null,
         validade: validade ? formatDateToPtBr(validade) : null,
-        quantidade: plain.quantidade,
+        quantidade: Number(plain.quantidade) || 0,
         lote: plain.lote ?? null,
         setor: plain.setor ?? null,
         paciente: plain.ResidentModel?.nome ?? null,

@@ -1,5 +1,9 @@
-import { WhereOptions } from 'sequelize';
+import type { WhereOptions, Includeable } from 'sequelize';
 import { Op } from 'sequelize';
+
+export interface AggregateRow {
+  [key: string]: number | string | null | undefined;
+}
 
 export type MovementWhereOptions = WhereOptions & {
   medicamento_id?: { [Op.not]: null } | number;
@@ -15,3 +19,5 @@ export type NotificationWhereOptions = WhereOptions & {
   status?: string;
   visto?: boolean;
 };
+
+export type { Includeable };

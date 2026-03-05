@@ -66,6 +66,54 @@ interface ResidentRow {
   consumo_mensal?: number;
 }
 
+interface MedicineReportRow {
+  MedicineModel?: { nome?: string; principio_ativo?: string };
+  ResidentModel?: { nome?: string };
+  validade?: Date | string;
+  quantidade?: number | string;
+}
+
+interface InputReportRow {
+  InputModel?: { nome?: string };
+  ResidentModel?: { nome?: string };
+  validade?: Date | string;
+  armario?: number | null;
+  quantidade?: number | string;
+}
+
+interface ResidentConsumptionRow {
+  MedicineModel?: { nome?: string; dosagem?: string; unidade_medida?: string; principio_ativo?: string; preco?: number };
+  InputModel?: { nome?: string; descricao?: string | null; preco?: number };
+  quantidade_estoque?: number | string;
+  observacao?: string | null;
+}
+
+interface ResidentReportRawRow {
+  ResidentModel?: { nome?: string; num_casela?: number };
+  MedicineModel?: { nome?: string; principio_ativo?: string };
+  quantidade?: number | string;
+  validade?: Date | string;
+}
+
+interface ResidentMedicineReportRow {
+  ResidentModel?: { nome?: string; num_casela?: number };
+  MedicineModel?: { nome?: string; dosagem?: string; unidade_medida?: string; principio_ativo?: string };
+  quantidade?: number | string;
+  validade?: Date | string;
+}
+
+interface ExpiringReportRow {
+  MedicineModel?: { nome?: string; principio_ativo?: string };
+  InputModel?: { nome?: string; descricao?: string | null };
+  ResidentModel?: { nome?: string };
+  validade?: Date | string;
+  quantidade?: number | string;
+  lote?: string | null;
+  setor?: string;
+  armario?: number | null;
+  gaveta?: number | null;
+}
+
 export class ReportRepository {
   async getMedicinesData(): Promise<MedicineReport[]> {
     const results = await MedicineStockModel.findAll({
@@ -99,10 +147,10 @@ export class ReportRepository {
       nest: true,
     });
 
-    return results.map((row: any) => ({
+    return (results as MedicineReportRow[]).map((row) => ({
       medicamento: row.MedicineModel?.nome || '',
       principio_ativo: row.MedicineModel?.principio_ativo || '',
-      validade: row.validade,
+      validade: row.validade != null ? String(row.validade) : '',
       quantidade: Number(row.quantidade) || 0,
       residente: row.ResidentModel?.nome || null,
     }));
@@ -141,11 +189,11 @@ export class ReportRepository {
       nest: true,
     });
 
-    return results.map((row: any) => ({
+    return (results as InputReportRow[]).map((row) => ({
       insumo: row.InputModel?.nome || '',
-      validade: row.validade,
+      validade: row.validade != null ? new Date(row.validade) : new Date(),
       quantidade: Number(row.quantidade) || 0,
-      armario: row.armario || null,
+      armario: row.armario ?? 0,
       residente: row.ResidentModel?.nome || null,
     }));
   }
@@ -185,13 +233,13 @@ export class ReportRepository {
       nest: true,
     });
 
-    return results.map((row: any) => ({
+    return (results as ResidentReportRawRow[]).map((row) => ({
       residente: row.ResidentModel?.nome || '',
       casela: row.ResidentModel?.num_casela || 0,
       medicamento: row.MedicineModel?.nome || '',
       principio_ativo: row.MedicineModel?.principio_ativo || null,
       quantidade: Number(row.quantidade) || 0,
-      validade: new Date(row.validade),
+      validade: new Date(row.validade as Date | string),
     }));
   }
 
@@ -248,12 +296,12 @@ export class ReportRepository {
       nest: true,
     });
 
-    return results.map((row: any) => ({
+    return (results as ResidentRow[]).map((row) => ({
       residente: row.ResidentModel?.nome || '',
       casela: row.ResidentModel?.num_casela || 0,
       medicamento: row.MedicineModel?.nome || '',
       principio_ativo: row.MedicineModel?.principio_ativo || '',
-      data: new Date(row.data),
+      data: new Date(row.data as Date),
       consumo_mensal: Number(row.consumo_mensal) || 0,
     }));
   }
@@ -294,8 +342,15 @@ export class ReportRepository {
       nest: true,
     });
 
-    const formatted = results.map((row: any) => ({
-      tipo: row.tipo,
+    interface PsicotropicoRawRow {
+      tipo: string;
+      data: Date | string;
+      quantidade?: number | string;
+      MedicineModel?: { nome?: string };
+      ResidentModel?: { nome?: string };
+    }
+    const formatted = (results as PsicotropicoRawRow[]).map((row) => ({
+      tipo: row.tipo as MovementType,
       medicamento: row.MedicineModel?.nome || '',
       residente: row.ResidentModel?.nome || '',
       data_movimentacao: formatDateToPtBr(row.data),
@@ -360,18 +415,18 @@ export class ReportRepository {
     });
 
     return {
-      medicamentos: medicines.map((row: any) => ({
+      medicamentos: (medicines as MedicineReportRow[]).map((row) => ({
         medicamento: row.MedicineModel?.nome || '',
         principio_ativo: row.MedicineModel?.principio_ativo || '',
         quantidade: Number(row.quantidade) || 0,
-        validade: row.validade,
+        validade: row.validade != null ? String(row.validade) : '',
         residente: row.ResidentModel?.nome || null,
       })),
-      insumos: inputs.map((row: any) => ({
+      insumos: (inputs as InputReportRow[]).map((row) => ({
         insumo: row.InputModel?.nome || '',
         quantidade: Number(row.quantidade) || 0,
-        armario: row.armario || null,
-        validade: row.validade ? new Date(row.validade) : new Date(),
+        armario: row.armario ?? 0,
+        validade: row.validade ? new Date(row.validade as string) : new Date(),
         residente: row.ResidentModel?.nome || null,
       })),
     };
@@ -456,8 +511,9 @@ export class ReportRepository {
       nest: true,
     });
 
-    const medicines: ResidentConsumptionMedicine[] = medicinesRows.map(
-      (row: any) => {
+    const medicines: ResidentConsumptionMedicine[] = (
+      medicinesRows as ResidentConsumptionRow[]
+    ).map((row) => {
         const nome = row.MedicineModel?.nome || '';
         const dosagem = row.MedicineModel?.dosagem || '';
         const unidadeMedida = row.MedicineModel?.unidade_medida || '';
@@ -475,7 +531,9 @@ export class ReportRepository {
       },
     );
 
-    const inputs: ResidentConsumptionInput[] = inputsRows.map((row: any) => {
+    const inputs: ResidentConsumptionInput[] = (
+      inputsRows as ResidentConsumptionRow[]
+    ).map((row) => {
       const preco = row.InputModel?.preco
         ? parseFloat(String(row.InputModel.preco))
         : null;
@@ -488,7 +546,7 @@ export class ReportRepository {
       };
     });
 
-    const custosMedicamentos = medicinesRows.map((row: any) => {
+    const custosMedicamentos = (medicinesRows as ResidentConsumptionRow[]).map((row) => {
       const nome = row.MedicineModel?.nome || '';
       const dosagem = row.MedicineModel?.dosagem || '';
       const unidadeMedida = row.MedicineModel?.unidade_medida || '';
@@ -508,7 +566,7 @@ export class ReportRepository {
       };
     });
 
-    const custosInsumos = inputsRows.map((row: any) => {
+    const custosInsumos = (inputsRows as ResidentConsumptionRow[]).map((row) => {
       const preco = row.InputModel?.preco
         ? parseFloat(String(row.InputModel.preco))
         : 0;
@@ -524,13 +582,13 @@ export class ReportRepository {
     });
 
     const totalEstimado =
-      medicinesRows.reduce((sum, row: any) => {
+      (medicinesRows as ResidentConsumptionRow[]).reduce((sum, row) => {
         const preco = row.MedicineModel?.preco
           ? parseFloat(String(row.MedicineModel.preco))
           : 0;
         return sum + preco * 12;
       }, 0) +
-      inputsRows.reduce((sum, row: any) => {
+      (inputsRows as ResidentConsumptionRow[]).reduce((sum, row) => {
         const preco = row.InputModel?.preco
           ? parseFloat(String(row.InputModel.preco))
           : 0;
@@ -852,18 +910,18 @@ export class ReportRepository {
       nest: true,
     });
 
-    return results.map((row: any) => {
+    return (results as ResidentMedicineReportRow[]).map((row) => {
       const nome = row.MedicineModel?.nome || '';
       const dosagem = row.MedicineModel?.dosagem || '';
       const unidadeMedida = row.MedicineModel?.unidade_medida || '';
 
       return {
         residente: row.ResidentModel?.nome || '',
-        casela: row.ResidentModel?.num_casela || casela,
+        casela: row.ResidentModel?.num_casela ?? casela,
         medicamento: formatMedicineName(nome, dosagem, unidadeMedida),
-        principio_ativo: row.MedicineModel?.principio_ativo || null,
+        principio_ativo: row.MedicineModel?.principio_ativo ?? '',
         quantidade: Number(row.quantidade) || 0,
-        validade: formatDateToPtBr(new Date(row.validade)),
+        validade: formatDateToPtBr(new Date(row.validade as string)),
       };
     });
   }
@@ -912,8 +970,8 @@ export class ReportRepository {
       nest: true,
     });
 
-    return results.map((row: any) => {
-      const expiryDate = new Date(row.validade);
+    return (results as ExpiringReportRow[]).map((row) => {
+      const expiryDate = new Date(row.validade as string);
       const daysExpired = Math.floor(
         (today.getTime() - expiryDate.getTime()) / (1000 * 60 * 60 * 24),
       );
@@ -988,8 +1046,8 @@ export class ReportRepository {
       nest: true,
     });
 
-    medicines.forEach((row: any) => {
-      const expiryDate = new Date(row.validade);
+    (medicines as ExpiringReportRow[]).forEach((row) => {
+      const expiryDate = new Date(row.validade as string);
       const daysUntilExpiry = Math.ceil(
         (expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
       );
@@ -1058,8 +1116,8 @@ export class ReportRepository {
       nest: true,
     });
 
-    inputs.forEach((row: any) => {
-      const expiryDate = new Date(row.validade);
+    (inputs as ExpiringReportRow[]).forEach((row) => {
+      const expiryDate = new Date(row.validade as string);
       const daysUntilExpiry = Math.ceil(
         (expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
       );

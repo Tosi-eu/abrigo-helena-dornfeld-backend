@@ -1,3 +1,4 @@
+import type { WhereOptions } from 'sequelize';
 import InputModel from '../models/insumo.model';
 import { Input } from '../../../core/domain/insumo';
 import { Op } from 'sequelize';
@@ -30,7 +31,7 @@ export class InputRepository {
   }> {
     const offset = (page - 1) * limit;
 
-    const where: any = {};
+    const where: WhereOptions = {};
     if (name && name.trim()) {
       where.nome = {
         [Op.iLike]: `%${name.trim()}%`,

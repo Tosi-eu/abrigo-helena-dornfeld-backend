@@ -2,6 +2,14 @@ import axios from 'axios';
 import { logger } from '../../infrastructure/helpers/logger.helper';
 import { PriceSourceStrategy } from '../utils/utils';
 
+interface VTEXProduct {
+  items?: Array<{
+    sellers?: Array<{
+      commertialOffer?: { ListPrice?: number; Price?: number };
+    }>;
+  }>;
+}
+
 export class DrogariaSaoPauloStrategy implements PriceSourceStrategy {
   readonly sourceName = 'drogaria_sao_paulo';
 
@@ -29,7 +37,7 @@ export class DrogariaSaoPauloStrategy implements PriceSourceStrategy {
         query,
       });
 
-      const response = await axios.get<any[]>(url, {
+      const response = await axios.get<VTEXProduct[]>(url, {
         timeout: 15000,
         headers: {
           'User-Agent': 'Mozilla/5.0',

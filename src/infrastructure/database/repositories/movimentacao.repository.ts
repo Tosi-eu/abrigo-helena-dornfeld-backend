@@ -14,6 +14,21 @@ import { sequelize } from '../sequelize';
 import { NonMovementedItem, OperationType } from '../../../core/utils/utils';
 import { MovementWhereOptions } from '../../types/sequelize.types';
 
+interface MovementHistoryPlain {
+  id: number;
+  tipo: string;
+  data: Date | string;
+  quantidade: number;
+  setor: string;
+  lote: string | null;
+  armario_id: number;
+  casela_id: number;
+  MedicineModel?: { nome?: string };
+  InputModel?: { nome?: string };
+  LoginModel?: { first_name?: string; login?: string };
+  ResidentModel?: { nome?: string };
+}
+
 export interface MovementQueryParams {
   days?: number;
   page: number;
@@ -386,20 +401,27 @@ export class MovementRepository {
       raw: true,
     });
 
+    interface NonMovementedRawRow {
+      id: number;
+      nome: string;
+      detalhe?: string | null;
+      ultima_movimentacao?: string | Date | null;
+      dias_parados?: string | number | null;
+    }
     const results: NonMovementedItem[] = [
-      ...medicines.map((m: any) => ({
+      ...(medicines as NonMovementedRawRow[]).map((m) => ({
         item_id: m.id,
         nome: m.nome,
-        detalhe: m.detalhe,
+        detalhe: m.detalhe ?? null,
         ultima_movimentacao: formatDateToPtBr(
           m.ultima_movimentacao ?? new Date('1900-01-01'),
         ),
         dias_parados: Number(m.dias_parados ?? 0),
       })),
-      ...inputs.map((i: any) => ({
+      ...(inputs as NonMovementedRawRow[]).map((i) => ({
         item_id: i.id,
         nome: i.nome,
-        detalhe: i.detalhe || null,
+        detalhe: i.detalhe ?? null,
         ultima_movimentacao: formatDateToPtBr(
           i.ultima_movimentacao ?? new Date('1900-01-01'),
         ),
@@ -587,7 +609,7 @@ export class MovementRepository {
     });
 
     const data = rows.map(r => {
-      const plain = r.get({ plain: true }) as any;
+      const plain = r.get({ plain: true }) as MovementHistoryPlain;
       return {
         id: plain.id,
         tipo: plain.tipo,
@@ -658,7 +680,9 @@ export class MovementRepository {
     });
 
     const data = rows.map(r => {
-      const plain = r.get({ plain: true }) as any;
+      const plain = r.get({ plain: true }) as MovementHistoryPlain & {
+        medicamento_id?: number | null;
+      };
       return {
         id: plain.id,
         tipo: plain.tipo,
