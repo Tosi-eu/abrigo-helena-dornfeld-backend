@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { logger } from '../../infrastructure/helpers/logger.helper';
+import { withRetry } from '../../infrastructure/helpers/retry.helper';
 import { PriceSourceStrategy } from '../utils/utils';
 
 export class DrogaRaiaStrategy implements PriceSourceStrategy {
@@ -28,15 +29,19 @@ export class DrogaRaiaStrategy implements PriceSourceStrategy {
         query,
       });
 
-      const response = await axios.get<string>(url, {
-        timeout: 15000,
-        headers: {
-          'User-Agent': 'Mozilla/5.0',
-          Accept: 'text/html',
-          'Accept-Language': 'pt-BR,pt;q=0.9',
-        },
-        validateStatus: status => status >= 200 && status < 400,
-      });
+      const response = await withRetry(
+        () =>
+          axios.get<string>(url, {
+            timeout: 15000,
+            headers: {
+              'User-Agent': 'Mozilla/5.0',
+              Accept: 'text/html',
+              'Accept-Language': 'pt-BR,pt;q=0.9',
+            },
+            validateStatus: status => status >= 200 && status < 400,
+          }),
+        { maxRetries: 3, initialDelayMs: 500 },
+      );
 
       const nextData: unknown = this.extractNextData(response.data);
 

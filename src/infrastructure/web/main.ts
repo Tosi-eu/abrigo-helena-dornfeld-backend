@@ -5,6 +5,7 @@ import rateLimit from 'express-rate-limit';
 import cookieParser from 'cookie-parser';
 import routes from './routes/index.routes';
 import { sequelize } from '../database/sequelize';
+import { getRedisClient } from '../database/redis/client.redis';
 import '../database/models/index.models';
 import { setupAssociations } from '../database/models/associations.models';
 import { errorHandler } from '../../middleware/error-handler.middleware';
@@ -60,6 +61,26 @@ app.use((req, res, next) => {
   }
 
   next();
+});
+
+app.get('/api/v1/health', async (_req, res) => {
+  try {
+    await sequelize.authenticate();
+    const redis = getRedisClient();
+    const redisOk = redis ? (await redis.ping()) === 'PONG' : false;
+    res.status(200).json({
+      status: 'ok',
+      database: 'connected',
+      redis: redisOk ? 'connected' : 'unavailable',
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    res.status(503).json({
+      status: 'unhealthy',
+      database: 'error',
+      error: message,
+    });
+  }
 });
 
 const limiter = rateLimit({

@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { logger } from '../../infrastructure/helpers/logger.helper';
+import { withRetry } from '../../infrastructure/helpers/retry.helper';
 import { PriceSourceStrategy } from '../utils/utils';
 
 interface VTEXProduct {
@@ -37,14 +38,18 @@ export class DrogariaSaoPauloStrategy implements PriceSourceStrategy {
         query,
       });
 
-      const response = await axios.get<VTEXProduct[]>(url, {
-        timeout: 15000,
-        headers: {
-          'User-Agent': 'Mozilla/5.0',
-          Accept: 'application/json',
-        },
-        validateStatus: status => status >= 200 && status < 400,
-      });
+      const response = await withRetry(
+        () =>
+          axios.get<VTEXProduct[]>(url, {
+            timeout: 15000,
+            headers: {
+              'User-Agent': 'Mozilla/5.0',
+              Accept: 'application/json',
+            },
+            validateStatus: status => status >= 200 && status < 400,
+          }),
+        { maxRetries: 3, initialDelayMs: 500 },
+      );
 
       const products = response.data ?? [];
       const prices: number[] = [];
