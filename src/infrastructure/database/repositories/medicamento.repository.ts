@@ -1,3 +1,4 @@
+import type { WhereOptions } from 'sequelize';
 import MedicineModel from '../models/medicamento.model';
 import { Medicine } from '../../../core/domain/medicamento';
 import { Op } from 'sequelize';
@@ -35,7 +36,7 @@ export class MedicineRepository {
   }) {
     const offset = (page - 1) * limit;
 
-    const where: any = {};
+    const where: WhereOptions = {};
     if (name && name.trim()) {
       where.nome = {
         [Op.iLike]: `%${name.trim()}%`,

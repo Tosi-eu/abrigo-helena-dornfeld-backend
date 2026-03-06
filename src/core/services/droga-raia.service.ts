@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { logger } from '../../infrastructure/helpers/logger.helper';
+import { withRetry } from '../../infrastructure/helpers/retry.helper';
 import { PriceSourceStrategy } from '../utils/utils';
 
 export class DrogaRaiaStrategy implements PriceSourceStrategy {
@@ -28,30 +29,36 @@ export class DrogaRaiaStrategy implements PriceSourceStrategy {
         query,
       });
 
-      const response = await axios.get<string>(url, {
-        timeout: 15000,
-        headers: {
-          'User-Agent': 'Mozilla/5.0',
-          Accept: 'text/html',
-          'Accept-Language': 'pt-BR,pt;q=0.9',
-        },
-        validateStatus: status => status >= 200 && status < 400,
-      });
+      const response = await withRetry(
+        () =>
+          axios.get<string>(url, {
+            timeout: 15000,
+            headers: {
+              'User-Agent': 'Mozilla/5.0',
+              Accept: 'text/html',
+              'Accept-Language': 'pt-BR,pt;q=0.9',
+            },
+            validateStatus: status => status >= 200 && status < 400,
+          }),
+        { maxRetries: 3, initialDelayMs: 500 },
+      );
 
-      const nextData = this.extractNextData(response.data);
+      const nextData: unknown = this.extractNextData(response.data);
 
-      if (!nextData) {
+      if (!nextData || typeof nextData !== 'object') {
         logger.warn('Next Data não encontrado na página', {
           source: this.sourceName,
         });
         return [];
       }
 
-      const products =
-        nextData?.props?.pageProps?.pageProps?.results?.products ?? [];
+      const data = nextData as {
+        props?: { pageProps?: { pageProps?: { results?: { products?: Array<{ priceService?: number | string }> } } } };
+      };
+      const products = data?.props?.pageProps?.pageProps?.results?.products ?? [];
 
       return products
-        .map((product: any) => Number(product.priceService) || null)
+        .map((product) => Number(product.priceService) || null)
         .filter((price: number | null): price is number => price !== null);
     } catch (error) {
       logger.error('Erro ao buscar preços na Droga Raia', {
@@ -62,7 +69,7 @@ export class DrogaRaiaStrategy implements PriceSourceStrategy {
     }
   }
 
-  private extractNextData(html: string): any | null {
+  private extractNextData(html: string): unknown {
     const match = html.match(
       /<script id="__NEXT_DATA__" type="application\/json">(.+?)<\/script>/,
     );
@@ -72,7 +79,7 @@ export class DrogaRaiaStrategy implements PriceSourceStrategy {
     }
 
     try {
-      return JSON.parse(match[1]);
+      return JSON.parse(match[1]) as unknown;
     } catch {
       return null;
     }

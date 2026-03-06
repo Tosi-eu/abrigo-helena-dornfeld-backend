@@ -34,15 +34,21 @@ class StructuredLogger {
       },
       transports: [
         new winston.transports.Console({
-          format: winston.format.combine(
-            winston.format.colorize(),
-            winston.format.printf(({ timestamp, level, message, ...meta }) => {
-              const metaString = Object.keys(meta).length
-                ? ` ${JSON.stringify(meta, null, 2)}`
-                : '';
-              return `${timestamp} [${level}]: ${message}${metaString}`;
-            }),
-          ),
+          format:
+            process.env.NODE_ENV === 'production' && process.env.LOG_FORMAT !== 'pretty'
+              ? winston.format.combine(
+                  winston.format.timestamp(),
+                  winston.format.json(),
+                )
+              : winston.format.combine(
+                  winston.format.colorize(),
+                  winston.format.printf(({ timestamp, level, message, ...meta }) => {
+                    const metaString = Object.keys(meta).length
+                      ? ` ${JSON.stringify(meta, null, 2)}`
+                      : '';
+                    return `${timestamp} [${level}]: ${message}${metaString}`;
+                  }),
+                ),
         }),
       ],
     });

@@ -66,23 +66,24 @@ export class DashboardService {
       ),
     ]);
 
-    const parseDate = (v: any): number => {
+    const parseDate = (v: unknown): number => {
       if (!v) return 0;
       if (typeof v === 'string' && v.includes('/')) {
         const [d, m, y] = v.split('/');
         if (y && m && d)
           return new Date(Number(y), Number(m) - 1, Number(d)).getTime();
       }
-      return new Date(v).getTime() || 0;
+      return new Date(v as string | number).getTime() || 0;
     };
+    type MovementSummaryItem = Record<string, unknown> & { data?: string | Date };
     const recentMovements = [
-      ...(medMovements.data || []).map((m: any) => ({
+      ...(medMovements.data || []).map((m: MovementSummaryItem) => ({
         ...m,
-        _source: 'medicine',
+        _source: 'medicine' as const,
       })),
-      ...(inpMovements.data || []).map((m: any) => ({
+      ...(inpMovements.data || []).map((m: MovementSummaryItem) => ({
         ...m,
-        _source: 'input',
+        _source: 'input' as const,
       })),
     ]
       .sort((a, b) => parseDate(b.data) - parseDate(a.data))

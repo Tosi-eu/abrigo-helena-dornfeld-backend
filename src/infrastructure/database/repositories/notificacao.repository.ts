@@ -10,10 +10,27 @@ import NotificationEventModel, {
 } from '../models/notificacao.model';
 import ResidentModel from '../models/residente.model';
 import { NotificationUpdateData } from '../../types/notificacao.types';
-import { NotificationWhereOptions } from '../../types/sequelize.types';
+import { NotificationWhereOptions, Includeable } from '../../types/sequelize.types';
 import { MovementType, StockItemStatus } from '../../../core/utils/utils';
 import MedicineStockModel from '../models/estoque-medicamento.model';
 import MovementModel from '../models/movimentacao.model';
+
+interface NotificationListRow {
+  id: number;
+  destino: string;
+  data_prevista: Date | string;
+  status: string;
+  criado_por: number;
+  medicamento_id: number;
+  residente_id: number;
+  visto: boolean;
+  tipo_evento: string;
+  residente?: { nome: string };
+  medicamento?: { nome: string };
+  usuario?: { first_name?: string; last_name?: string; login?: string };
+  movimentacoes?: Array<{ quantidade?: number }>;
+  estoque?: { dias_para_repor?: number };
+}
 
 export function getTodayInBrazil(): string {
   const formatter = new Intl.DateTimeFormat('en-CA', {
@@ -82,7 +99,7 @@ export class NotificationEventRepository {
       where.data_prevista = date;
     if (visto === false) where.visto = false;
 
-    const include: any[] = [
+    const include: Includeable[] = [
       {
         model: ResidentModel,
         as: 'residente',
@@ -144,7 +161,7 @@ export class NotificationEventRepository {
     });
 
     return {
-      items: rows.map((row: any) => ({
+      items: (rows as NotificationListRow[]).map((row) => ({
         id: row.id,
         destino: row.destino,
         data_prevista: formatDateToPtBr(row.data_prevista),

@@ -137,7 +137,12 @@ export class LoginService {
     const passwordMatch = await bcrypt.compare(currentPassword, user.password);
     if (!passwordMatch) return null;
 
-    const updateData: any = {};
+    const updateData: Partial<{
+      first_name: string;
+      last_name: string;
+      login: string;
+      password: string;
+    }> = {};
 
     if (firstName !== undefined) updateData.first_name = firstName;
     if (lastName !== undefined) updateData.last_name = lastName;

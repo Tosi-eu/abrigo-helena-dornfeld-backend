@@ -34,6 +34,23 @@ export interface StockQueryResult {
   [key: string]: unknown;
 }
 
+export interface ExpiringStockItem {
+  tipo_item: 'medicamento' | 'insumo';
+  item_id: number;
+  estoque_id: number;
+  nome: string;
+  principio_ativo?: string | null;
+  dosagem?: string | null;
+  unidade_medida?: string | null;
+  descricao?: string | null;
+  validade: string | null;
+  quantidade: number;
+  lote: string | null;
+  setor: string | null;
+  paciente: string | null;
+  dias_para_vencer: number;
+}
+
 export type StockGroup =
   | 'medicamentos_geral'
   | 'medicamentos_individual'
