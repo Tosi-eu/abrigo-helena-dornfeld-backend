@@ -44,17 +44,20 @@ export class AuditRepository {
     limit = 50,
     offset = 0,
     operationType?: AuditOperationFilter,
+    resource?: string | null,
+    userId?: number | null,
   ): Promise<AuditInsights> {
-    const where = {
+    const where: Record<string, unknown> = {
       created_at: {
         [Op.gte]: startDate,
         [Op.lte]: endDate,
       },
     };
+    if (operationType) where.operation_type = operationType;
+    if (resource != null && resource !== '') where.resource = resource;
+    if (userId != null && !Number.isNaN(userId)) where.user_id = userId;
 
-    const eventsWhere = operationType
-      ? { ...where, operation_type: operationType }
-      : where;
+    const eventsWhere = where;
 
     const [created, updated, deleted, totalFiltered, events] =
       await Promise.all([

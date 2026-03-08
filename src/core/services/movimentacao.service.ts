@@ -169,4 +169,8 @@ export class MovementService {
       transaction,
     );
   }
+
+  async countMovementsThisMonth(): Promise<number> {
+    return this.repo.countMovementsThisMonth();
+  }
 }

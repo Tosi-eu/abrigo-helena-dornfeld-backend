@@ -36,7 +36,34 @@ export interface MovementQueryParams {
   type?: string;
 }
 
+function startOfMonth(d: Date) {
+  const x = new Date(d);
+  x.setDate(1);
+  x.setHours(0, 0, 0, 0);
+  return x;
+}
+function endOfMonth(d: Date) {
+  const x = new Date(d);
+  x.setMonth(x.getMonth() + 1);
+  x.setDate(0);
+  x.setHours(23, 59, 59, 999);
+  return x;
+}
+
 export class MovementRepository {
+  async countMovementsThisMonth(): Promise<number> {
+    const now = new Date();
+    const count = await MovementModel.count({
+      where: {
+        data: {
+          [Op.gte]: startOfMonth(now),
+          [Op.lte]: endOfMonth(now),
+        },
+      },
+    });
+    return count;
+  }
+
   async create(data: Movement, transaction?: Transaction) {
     return await MovementModel.create(
       {

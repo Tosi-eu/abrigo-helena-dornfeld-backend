@@ -3,6 +3,7 @@ import rateLimit from 'express-rate-limit';
 
 import { LoginController } from '../controllers/login.controller';
 import { LoginRepository } from '../../database/repositories/login.repository';
+import { LoginLogRepository } from '../../database/repositories/login-log.repository';
 import { LoginService } from '../../../core/services/login.service';
 import { authMiddleware } from '../../../middleware/auth.middleware';
 import {
@@ -14,8 +15,9 @@ import { auditLog } from '../../../middleware/audit.middleware';
 const router = Router();
 
 const repo = new LoginRepository();
+const loginLogRepo = new LoginLogRepository();
 const service = new LoginService(repo);
-const controller = new LoginController(service);
+const controller = new LoginController(service, loginLogRepo);
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 20,

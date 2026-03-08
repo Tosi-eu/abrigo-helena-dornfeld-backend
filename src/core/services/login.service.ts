@@ -98,6 +98,60 @@ export class LoginService {
     }
   }
 
+  async createByAdmin(attrs: {
+    login: string;
+    password: string;
+    first_name?: string;
+    last_name?: string;
+    role?: 'admin' | 'user';
+    permissions?: { read?: boolean; create?: boolean; update?: boolean; delete?: boolean };
+  }) {
+    const userExists = await this.repo.findByLogin(attrs.login);
+    if (userExists) throw new Error('Usuário já cadastrado');
+
+    validateStrongPassword(attrs.password);
+    const hashed = await bcrypt.hash(attrs.password, 10);
+    const role = attrs.role ?? 'user';
+    const permissions =
+      role === 'admin'
+        ? { ...FULL_PERMISSIONS }
+        : {
+            read: true,
+            create: Boolean(attrs.permissions?.create),
+            update: Boolean(attrs.permissions?.update),
+            delete: Boolean(attrs.permissions?.delete),
+          };
+
+    try {
+      const created = await this.repo.create({
+        login: attrs.login,
+        password: hashed,
+        first_name: attrs.first_name,
+        last_name: attrs.last_name,
+        role,
+        permissions,
+      });
+      const user = await this.repo.findById(created.id);
+      if (!user) return null;
+      return {
+        id: user.id,
+        login: user.login,
+        firstName: user.first_name,
+        lastName: user.last_name,
+        role: user.role,
+        permissions: effectivePermissions(user.role, user.permissions),
+      };
+    } catch (err: unknown) {
+      if (
+        err instanceof BaseError &&
+        err.name === 'SequelizeUniqueConstraintError'
+      ) {
+        throw new Error('duplicate key');
+      }
+      throw err;
+    }
+  }
+
   async authenticate(login: string, password: string) {
     const user = await this.repo.findByLogin(login);
     if (!user) return null;

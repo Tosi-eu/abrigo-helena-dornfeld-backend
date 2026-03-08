@@ -7,9 +7,11 @@ import './estoque-medicamento.model';
 import './gaveta.model';
 import './insumo.model';
 import './login.model';
+import './login-log.model';
 import './medicamento.model';
 import './movimentacao.model';
 import './notificacao.model';
 import './residente.model';
+import './system-config.model';
 
 export { setupAssociations } from './associations.models';
