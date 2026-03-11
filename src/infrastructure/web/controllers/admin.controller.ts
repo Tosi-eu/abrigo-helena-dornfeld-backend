@@ -15,7 +15,10 @@ import {
   type GenerateReportParams,
 } from '../../../core/services/relatorio.service';
 import { toCSV, reportResultToArrays } from '../../helpers/csv.helper';
-import { EventStatus } from '../../database/models/notificacao.model';
+import {
+  EventStatus,
+  NotificationEventType,
+} from '../../database/models/notificacao.model';
 
 const DEFAULT_DAYS = 30;
 const MAX_DAYS = 365;
@@ -191,10 +194,6 @@ export class AdminController {
         | 'update'
         | 'delete'
         | undefined;
-      const resource =
-        typeof req.query.resource === 'string' ? req.query.resource.trim() || undefined : undefined;
-      const userId =
-        req.query.userId != null ? Number(req.query.userId) : undefined;
       if (
         operationType &&
         !['create', 'update', 'delete'].includes(operationType)
@@ -208,8 +207,6 @@ export class AdminController {
         limit,
         offset,
         operationType,
-        resource,
-        userId,
       );
       return res.json(insights);
     } catch (error: unknown) {
@@ -405,6 +402,38 @@ export class AdminController {
     }
   }
 
+  async getActiveUsersThisMonth(req: AuthRequest, res: Response) {
+    if (!this.loginLogRepo) {
+      return res.status(501).json({ error: 'Log de acessos não disponível' });
+    }
+    try {
+      const page = Math.max(1, Number(req.query.page) || 1);
+      const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 25));
+      const result = await this.loginLogRepo.listActiveUsersThisMonth(page, limit);
+      return res.json(result);
+    } catch (error: unknown) {
+      return res.status(500).json({
+        error: getErrorMessage(error) || 'Erro ao listar usuários ativos do mês',
+      });
+    }
+  }
+
+  async getMovementsThisMonth(req: AuthRequest, res: Response) {
+    if (!this.movementService) {
+      return res.status(501).json({ error: 'Movimentações não disponíveis' });
+    }
+    try {
+      const page = Math.max(1, Number(req.query.page) || 1);
+      const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 25));
+      const result = await this.movementService.listMovementsThisMonth(page, limit);
+      return res.json(result);
+    } catch (error: unknown) {
+      return res.status(500).json({
+        error: getErrorMessage(error) || 'Erro ao listar movimentações do mês',
+      });
+    }
+  }
+
   async getConfig(_req: AuthRequest, res: Response) {
     if (!this.systemConfigRepo) {
       return res.status(501).json({ error: 'Configurações não disponíveis' });
@@ -433,8 +462,8 @@ export class AdminController {
       const result = await this.notificationService.listForAdmin({
         page,
         limit,
-        tipo: tipo as 'medicamento' | 'reposicao_estoque' | undefined,
-        status: status as 'pending' | 'sent' | 'cancelled' | undefined,
+        tipo: tipo as NotificationEventType | undefined,
+        status: status as EventStatus | undefined,
         visto,
       });
       return res.json(result);

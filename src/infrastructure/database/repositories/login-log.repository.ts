@@ -1,5 +1,6 @@
-import { Op, fn, col } from 'sequelize';
+import { Op, fn, col, QueryTypes } from 'sequelize';
 import { LoginLogModel } from '../models/login-log.model';
+import { sequelize } from '../sequelize';
 
 export type CreateLoginLogData = {
   user_id?: number | null;
@@ -95,5 +96,86 @@ export class LoginLogRepository {
     });
     const count = (row as unknown as { count?: string } | null)?.count;
     return Number(count ?? 0);
+  }
+
+  async listActiveUsersThisMonth(page: number = 1, limit: number = 25) {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+    const end = new Date(
+      now.getFullYear(),
+      now.getMonth() + 1,
+      0,
+      23,
+      59,
+      59,
+      999,
+    );
+    const safePage = Math.max(1, Number(page) || 1);
+    const safeLimit = Math.min(100, Math.max(1, Number(limit) || 25));
+    const offset = (safePage - 1) * safeLimit;
+
+    const [{ total }] = (await sequelize.query<
+      { total: string }[]
+    >(
+      `
+      SELECT COUNT(DISTINCT ll.user_id)::text AS total
+      FROM login_log ll
+      WHERE ll.success = true
+        AND ll.user_id IS NOT NULL
+        AND ll.created_at >= :start
+        AND ll.created_at <= :end
+      `,
+      {
+        type: QueryTypes.SELECT,
+        replacements: { start, end },
+      },
+    )) as unknown as [{ total: string }];
+
+    const data = await sequelize.query<{
+      id: number;
+      login: string;
+      first_name: string | null;
+      last_name: string | null;
+      last_login_at: Date;
+      logins_count: string;
+    }>(
+      `
+      SELECT
+        l.id,
+        l.login,
+        l.first_name,
+        l.last_name,
+        MAX(ll.created_at) AS last_login_at,
+        COUNT(*)::text AS logins_count
+      FROM login_log ll
+      JOIN login l ON l.id = ll.user_id
+      WHERE ll.success = true
+        AND ll.user_id IS NOT NULL
+        AND ll.created_at >= :start
+        AND ll.created_at <= :end
+      GROUP BY l.id, l.login, l.first_name, l.last_name
+      ORDER BY last_login_at DESC
+      LIMIT :limit
+      OFFSET :offset
+      `,
+      {
+        type: QueryTypes.SELECT,
+        replacements: { start, end, limit: safeLimit, offset },
+      },
+    );
+
+    return {
+      data: data.map((r) => ({
+        id: Number(r.id),
+        login: r.login,
+        first_name: r.first_name ?? null,
+        last_name: r.last_name ?? null,
+        last_login_at: r.last_login_at,
+        logins_count: Number(r.logins_count ?? 0),
+      })),
+      total: Number(total ?? 0),
+      page: safePage,
+      limit: safeLimit,
+    };
   }
 }

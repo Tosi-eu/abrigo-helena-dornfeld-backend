@@ -173,4 +173,8 @@ export class MovementService {
   async countMovementsThisMonth(): Promise<number> {
     return this.repo.countMovementsThisMonth();
   }
+
+  async listMovementsThisMonth(page: number = 1, limit: number = 25) {
+    return this.repo.listMovementsThisMonth(page, limit);
+  }
 }

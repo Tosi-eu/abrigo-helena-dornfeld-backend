@@ -64,6 +64,82 @@ export class MovementRepository {
     return count;
   }
 
+  async listMovementsThisMonth(page: number = 1, limit: number = 25) {
+    const now = new Date();
+    const safePage = Math.max(1, Number(page) || 1);
+    const safeLimit = Math.min(100, Math.max(1, Number(limit) || 25));
+    const offset = (safePage - 1) * safeLimit;
+
+    const { rows, count } = await MovementModel.findAndCountAll({
+      where: {
+        data: {
+          [Op.gte]: startOfMonth(now),
+          [Op.lte]: endOfMonth(now),
+        },
+      },
+      order: [['data', 'DESC']],
+      offset,
+      limit: safeLimit,
+      include: [
+        {
+          model: MedicineModel,
+          as: 'MedicineModel',
+          attributes: ['id', 'nome', 'principio_ativo'],
+          required: false,
+        },
+        {
+          model: InputModel,
+          as: 'InputModel',
+          attributes: ['id', 'nome', 'descricao'],
+          required: false,
+        },
+        {
+          model: LoginModel,
+          as: 'LoginModel',
+          attributes: ['id', 'login', 'first_name'],
+        },
+        {
+          model: CabinetModel,
+          as: 'CabinetModel',
+          attributes: ['num_armario'],
+        },
+        {
+          model: ResidenteModel,
+          as: 'ResidentModel',
+          attributes: ['num_casela', 'nome'],
+        },
+      ],
+    });
+
+    const data = rows.map((r) => {
+      const plain = r.get({ plain: true }) as MovementHistoryPlain & {
+        medicamento_id?: number | null;
+      };
+      return {
+        id: plain.id,
+        tipo: plain.tipo,
+        data: formatDateToPtBr(plain.data),
+        quantidade: plain.quantidade,
+        setor: plain.setor,
+        lote: plain.lote,
+        nome: plain.MedicineModel?.nome ?? plain.InputModel?.nome ?? '-',
+        operador: plain.LoginModel?.first_name ?? plain.LoginModel?.login ?? '-',
+        armario_id: plain.armario_id,
+        casela_id: plain.casela_id,
+        residente: plain.ResidentModel?.nome ?? null,
+        item_type: plain.medicamento_id ? 'medicamento' : 'insumo',
+      };
+    });
+
+    return {
+      data,
+      total: count,
+      hasNext: count > safePage * safeLimit,
+      page: safePage,
+      limit: safeLimit,
+    };
+  }
+
   async create(data: Movement, transaction?: Transaction) {
     return await MovementModel.create(
       {

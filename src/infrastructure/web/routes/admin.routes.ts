@@ -61,6 +61,12 @@ router.get('/stock-history', (req, res) =>
 );
 router.get('/export', (req, res) => controller.getExport(req, res));
 router.get('/metrics', (req, res) => controller.getMetrics(req, res));
+router.get('/metrics/active-users', (req, res) =>
+  controller.getActiveUsersThisMonth(req, res),
+);
+router.get('/metrics/movements', (req, res) =>
+  controller.getMovementsThisMonth(req, res),
+);
 router.get('/health', (req, res) => controller.getHealth(req, res));
 router.get('/config', (req, res) => controller.getConfig(req, res));
 router.put('/config', (req, res) => controller.updateConfig(req, res));
