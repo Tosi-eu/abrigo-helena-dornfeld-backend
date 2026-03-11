@@ -36,7 +36,110 @@ export interface MovementQueryParams {
   type?: string;
 }
 
+function startOfMonth(d: Date) {
+  const x = new Date(d);
+  x.setDate(1);
+  x.setHours(0, 0, 0, 0);
+  return x;
+}
+function endOfMonth(d: Date) {
+  const x = new Date(d);
+  x.setMonth(x.getMonth() + 1);
+  x.setDate(0);
+  x.setHours(23, 59, 59, 999);
+  return x;
+}
+
 export class MovementRepository {
+  async countMovementsThisMonth(): Promise<number> {
+    const now = new Date();
+    const count = await MovementModel.count({
+      where: {
+        data: {
+          [Op.gte]: startOfMonth(now),
+          [Op.lte]: endOfMonth(now),
+        },
+      },
+    });
+    return count;
+  }
+
+  async listMovementsThisMonth(page: number = 1, limit: number = 25) {
+    const now = new Date();
+    const safePage = Math.max(1, Number(page) || 1);
+    const safeLimit = Math.min(100, Math.max(1, Number(limit) || 25));
+    const offset = (safePage - 1) * safeLimit;
+
+    const { rows, count } = await MovementModel.findAndCountAll({
+      where: {
+        data: {
+          [Op.gte]: startOfMonth(now),
+          [Op.lte]: endOfMonth(now),
+        },
+      },
+      order: [['data', 'DESC']],
+      offset,
+      limit: safeLimit,
+      include: [
+        {
+          model: MedicineModel,
+          as: 'MedicineModel',
+          attributes: ['id', 'nome', 'principio_ativo'],
+          required: false,
+        },
+        {
+          model: InputModel,
+          as: 'InputModel',
+          attributes: ['id', 'nome', 'descricao'],
+          required: false,
+        },
+        {
+          model: LoginModel,
+          as: 'LoginModel',
+          attributes: ['id', 'login', 'first_name'],
+        },
+        {
+          model: CabinetModel,
+          as: 'CabinetModel',
+          attributes: ['num_armario'],
+        },
+        {
+          model: ResidenteModel,
+          as: 'ResidentModel',
+          attributes: ['num_casela', 'nome'],
+        },
+      ],
+    });
+
+    const data = rows.map((r) => {
+      const plain = r.get({ plain: true }) as MovementHistoryPlain & {
+        medicamento_id?: number | null;
+      };
+      return {
+        id: plain.id,
+        tipo: plain.tipo,
+        data: formatDateToPtBr(plain.data),
+        quantidade: plain.quantidade,
+        setor: plain.setor,
+        lote: plain.lote,
+        nome: plain.MedicineModel?.nome ?? plain.InputModel?.nome ?? '-',
+        operador: plain.LoginModel?.first_name ?? plain.LoginModel?.login ?? '-',
+        armario_id: plain.armario_id,
+        casela_id: plain.casela_id,
+        residente: plain.ResidentModel?.nome ?? null,
+        item_type: plain.medicamento_id ? 'medicamento' : 'insumo',
+      };
+    });
+
+    return {
+      data,
+      total: count,
+      hasNext: count > safePage * safeLimit,
+      page: safePage,
+      limit: safeLimit,
+    };
+  }
+
   async create(data: Movement, transaction?: Transaction) {
     return await MovementModel.create(
       {

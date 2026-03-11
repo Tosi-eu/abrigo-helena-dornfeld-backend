@@ -44,6 +44,19 @@ export class NotificationEventService {
     return this.repo.listWithFilters(filters, transaction);
   }
 
+  async listForAdmin(
+    filters: {
+      page?: number;
+      limit?: number;
+      tipo?: NotificationEventType;
+      status?: EventStatus;
+      visto?: boolean;
+    },
+    transaction?: Transaction,
+  ) {
+    return this.repo.listAllForAdmin(filters, transaction);
+  }
+
   async update(
     id: number,
     updates: NotificationUpdateData,

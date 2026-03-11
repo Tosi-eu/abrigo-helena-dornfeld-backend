@@ -2,9 +2,19 @@ import { Request, Response } from 'express';
 import { LoginService } from '../../../core/services/login.service';
 import { AuthRequest } from '../../../middleware/auth.middleware';
 import { getErrorMessage } from '../../types/error.types';
+import type { LoginLogRepository } from '../../database/repositories/login-log.repository';
+
+function getClientIp(req: Request): string | null {
+  const forwarded = req.headers['x-forwarded-for'];
+  if (typeof forwarded === 'string') return forwarded.split(',')[0]?.trim() ?? null;
+  return req.ip ?? req.socket?.remoteAddress ?? null;
+}
 
 export class LoginController {
-  constructor(private readonly service: LoginService) {}
+  constructor(
+    private readonly service: LoginService,
+    private readonly loginLogRepo?: LoginLogRepository,
+  ) {}
 
   async create(req: AuthRequest, res: Response) {
     // Only whitelisted fields: new accounts are always created as normal user (no id/role from client)
@@ -49,6 +59,21 @@ export class LoginController {
       return res.status(400).json({ error: 'Login e senha obrigatórios' });
 
     const result = await this.service.authenticate(login, password);
+
+    if (this.loginLogRepo) {
+      try {
+        await this.loginLogRepo.create({
+          user_id: result?.user?.id ?? null,
+          login: String(login),
+          success: !!result,
+          ip: getClientIp(req),
+          user_agent: req.get('User-Agent') ?? null,
+        });
+      } catch {
+        // ignore log errors
+      }
+    }
+
     if (!result)
       return res.status(401).json({ error: 'Credenciais inválidas' });
 

@@ -192,6 +192,68 @@ export class NotificationEventRepository {
     };
   }
 
+  /** Admin: list all notifications with optional filters (tipo optional). */
+  async listAllForAdmin(
+    {
+      page = 1,
+      limit = 25,
+      tipo,
+      status,
+      visto,
+    }: {
+      page?: number;
+      limit?: number;
+      tipo?: NotificationEventType;
+      status?: EventStatus;
+      visto?: boolean;
+    },
+    transaction?: Transaction,
+  ) {
+    const offset = (page - 1) * limit;
+    const where: Record<string, unknown> = {};
+    if (tipo) where.tipo_evento = tipo;
+    if (status) where.status = status;
+    if (visto !== undefined) where.visto = visto;
+
+    const { rows, count } = await NotificationEventModel.findAndCountAll({
+      where,
+      offset,
+      limit,
+      order: [['createdAt', 'DESC']],
+      include: [
+        { model: ResidentModel, as: 'residente', attributes: ['nome'], required: false },
+        { model: MedicineModel, as: 'medicamento', attributes: ['nome'], required: false },
+        { model: LoginModel, as: 'usuario', attributes: ['first_name', 'last_name', 'login'], required: false },
+      ],
+      transaction,
+    });
+
+    const items = (rows as NotificationListRow[]).map((row) => ({
+      id: row.id,
+      destino: row.destino,
+      data_prevista: formatDateToPtBr(row.data_prevista),
+      status: row.status,
+      criado_por: row.criado_por,
+      residente_nome: row.residente?.nome,
+      medicamento_nome: row.medicamento?.nome,
+      medicamento_id: row.medicamento_id,
+      residente_id: row.residente_id,
+      usuario: row.usuario
+        ? `${row.usuario.first_name ?? ''} ${row.usuario.last_name ?? ''}`.trim() || row.usuario.login
+        : 'Sistema',
+      visto: row.visto,
+      tipo_evento: row.tipo_evento,
+    }));
+
+    return {
+      items,
+      total: count,
+      page,
+      limit,
+      hasNext: offset + rows.length < count,
+    };
+  }
+
   async findById(id: number, transaction?: Transaction) {
     return NotificationEventModel.findByPk(id, { transaction });
   }
