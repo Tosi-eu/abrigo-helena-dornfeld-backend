@@ -637,6 +637,89 @@ export class StockRepository {
     };
   }
 
+  async getFilterOptions(transaction?: Transaction) {
+    const [medCabinets, inpCabinets, medCaselas, inpCaselas, medLots, inpLots] =
+      await Promise.all([
+        MedicineStockModel.findAll({
+          attributes: ['armario_id'],
+          where: { armario_id: { [Op.not]: null } },
+          group: ['armario_id'],
+          raw: true,
+          transaction,
+        }),
+        InputStockModel.findAll({
+          attributes: ['armario_id'],
+          where: { armario_id: { [Op.not]: null } },
+          group: ['armario_id'],
+          raw: true,
+          transaction,
+        }),
+        MedicineStockModel.findAll({
+          attributes: ['casela_id'],
+          where: { casela_id: { [Op.not]: null } },
+          group: ['casela_id'],
+          raw: true,
+          transaction,
+        }),
+        InputStockModel.findAll({
+          attributes: ['casela_id'],
+          where: { casela_id: { [Op.not]: null } },
+          group: ['casela_id'],
+          raw: true,
+          transaction,
+        }),
+        MedicineStockModel.findAll({
+          attributes: ['lote'],
+          where: {
+            [Op.and]: [
+              { lote: { [Op.ne]: null } },
+              { lote: { [Op.ne]: '' } },
+            ],
+          },
+          group: ['lote'],
+          raw: true,
+          transaction,
+        }),
+        InputStockModel.findAll({
+          attributes: ['lote'],
+          where: {
+            [Op.and]: [
+              { lote: { [Op.ne]: null } },
+              { lote: { [Op.ne]: '' } },
+            ],
+          },
+          group: ['lote'],
+          raw: true,
+          transaction,
+        }),
+      ]);
+
+    const cabinets = Array.from(
+      new Set([
+        ...(medCabinets as { armario_id: number }[]).map(r => r.armario_id),
+        ...(inpCabinets as { armario_id: number }[]).map(r => r.armario_id),
+      ]),
+    ).sort((a, b) => a - b);
+
+    const caselas = Array.from(
+      new Set([
+        ...(medCaselas as { casela_id: number }[]).map(r => r.casela_id),
+        ...(inpCaselas as { casela_id: number }[]).map(r => r.casela_id),
+      ]),
+    ).sort((a, b) => a - b);
+
+    const lots = Array.from(
+      new Set([
+        ...(medLots as { lote: string }[]).map(r => r.lote),
+        ...(inpLots as { lote: string }[]).map(r => r.lote),
+      ]),
+    )
+      .filter(Boolean)
+      .sort((a, b) => String(a).localeCompare(String(b)));
+
+    return { cabinets, caselas, lots };
+  }
+
   private async sumStock(
     model: StockModel,
     options?: {

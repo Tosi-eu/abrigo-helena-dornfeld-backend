@@ -241,27 +241,54 @@ export class MovementRepository {
       ],
     });
 
-    const transfers = [];
-    for (const row of rows) {
-      const movement = row.get({ plain: true });
+    const pairs = rows
+      .filter(
+        (r) =>
+          (r.get('medicamento_id') as number) != null &&
+          (r.get('casela_id') as number) != null,
+      )
+      .map((r) => ({
+        medicamento_id: r.get('medicamento_id') as number,
+        casela_id: r.get('casela_id') as number,
+      }));
 
-      if (movement.medicamento_id && movement.casela_id) {
-        const stockInNursing = await MedicineStockModel.findOne({
-          where: {
-            medicamento_id: movement.medicamento_id,
-            casela_id: movement.casela_id,
-            setor: 'enfermagem',
-          },
-        });
+    const uniquePairs = Array.from(
+      new Map(pairs.map((p) => [`${p.medicamento_id}-${p.casela_id}`, p])).values(),
+    );
 
-        if (stockInNursing) {
-          transfers.push({
-            ...movement,
-            data: formatDateToPtBr(movement.data),
-          });
-        }
-      }
+    let nursingStockMap: Map<string, boolean> = new Map();
+    if (uniquePairs.length > 0) {
+      const nursingStocks = await MedicineStockModel.findAll({
+        where: {
+          setor: 'enfermagem',
+          [Op.or]: uniquePairs.map((p) => ({
+            medicamento_id: p.medicamento_id,
+            casela_id: p.casela_id,
+          })),
+        },
+        attributes: ['medicamento_id', 'casela_id'],
+      });
+      nursingStockMap = new Map(
+        nursingStocks.map((s) => [
+          `${s.medicamento_id}-${s.casela_id}`,
+          true,
+        ]),
+      );
     }
+
+    const transfers = rows
+      .map((row) => {
+        const movement = row.get({ plain: true });
+        if (
+          movement.medicamento_id &&
+          movement.casela_id &&
+          nursingStockMap.get(`${movement.medicamento_id}-${movement.casela_id}`)
+        ) {
+          return { ...movement, data: formatDateToPtBr(movement.data) };
+        }
+        return null;
+      })
+      .filter((t): t is NonNullable<typeof t> => t != null);
 
     return {
       data: transfers,

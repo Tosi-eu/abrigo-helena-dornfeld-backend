@@ -103,6 +103,20 @@ export class StockController {
     }
   }
 
+  async getFilterOptions(req: RlsRequest, res: Response) {
+    try {
+      const data = await this.service.getFilterOptions(req.transaction);
+      return res.json(data);
+    } catch (error: unknown) {
+      return sendErrorResponse(
+        res,
+        500,
+        error,
+        'Erro ao buscar opções de filtro',
+      );
+    }
+  }
+
   async getDaysForReplacementForNursing(req: RlsRequest, res: Response) {
     try {
       const medicamento_id = req.query.medicamento_id;

@@ -3,11 +3,12 @@ import rateLimit from 'express-rate-limit';
 import { ReportRepository } from '../../database/repositories/relatorio.repository';
 import { ReportService } from '../../../core/services/relatorio.service';
 import { ReportController } from '../controllers/relatorio.controller';
+import { cacheService } from '../../database/redis/client.redis';
 
 const router = Router();
 
 const repo = new ReportRepository();
-const service = new ReportService(repo);
+const service = new ReportService(repo, cacheService);
 const controller = new ReportController(service);
 
 const reportLimiter = rateLimit({

@@ -19,7 +19,11 @@ const stockService = new StockService(
 );
 const movementRepo = new MovementRepository();
 const movementService = new MovementService(movementRepo, cacheService);
-const dashboardService = new DashboardService(stockService, movementService);
+const dashboardService = new DashboardService(
+  stockService,
+  movementService,
+  cacheService,
+);
 const controller = new DashboardController(dashboardService);
 
 const router = Router();

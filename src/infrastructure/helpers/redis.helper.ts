@@ -17,6 +17,10 @@ export class CacheKeyHelper {
     return `stock:list:${this.hash(params)}`;
   }
 
+  static stockFilterOptions() {
+    return 'stock:filter-options';
+  }
+
   static stockDashboard(setor: string) {
     return `stock:dashboard:${setor}`;
   }
@@ -43,5 +47,13 @@ export class CacheKeyHelper {
 
   static movementWildcard() {
     return 'movement:*';
+  }
+
+  static report(type: string, params: object) {
+    return `report:${type}:${this.hash(params)}`;
+  }
+
+  static dashboardSummary(expiringDays?: number) {
+    return `dashboard:summary:${expiringDays ?? 'default'}`;
   }
 }
