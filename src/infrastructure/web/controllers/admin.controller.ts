@@ -574,10 +574,13 @@ export class AdminController {
   }
 
   async restoreBackup(req: AuthRequest, res: Response): Promise<void> {
-    const file = (req as unknown as { file?: { buffer: Buffer; originalname: string } }).file;
+    const file = (
+      req as unknown as { file?: { buffer: Buffer; originalname: string } }
+    ).file;
     if (!file?.buffer?.length || !file.originalname) {
       res.status(400).json({
-        error: 'Envie o arquivo do dump (backup_*.sql.gz ou .sql) no campo "file".',
+        error:
+          'Envie o arquivo do dump (backup_*.sql.gz ou .sql) no campo "file".',
       });
       return;
     }
@@ -615,13 +618,17 @@ export class AdminController {
       cleanup();
       if (code !== 0) {
         res.status(500).json({
-          error: stderr?.trim() || stdout?.trim() || `Processo encerrou com código ${code}`,
+          error:
+            stderr?.trim() ||
+            stdout?.trim() ||
+            `Processo encerrou com código ${code}`,
         });
         return;
       }
       const sendSuccess = () => {
         res.status(200).json({
-          message: 'Dump restaurado com sucesso. O banco foi alimentado com o arquivo de backup.',
+          message:
+            'Dump restaurado com sucesso. O banco foi alimentado com o arquivo de backup.',
         });
       };
       if (this.systemConfigRepo) {
@@ -642,27 +649,63 @@ export class AdminController {
       let stderr = '';
       let stdout = '';
       if (isGz) {
-        const gunzip = spawn('gunzip', ['-c', tmpPath], { stdio: ['ignore', 'pipe', 'pipe'] });
+        const gunzip = spawn('gunzip', ['-c', tmpPath], {
+          stdio: ['ignore', 'pipe', 'pipe'],
+        });
         const psql = spawn(
           'psql',
-          ['-h', dbHost, '-p', dbPort, '-U', dbUser, '-d', dbName, '-v', 'ON_ERROR_STOP=1'],
+          [
+            '-h',
+            dbHost,
+            '-p',
+            dbPort,
+            '-U',
+            dbUser,
+            '-d',
+            dbName,
+            '-v',
+            'ON_ERROR_STOP=1',
+          ],
           { env, stdio: ['pipe', 'pipe', 'pipe'] },
         );
         gunzip.stdout.pipe(psql.stdin!);
-        gunzip.stderr?.on('data', (d: Buffer) => { stderr += d.toString(); });
-        psql.stderr?.on('data', (d: Buffer) => { stderr += d.toString(); });
-        psql.stdout?.on('data', (d: Buffer) => { stdout += d.toString(); });
+        gunzip.stderr?.on('data', (d: Buffer) => {
+          stderr += d.toString();
+        });
+        psql.stderr?.on('data', (d: Buffer) => {
+          stderr += d.toString();
+        });
+        psql.stdout?.on('data', (d: Buffer) => {
+          stdout += d.toString();
+        });
         psql.on('close', (code, signal) => {
           onDone(code ?? (signal ? 1 : 0), stderr, stdout);
         });
       } else {
         const psql = spawn(
           'psql',
-          ['-h', dbHost, '-p', dbPort, '-U', dbUser, '-d', dbName, '-v', 'ON_ERROR_STOP=1', '-f', tmpPath],
+          [
+            '-h',
+            dbHost,
+            '-p',
+            dbPort,
+            '-U',
+            dbUser,
+            '-d',
+            dbName,
+            '-v',
+            'ON_ERROR_STOP=1',
+            '-f',
+            tmpPath,
+          ],
           { env, stdio: ['ignore', 'pipe', 'pipe'] },
         );
-        psql.stderr?.on('data', (d: Buffer) => { stderr += d.toString(); });
-        psql.stdout?.on('data', (d: Buffer) => { stdout += d.toString(); });
+        psql.stderr?.on('data', (d: Buffer) => {
+          stderr += d.toString();
+        });
+        psql.stdout?.on('data', (d: Buffer) => {
+          stdout += d.toString();
+        });
         psql.on('close', (code, signal) => {
           onDone(code ?? (signal ? 1 : 0), stderr, stdout);
         });
@@ -673,11 +716,30 @@ export class AdminController {
     const truncateSql =
       "DO $$ DECLARE tbls text; BEGIN SELECT string_agg(quote_ident(tablename), ', ') INTO tbls FROM pg_tables WHERE schemaname = 'public' AND tablename <> 'SequelizeMeta'; IF tbls IS NOT NULL AND tbls <> '' THEN EXECUTE 'TRUNCATE TABLE ' || tbls || ' RESTART IDENTITY CASCADE'; END IF; END $$;";
     let truncateStderr = '';
-    const truncatePsql = spawn('psql', ['-h', dbHost, '-p', dbPort, '-U', dbUser, '-d', dbName, '-v', 'ON_ERROR_STOP=1', '-c', truncateSql], {
-      env,
-      stdio: ['ignore', 'pipe', 'pipe'],
+    const truncatePsql = spawn(
+      'psql',
+      [
+        '-h',
+        dbHost,
+        '-p',
+        dbPort,
+        '-U',
+        dbUser,
+        '-d',
+        dbName,
+        '-v',
+        'ON_ERROR_STOP=1',
+        '-c',
+        truncateSql,
+      ],
+      {
+        env,
+        stdio: ['ignore', 'pipe', 'pipe'],
+      },
+    );
+    truncatePsql.stderr?.on('data', (d: Buffer) => {
+      truncateStderr += d.toString();
     });
-    truncatePsql.stderr?.on('data', (d: Buffer) => { truncateStderr += d.toString(); });
     truncatePsql.on('close', (code, signal) => {
       if (code !== 0) {
         onDone(code ?? (signal ? 1 : 0), truncateStderr, '');
