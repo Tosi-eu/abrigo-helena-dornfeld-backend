@@ -1,14 +1,15 @@
 import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
+import multer from 'multer';
 import { LoginRepository } from '../../database/repositories/login.repository';
 import { LoginLogRepository } from '../../database/repositories/login-log.repository';
 import { ReportRepository } from '../../database/repositories/relatorio.repository';
 import { SystemConfigRepository } from '../../database/repositories/system-config.repository';
 import { NotificationEventRepository } from '../../database/repositories/notificacao.repository';
+import { MovementRepository } from '../../database/repositories/movimentacao.repository';
 import { LoginService } from '../../../core/services/login.service';
 import { ReportService } from '../../../core/services/relatorio.service';
 import { NotificationEventService } from '../../../core/services/notificacao.service';
-import { MovementRepository } from '../../database/repositories/movimentacao.repository';
 import { MovementService } from '../../../core/services/movimentacao.service';
 import { AuditRepository } from '../../database/repositories/audit.repository';
 import { AdminController } from '../controllers/admin.controller';
@@ -16,6 +17,11 @@ import { requireAdmin } from '../../../middleware/admin.middleware';
 import { cacheService } from '../../database/redis/client.redis';
 
 const router = Router();
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 200 * 1024 * 1024 },
+});
+
 const loginRepo = new LoginRepository();
 const loginLogRepo = new LoginLogRepository();
 const reportRepo = new ReportRepository();
@@ -75,6 +81,9 @@ router.get('/notifications', (req, res) =>
 );
 router.patch('/notifications/:id', (req, res) =>
   controller.patchNotification(req, res),
+);
+router.post('/restore-backup', upload.single('file'), (req, res) =>
+  controller.restoreBackup(req, res),
 );
 
 export default router;

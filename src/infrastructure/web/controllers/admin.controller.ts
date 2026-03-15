@@ -1,4 +1,8 @@
 import { Response } from 'express';
+import { spawn } from 'child_process';
+import { writeFileSync, unlinkSync, existsSync } from 'fs';
+import { join } from 'path';
+import { tmpdir } from 'os';
 import { LoginService } from '../../../core/services/login.service';
 import { MovementService } from '../../../core/services/movimentacao.service';
 import { ReportService } from '../../../core/services/relatorio.service';
@@ -567,5 +571,119 @@ export class AdminController {
         error: getErrorMessage(error) || 'Erro ao salvar configurações',
       });
     }
+  }
+
+  async restoreBackup(req: AuthRequest, res: Response): Promise<void> {
+    const file = (req as unknown as { file?: { buffer: Buffer; originalname: string } }).file;
+    if (!file?.buffer?.length || !file.originalname) {
+      res.status(400).json({
+        error: 'Envie o arquivo do dump (backup_*.sql.gz ou .sql) no campo "file".',
+      });
+      return;
+    }
+
+    const name = file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const isGz = name.toLowerCase().endsWith('.gz');
+    const ext = isGz ? '.sql.gz' : '.sql';
+    const tmpPath = join(tmpdir(), `restore_${Date.now()}${ext}`);
+
+    try {
+      writeFileSync(tmpPath, file.buffer);
+    } catch (err: unknown) {
+      res.status(500).json({
+        error: getErrorMessage(err) || 'Erro ao gravar arquivo temporário',
+      });
+      return;
+    }
+
+    const dbHost = process.env.DB_HOST || 'localhost';
+    const dbPort = process.env.DB_PORT || '5432';
+    const dbUser = process.env.DB_USER || 'postgres';
+    const dbPassword = process.env.DB_PASSWORD || '';
+    const dbName = process.env.DB_NAME || 'estoque';
+    const env = { ...process.env, PGPASSWORD: dbPassword };
+
+    const cleanup = () => {
+      try {
+        if (existsSync(tmpPath)) unlinkSync(tmpPath);
+      } catch {
+        /* ignore */
+      }
+    };
+
+    const onDone = (code: number, stderr: string, stdout: string) => {
+      cleanup();
+      if (code !== 0) {
+        res.status(500).json({
+          error: stderr?.trim() || stdout?.trim() || `Processo encerrou com código ${code}`,
+        });
+        return;
+      }
+      const sendSuccess = () => {
+        res.status(200).json({
+          message: 'Dump restaurado com sucesso. O banco foi alimentado com o arquivo de backup.',
+        });
+      };
+      if (this.systemConfigRepo) {
+        this.systemConfigRepo
+          .set('last_backup_at', new Date().toISOString())
+          .then(sendSuccess)
+          .catch((err: unknown) => {
+            res.status(500).json({
+              error: getErrorMessage(err) || 'Erro ao atualizar last_backup_at',
+            });
+          });
+      } else {
+        sendSuccess();
+      }
+    };
+
+    const runRestore = () => {
+      let stderr = '';
+      let stdout = '';
+      if (isGz) {
+        const gunzip = spawn('gunzip', ['-c', tmpPath], { stdio: ['ignore', 'pipe', 'pipe'] });
+        const psql = spawn(
+          'psql',
+          ['-h', dbHost, '-p', dbPort, '-U', dbUser, '-d', dbName, '-v', 'ON_ERROR_STOP=1'],
+          { env, stdio: ['pipe', 'pipe', 'pipe'] },
+        );
+        gunzip.stdout.pipe(psql.stdin!);
+        gunzip.stderr?.on('data', (d: Buffer) => { stderr += d.toString(); });
+        psql.stderr?.on('data', (d: Buffer) => { stderr += d.toString(); });
+        psql.stdout?.on('data', (d: Buffer) => { stdout += d.toString(); });
+        psql.on('close', (code, signal) => {
+          onDone(code ?? (signal ? 1 : 0), stderr, stdout);
+        });
+      } else {
+        const psql = spawn(
+          'psql',
+          ['-h', dbHost, '-p', dbPort, '-U', dbUser, '-d', dbName, '-v', 'ON_ERROR_STOP=1', '-f', tmpPath],
+          { env, stdio: ['ignore', 'pipe', 'pipe'] },
+        );
+        psql.stderr?.on('data', (d: Buffer) => { stderr += d.toString(); });
+        psql.stdout?.on('data', (d: Buffer) => { stdout += d.toString(); });
+        psql.on('close', (code, signal) => {
+          onDone(code ?? (signal ? 1 : 0), stderr, stdout);
+        });
+      }
+    };
+
+    // Truncate all tables (except SequelizeMeta) so restore does not collide with existing data.
+    const truncateSql =
+      "DO $$ DECLARE tbls text; BEGIN SELECT string_agg(quote_ident(tablename), ', ') INTO tbls FROM pg_tables WHERE schemaname = 'public' AND tablename <> 'SequelizeMeta'; IF tbls IS NOT NULL AND tbls <> '' THEN EXECUTE 'TRUNCATE TABLE ' || tbls || ' RESTART IDENTITY CASCADE'; END IF; END $$;";
+    let truncateStderr = '';
+    const truncatePsql = spawn('psql', ['-h', dbHost, '-p', dbPort, '-U', dbUser, '-d', dbName, '-v', 'ON_ERROR_STOP=1', '-c', truncateSql], {
+      env,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    truncatePsql.stderr?.on('data', (d: Buffer) => { truncateStderr += d.toString(); });
+    truncatePsql.on('close', (code, signal) => {
+      if (code !== 0) {
+        onDone(code ?? (signal ? 1 : 0), truncateStderr, '');
+        return;
+      }
+      runRestore();
+    });
   }
 }
