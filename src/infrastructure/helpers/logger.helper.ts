@@ -35,7 +35,8 @@ class StructuredLogger {
       transports: [
         new winston.transports.Console({
           format:
-            process.env.NODE_ENV === 'production' && process.env.LOG_FORMAT !== 'pretty'
+            process.env.NODE_ENV === 'production' &&
+            process.env.LOG_FORMAT !== 'pretty'
               ? winston.format.combine(
                   winston.format.timestamp(),
                   winston.format.json(),

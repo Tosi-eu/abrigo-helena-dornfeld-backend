@@ -15,9 +15,9 @@
     "test:watch": "NODE_ENV=test jest --watchAll",
     "format": "prettier --write \"src/**/*.{ts,js,json}\"",
     "lint": "eslint \"src/**/*.ts\" --fix",
-    "db:migrate": "sequelize-cli db:migrate",
-    "db:migrate:undo": "sequelize-cli db:migrate:undo",
-    "db:seed": "sequelize-cli db:seed:all"
+    "db:migrate": "docker exec backend npx sequelize-cli db:migrate",
+    "db:migrate:undo": "docker exec backend npx sequelize-cli db:migrate:undo",
+    "db:seed": "docker exec backend npx sequelize-cli db:seed:all"
   },
   "dependencies": {
     "@types/pdfkit": "^0.17.3",
