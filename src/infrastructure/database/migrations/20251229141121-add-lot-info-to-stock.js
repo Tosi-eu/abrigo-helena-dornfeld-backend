@@ -1,6 +1,9 @@
 'use strict';
 
-const { addColumnIfNotExists, removeColumnIfExists } = require('../migration-helpers');
+const {
+  addColumnIfNotExists,
+  removeColumnIfExists,
+} = require('../migration-helpers');
 
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
@@ -18,9 +21,7 @@ module.exports = {
     const addIndexIfNotExists = async (table, fields, opts) => {
       try {
         await queryInterface.addIndex(table, fields, opts);
-      } catch (e) {
-      
-      }
+      } catch (e) {}
     };
     await addIndexIfNotExists('estoque_insumo', ['lote'], {
       unique: true,
@@ -40,10 +41,16 @@ module.exports = {
 
   async down(queryInterface) {
     try {
-      await queryInterface.removeIndex('estoque_insumo', 'uniq_estoque_insumo_lote');
+      await queryInterface.removeIndex(
+        'estoque_insumo',
+        'uniq_estoque_insumo_lote',
+      );
     } catch (_) {}
     try {
-      await queryInterface.removeIndex('estoque_medicamento', 'uniq_estoque_medicamento_lote');
+      await queryInterface.removeIndex(
+        'estoque_medicamento',
+        'uniq_estoque_medicamento_lote',
+      );
     } catch (_) {}
 
     await removeColumnIfExists(queryInterface, 'estoque_insumo', 'lote');

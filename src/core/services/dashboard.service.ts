@@ -95,7 +95,9 @@ export class DashboardService {
       }
       return new Date(v as string | number).getTime() || 0;
     };
-    type MovementSummaryItem = Record<string, unknown> & { data?: string | Date };
+    type MovementSummaryItem = Record<string, unknown> & {
+      data?: string | Date;
+    };
     const recentMovements = [
       ...(medMovements.data || []).map((m: MovementSummaryItem) => ({
         ...m,

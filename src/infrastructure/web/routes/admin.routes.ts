@@ -70,7 +70,11 @@ router.get('/metrics/movements', (req, res) =>
 router.get('/health', (req, res) => controller.getHealth(req, res));
 router.get('/config', (req, res) => controller.getConfig(req, res));
 router.put('/config', (req, res) => controller.updateConfig(req, res));
-router.get('/notifications', (req, res) => controller.getNotifications(req, res));
-router.patch('/notifications/:id', (req, res) => controller.patchNotification(req, res));
+router.get('/notifications', (req, res) =>
+  controller.getNotifications(req, res),
+);
+router.patch('/notifications/:id', (req, res) =>
+  controller.patchNotification(req, res),
+);
 
 export default router;

@@ -34,9 +34,15 @@ module.exports = {
       "(current_setting('app.current_user_id', true) IS NULL OR (current_setting('app.current_user_id', true))::int = 1 OR current_setting('app.user_can_delete', true) = 'true')";
 
     for (const table of allTables) {
-      await sequelize.query(`DROP POLICY IF EXISTS "${table}_rls_insert" ON "${table}";`);
-      await sequelize.query(`DROP POLICY IF EXISTS "${table}_rls_update" ON "${table}";`);
-      await sequelize.query(`DROP POLICY IF EXISTS "${table}_rls_delete" ON "${table}";`);
+      await sequelize.query(
+        `DROP POLICY IF EXISTS "${table}_rls_insert" ON "${table}";`,
+      );
+      await sequelize.query(
+        `DROP POLICY IF EXISTS "${table}_rls_update" ON "${table}";`,
+      );
+      await sequelize.query(
+        `DROP POLICY IF EXISTS "${table}_rls_delete" ON "${table}";`,
+      );
 
       await sequelize.query(`
         CREATE POLICY "${table}_rls_insert" ON "${table}"
@@ -73,9 +79,15 @@ module.exports = {
     ];
 
     for (const table of allTables) {
-      await sequelize.query(`DROP POLICY IF EXISTS "${table}_rls_insert" ON "${table}";`);
-      await sequelize.query(`DROP POLICY IF EXISTS "${table}_rls_update" ON "${table}";`);
-      await sequelize.query(`DROP POLICY IF EXISTS "${table}_rls_delete" ON "${table}";`);
+      await sequelize.query(
+        `DROP POLICY IF EXISTS "${table}_rls_insert" ON "${table}";`,
+      );
+      await sequelize.query(
+        `DROP POLICY IF EXISTS "${table}_rls_update" ON "${table}";`,
+      );
+      await sequelize.query(
+        `DROP POLICY IF EXISTS "${table}_rls_delete" ON "${table}";`,
+      );
 
       await sequelize.query(`
         CREATE POLICY "${table}_rls_insert" ON "${table}"

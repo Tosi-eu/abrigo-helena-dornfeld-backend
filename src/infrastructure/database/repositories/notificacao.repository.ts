@@ -10,7 +10,10 @@ import NotificationEventModel, {
 } from '../models/notificacao.model';
 import ResidentModel from '../models/residente.model';
 import { NotificationUpdateData } from '../../types/notificacao.types';
-import { NotificationWhereOptions, Includeable } from '../../types/sequelize.types';
+import {
+  NotificationWhereOptions,
+  Includeable,
+} from '../../types/sequelize.types';
 import { MovementType, StockItemStatus } from '../../../core/utils/utils';
 import MedicineStockModel from '../models/estoque-medicamento.model';
 import MovementModel from '../models/movimentacao.model';
@@ -161,7 +164,7 @@ export class NotificationEventRepository {
     });
 
     return {
-      items: (rows as NotificationListRow[]).map((row) => ({
+      items: (rows as NotificationListRow[]).map(row => ({
         id: row.id,
         destino: row.destino,
         data_prevista: formatDateToPtBr(row.data_prevista),
@@ -221,14 +224,29 @@ export class NotificationEventRepository {
       limit,
       order: [['createdAt', 'DESC']],
       include: [
-        { model: ResidentModel, as: 'residente', attributes: ['nome'], required: false },
-        { model: MedicineModel, as: 'medicamento', attributes: ['nome'], required: false },
-        { model: LoginModel, as: 'usuario', attributes: ['first_name', 'last_name', 'login'], required: false },
+        {
+          model: ResidentModel,
+          as: 'residente',
+          attributes: ['nome'],
+          required: false,
+        },
+        {
+          model: MedicineModel,
+          as: 'medicamento',
+          attributes: ['nome'],
+          required: false,
+        },
+        {
+          model: LoginModel,
+          as: 'usuario',
+          attributes: ['first_name', 'last_name', 'login'],
+          required: false,
+        },
       ],
       transaction,
     });
 
-    const items = (rows as NotificationListRow[]).map((row) => ({
+    const items = (rows as NotificationListRow[]).map(row => ({
       id: row.id,
       destino: row.destino,
       data_prevista: formatDateToPtBr(row.data_prevista),
@@ -239,7 +257,8 @@ export class NotificationEventRepository {
       medicamento_id: row.medicamento_id,
       residente_id: row.residente_id,
       usuario: row.usuario
-        ? `${row.usuario.first_name ?? ''} ${row.usuario.last_name ?? ''}`.trim() || row.usuario.login
+        ? `${row.usuario.first_name ?? ''} ${row.usuario.last_name ?? ''}`.trim() ||
+          row.usuario.login
         : 'Sistema',
       visto: row.visto,
       tipo_evento: row.tipo_evento,

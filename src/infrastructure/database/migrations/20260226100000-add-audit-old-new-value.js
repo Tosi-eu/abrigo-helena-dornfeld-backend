@@ -1,6 +1,9 @@
 'use strict';
 
-const { addColumnIfNotExists, removeColumnIfExists } = require('../migration-helpers');
+const {
+  addColumnIfNotExists,
+  removeColumnIfExists,
+} = require('../migration-helpers');
 
 /**
  * Adds old_value and new_value (TEXT) to audit_log for before/after comparison.

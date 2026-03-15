@@ -47,7 +47,12 @@ async function tableExists(queryInterface, tableName) {
  * @param {string} columnName
  * @param {object} options - Same as queryInterface.addColumn options
  */
-async function addColumnIfNotExists(queryInterface, tableName, columnName, options) {
+async function addColumnIfNotExists(
+  queryInterface,
+  tableName,
+  columnName,
+  options,
+) {
   const exists = await columnExists(queryInterface, tableName, columnName);
   if (exists) return;
   try {
@@ -77,7 +82,12 @@ async function removeColumnIfExists(queryInterface, tableName, columnName) {
  * @param {object} attributes
  * @param {object} [options]
  */
-async function createTableIfNotExists(queryInterface, tableName, attributes, options = {}) {
+async function createTableIfNotExists(
+  queryInterface,
+  tableName,
+  attributes,
+  options = {},
+) {
   const exists = await tableExists(queryInterface, tableName);
   if (!exists) {
     await queryInterface.createTable(tableName, attributes, options);

@@ -2,9 +2,7 @@ import { sequelize } from '../database/sequelize';
 import express from 'express';
 import cookieParser from 'cookie-parser';
 import routes from '../web/routes/index.routes';
-import {
-  setupAssociations,
-} from '../database/models/index.models';
+import { setupAssociations } from '../database/models/index.models';
 import { errorHandler } from '../../middleware/error-handler.middleware';
 import { getDatabaseConfig } from './database-config.helper';
 

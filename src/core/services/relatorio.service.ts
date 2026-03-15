@@ -56,7 +56,6 @@ export class ReportService {
   ) {}
 
   async generateReport(type: string, params: GenerateReportParams) {
-
     const resolver = async () => this.generateReportInternal(type, params);
 
     if (this.cache) {

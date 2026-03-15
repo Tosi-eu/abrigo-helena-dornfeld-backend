@@ -1,6 +1,9 @@
 'use strict';
 
-const { addColumnIfNotExists, removeColumnIfExists } = require('../migration-helpers');
+const {
+  addColumnIfNotExists,
+  removeColumnIfExists,
+} = require('../migration-helpers');
 
 module.exports = {
   async up(queryInterface, Sequelize) {
@@ -10,14 +13,23 @@ module.exports = {
       defaultValue: 'active',
     });
 
-    await addColumnIfNotExists(queryInterface, 'estoque_insumo', 'suspended_at', {
-      type: Sequelize.DATE,
-      allowNull: true,
-    });
+    await addColumnIfNotExists(
+      queryInterface,
+      'estoque_insumo',
+      'suspended_at',
+      {
+        type: Sequelize.DATE,
+        allowNull: true,
+      },
+    );
   },
 
   async down(queryInterface) {
     await removeColumnIfExists(queryInterface, 'estoque_insumo', 'status');
-    await removeColumnIfExists(queryInterface, 'estoque_insumo', 'suspended_at');
+    await removeColumnIfExists(
+      queryInterface,
+      'estoque_insumo',
+      'suspended_at',
+    );
   },
 };

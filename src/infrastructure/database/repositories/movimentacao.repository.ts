@@ -111,7 +111,7 @@ export class MovementRepository {
       ],
     });
 
-    const data = rows.map((r) => {
+    const data = rows.map(r => {
       const plain = r.get({ plain: true }) as MovementHistoryPlain & {
         medicamento_id?: number | null;
       };
@@ -123,7 +123,8 @@ export class MovementRepository {
         setor: plain.setor,
         lote: plain.lote,
         nome: plain.MedicineModel?.nome ?? plain.InputModel?.nome ?? '-',
-        operador: plain.LoginModel?.first_name ?? plain.LoginModel?.login ?? '-',
+        operador:
+          plain.LoginModel?.first_name ?? plain.LoginModel?.login ?? '-',
         armario_id: plain.armario_id,
         casela_id: plain.casela_id,
         residente: plain.ResidentModel?.nome ?? null,
@@ -243,17 +244,19 @@ export class MovementRepository {
 
     const pairs = rows
       .filter(
-        (r) =>
+        r =>
           (r.get('medicamento_id') as number) != null &&
           (r.get('casela_id') as number) != null,
       )
-      .map((r) => ({
+      .map(r => ({
         medicamento_id: r.get('medicamento_id') as number,
         casela_id: r.get('casela_id') as number,
       }));
 
     const uniquePairs = Array.from(
-      new Map(pairs.map((p) => [`${p.medicamento_id}-${p.casela_id}`, p])).values(),
+      new Map(
+        pairs.map(p => [`${p.medicamento_id}-${p.casela_id}`, p]),
+      ).values(),
     );
 
     let nursingStockMap: Map<string, boolean> = new Map();
@@ -261,7 +264,7 @@ export class MovementRepository {
       const nursingStocks = await MedicineStockModel.findAll({
         where: {
           setor: 'enfermagem',
-          [Op.or]: uniquePairs.map((p) => ({
+          [Op.or]: uniquePairs.map(p => ({
             medicamento_id: p.medicamento_id,
             casela_id: p.casela_id,
           })),
@@ -269,20 +272,19 @@ export class MovementRepository {
         attributes: ['medicamento_id', 'casela_id'],
       });
       nursingStockMap = new Map(
-        nursingStocks.map((s) => [
-          `${s.medicamento_id}-${s.casela_id}`,
-          true,
-        ]),
+        nursingStocks.map(s => [`${s.medicamento_id}-${s.casela_id}`, true]),
       );
     }
 
     const transfers = rows
-      .map((row) => {
+      .map(row => {
         const movement = row.get({ plain: true });
         if (
           movement.medicamento_id &&
           movement.casela_id &&
-          nursingStockMap.get(`${movement.medicamento_id}-${movement.casela_id}`)
+          nursingStockMap.get(
+            `${movement.medicamento_id}-${movement.casela_id}`,
+          )
         ) {
           return { ...movement, data: formatDateToPtBr(movement.data) };
         }
@@ -539,7 +541,7 @@ export class MovementRepository {
       dias_parados?: string | number | null;
     }
     const results: NonMovementedItem[] = [
-      ...(medicines as NonMovementedRawRow[]).map((m) => ({
+      ...(medicines as NonMovementedRawRow[]).map(m => ({
         item_id: m.id,
         nome: m.nome,
         detalhe: m.detalhe ?? null,
@@ -548,7 +550,7 @@ export class MovementRepository {
         ),
         dias_parados: Number(m.dias_parados ?? 0),
       })),
-      ...(inputs as NonMovementedRawRow[]).map((i) => ({
+      ...(inputs as NonMovementedRawRow[]).map(i => ({
         item_id: i.id,
         nome: i.nome,
         detalhe: i.detalhe ?? null,

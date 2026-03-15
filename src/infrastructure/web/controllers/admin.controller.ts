@@ -64,7 +64,12 @@ export class AdminController {
       first_name?: string;
       last_name?: string;
       role?: 'admin' | 'user';
-      permissions?: { read?: boolean; create?: boolean; update?: boolean; delete?: boolean };
+      permissions?: {
+        read?: boolean;
+        create?: boolean;
+        update?: boolean;
+        delete?: boolean;
+      };
     } = { login, password };
     if (firstName !== undefined) data.first_name = firstName;
     if (lastName !== undefined) data.last_name = lastName;
@@ -74,7 +79,11 @@ export class AdminController {
       }
       data.role = role;
     }
-    if (permissions !== undefined && typeof permissions === 'object' && permissions !== null) {
+    if (
+      permissions !== undefined &&
+      typeof permissions === 'object' &&
+      permissions !== null
+    ) {
       data.permissions = {
         read: permissions.read !== false,
         create: Boolean(permissions.create),
@@ -91,7 +100,11 @@ export class AdminController {
       return res.status(201).json(user);
     } catch (error: unknown) {
       const msg = getErrorMessage(error);
-      if (msg === 'duplicate key' || msg === 'Usuário já cadastrado' || msg?.includes('cadastrado')) {
+      if (
+        msg === 'duplicate key' ||
+        msg === 'Usuário já cadastrado' ||
+        msg?.includes('cadastrado')
+      ) {
         return res.status(409).json({ error: 'Login já cadastrado' });
       }
       if (msg?.includes('Senha deve')) {
@@ -115,7 +128,12 @@ export class AdminController {
       login?: string;
       password?: string;
       role?: 'admin' | 'user';
-      permissions?: { read?: boolean; create?: boolean; update?: boolean; delete?: boolean };
+      permissions?: {
+        read?: boolean;
+        create?: boolean;
+        update?: boolean;
+        delete?: boolean;
+      };
     } = {};
     if (body.firstName !== undefined) data.first_name = body.firstName;
     if (body.lastName !== undefined) data.last_name = body.lastName;
@@ -131,7 +149,9 @@ export class AdminController {
     if (body.permissions !== undefined) {
       const p = body.permissions;
       if (typeof p !== 'object' || p === null) {
-        return res.status(400).json({ error: 'permissions deve ser um objeto' });
+        return res
+          .status(400)
+          .json({ error: 'permissions deve ser um objeto' });
       }
       data.permissions = {
         read: p.read !== false,
@@ -215,7 +235,7 @@ export class AdminController {
       });
     }
   }
-  
+
   async getLoginLog(req: AuthRequest, res: Response) {
     if (!this.loginLogRepo) {
       return res.status(501).json({ error: 'Log de acessos não disponível' });
@@ -223,10 +243,18 @@ export class AdminController {
     try {
       const page = Math.max(1, Number(req.query.page) || 1);
       const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 25));
-      const userId = req.query.userId != null ? Number(req.query.userId) : undefined;
-      const login = typeof req.query.login === 'string' ? req.query.login.trim() : undefined;
+      const userId =
+        req.query.userId != null ? Number(req.query.userId) : undefined;
+      const login =
+        typeof req.query.login === 'string'
+          ? req.query.login.trim()
+          : undefined;
       const success =
-        req.query.success === 'true' ? true : req.query.success === 'false' ? false : undefined;
+        req.query.success === 'true'
+          ? true
+          : req.query.success === 'false'
+            ? false
+            : undefined;
       const fromDate =
         typeof req.query.fromDate === 'string' && req.query.fromDate
           ? new Date(req.query.fromDate)
@@ -409,11 +437,15 @@ export class AdminController {
     try {
       const page = Math.max(1, Number(req.query.page) || 1);
       const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 25));
-      const result = await this.loginLogRepo.listActiveUsersThisMonth(page, limit);
+      const result = await this.loginLogRepo.listActiveUsersThisMonth(
+        page,
+        limit,
+      );
       return res.json(result);
     } catch (error: unknown) {
       return res.status(500).json({
-        error: getErrorMessage(error) || 'Erro ao listar usuários ativos do mês',
+        error:
+          getErrorMessage(error) || 'Erro ao listar usuários ativos do mês',
       });
     }
   }
@@ -425,7 +457,10 @@ export class AdminController {
     try {
       const page = Math.max(1, Number(req.query.page) || 1);
       const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 25));
-      const result = await this.movementService.listMovementsThisMonth(page, limit);
+      const result = await this.movementService.listMovementsThisMonth(
+        page,
+        limit,
+      );
       return res.json(result);
     } catch (error: unknown) {
       return res.status(500).json({
@@ -458,7 +493,11 @@ export class AdminController {
       const tipo = (req.query.tipo as string) || undefined;
       const status = (req.query.status as string) || undefined;
       const visto =
-        req.query.visto === 'true' ? true : req.query.visto === 'false' ? false : undefined;
+        req.query.visto === 'true'
+          ? true
+          : req.query.visto === 'false'
+            ? false
+            : undefined;
       const result = await this.notificationService.listForAdmin({
         page,
         limit,
@@ -485,7 +524,10 @@ export class AdminController {
     const body = req.body ?? {};
     const updates: { visto?: boolean; status?: EventStatus } = {};
     if (typeof body.visto === 'boolean') updates.visto = body.visto;
-    if (typeof body.status === 'string' && ['pending', 'sent', 'cancelled'].includes(body.status)) {
+    if (
+      typeof body.status === 'string' &&
+      ['pending', 'sent', 'cancelled'].includes(body.status)
+    ) {
       updates.status = body.status as EventStatus;
     }
     if (Object.keys(updates).length === 0) {
@@ -493,7 +535,8 @@ export class AdminController {
     }
     try {
       const updated = await this.notificationService.update(id, updates);
-      if (!updated) return res.status(404).json({ error: 'Notificação não encontrada' });
+      if (!updated)
+        return res.status(404).json({ error: 'Notificação não encontrada' });
       return res.json(updated);
     } catch (error: unknown) {
       return res.status(500).json({

@@ -141,7 +141,10 @@ describe('LoginService (unit)', () => {
       expect(result).not.toBeNull();
       expect(result!.token).toBeDefined();
       expect(result!.user).toEqual({ id: 1, login: 'user1', role: 'user' });
-      expect(mockRepo.update).toHaveBeenCalledWith(1, expect.objectContaining({ refresh_token: result!.token }));
+      expect(mockRepo.update).toHaveBeenCalledWith(
+        1,
+        expect.objectContaining({ refresh_token: result!.token }),
+      );
     });
   });
 

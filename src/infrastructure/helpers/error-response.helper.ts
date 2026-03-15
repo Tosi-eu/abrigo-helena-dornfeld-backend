@@ -19,7 +19,7 @@ export function sendErrorResponse(
 
   return res.status(statusCode).json(body);
 }
-  
+
 export function mapErrorToStatusAndCode(error: unknown): {
   status: number;
   code?: string;

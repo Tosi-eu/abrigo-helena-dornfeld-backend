@@ -5,7 +5,6 @@ import jwt from 'jsonwebtoken';
 import { BaseError } from 'sequelize';
 import { Login } from '../domain/login';
 
-
 const MIN_PASSWORD_LENGTH = 8;
 
 const FULL_PERMISSIONS = {
@@ -24,7 +23,10 @@ const DEFAULT_PERMISSIONS = {
 
 function effectivePermissions(
   role: 'admin' | 'user',
-  stored: { read?: boolean; create?: boolean; update?: boolean; delete?: boolean } | null | undefined,
+  stored:
+    | { read?: boolean; create?: boolean; update?: boolean; delete?: boolean }
+    | null
+    | undefined,
 ) {
   if (role === 'admin') return { ...FULL_PERMISSIONS };
   return { ...DEFAULT_PERMISSIONS, ...(stored ?? {}) };
@@ -104,7 +106,12 @@ export class LoginService {
     first_name?: string;
     last_name?: string;
     role?: 'admin' | 'user';
-    permissions?: { read?: boolean; create?: boolean; update?: boolean; delete?: boolean };
+    permissions?: {
+      read?: boolean;
+      create?: boolean;
+      update?: boolean;
+      delete?: boolean;
+    };
   }) {
     const userExists = await this.repo.findByLogin(attrs.login);
     if (userExists) throw new Error('Usuário já cadastrado');
@@ -255,7 +262,12 @@ export class LoginService {
       login?: string;
       password?: string;
       role?: 'admin' | 'user';
-      permissions?: { read?: boolean; create?: boolean; update?: boolean; delete?: boolean };
+      permissions?: {
+        read?: boolean;
+        create?: boolean;
+        update?: boolean;
+        delete?: boolean;
+      };
     },
   ) {
     const user = await this.repo.findById(userId);
@@ -267,7 +279,12 @@ export class LoginService {
       login: string;
       role: 'admin' | 'user';
       password: string;
-      permissions: { read: boolean; create: boolean; update: boolean; delete: boolean };
+      permissions: {
+        read: boolean;
+        create: boolean;
+        update: boolean;
+        delete: boolean;
+      };
     }> = {};
     if (data.first_name !== undefined) updateData.first_name = data.first_name;
     if (data.last_name !== undefined) updateData.last_name = data.last_name;

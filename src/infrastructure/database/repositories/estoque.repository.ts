@@ -671,10 +671,7 @@ export class StockRepository {
         MedicineStockModel.findAll({
           attributes: ['lote'],
           where: {
-            [Op.and]: [
-              { lote: { [Op.ne]: null } },
-              { lote: { [Op.ne]: '' } },
-            ],
+            [Op.and]: [{ lote: { [Op.ne]: null } }, { lote: { [Op.ne]: '' } }],
           },
           group: ['lote'],
           raw: true,
@@ -683,10 +680,7 @@ export class StockRepository {
         InputStockModel.findAll({
           attributes: ['lote'],
           where: {
-            [Op.and]: [
-              { lote: { [Op.ne]: null } },
-              { lote: { [Op.ne]: '' } },
-            ],
+            [Op.and]: [{ lote: { [Op.ne]: null } }, { lote: { [Op.ne]: '' } }],
           },
           group: ['lote'],
           raw: true,
@@ -1551,15 +1545,29 @@ export class StockRepository {
       quantidade?: number;
       lote?: string | null;
       setor?: string | null;
-      MedicineModel?: { nome?: string; principio_ativo?: string; dosagem?: string; unidade_medida?: string };
+      MedicineModel?: {
+        nome?: string;
+        principio_ativo?: string;
+        dosagem?: string;
+        unidade_medida?: string;
+      };
       InputModel?: { nome?: string; descricao?: string | null };
       ResidentModel?: { nome?: string };
     };
-    type ExpiringRow = { get?(opts: { plain: true }): ExpiringRowPlain } | ExpiringRowPlain;
-    const toItem = (r: ExpiringRow, tipo: 'medicamento' | 'insumo'): ExpiringStockItem => {
-      const plain: ExpiringRowPlain = typeof (r as { get?: (o: { plain: true }) => ExpiringRowPlain }).get === 'function'
-        ? (r as { get(o: { plain: true }): ExpiringRowPlain }).get({ plain: true })
-        : (r as ExpiringRowPlain);
+    type ExpiringRow =
+      | { get?(opts: { plain: true }): ExpiringRowPlain }
+      | ExpiringRowPlain;
+    const toItem = (
+      r: ExpiringRow,
+      tipo: 'medicamento' | 'insumo',
+    ): ExpiringStockItem => {
+      const plain: ExpiringRowPlain =
+        typeof (r as { get?: (o: { plain: true }) => ExpiringRowPlain }).get ===
+        'function'
+          ? (r as { get(o: { plain: true }): ExpiringRowPlain }).get({
+              plain: true,
+            })
+          : (r as ExpiringRowPlain);
       const validade = plain.validade ? new Date(plain.validade) : null;
       const dias = validade
         ? Math.ceil((validade.getTime() - today.getTime()) / 86400000)
@@ -1738,8 +1746,7 @@ export class StockRepository {
               { [Op.gte]: sequelize.literal('CURRENT_DATE') },
               {
                 [Op.lte]: sequelize.literal(
-                  'CURRENT_DATE + ' +
-                    Math.min(365, Math.max(1, expiringDays)),
+                  'CURRENT_DATE + ' + Math.min(365, Math.max(1, expiringDays)),
                 ),
               },
             ],
@@ -1755,8 +1762,7 @@ export class StockRepository {
               { [Op.gte]: sequelize.literal('CURRENT_DATE') },
               {
                 [Op.lte]: sequelize.literal(
-                  'CURRENT_DATE + ' +
-                    Math.min(365, Math.max(1, expiringDays)),
+                  'CURRENT_DATE + ' + Math.min(365, Math.max(1, expiringDays)),
                 ),
               },
             ],

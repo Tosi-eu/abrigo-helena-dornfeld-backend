@@ -42,10 +42,19 @@ module.exports = {
       } catch (_) {}
     };
 
-    await removeIndexIfExists('audit_log', 'idx_audit_log_created_at_operation_type');
+    await removeIndexIfExists(
+      'audit_log',
+      'idx_audit_log_created_at_operation_type',
+    );
     await removeIndexIfExists('audit_log', 'idx_audit_log_created_at_user_id');
     await removeIndexIfExists('notificacao', 'idx_notificacao_data_prevista');
-    await removeIndexIfExists('notificacao', 'idx_notificacao_data_prevista_status');
-    await removeIndexIfExists('notificacao', 'idx_notificacao_data_prevista_tipo_evento');
+    await removeIndexIfExists(
+      'notificacao',
+      'idx_notificacao_data_prevista_status',
+    );
+    await removeIndexIfExists(
+      'notificacao',
+      'idx_notificacao_data_prevista_tipo_evento',
+    );
   },
 };
