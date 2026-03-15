@@ -9,7 +9,7 @@ export interface InputAttrs {
   preco?: number | null;
 }
 
-export interface InsumoCreationAttributes extends Optional<InputAttrs, 'id'> {}
+export type InsumoCreationAttributes = Optional<InputAttrs, 'id'>;
 
 export class InputModel
   extends Model<InputAttrs, InsumoCreationAttributes>

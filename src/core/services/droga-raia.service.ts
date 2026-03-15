@@ -53,12 +53,21 @@ export class DrogaRaiaStrategy implements PriceSourceStrategy {
       }
 
       const data = nextData as {
-        props?: { pageProps?: { pageProps?: { results?: { products?: Array<{ priceService?: number | string }> } } } };
+        props?: {
+          pageProps?: {
+            pageProps?: {
+              results?: {
+                products?: Array<{ priceService?: number | string }>;
+              };
+            };
+          };
+        };
       };
-      const products = data?.props?.pageProps?.pageProps?.results?.products ?? [];
+      const products =
+        data?.props?.pageProps?.pageProps?.results?.products ?? [];
 
       return products
-        .map((product) => Number(product.priceService) || null)
+        .map(product => Number(product.priceService) || null)
         .filter((price: number | null): price is number => price !== null);
     } catch (error) {
       logger.error('Erro ao buscar preços na Droga Raia', {

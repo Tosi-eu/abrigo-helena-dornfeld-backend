@@ -77,7 +77,10 @@ export class StockService {
       throw new Error('Usuário não autenticado');
     }
 
-    const result = await this.repo.createMedicineStockIn(normalized, transaction);
+    const result = await this.repo.createMedicineStockIn(
+      normalized,
+      transaction,
+    );
 
     await this.movementRepo.create(
       {
@@ -253,10 +256,18 @@ export class StockService {
     );
   }
 
+  async getFilterOptions(transaction?: Transaction) {
+    return this.cache.getOrSet(
+      CacheKeyHelper.stockFilterOptions(),
+      () => this.repo.getFilterOptions(transaction),
+      120,
+    );
+  }
+
   async getAlertCounts(transaction?: Transaction, expiringDays?: number) {
     return this.repo.getAlertCounts(transaction, expiringDays ?? 45);
   }
-  
+
   async getExpiringItems(
     days: number,
     page?: number,

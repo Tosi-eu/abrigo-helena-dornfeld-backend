@@ -1,15 +1,35 @@
 import { StockService } from './estoque.service';
 import { MovementService } from './movimentacao.service';
 import { SectorType } from '../utils/utils';
+import { CacheKeyHelper } from '../../infrastructure/helpers/redis.helper';
 import type { Transaction } from 'sequelize';
+import type { CacheService } from './redis.service';
+
+const DASHBOARD_CACHE_TTL = 60;
 
 export class DashboardService {
   constructor(
     private readonly stockService: StockService,
     private readonly movementService: MovementService,
+    private readonly cache?: CacheService,
   ) {}
 
   async getSummary(transaction?: Transaction, expiringDays?: number) {
+    if (this.cache && !transaction) {
+      const key = CacheKeyHelper.dashboardSummary(expiringDays);
+      return this.cache.getOrSet(
+        key,
+        () => this.getSummaryInternal(transaction, expiringDays),
+        DASHBOARD_CACHE_TTL,
+      );
+    }
+    return this.getSummaryInternal(transaction, expiringDays);
+  }
+
+  private async getSummaryInternal(
+    transaction?: Transaction,
+    expiringDays?: number,
+  ) {
     const [
       alerts,
       medMovements,
@@ -75,7 +95,9 @@ export class DashboardService {
       }
       return new Date(v as string | number).getTime() || 0;
     };
-    type MovementSummaryItem = Record<string, unknown> & { data?: string | Date };
+    type MovementSummaryItem = Record<string, unknown> & {
+      data?: string | Date;
+    };
     const recentMovements = [
       ...(medMovements.data || []).map((m: MovementSummaryItem) => ({
         ...m,

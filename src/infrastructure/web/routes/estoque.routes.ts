@@ -32,6 +32,10 @@ router.get(
   withRls(sequelize, (req, res) => controller.list(req, res)),
 );
 router.get(
+  '/filter-options',
+  withRls(sequelize, (req, res) => controller.getFilterOptions(req, res)),
+);
+router.get(
   '/proporcao',
   withRls(sequelize, (req, res) => controller.proportion(req, res)),
 );

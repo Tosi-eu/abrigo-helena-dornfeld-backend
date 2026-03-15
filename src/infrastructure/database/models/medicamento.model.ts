@@ -11,10 +11,10 @@ export interface MedicineAttrs {
   preco?: number | null;
 }
 
-export interface MedicineCreationAttrs extends Optional<
+export type MedicineCreationAttrs = Optional<
   MedicineAttrs,
   'id' | 'estoque_minimo'
-> {}
+>;
 
 export class MedicineModel
   extends Model<MedicineAttrs, MedicineCreationAttrs>

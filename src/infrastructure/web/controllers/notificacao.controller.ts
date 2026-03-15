@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { NotificationEventService } from '../../../core/services/notificacao.service';
 import { sendErrorResponse } from '../../helpers/error-response.helper';
 import {

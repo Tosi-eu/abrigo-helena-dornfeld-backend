@@ -6,7 +6,8 @@ import type { LoginLogRepository } from '../../database/repositories/login-log.r
 
 function getClientIp(req: Request): string | null {
   const forwarded = req.headers['x-forwarded-for'];
-  if (typeof forwarded === 'string') return forwarded.split(',')[0]?.trim() ?? null;
+  if (typeof forwarded === 'string')
+    return forwarded.split(',')[0]?.trim() ?? null;
   return req.ip ?? req.socket?.remoteAddress ?? null;
 }
 
@@ -36,7 +37,11 @@ export class LoginController {
       });
       return res.status(201).json(user);
     } catch (error: unknown) {
-      const err = error as { message?: string; name?: string; original?: { code?: string } };
+      const err = error as {
+        message?: string;
+        name?: string;
+        original?: { code?: string };
+      };
       const message = getErrorMessage(error);
       const isDuplicate =
         message === 'duplicate key' ||
@@ -154,7 +159,10 @@ export class LoginController {
       const message =
         error instanceof Error ? error.message : 'Erro ao redefinir senha';
 
-      if (message === 'Login não encontrado' || String(message).includes('não encontrado')) {
+      if (
+        message === 'Login não encontrado' ||
+        String(message).includes('não encontrado')
+      ) {
         return res.status(404).json({ error: 'Login não encontrado' });
       }
       return res.status(400).json({ error: message });

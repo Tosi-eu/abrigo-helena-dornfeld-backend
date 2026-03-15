@@ -21,10 +21,7 @@ export async function withRetry<T>(
     } catch (err) {
       lastError = err;
       if (attempt === maxRetries) break;
-      const delay = Math.min(
-        initialDelayMs * Math.pow(2, attempt),
-        maxDelayMs,
-      );
+      const delay = Math.min(initialDelayMs * Math.pow(2, attempt), maxDelayMs);
       await new Promise(resolve => setTimeout(resolve, delay));
     }
   }

@@ -1,5 +1,7 @@
 import { ReportRepository } from '../../infrastructure/database/repositories/relatorio.repository';
 import { formatDateToPtBr } from '../../infrastructure/helpers/date.helper';
+import { CacheKeyHelper } from '../../infrastructure/helpers/redis.helper';
+import type { CacheService } from './redis.service';
 
 export const MAX_REPORT_ROWS = 10_000;
 
@@ -45,10 +47,29 @@ export type GenerateReportParams =
   | (MovementsParams & { casela?: number; data?: string })
   | { casela?: number; data?: string };
 
+const REPORT_CACHE_TTL = 120;
+
 export class ReportService {
-  constructor(private readonly repo: ReportRepository) {}
+  constructor(
+    private readonly repo: ReportRepository,
+    private readonly cache?: CacheService,
+  ) {}
 
   async generateReport(type: string, params: GenerateReportParams) {
+    const resolver = async () => this.generateReportInternal(type, params);
+
+    if (this.cache) {
+      const key = CacheKeyHelper.report(type, params);
+      return this.cache.getOrSet(key, resolver, REPORT_CACHE_TTL);
+    }
+
+    return resolver();
+  }
+
+  private async generateReportInternal(
+    type: string,
+    params: GenerateReportParams,
+  ) {
     const { casela } = params;
 
     switch (type) {

@@ -45,7 +45,8 @@ describe('E2E Movimentação', () => {
         setor: 'farmacia',
         lote: 'LOTE-1',
         observacao: 'teste',
-      }).expect(201);
+      })
+      .expect(201);
 
     expect(res.body.id).toBeDefined();
   });

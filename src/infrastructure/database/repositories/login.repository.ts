@@ -17,7 +17,12 @@ const DEFAULT_USER_PERMISSIONS = {
 
 export type CreateUserData = Login & {
   role?: 'admin' | 'user';
-  permissions?: { read: boolean; create: boolean; update: boolean; delete: boolean };
+  permissions?: {
+    read: boolean;
+    create: boolean;
+    update: boolean;
+    delete: boolean;
+  };
 };
 
 export class LoginRepository {
@@ -82,7 +87,14 @@ export class LoginRepository {
 
   async findAll() {
     return LoginModel.findAll({
-      attributes: ['id', 'login', 'first_name', 'last_name', 'role', 'permissions'],
+      attributes: [
+        'id',
+        'login',
+        'first_name',
+        'last_name',
+        'role',
+        'permissions',
+      ],
       order: [['id', 'ASC']],
     });
   }

@@ -42,11 +42,11 @@ export class PriceSearchService {
 
     const cached = await this.cache.get<PriceSearchResult>(cacheKey);
     if (cached && cached.averagePrice !== null) {
-      logger.debug('Cache hit para busca de preço', {
+      logger.info('Busca de preço (cache hit)', {
         operation: 'price_search',
         itemName,
         itemType,
-        cacheKey,
+        precoMedio: cached.averagePrice,
         source: cached.source,
       });
       return cached;
@@ -132,10 +132,12 @@ export class PriceSearchService {
 
     await this.cache.set(cacheKey, response, 60 * 60 * 24);
 
-    logger.debug('Resultado de preço cacheado', {
+    logger.info('Busca de preço concluída', {
       operation: 'price_search',
-      cacheKey,
-      source: response.source,
+      itemName,
+      itemType,
+      precoMedio: response.averagePrice,
+      fontes: response.source,
     });
 
     return response;

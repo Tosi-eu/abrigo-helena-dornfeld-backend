@@ -38,11 +38,7 @@ export class LoginLogRepository {
     };
   }
 
-  async list(
-    page: number,
-    limit: number,
-    filters: LoginLogListFilters = {},
-  ) {
+  async list(page: number, limit: number, filters: LoginLogListFilters = {}) {
     const where: Record<string, unknown> = {};
     if (filters.userId != null) where.user_id = filters.userId;
     if (filters.login != null && filters.login !== '') {
@@ -61,11 +57,19 @@ export class LoginLogRepository {
       order: [['created_at', 'DESC']],
       limit,
       offset: (page - 1) * limit,
-      attributes: ['id', 'user_id', 'login', 'success', 'ip', 'user_agent', 'created_at'],
+      attributes: [
+        'id',
+        'user_id',
+        'login',
+        'success',
+        'ip',
+        'user_agent',
+        'created_at',
+      ],
     });
 
     return {
-      data: rows.map((r) => ({
+      data: rows.map(r => ({
         id: r.id,
         user_id: r.user_id,
         login: r.login,
@@ -84,7 +88,15 @@ export class LoginLogRepository {
   async countActiveUsersThisMonth(): Promise<number> {
     const now = new Date();
     const start = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
-    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+    const end = new Date(
+      now.getFullYear(),
+      now.getMonth() + 1,
+      0,
+      23,
+      59,
+      59,
+      999,
+    );
     const row = await LoginLogModel.findOne({
       where: {
         success: true,
@@ -114,9 +126,7 @@ export class LoginLogRepository {
     const safeLimit = Math.min(100, Math.max(1, Number(limit) || 25));
     const offset = (safePage - 1) * safeLimit;
 
-    const [{ total }] = (await sequelize.query<
-      { total: string }[]
-    >(
+    const [{ total }] = (await sequelize.query<{ total: string }[]>(
       `
       SELECT COUNT(DISTINCT ll.user_id)::text AS total
       FROM login_log ll
@@ -165,7 +175,7 @@ export class LoginLogRepository {
     );
 
     return {
-      data: data.map((r) => ({
+      data: data.map(r => ({
         id: Number(r.id),
         login: r.login,
         first_name: r.first_name ?? null,

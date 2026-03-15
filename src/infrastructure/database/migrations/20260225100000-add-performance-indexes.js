@@ -93,20 +93,47 @@ module.exports = {
       } catch (_) {}
     };
     await removeIndexIfExists('movimentacao', 'idx_movimentacao_data');
-    await removeIndexIfExists('movimentacao', 'idx_movimentacao_medicamento_id');
+    await removeIndexIfExists(
+      'movimentacao',
+      'idx_movimentacao_medicamento_id',
+    );
     await removeIndexIfExists('movimentacao', 'idx_movimentacao_insumo_id');
     await removeIndexIfExists('movimentacao', 'idx_movimentacao_tipo');
 
-    await removeIndexIfExists('estoque_medicamento', 'idx_estoque_medicamento_validade');
-    await removeIndexIfExists('estoque_medicamento', 'idx_estoque_medicamento_quantidade');
-    await removeIndexIfExists('estoque_medicamento', 'idx_estoque_medicamento_armario_id');
-    await removeIndexIfExists('estoque_medicamento', 'idx_estoque_medicamento_gaveta_id');
-    await removeIndexIfExists('estoque_medicamento', 'idx_estoque_medicamento_casela_id');
-    await removeIndexIfExists('estoque_medicamento', 'idx_estoque_medicamento_setor');
+    await removeIndexIfExists(
+      'estoque_medicamento',
+      'idx_estoque_medicamento_validade',
+    );
+    await removeIndexIfExists(
+      'estoque_medicamento',
+      'idx_estoque_medicamento_quantidade',
+    );
+    await removeIndexIfExists(
+      'estoque_medicamento',
+      'idx_estoque_medicamento_armario_id',
+    );
+    await removeIndexIfExists(
+      'estoque_medicamento',
+      'idx_estoque_medicamento_gaveta_id',
+    );
+    await removeIndexIfExists(
+      'estoque_medicamento',
+      'idx_estoque_medicamento_casela_id',
+    );
+    await removeIndexIfExists(
+      'estoque_medicamento',
+      'idx_estoque_medicamento_setor',
+    );
 
     await removeIndexIfExists('estoque_insumo', 'idx_estoque_insumo_validade');
-    await removeIndexIfExists('estoque_insumo', 'idx_estoque_insumo_quantidade');
-    await removeIndexIfExists('estoque_insumo', 'idx_estoque_insumo_armario_id');
+    await removeIndexIfExists(
+      'estoque_insumo',
+      'idx_estoque_insumo_quantidade',
+    );
+    await removeIndexIfExists(
+      'estoque_insumo',
+      'idx_estoque_insumo_armario_id',
+    );
     await removeIndexIfExists('estoque_insumo', 'idx_estoque_insumo_gaveta_id');
     await removeIndexIfExists('estoque_insumo', 'idx_estoque_insumo_casela_id');
     await removeIndexIfExists('estoque_insumo', 'idx_estoque_insumo_setor');

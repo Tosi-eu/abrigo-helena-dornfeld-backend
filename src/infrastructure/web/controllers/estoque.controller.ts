@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { StockService } from '../../../core/services/estoque.service';
 import { sendErrorResponse } from '../../helpers/error-response.helper';
 import { handleETagResponse } from '../../helpers/etag.helper';
@@ -100,6 +100,20 @@ export class StockController {
       return res.json(data);
     } catch (error: unknown) {
       return sendErrorResponse(res, 500, error, 'Erro ao listar estoque');
+    }
+  }
+
+  async getFilterOptions(req: RlsRequest, res: Response) {
+    try {
+      const data = await this.service.getFilterOptions(req.transaction);
+      return res.json(data);
+    } catch (error: unknown) {
+      return sendErrorResponse(
+        res,
+        500,
+        error,
+        'Erro ao buscar opções de filtro',
+      );
     }
   }
 

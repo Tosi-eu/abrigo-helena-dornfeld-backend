@@ -1,6 +1,9 @@
 'use strict';
 
-const { addColumnIfNotExists, removeColumnIfExists } = require('../migration-helpers');
+const {
+  addColumnIfNotExists,
+  removeColumnIfExists,
+} = require('../migration-helpers');
 
 /**
  * Adds a `role` column to the login table.

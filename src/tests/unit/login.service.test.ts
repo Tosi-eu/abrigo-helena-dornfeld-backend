@@ -1,5 +1,6 @@
 import { LoginService } from '../../core/services/login.service';
 import type { LoginRepository } from '../../infrastructure/database/repositories/login.repository';
+import bcrypt from 'bcrypt';
 
 describe('LoginService (unit)', () => {
   let mockRepo: jest.Mocked<LoginRepository>;
@@ -126,7 +127,6 @@ describe('LoginService (unit)', () => {
     });
 
     it('deve retornar token e user quando credenciais corretas', async () => {
-      const bcrypt = require('bcrypt');
       const hashed = await bcrypt.hash('senha1234', 10);
       mockRepo.findByLogin.mockResolvedValue({
         id: 1,
@@ -141,7 +141,10 @@ describe('LoginService (unit)', () => {
       expect(result).not.toBeNull();
       expect(result!.token).toBeDefined();
       expect(result!.user).toEqual({ id: 1, login: 'user1', role: 'user' });
-      expect(mockRepo.update).toHaveBeenCalledWith(1, expect.objectContaining({ refresh_token: result!.token }));
+      expect(mockRepo.update).toHaveBeenCalledWith(
+        1,
+        expect.objectContaining({ refresh_token: result!.token }),
+      );
     });
   });
 

@@ -1,4 +1,8 @@
 import { Response } from 'express';
+import { spawn } from 'child_process';
+import { writeFileSync, unlinkSync, existsSync } from 'fs';
+import { join } from 'path';
+import { tmpdir } from 'os';
 import { LoginService } from '../../../core/services/login.service';
 import { MovementService } from '../../../core/services/movimentacao.service';
 import { ReportService } from '../../../core/services/relatorio.service';
@@ -64,7 +68,12 @@ export class AdminController {
       first_name?: string;
       last_name?: string;
       role?: 'admin' | 'user';
-      permissions?: { read?: boolean; create?: boolean; update?: boolean; delete?: boolean };
+      permissions?: {
+        read?: boolean;
+        create?: boolean;
+        update?: boolean;
+        delete?: boolean;
+      };
     } = { login, password };
     if (firstName !== undefined) data.first_name = firstName;
     if (lastName !== undefined) data.last_name = lastName;
@@ -74,7 +83,11 @@ export class AdminController {
       }
       data.role = role;
     }
-    if (permissions !== undefined && typeof permissions === 'object' && permissions !== null) {
+    if (
+      permissions !== undefined &&
+      typeof permissions === 'object' &&
+      permissions !== null
+    ) {
       data.permissions = {
         read: permissions.read !== false,
         create: Boolean(permissions.create),
@@ -91,7 +104,11 @@ export class AdminController {
       return res.status(201).json(user);
     } catch (error: unknown) {
       const msg = getErrorMessage(error);
-      if (msg === 'duplicate key' || msg === 'Usuário já cadastrado' || msg?.includes('cadastrado')) {
+      if (
+        msg === 'duplicate key' ||
+        msg === 'Usuário já cadastrado' ||
+        msg?.includes('cadastrado')
+      ) {
         return res.status(409).json({ error: 'Login já cadastrado' });
       }
       if (msg?.includes('Senha deve')) {
@@ -115,7 +132,12 @@ export class AdminController {
       login?: string;
       password?: string;
       role?: 'admin' | 'user';
-      permissions?: { read?: boolean; create?: boolean; update?: boolean; delete?: boolean };
+      permissions?: {
+        read?: boolean;
+        create?: boolean;
+        update?: boolean;
+        delete?: boolean;
+      };
     } = {};
     if (body.firstName !== undefined) data.first_name = body.firstName;
     if (body.lastName !== undefined) data.last_name = body.lastName;
@@ -131,7 +153,9 @@ export class AdminController {
     if (body.permissions !== undefined) {
       const p = body.permissions;
       if (typeof p !== 'object' || p === null) {
-        return res.status(400).json({ error: 'permissions deve ser um objeto' });
+        return res
+          .status(400)
+          .json({ error: 'permissions deve ser um objeto' });
       }
       data.permissions = {
         read: p.read !== false,
@@ -215,7 +239,7 @@ export class AdminController {
       });
     }
   }
-  
+
   async getLoginLog(req: AuthRequest, res: Response) {
     if (!this.loginLogRepo) {
       return res.status(501).json({ error: 'Log de acessos não disponível' });
@@ -223,10 +247,18 @@ export class AdminController {
     try {
       const page = Math.max(1, Number(req.query.page) || 1);
       const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 25));
-      const userId = req.query.userId != null ? Number(req.query.userId) : undefined;
-      const login = typeof req.query.login === 'string' ? req.query.login.trim() : undefined;
+      const userId =
+        req.query.userId != null ? Number(req.query.userId) : undefined;
+      const login =
+        typeof req.query.login === 'string'
+          ? req.query.login.trim()
+          : undefined;
       const success =
-        req.query.success === 'true' ? true : req.query.success === 'false' ? false : undefined;
+        req.query.success === 'true'
+          ? true
+          : req.query.success === 'false'
+            ? false
+            : undefined;
       const fromDate =
         typeof req.query.fromDate === 'string' && req.query.fromDate
           ? new Date(req.query.fromDate)
@@ -409,11 +441,15 @@ export class AdminController {
     try {
       const page = Math.max(1, Number(req.query.page) || 1);
       const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 25));
-      const result = await this.loginLogRepo.listActiveUsersThisMonth(page, limit);
+      const result = await this.loginLogRepo.listActiveUsersThisMonth(
+        page,
+        limit,
+      );
       return res.json(result);
     } catch (error: unknown) {
       return res.status(500).json({
-        error: getErrorMessage(error) || 'Erro ao listar usuários ativos do mês',
+        error:
+          getErrorMessage(error) || 'Erro ao listar usuários ativos do mês',
       });
     }
   }
@@ -425,7 +461,10 @@ export class AdminController {
     try {
       const page = Math.max(1, Number(req.query.page) || 1);
       const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 25));
-      const result = await this.movementService.listMovementsThisMonth(page, limit);
+      const result = await this.movementService.listMovementsThisMonth(
+        page,
+        limit,
+      );
       return res.json(result);
     } catch (error: unknown) {
       return res.status(500).json({
@@ -458,7 +497,11 @@ export class AdminController {
       const tipo = (req.query.tipo as string) || undefined;
       const status = (req.query.status as string) || undefined;
       const visto =
-        req.query.visto === 'true' ? true : req.query.visto === 'false' ? false : undefined;
+        req.query.visto === 'true'
+          ? true
+          : req.query.visto === 'false'
+            ? false
+            : undefined;
       const result = await this.notificationService.listForAdmin({
         page,
         limit,
@@ -485,7 +528,10 @@ export class AdminController {
     const body = req.body ?? {};
     const updates: { visto?: boolean; status?: EventStatus } = {};
     if (typeof body.visto === 'boolean') updates.visto = body.visto;
-    if (typeof body.status === 'string' && ['pending', 'sent', 'cancelled'].includes(body.status)) {
+    if (
+      typeof body.status === 'string' &&
+      ['pending', 'sent', 'cancelled'].includes(body.status)
+    ) {
       updates.status = body.status as EventStatus;
     }
     if (Object.keys(updates).length === 0) {
@@ -493,7 +539,8 @@ export class AdminController {
     }
     try {
       const updated = await this.notificationService.update(id, updates);
-      if (!updated) return res.status(404).json({ error: 'Notificação não encontrada' });
+      if (!updated)
+        return res.status(404).json({ error: 'Notificação não encontrada' });
       return res.json(updated);
     } catch (error: unknown) {
       return res.status(500).json({
@@ -524,5 +571,181 @@ export class AdminController {
         error: getErrorMessage(error) || 'Erro ao salvar configurações',
       });
     }
+  }
+
+  async restoreBackup(req: AuthRequest, res: Response): Promise<void> {
+    const file = (
+      req as unknown as { file?: { buffer: Buffer; originalname: string } }
+    ).file;
+    if (!file?.buffer?.length || !file.originalname) {
+      res.status(400).json({
+        error:
+          'Envie o arquivo do dump (backup_*.sql.gz ou .sql) no campo "file".',
+      });
+      return;
+    }
+
+    const name = file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const isGz = name.toLowerCase().endsWith('.gz');
+    const ext = isGz ? '.sql.gz' : '.sql';
+    const tmpPath = join(tmpdir(), `restore_${Date.now()}${ext}`);
+
+    try {
+      writeFileSync(tmpPath, file.buffer);
+    } catch (err: unknown) {
+      res.status(500).json({
+        error: getErrorMessage(err) || 'Erro ao gravar arquivo temporário',
+      });
+      return;
+    }
+
+    const dbHost = process.env.DB_HOST || 'localhost';
+    const dbPort = process.env.DB_PORT || '5432';
+    const dbUser = process.env.DB_USER || 'postgres';
+    const dbPassword = process.env.DB_PASSWORD || '';
+    const dbName = process.env.DB_NAME || 'estoque';
+    const env = { ...process.env, PGPASSWORD: dbPassword };
+
+    const cleanup = () => {
+      try {
+        if (existsSync(tmpPath)) unlinkSync(tmpPath);
+      } catch {
+        /* ignore */
+      }
+    };
+
+    const onDone = (code: number, stderr: string, stdout: string) => {
+      cleanup();
+      if (code !== 0) {
+        res.status(500).json({
+          error:
+            stderr?.trim() ||
+            stdout?.trim() ||
+            `Processo encerrou com código ${code}`,
+        });
+        return;
+      }
+      const sendSuccess = () => {
+        res.status(200).json({
+          message:
+            'Dump restaurado com sucesso. O banco foi alimentado com o arquivo de backup.',
+        });
+      };
+      if (this.systemConfigRepo) {
+        this.systemConfigRepo
+          .set('last_backup_at', new Date().toISOString())
+          .then(sendSuccess)
+          .catch((err: unknown) => {
+            res.status(500).json({
+              error: getErrorMessage(err) || 'Erro ao atualizar last_backup_at',
+            });
+          });
+      } else {
+        sendSuccess();
+      }
+    };
+
+    const runRestore = () => {
+      let stderr = '';
+      let stdout = '';
+      if (isGz) {
+        const gunzip = spawn('gunzip', ['-c', tmpPath], {
+          stdio: ['ignore', 'pipe', 'pipe'],
+        });
+        const psql = spawn(
+          'psql',
+          [
+            '-h',
+            dbHost,
+            '-p',
+            dbPort,
+            '-U',
+            dbUser,
+            '-d',
+            dbName,
+            '-v',
+            'ON_ERROR_STOP=1',
+          ],
+          { env, stdio: ['pipe', 'pipe', 'pipe'] },
+        );
+        gunzip.stdout.pipe(psql.stdin!);
+        gunzip.stderr?.on('data', (d: Buffer) => {
+          stderr += d.toString();
+        });
+        psql.stderr?.on('data', (d: Buffer) => {
+          stderr += d.toString();
+        });
+        psql.stdout?.on('data', (d: Buffer) => {
+          stdout += d.toString();
+        });
+        psql.on('close', (code, signal) => {
+          onDone(code ?? (signal ? 1 : 0), stderr, stdout);
+        });
+      } else {
+        const psql = spawn(
+          'psql',
+          [
+            '-h',
+            dbHost,
+            '-p',
+            dbPort,
+            '-U',
+            dbUser,
+            '-d',
+            dbName,
+            '-v',
+            'ON_ERROR_STOP=1',
+            '-f',
+            tmpPath,
+          ],
+          { env, stdio: ['ignore', 'pipe', 'pipe'] },
+        );
+        psql.stderr?.on('data', (d: Buffer) => {
+          stderr += d.toString();
+        });
+        psql.stdout?.on('data', (d: Buffer) => {
+          stdout += d.toString();
+        });
+        psql.on('close', (code, signal) => {
+          onDone(code ?? (signal ? 1 : 0), stderr, stdout);
+        });
+      }
+    };
+
+    // Truncate all tables (except SequelizeMeta) so restore does not collide with existing data.
+    const truncateSql =
+      "DO $$ DECLARE tbls text; BEGIN SELECT string_agg(quote_ident(tablename), ', ') INTO tbls FROM pg_tables WHERE schemaname = 'public' AND tablename <> 'SequelizeMeta'; IF tbls IS NOT NULL AND tbls <> '' THEN EXECUTE 'TRUNCATE TABLE ' || tbls || ' RESTART IDENTITY CASCADE'; END IF; END $$;";
+    let truncateStderr = '';
+    const truncatePsql = spawn(
+      'psql',
+      [
+        '-h',
+        dbHost,
+        '-p',
+        dbPort,
+        '-U',
+        dbUser,
+        '-d',
+        dbName,
+        '-v',
+        'ON_ERROR_STOP=1',
+        '-c',
+        truncateSql,
+      ],
+      {
+        env,
+        stdio: ['ignore', 'pipe', 'pipe'],
+      },
+    );
+    truncatePsql.stderr?.on('data', (d: Buffer) => {
+      truncateStderr += d.toString();
+    });
+    truncatePsql.on('close', (code, signal) => {
+      if (code !== 0) {
+        onDone(code ?? (signal ? 1 : 0), truncateStderr, '');
+        return;
+      }
+      runRestore();
+    });
   }
 }
