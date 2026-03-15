@@ -14,7 +14,9 @@
     "test:db:create": "node scripts/create-test-db.js",
     "test:watch": "NODE_ENV=test jest --watchAll",
     "format": "prettier --write \"src/**/*.{ts,js,json}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,js,json}\"",
     "lint": "eslint \"src/**/*.ts\" --fix",
+    "lint:check": "eslint \"src/**/*.ts\"",
     "db:migrate": "docker exec backend npx sequelize-cli db:migrate",
     "db:migrate:undo": "docker exec backend npx sequelize-cli db:migrate:undo",
     "db:seed": "docker exec backend npx sequelize-cli db:seed:all"
