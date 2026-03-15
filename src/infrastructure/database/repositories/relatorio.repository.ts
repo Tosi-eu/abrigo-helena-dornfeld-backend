@@ -1,5 +1,5 @@
 import { sequelize } from '../sequelize';
-import { Op, fn, col, where } from 'sequelize';
+import { Op, fn, col } from 'sequelize';
 import {
   AllItemsReport,
   InputReport,

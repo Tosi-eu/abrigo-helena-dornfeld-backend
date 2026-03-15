@@ -4,7 +4,6 @@ import { App } from 'supertest/types';
 
 describe('Login E2E - CRUD', () => {
   let app: App;
-  let userId: number;
   let authCookie: string | undefined;
 
   beforeAll(async () => {
@@ -19,8 +18,6 @@ describe('Login E2E - CRUD', () => {
     expect(res.status).toBe(201);
     expect(res.body.login).toBe('joao');
     expect(res.body.id).toBeDefined();
-
-    userId = res.body.id;
   });
 
   it('não deve criar login duplicado', async () => {

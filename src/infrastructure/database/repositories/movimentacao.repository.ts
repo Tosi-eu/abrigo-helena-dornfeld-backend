@@ -1,4 +1,4 @@
-import { Op, fn, col, QueryTypes } from 'sequelize';
+import { Op, QueryTypes } from 'sequelize';
 import type { Transaction } from 'sequelize';
 import MovementModel from '../models/movimentacao.model';
 import Movement from '../../../core/domain/movimentacao';
