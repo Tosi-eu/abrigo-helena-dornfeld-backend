@@ -6,10 +6,10 @@ export interface DrawerCategoryAttributes {
   nome: string;
 }
 
-export interface DrawerCategoryCreationAttributes extends Optional<
+export type DrawerCategoryCreationAttributes = Optional<
   DrawerCategoryAttributes,
   'id'
-> {}
+>;
 
 export class DrawerCategoryModel
   extends Model<DrawerCategoryAttributes, DrawerCategoryCreationAttributes>

@@ -7,10 +7,10 @@ export interface CabinetAttributes {
   categoria_id: number;
 }
 
-export interface CabinetCreationAttributes extends Optional<
+export type CabinetCreationAttributes = Optional<
   CabinetAttributes,
   'num_armario'
-> {}
+>;
 
 export class CabinetModel
   extends Model<CabinetAttributes, CabinetCreationAttributes>

@@ -6,10 +6,10 @@ export interface ResidentAttributes {
   nome: string;
 }
 
-export interface ResidentCreationAttributes extends Optional<
+export type ResidentCreationAttributes = Optional<
   ResidentAttributes,
   'num_casela'
-> {}
+>;
 
 export class ResidentModel
   extends Model<ResidentAttributes, ResidentCreationAttributes>

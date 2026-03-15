@@ -7,10 +7,10 @@ export interface DrawerAttributes {
   categoria_id: number;
 }
 
-export interface DrawerCreationAttributes extends Optional<
+export type DrawerCreationAttributes = Optional<
   DrawerAttributes,
   'num_gaveta'
-> {}
+>;
 
 export class DrawerModel
   extends Model<DrawerAttributes, DrawerCreationAttributes>

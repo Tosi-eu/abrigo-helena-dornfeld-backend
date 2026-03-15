@@ -6,10 +6,10 @@ export interface CabinetCategoryAttributes {
   nome: string;
 }
 
-export interface CabinetCategoryCreationAttributes extends Optional<
+export type CabinetCategoryCreationAttributes = Optional<
   CabinetCategoryAttributes,
   'id'
-> {}
+>;
 
 export class CabinetCategoryModel
   extends Model<CabinetCategoryAttributes, CabinetCategoryCreationAttributes>
