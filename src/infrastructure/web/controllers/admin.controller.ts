@@ -539,7 +539,9 @@ export class AdminController {
         last_backup_at: new Date().toISOString(),
         last_backup_status: 'ok',
         last_backup_duration_ms: String(durationMs),
-        ...(sizeBytes != null ? { last_backup_size_bytes: String(sizeBytes) } : {}),
+        ...(sizeBytes != null
+          ? { last_backup_size_bytes: String(sizeBytes) }
+          : {}),
         last_backup_error: '',
       });
 
@@ -566,12 +568,12 @@ export class AdminController {
 
   async getDataQualitySummary(_req: AuthRequest, res: Response) {
     try {
-      const [[{ count: negMed }]] = await sequelize.query<
-        { count: number }[]
-      >(`SELECT COUNT(*)::int as count FROM estoque_medicamento WHERE quantidade < 0`);
-      const [[{ count: negInp }]] = await sequelize.query<
-        { count: number }[]
-      >(`SELECT COUNT(*)::int as count FROM estoque_insumo WHERE quantidade < 0`);
+      const [[{ count: negMed }]] = await sequelize.query<{ count: number }[]>(
+        `SELECT COUNT(*)::int as count FROM estoque_medicamento WHERE quantidade < 0`,
+      );
+      const [[{ count: negInp }]] = await sequelize.query<{ count: number }[]>(
+        `SELECT COUNT(*)::int as count FROM estoque_insumo WHERE quantidade < 0`,
+      );
       const [[{ count: missingLotMed }]] = await sequelize.query<
         { count: number }[]
       >(
@@ -708,8 +710,7 @@ export class AdminController {
       return res.json({ data: rows, total, page, limit });
     } catch (error: unknown) {
       return res.status(500).json({
-        error:
-          getErrorMessage(error) || 'Erro ao listar possíveis duplicados',
+        error: getErrorMessage(error) || 'Erro ao listar possíveis duplicados',
       });
     }
   }
@@ -717,7 +718,9 @@ export class AdminController {
   async mergeMedicines(req: AuthRequest, res: Response) {
     const keepId = Number(req.body?.keepId);
     const mergeIds = Array.isArray(req.body?.mergeIds)
-      ? (req.body.mergeIds as unknown[]).map(Number).filter(n => !Number.isNaN(n))
+      ? (req.body.mergeIds as unknown[])
+          .map(Number)
+          .filter(n => !Number.isNaN(n))
       : [];
 
     if (!keepId || Number.isNaN(keepId) || keepId < 1) {
@@ -742,10 +745,10 @@ export class AdminController {
           `UPDATE notificacao SET medicamento_id = :keepId WHERE medicamento_id = ANY(:ids)`,
           { replacements: { keepId, ids: idsToMerge }, transaction: t },
         );
-        await sequelize.query(
-          `DELETE FROM medicamento WHERE id = ANY(:ids)`,
-          { replacements: { ids: idsToMerge }, transaction: t },
-        );
+        await sequelize.query(`DELETE FROM medicamento WHERE id = ANY(:ids)`, {
+          replacements: { ids: idsToMerge },
+          transaction: t,
+        });
       });
 
       return res.json({ message: 'Medicamentos mesclados com sucesso.' });
@@ -780,9 +783,9 @@ export class AdminController {
   async normalizeMedicineUnits(req: AuthRequest, res: Response) {
     const dryRun = req.body?.dryRun === true;
     try {
-      const [rows] = await sequelize.query<{ id: number; unidade_medida: string }[]>(
-        `SELECT id, unidade_medida FROM medicamento`,
-      );
+      const [rows] = await sequelize.query<
+        { id: number; unidade_medida: string }[]
+      >(`SELECT id, unidade_medida FROM medicamento`);
       let updated = 0;
       const changes: Array<{ id: number; from: string; to: string }> = [];
       for (const row of rows) {

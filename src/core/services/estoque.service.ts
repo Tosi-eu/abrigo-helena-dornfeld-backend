@@ -38,7 +38,9 @@ export class StockService {
   }
 
   private async getStockCacheVersion(): Promise<number> {
-    const current = await redisRepository.get<number>(this.stockCacheVersionKey);
+    const current = await redisRepository.get<number>(
+      this.stockCacheVersionKey,
+    );
     if (current == null) {
       // Default version = 1. Redis may be unavailable; set() is a no-op then.
       await redisRepository.set(this.stockCacheVersionKey, 1);
