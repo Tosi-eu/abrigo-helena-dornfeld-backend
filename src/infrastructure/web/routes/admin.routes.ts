@@ -77,6 +77,10 @@ router.get('/metrics/movements', (req, res) =>
   controller.getMovementsThisMonth(req, res),
 );
 router.get('/health', (req, res) => controller.getHealth(req, res));
+router.get('/backup/status', (req, res) =>
+  controller.getBackupStatus(req, res),
+);
+router.post('/backup/run', (req, res) => controller.runBackupNow(req, res));
 router.get('/config', (req, res) => controller.getConfig(req, res));
 router.put('/config', (req, res) => controller.updateConfig(req, res));
 

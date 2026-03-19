@@ -40,10 +40,12 @@ export class AdminController {
     private readonly notificationService?: NotificationEventService,
   ) {}
 
-  async listUsers(_req: AuthRequest, res: Response) {
+  async listUsers(req: AuthRequest, res: Response) {
     try {
-      const users = await this.loginService.listAllUsers();
-      return res.json(users);
+      const page = Math.max(1, Number(req.query.page) || 1);
+      const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 25));
+      const result = await this.loginService.listUsersPaginated(page, limit);
+      return res.json(result);
     } catch (error: unknown) {
       return res.status(500).json({
         error: getErrorMessage(error) || 'Erro ao listar usuários',

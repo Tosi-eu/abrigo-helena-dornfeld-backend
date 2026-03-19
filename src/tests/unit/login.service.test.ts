@@ -185,6 +185,12 @@ describe('LoginService (unit)', () => {
         firstName: 'João',
         lastName: 'Silva',
         role: 'user',
+        permissions: {
+          read: true,
+          create: false,
+          update: false,
+          delete: false,
+        },
       });
     });
   });
