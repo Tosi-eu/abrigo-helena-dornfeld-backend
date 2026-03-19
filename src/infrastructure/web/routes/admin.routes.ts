@@ -74,8 +74,25 @@ router.get('/metrics/movements', (req, res) =>
   controller.getMovementsThisMonth(req, res),
 );
 router.get('/health', (req, res) => controller.getHealth(req, res));
+router.get('/backup/status', (req, res) => controller.getBackupStatus(req, res));
+router.post('/backup/run', (req, res) => controller.runBackupNow(req, res));
 router.get('/config', (req, res) => controller.getConfig(req, res));
 router.put('/config', (req, res) => controller.updateConfig(req, res));
+router.get('/data-quality/summary', (req, res) =>
+  controller.getDataQualitySummary(req, res),
+);
+router.get('/data-quality/inconsistencies', (req, res) =>
+  controller.listInconsistencies(req, res),
+);
+router.get('/data-quality/medicine-duplicates', (req, res) =>
+  controller.listMedicineDuplicates(req, res),
+);
+router.post('/data-quality/merge-medicines', (req, res) =>
+  controller.mergeMedicines(req, res),
+);
+router.post('/data-quality/normalize-medicine-units', (req, res) =>
+  controller.normalizeMedicineUnits(req, res),
+);
 router.get('/notifications', (req, res) =>
   controller.getNotifications(req, res),
 );

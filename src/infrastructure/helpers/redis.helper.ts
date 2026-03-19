@@ -13,20 +13,24 @@ export class CacheKeyHelper {
       .digest('hex');
   }
 
-  static stockList(params: QueryPaginationParams) {
-    return `stock:list:${this.hash(params)}`;
+  static stockCacheVersionKey() {
+    return 'stock:cache:version';
   }
 
-  static stockFilterOptions() {
-    return 'stock:filter-options';
-  }
-
-  static stockDashboard(setor: string) {
-    return `stock:dashboard:${setor}`;
+  static stockFilterOptions(version: number) {
+    return `stock:filter-options:${version}`;
   }
 
   static stockWildcard() {
     return 'stock:*';
+  }
+
+  static stockDashboard(setor: string, version: number) {
+    return `stock:dashboard:${setor}:${version}`;
+  }
+
+  static stockList(params: QueryPaginationParams, version: number) {
+    return `stock:list:${version}:${this.hash(params)}`;
   }
 
   static movementMedicineList(params: MovementQueryParams) {

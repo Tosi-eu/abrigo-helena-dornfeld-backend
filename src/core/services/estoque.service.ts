@@ -14,6 +14,7 @@ import { CacheService } from './redis.service';
 import { MedicineRepository } from '../../infrastructure/database/repositories/medicamento.repository';
 import { InputRepository } from '../../infrastructure/database/repositories/insumo.repository';
 import { NotificationEventRepository } from '../../infrastructure/database/repositories/notificacao.repository';
+import { redisRepository } from '../../infrastructure/database/redis/client.redis';
 import {
   NotificationDestinoType,
   NotificationEventType,
@@ -24,6 +25,7 @@ export class StockService {
   private medicineRepo: MedicineRepository;
   private inputRepo: InputRepository;
   private movementRepo: MovementRepository;
+  private readonly stockCacheVersionKey = CacheKeyHelper.stockCacheVersionKey();
 
   constructor(
     private readonly repo: StockRepository,
@@ -33,6 +35,22 @@ export class StockService {
     this.medicineRepo = new MedicineRepository();
     this.inputRepo = new InputRepository();
     this.movementRepo = new MovementRepository();
+  }
+
+  private async getStockCacheVersion(): Promise<number> {
+    const current = await redisRepository.get<number>(this.stockCacheVersionKey);
+    if (current == null) {
+      // Default version = 1. Redis may be unavailable; set() is a no-op then.
+      await redisRepository.set(this.stockCacheVersionKey, 1);
+      return 1;
+    }
+
+    return current;
+  }
+
+  private async bumpStockCacheVersion(): Promise<void> {
+    // IncrBy will create the key if it doesn't exist.
+    await redisRepository.incrBy(this.stockCacheVersionKey, 1);
   }
 
   async medicineStockIn(
@@ -99,7 +117,7 @@ export class StockService {
       transaction,
     );
 
-    await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
+    await this.bumpStockCacheVersion();
 
     return result;
   }
@@ -152,7 +170,7 @@ export class StockService {
       transaction,
     );
 
-    await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
+    await this.bumpStockCacheVersion();
 
     return result;
   }
@@ -218,13 +236,14 @@ export class StockService {
       transaction,
     );
 
-    await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
+    await this.bumpStockCacheVersion();
 
     return result;
   }
 
   async listStock(params: QueryPaginationParams, transaction?: Transaction) {
-    const cacheKey = CacheKeyHelper.stockList(params);
+    const version = await this.getStockCacheVersion();
+    const cacheKey = CacheKeyHelper.stockList(params, version);
 
     return this.cache.getOrSet(
       cacheKey,
@@ -249,16 +268,18 @@ export class StockService {
   }
 
   async getProportion(setor?: SectorType, transaction?: Transaction) {
+    const version = await this.getStockCacheVersion();
     return this.cache.getOrSet(
-      CacheKeyHelper.stockDashboard(setor ?? 'general'),
+      CacheKeyHelper.stockDashboard(setor ?? 'general', version),
       () => this.repo.getStockProportionBySector(setor, transaction),
       60,
     );
   }
 
   async getFilterOptions(transaction?: Transaction) {
+    const version = await this.getStockCacheVersion();
     return this.cache.getOrSet(
-      CacheKeyHelper.stockFilterOptions(),
+      CacheKeyHelper.stockFilterOptions(version),
       () => this.repo.getFilterOptions(transaction),
       120,
     );
@@ -308,7 +329,7 @@ export class StockService {
       transaction,
     );
 
-    await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
+    await this.bumpStockCacheVersion();
 
     return result;
   }
@@ -339,7 +360,7 @@ export class StockService {
       transaction,
     );
 
-    await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
+    await this.bumpStockCacheVersion();
 
     return result;
   }
@@ -451,7 +472,7 @@ export class StockService {
       );
     }
 
-    await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
+    await this.bumpStockCacheVersion();
 
     return result;
   }
@@ -561,7 +582,7 @@ export class StockService {
       transaction,
     );
 
-    await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
+    await this.bumpStockCacheVersion();
 
     return result;
   }
@@ -673,7 +694,7 @@ export class StockService {
       }
     }
 
-    await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
+    await this.bumpStockCacheVersion();
 
     return result;
   }
@@ -689,7 +710,7 @@ export class StockService {
       transaction,
     );
 
-    await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
+    await this.bumpStockCacheVersion();
 
     return result;
   }
@@ -714,7 +735,7 @@ export class StockService {
       transaction,
     );
 
-    await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
+    await this.bumpStockCacheVersion();
 
     return result;
   }
@@ -739,7 +760,7 @@ export class StockService {
       transaction,
     );
 
-    await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
+    await this.bumpStockCacheVersion();
 
     return result;
   }
@@ -760,7 +781,7 @@ export class StockService {
       transaction,
     );
 
-    await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
+    await this.bumpStockCacheVersion();
 
     return result;
   }
@@ -781,7 +802,7 @@ export class StockService {
       transaction,
     );
 
-    await this.cache.invalidateByPattern(CacheKeyHelper.stockWildcard());
+    await this.bumpStockCacheVersion();
 
     return result;
   }

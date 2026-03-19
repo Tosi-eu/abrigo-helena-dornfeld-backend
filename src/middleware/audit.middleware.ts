@@ -39,10 +39,21 @@ export function auditLog(req: AuthRequest, res: Response, next: NextFunction) {
   let capturedOld: Record<string, unknown> | null = null;
   let capturedNew: unknown = null;
   let auditDone = false;
+  let oldValuePromise: Promise<Record<string, unknown> | null> | null = null;
 
-  const runAudit = () => {
+  const runAudit = async () => {
     if (auditDone) return;
     auditDone = true;
+
+    if (oldValuePromise) {
+      try {
+        capturedOld = await oldValuePromise;
+      } catch {
+        // If audit old-value fails, we still want to log the event.
+        capturedOld = null;
+      }
+    }
+
     const duration = Date.now() - startTime;
     logAuditEvent(req, res, duration, capturedOld, capturedNew, pathForAudit);
   };
@@ -50,31 +61,25 @@ export function auditLog(req: AuthRequest, res: Response, next: NextFunction) {
   const originalJson = res.json.bind(res);
   res.json = function (body: unknown) {
     if (body != null && typeof body === 'object') capturedNew = body;
-    runAudit();
+    void runAudit();
     return originalJson(body);
   };
 
-  res.on('finish', runAudit);
+  res.on('finish', () => {
+    void runAudit();
+  });
 
-  Promise.resolve()
-    .then(async () => {
-      if (
-        SENSITIVE_METHODS.includes(req.method) &&
-        ['PUT', 'PATCH', 'DELETE'].includes(req.method)
-      ) {
-        try {
-          capturedOld = await getOldValueForAudit(
-            pathForAudit,
-            req.method,
-            req,
-          );
-        } catch {
-          // ignore
-        }
-      }
-    })
-    .then(() => next())
-    .catch(next);
+  if (
+    SENSITIVE_METHODS.includes(req.method) &&
+    ['PUT', 'PATCH', 'DELETE'].includes(req.method)
+  ) {
+    // Kick off in background; avoid delaying the handler execution.
+    oldValuePromise = getOldValueForAudit(pathForAudit, req.method, req).catch(
+      () => null,
+    );
+  }
+
+  next();
 }
 
 function logAuditEvent(

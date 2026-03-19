@@ -99,6 +99,36 @@ export class LoginRepository {
     });
   }
 
+  async listPaginated(page: number, limit: number) {
+    const safePage = Math.max(1, Number(page) || 1);
+    const safeLimit = Math.min(100, Math.max(1, Number(limit) || 25));
+    const offset = (safePage - 1) * safeLimit;
+
+    const [data, total] = await Promise.all([
+      LoginModel.findAll({
+        attributes: [
+          'id',
+          'login',
+          'first_name',
+          'last_name',
+          'role',
+          'permissions',
+        ],
+        order: [['id', 'ASC']],
+        limit: safeLimit,
+        offset,
+      }),
+      LoginModel.count(),
+    ]);
+
+    return {
+      data,
+      total,
+      page: safePage,
+      limit: safeLimit,
+    };
+  }
+
   async update(id: number, data: Partial<LoginModel>) {
     await LoginModel.update(data, { where: { id } });
     return this.findById(id);
