@@ -8,6 +8,7 @@ import {
   validateIdParam,
 } from '../../../middleware/validation.middleware';
 import { priceSearchService } from '../../helpers/price-service.helper';
+import { requireModule } from '../../../middleware/module.middleware';
 
 const repo = new MedicineRepository();
 
@@ -16,11 +17,26 @@ const controller = new MedicineController(service);
 
 const router = Router();
 
-router.post('/', (req, res) => controller.create(req, res));
-router.get('/', validatePagination, (req, res) => controller.getAll(req, res));
-router.put('/:id', validateIdParam, (req, res) => controller.update(req, res));
-router.delete('/:id', validateIdParam, (req, res) =>
-  controller.delete(req, res),
+ router.post('/', requireModule('medicines'), (req, res) =>
+   controller.create(req, res),
+ );
+router.get(
+  '/',
+  validatePagination,
+  requireModule('medicines'),
+  (req, res) => controller.getAll(req, res),
 );
+ router.put(
+   '/:id',
+   validateIdParam,
+   requireModule('medicines'),
+   (req, res) => controller.update(req, res),
+ );
+ router.delete(
+   '/:id',
+   validateIdParam,
+   requireModule('medicines'),
+   (req, res) => controller.delete(req, res),
+ );
 
 export default router;

@@ -17,4 +17,8 @@ router.get('/status', statusLimiter, (req, res) =>
   appController.getStatus(req, res),
 );
 
+router.get('/tenants', statusLimiter, (req, res) =>
+  appController.listTenants(req, res),
+);
+
 export default router;

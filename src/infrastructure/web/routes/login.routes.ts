@@ -11,6 +11,7 @@ import {
   blockNonAdminWrites,
 } from '../../../middleware/admin.middleware';
 import { auditLog } from '../../../middleware/audit.middleware';
+import { publicTenantContextMiddleware } from '../../../middleware/tenant.middleware';
 
 const router = Router();
 
@@ -38,9 +39,17 @@ const registerLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-router.post('/', registerLimiter, (req, res) => controller.create(req, res));
-router.post('/authenticate', loginLimiter, (req, res) =>
-  controller.authenticate(req, res),
+router.post(
+  '/',
+  registerLimiter,
+  publicTenantContextMiddleware,
+  (req, res) => controller.create(req, res),
+);
+router.post(
+  '/authenticate',
+  loginLimiter,
+  publicTenantContextMiddleware,
+  (req, res) => controller.authenticate(req, res),
 );
 
 router.post('/reset-password', authMiddleware, requireAdmin, (req, res) =>

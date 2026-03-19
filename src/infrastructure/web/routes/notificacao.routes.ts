@@ -8,6 +8,7 @@ import {
 } from '../../../middleware/validation.middleware';
 import { withRls } from '../../../middleware/rls.middleware';
 import { sequelize } from '../../database/sequelize';
+import { requireModule } from '../../../middleware/module.middleware';
 
 const repo = new NotificationEventRepository();
 const service = new NotificationEventService(repo);
@@ -17,26 +18,31 @@ const router = Router();
 
 router.post(
   '/',
+  requireModule('notifications'),
   withRls(sequelize, (req, res) => controller.create(req, res)),
 );
 router.get(
   '/',
   validatePagination,
+  requireModule('notifications'),
   withRls(sequelize, (req, res) => controller.getAll(req, res)),
 );
 router.get(
   '/:id',
   validateIdParam,
+  requireModule('notifications'),
   withRls(sequelize, (req, res) => controller.getById(req, res)),
 );
 router.patch(
   '/:id',
   validateIdParam,
+  requireModule('notifications'),
   withRls(sequelize, (req, res) => controller.update(req, res)),
 );
 router.delete(
   '/:id',
   validateIdParam,
+  requireModule('notifications'),
   withRls(sequelize, (req, res) => controller.delete(req, res)),
 );
 

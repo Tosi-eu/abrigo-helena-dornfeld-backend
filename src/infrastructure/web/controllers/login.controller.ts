@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { LoginService } from '../../../core/services/login.service';
 import { AuthRequest } from '../../../middleware/auth.middleware';
+import type { TenantRequest } from '../../../middleware/tenant.middleware';
 import { getErrorMessage } from '../../types/error.types';
 import type { LoginLogRepository } from '../../database/repositories/login-log.repository';
 
@@ -17,7 +18,7 @@ export class LoginController {
     private readonly loginLogRepo?: LoginLogRepository,
   ) {}
 
-  async create(req: AuthRequest, res: Response) {
+  async create(req: AuthRequest & TenantRequest, res: Response) {
     // Only whitelisted fields: new accounts are always created as normal user (no id/role from client)
     const body = req.body ?? {};
     const login = body.login;
@@ -29,11 +30,13 @@ export class LoginController {
       return res.status(400).json({ error: 'Login e senha obrigatórios' });
 
     try {
+      const tenantId = req.tenant?.id ?? 1;
       const user = await this.service.create({
         login,
         password,
         first_name,
         last_name,
+        tenant_id: tenantId,
       });
       return res.status(201).json(user);
     } catch (error: unknown) {
@@ -57,13 +60,14 @@ export class LoginController {
     }
   }
 
-  async authenticate(req: AuthRequest, res: Response) {
+  async authenticate(req: AuthRequest & TenantRequest, res: Response) {
     const { login, password } = req.body;
 
     if (!login || !password)
       return res.status(400).json({ error: 'Login e senha obrigatórios' });
 
-    const result = await this.service.authenticate(login, password);
+    const tenantId = req.tenant?.id ?? 1;
+    const result = await this.service.authenticate(login, password, tenantId);
 
     if (this.loginLogRepo) {
       try {

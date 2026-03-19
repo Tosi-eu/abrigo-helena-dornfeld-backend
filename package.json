@@ -13,6 +13,7 @@
     "test:e2e": "NODE_ENV=test jest src/tests/e2e --detectOpenHandles",
     "test:db:create": "node scripts/create-test-db.js",
     "test:watch": "NODE_ENV=test jest --watchAll",
+    "check:multi-tenant": "node scripts/check-multi-tenant.js",
     "format": "prettier --write \"src/**/*.{ts,js,json}\"",
     "format:check": "prettier --check \"src/**/*.{ts,js,json}\"",
     "lint": "eslint \"src/**/*.ts\" --fix",
@@ -40,6 +41,7 @@
     "sequelize": "^6.37.7",
     "supertest": "^7.1.4",
     "winston": "^3.19.0"
+    ,"zod": "^3.25.76"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",

@@ -19,17 +19,26 @@ import { authMiddleware } from '../../../middleware/auth.middleware';
 import { rlsContextMiddleware } from '../../../middleware/rls.middleware';
 import { blockNonAdminWrites } from '../../../middleware/admin.middleware';
 import { auditLog } from '../../../middleware/audit.middleware';
+import {
+  enforceTenantMiddleware,
+  tenantMiddleware,
+} from '../../../middleware/tenant.middleware';
+import tenantRoutes from './tenant.routes';
 
 const router = Router();
+
+router.use(tenantMiddleware);
 
 router.use('/login', loginRoutes);
 router.use('/', appRoutes);
 
 router.use(authMiddleware);
+router.use(enforceTenantMiddleware);
 router.use(blockNonAdminWrites);
 router.use(rlsContextMiddleware);
 router.use(auditLog);
 
+router.use('/tenant', tenantRoutes);
 router.use('/admin', adminRoutes);
 router.use('/dashboard', dashboardRoutes);
 

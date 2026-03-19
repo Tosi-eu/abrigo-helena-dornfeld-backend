@@ -13,5 +13,7 @@ import './movimentacao.model';
 import './notificacao.model';
 import './residente.model';
 import './system-config.model';
+import './tenant.model';
+import './tenant-config.model';
 
 export { setupAssociations } from './associations.models';

@@ -15,11 +15,14 @@ module.exports = {
     const { sequelize } = queryInterface;
     const adminOnly =
       "(current_setting('app.current_user_id', true) IS NULL OR (current_setting('app.current_user_id', true))::int = 1)";
+    const tenantMatch =
+      "(current_setting('app.tenant_id', true) IS NULL OR tenant_id = (current_setting('app.tenant_id', true))::int)";
 
     const allTables = [
       'notificacao',
       'movimentacao',
       'login',
+      'login_log',
       'medicamento',
       'insumo',
       'residente',
@@ -29,6 +32,10 @@ module.exports = {
       'categoria_gaveta',
       'estoque_medicamento',
       'estoque_insumo',
+      'audit_log',
+      'system_config',
+      'tenant',
+      'tenant_config',
     ];
 
     for (const table of allTables) {
@@ -39,24 +46,24 @@ module.exports = {
       await sequelize.query(`
         CREATE POLICY "${table}_rls_select" ON "${table}"
         FOR SELECT
-        USING (true);
+        USING (${tenantMatch});
       `);
       // Write: only admin (or unset for backward compat)
       await sequelize.query(`
         CREATE POLICY "${table}_rls_insert" ON "${table}"
         FOR INSERT
-        WITH CHECK (${adminOnly});
+        WITH CHECK (${adminOnly} AND ${tenantMatch});
       `);
       await sequelize.query(`
         CREATE POLICY "${table}_rls_update" ON "${table}"
         FOR UPDATE
-        USING (${adminOnly})
-        WITH CHECK (${adminOnly});
+        USING (${adminOnly} AND ${tenantMatch})
+        WITH CHECK (${adminOnly} AND ${tenantMatch});
       `);
       await sequelize.query(`
         CREATE POLICY "${table}_rls_delete" ON "${table}"
         FOR DELETE
-        USING (${adminOnly});
+        USING (${adminOnly} AND ${tenantMatch});
       `);
     }
   },
@@ -67,6 +74,7 @@ module.exports = {
       'notificacao',
       'movimentacao',
       'login',
+      'login_log',
       'medicamento',
       'insumo',
       'residente',
@@ -76,6 +84,10 @@ module.exports = {
       'categoria_gaveta',
       'estoque_medicamento',
       'estoque_insumo',
+      'audit_log',
+      'system_config',
+      'tenant',
+      'tenant_config',
     ];
 
     const policySuffixes = ['select', 'insert', 'update', 'delete'];

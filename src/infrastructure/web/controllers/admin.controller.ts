@@ -1,8 +1,10 @@
 import { Response } from 'express';
 import { spawn } from 'child_process';
-import { writeFileSync, unlinkSync, existsSync } from 'fs';
+import { writeFileSync, unlinkSync, existsSync, statSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
+import crypto from 'crypto';
+import { QueryTypes } from 'sequelize';
 import { LoginService } from '../../../core/services/login.service';
 import { MovementService } from '../../../core/services/movimentacao.service';
 import { ReportService } from '../../../core/services/relatorio.service';
@@ -68,13 +70,14 @@ export class AdminController {
       first_name?: string;
       last_name?: string;
       role?: 'admin' | 'user';
+      tenantId: number;
       permissions?: {
         read?: boolean;
         create?: boolean;
         update?: boolean;
         delete?: boolean;
       };
-    } = { login, password };
+    } = { login, password, tenantId: req.user?.tenantId ?? 1 };
     if (firstName !== undefined) data.first_name = firstName;
     if (lastName !== undefined) data.last_name = lastName;
     if (role !== undefined) {
@@ -411,6 +414,437 @@ export class AdminController {
         database: 'error',
         redis: 'unknown',
         error: getErrorMessage(error) || 'Erro ao verificar saúde',
+      });
+    }
+  }
+
+  async getBackupStatus(_req: AuthRequest, res: Response) {
+    if (!this.systemConfigRepo) {
+      return res.status(501).json({ error: 'Configurações não disponíveis' });
+    }
+
+    try {
+      const [
+        lastBackupAt,
+        lastBackupStatus,
+        lastBackupDurationMs,
+        lastBackupSizeBytes,
+        lastBackupError,
+      ] = await Promise.all([
+        this.systemConfigRepo.get('last_backup_at'),
+        this.systemConfigRepo.get('last_backup_status'),
+        this.systemConfigRepo.get('last_backup_duration_ms'),
+        this.systemConfigRepo.get('last_backup_size_bytes'),
+        this.systemConfigRepo.get('last_backup_error'),
+      ]);
+
+      return res.json({
+        lastBackupAt: lastBackupAt || null,
+        lastBackupStatus: lastBackupStatus || null,
+        lastBackupDurationMs: lastBackupDurationMs
+          ? Number(lastBackupDurationMs)
+          : null,
+        lastBackupSizeBytes: lastBackupSizeBytes
+          ? Number(lastBackupSizeBytes)
+          : null,
+        lastBackupError: lastBackupError || null,
+        retentionCount: Number(process.env.R2_RETENTION_COUNT) || null,
+      });
+    } catch (error: unknown) {
+      return res.status(500).json({
+        error: getErrorMessage(error) || 'Erro ao carregar status do backup',
+      });
+    }
+  }
+
+  async runBackupNow(_req: AuthRequest, res: Response) {
+    if (!this.systemConfigRepo) {
+      return res.status(501).json({ error: 'Configurações não disponíveis' });
+    }
+
+    const startedAt = Date.now();
+    const dbHost = process.env.DB_HOST || 'localhost';
+    const dbPort = process.env.DB_PORT || '5432';
+    const dbUser = process.env.DB_USER || 'postgres';
+    const dbPassword = process.env.DB_PASSWORD || '';
+    const dbName = process.env.DB_NAME || 'estoque';
+    const env = { ...process.env, PGPASSWORD: dbPassword };
+
+    const token = crypto.randomBytes(8).toString('hex');
+    const tmpSql = join(tmpdir(), `admin_backup_${Date.now()}_${token}.sql`);
+    const tmpGz = `${tmpSql}.gz`;
+
+    const cleanup = () => {
+      try {
+        if (existsSync(tmpSql)) unlinkSync(tmpSql);
+      } catch {
+        /* ignore */
+      }
+      try {
+        if (existsSync(tmpGz)) unlinkSync(tmpGz);
+      } catch {
+        /* ignore */
+      }
+    };
+
+    const persistStatus = async (data: Record<string, string>) => {
+      await this.systemConfigRepo!.setMany(data);
+    };
+
+    try {
+      // 1) pg_dump data-only to tmpSql
+      await new Promise<void>((resolve, reject) => {
+        let stderr = '';
+        const p = spawn(
+          'pg_dump',
+          [
+            '-Fp',
+            '--data-only',
+            '-h',
+            dbHost,
+            '-p',
+            dbPort,
+            '-U',
+            dbUser,
+            dbName,
+            '-f',
+            tmpSql,
+          ],
+          { env, stdio: ['ignore', 'ignore', 'pipe'] },
+        );
+        p.stderr?.on('data', (d: Buffer) => (stderr += d.toString()));
+        p.on('close', code => {
+          if (code === 0) return resolve();
+          reject(new Error(stderr.trim() || `pg_dump failed (code ${code})`));
+        });
+      });
+
+      // 2) gzip it
+      await new Promise<void>((resolve, reject) => {
+        let stderr = '';
+        const p = spawn('gzip', ['-f', tmpSql], {
+          stdio: ['ignore', 'ignore', 'pipe'],
+        });
+        p.stderr?.on('data', (d: Buffer) => (stderr += d.toString()));
+        p.on('close', code => {
+          if (code === 0) return resolve();
+          reject(new Error(stderr.trim() || `gzip failed (code ${code})`));
+        });
+      });
+
+      const durationMs = Date.now() - startedAt;
+      const sizeBytes = existsSync(tmpGz) ? Number(statSync(tmpGz).size) : null;
+
+      await persistStatus({
+        last_backup_at: new Date().toISOString(),
+        last_backup_status: 'ok',
+        last_backup_duration_ms: String(durationMs),
+        ...(sizeBytes != null
+          ? { last_backup_size_bytes: String(sizeBytes) }
+          : {}),
+        last_backup_error: '',
+      });
+
+      cleanup();
+
+      return res.json({
+        message: 'Backup gerado com sucesso.',
+        durationMs,
+        sizeBytes,
+      });
+    } catch (error: unknown) {
+      const durationMs = Date.now() - startedAt;
+      const msg = getErrorMessage(error) || 'Erro ao gerar backup';
+      await persistStatus({
+        last_backup_at: new Date().toISOString(),
+        last_backup_status: 'error',
+        last_backup_duration_ms: String(durationMs),
+        last_backup_error: msg,
+      }).catch(() => null);
+      cleanup();
+      return res.status(500).json({ error: msg });
+    }
+  }
+
+  async getDataQualitySummary(_req: AuthRequest, res: Response) {
+    try {
+      const negMedRow = await sequelize.query<{ count: number }>(
+        `SELECT COUNT(*)::int as count FROM estoque_medicamento WHERE quantidade < 0`,
+        { type: QueryTypes.SELECT, plain: true },
+      );
+      const negInpRow = await sequelize.query<{ count: number }>(
+        `SELECT COUNT(*)::int as count FROM estoque_insumo WHERE quantidade < 0`,
+        { type: QueryTypes.SELECT, plain: true },
+      );
+      const missingLotMedRow = await sequelize.query<{ count: number }>(
+        `SELECT COUNT(*)::int as count FROM estoque_medicamento WHERE (lote IS NULL OR btrim(lote) = '') AND quantidade > 0`,
+        { type: QueryTypes.SELECT, plain: true },
+      );
+      const missingLotInpRow = await sequelize.query<{ count: number }>(
+        `SELECT COUNT(*)::int as count FROM estoque_insumo WHERE (lote IS NULL OR btrim(lote) = '') AND quantidade > 0`,
+        { type: QueryTypes.SELECT, plain: true },
+      );
+      const orphanMovRow = await sequelize.query<{ count: number }>(
+        `SELECT COUNT(*)::int as count FROM movimentacao WHERE medicamento_id IS NULL AND insumo_id IS NULL`,
+        { type: QueryTypes.SELECT, plain: true },
+      );
+
+      const negMed = Number(negMedRow?.count) || 0;
+      const negInp = Number(negInpRow?.count) || 0;
+      const missingLotMed = Number(missingLotMedRow?.count) || 0;
+      const missingLotInp = Number(missingLotInpRow?.count) || 0;
+      const orphanMov = Number(orphanMovRow?.count) || 0;
+
+      return res.json({
+        negativeStock: { medicines: negMed, inputs: negInp },
+        missingLot: { medicines: missingLotMed, inputs: missingLotInp },
+        orphanMovements: orphanMov,
+      });
+    } catch (error: unknown) {
+      return res.status(500).json({
+        error: getErrorMessage(error) || 'Erro ao calcular qualidade de dados',
+      });
+    }
+  }
+
+  async listInconsistencies(req: AuthRequest, res: Response) {
+    const type = String(req.query.type || '');
+    const page = Math.max(1, Number(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 25));
+    const offset = (page - 1) * limit;
+
+    try {
+      if (type === 'orphan_movements') {
+        const [rows] = await sequelize.query(
+          `SELECT id, tipo, data, login_id, quantidade, setor, lote, destino
+           FROM movimentacao
+           WHERE medicamento_id IS NULL AND insumo_id IS NULL
+           ORDER BY data DESC
+           LIMIT :limit OFFSET :offset`,
+          { replacements: { limit, offset }, type: QueryTypes.SELECT },
+        );
+        const totalRow = await sequelize.query<{ total: number }>(
+          `SELECT COUNT(*)::int as total FROM movimentacao WHERE medicamento_id IS NULL AND insumo_id IS NULL`,
+          { type: QueryTypes.SELECT, plain: true },
+        );
+        return res.json({
+          data: rows,
+          total: Number(totalRow?.total) || 0,
+          page,
+          limit,
+        });
+      }
+
+      if (type === 'negative_stock') {
+        const [rows] = await sequelize.query(
+          `SELECT 'medicamento' as item_type, id, medicamento_id as item_id, quantidade, setor, lote, validade
+           FROM estoque_medicamento WHERE quantidade < 0
+           UNION ALL
+           SELECT 'insumo' as item_type, id, insumo_id as item_id, quantidade, setor, lote, validade
+           FROM estoque_insumo WHERE quantidade < 0
+           ORDER BY quantidade ASC
+           LIMIT :limit OFFSET :offset`,
+          { replacements: { limit, offset }, type: QueryTypes.SELECT },
+        );
+        const totalRow = await sequelize.query<{ total: number }>(
+          `SELECT (
+             (SELECT COUNT(*) FROM estoque_medicamento WHERE quantidade < 0) +
+             (SELECT COUNT(*) FROM estoque_insumo WHERE quantidade < 0)
+           )::int as total`,
+          { type: QueryTypes.SELECT, plain: true },
+        );
+        return res.json({
+          data: rows,
+          total: Number(totalRow?.total) || 0,
+          page,
+          limit,
+        });
+      }
+
+      if (type === 'missing_lot') {
+        const [rows] = await sequelize.query(
+          `SELECT 'medicamento' as item_type, id, medicamento_id as item_id, quantidade, setor, lote, validade
+           FROM estoque_medicamento WHERE (lote IS NULL OR btrim(lote) = '') AND quantidade > 0
+           UNION ALL
+           SELECT 'insumo' as item_type, id, insumo_id as item_id, quantidade, setor, lote, validade
+           FROM estoque_insumo WHERE (lote IS NULL OR btrim(lote) = '') AND quantidade > 0
+           ORDER BY validade ASC
+           LIMIT :limit OFFSET :offset`,
+          { replacements: { limit, offset }, type: QueryTypes.SELECT },
+        );
+        const totalRow = await sequelize.query<{ total: number }>(
+          `SELECT (
+             (SELECT COUNT(*) FROM estoque_medicamento WHERE (lote IS NULL OR btrim(lote) = '') AND quantidade > 0) +
+             (SELECT COUNT(*) FROM estoque_insumo WHERE (lote IS NULL OR btrim(lote) = '') AND quantidade > 0)
+           )::int as total`,
+          { type: QueryTypes.SELECT, plain: true },
+        );
+        return res.json({
+          data: rows,
+          total: Number(totalRow?.total) || 0,
+          page,
+          limit,
+        });
+      }
+
+      return res.status(400).json({
+        error:
+          'type inválido. Use: negative_stock | missing_lot | orphan_movements',
+      });
+    } catch (error: unknown) {
+      return res.status(500).json({
+        error: getErrorMessage(error) || 'Erro ao listar inconsistências',
+      });
+    }
+  }
+
+  async listMedicineDuplicates(req: AuthRequest, res: Response) {
+    const page = Math.max(1, Number(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 25));
+    const offset = (page - 1) * limit;
+    try {
+      const [rows] = await sequelize.query(
+        `WITH norm AS (
+           SELECT
+             lower(btrim(nome)) as n_nome,
+             lower(btrim(principio_ativo)) as n_principio,
+             lower(btrim(dosagem)) as n_dosagem,
+             lower(btrim(unidade_medida)) as n_unidade,
+             array_agg(id ORDER BY id) as ids,
+             COUNT(*)::int as count
+           FROM medicamento
+           GROUP BY 1,2,3,4
+           HAVING COUNT(*) > 1
+         )
+         SELECT * FROM norm
+         ORDER BY count DESC, n_nome ASC
+         LIMIT :limit OFFSET :offset`,
+        { replacements: { limit, offset }, type: QueryTypes.SELECT },
+      );
+      const totalRow = await sequelize.query<{ total: number }>(
+        `WITH norm AS (
+           SELECT 1
+           FROM medicamento
+           GROUP BY lower(btrim(nome)), lower(btrim(principio_ativo)), lower(btrim(dosagem)), lower(btrim(unidade_medida))
+           HAVING COUNT(*) > 1
+         )
+         SELECT COUNT(*)::int as total FROM norm`,
+        { type: QueryTypes.SELECT, plain: true },
+      );
+      return res.json({
+        data: rows,
+        total: Number(totalRow?.total) || 0,
+        page,
+        limit,
+      });
+    } catch (error: unknown) {
+      return res.status(500).json({
+        error: getErrorMessage(error) || 'Erro ao listar possíveis duplicados',
+      });
+    }
+  }
+
+  async mergeMedicines(req: AuthRequest, res: Response) {
+    const keepId = Number(req.body?.keepId);
+    const mergeIds = Array.isArray(req.body?.mergeIds)
+      ? (req.body.mergeIds as unknown[])
+          .map(Number)
+          .filter(n => !Number.isNaN(n))
+      : [];
+
+    if (!keepId || Number.isNaN(keepId) || keepId < 1) {
+      return res.status(400).json({ error: 'keepId inválido' });
+    }
+    const idsToMerge = mergeIds.filter(id => id && id !== keepId);
+    if (idsToMerge.length === 0) {
+      return res.status(400).json({ error: 'mergeIds vazio' });
+    }
+
+    try {
+      await sequelize.transaction(async t => {
+        await sequelize.query(
+          `UPDATE estoque_medicamento SET medicamento_id = :keepId WHERE medicamento_id = ANY(:ids)`,
+          { replacements: { keepId, ids: idsToMerge }, transaction: t },
+        );
+        await sequelize.query(
+          `UPDATE movimentacao SET medicamento_id = :keepId WHERE medicamento_id = ANY(:ids)`,
+          { replacements: { keepId, ids: idsToMerge }, transaction: t },
+        );
+        await sequelize.query(
+          `UPDATE notificacao SET medicamento_id = :keepId WHERE medicamento_id = ANY(:ids)`,
+          { replacements: { keepId, ids: idsToMerge }, transaction: t },
+        );
+        await sequelize.query(`DELETE FROM medicamento WHERE id = ANY(:ids)`, {
+          replacements: { ids: idsToMerge },
+          transaction: t,
+        });
+      });
+
+      return res.json({ message: 'Medicamentos mesclados com sucesso.' });
+    } catch (error: unknown) {
+      return res.status(500).json({
+        error: getErrorMessage(error) || 'Erro ao mesclar medicamentos',
+      });
+    }
+  }
+
+  private canonicalUnit(u: string): string {
+    const raw = (u || '').trim();
+    if (!raw) return raw;
+    const low = raw.toLowerCase();
+    const map: Record<string, string> = {
+      mg: 'mg',
+      ml: 'ml',
+      g: 'g',
+      mcg: 'mcg',
+      ui: 'UI',
+      gts: 'gts',
+      'mg/ml': 'mg/ml',
+      'g/ml': 'g/ml',
+      'mg/g': 'mg/g',
+      'ui/g': 'UI/g',
+      'ui/mg': 'UI/mg',
+      'ui/ml': 'UI/ml',
+    };
+    return map[low] ?? raw;
+  }
+
+  async normalizeMedicineUnits(req: AuthRequest, res: Response) {
+    const dryRun = req.body?.dryRun === true;
+    try {
+      const rows = await sequelize.query<{ id: number; unidade_medida: string }>(
+        `SELECT id, unidade_medida FROM medicamento`,
+        { type: QueryTypes.SELECT },
+      );
+      let updated = 0;
+      const changes: Array<{ id: number; from: string; to: string }> = [];
+      for (const row of rows) {
+        const to = this.canonicalUnit(row.unidade_medida);
+        if (to !== row.unidade_medida) {
+          updated++;
+          changes.push({ id: row.id, from: row.unidade_medida, to });
+        }
+      }
+
+      if (!dryRun && changes.length > 0) {
+        await sequelize.transaction(async t => {
+          for (const c of changes) {
+            await sequelize.query(
+              `UPDATE medicamento SET unidade_medida = :to WHERE id = :id`,
+              { replacements: { id: c.id, to: c.to }, transaction: t },
+            );
+          }
+        });
+      }
+
+      return res.json({
+        dryRun,
+        updated,
+        preview: changes.slice(0, 50),
+      });
+    } catch (error: unknown) {
+      return res.status(500).json({
+        error: getErrorMessage(error) || 'Erro ao normalizar unidades',
       });
     }
   }

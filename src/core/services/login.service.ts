@@ -72,8 +72,10 @@ export class LoginService {
     };
   }
 
-  async create(attrs: Login) {
-    const userExists = await this.repo.findByLogin(attrs.login);
+  async create(attrs: Login & { tenant_id?: number }) {
+    const tenantId =
+      (attrs as unknown as { tenant_id?: number }).tenant_id ?? 1;
+    const userExists = await this.repo.findByLoginForTenant(attrs.login, tenantId);
 
     if (userExists) {
       throw new Error('Usuário já cadastrado');
@@ -87,6 +89,7 @@ export class LoginService {
         password: hashed,
         first_name: attrs.first_name,
         last_name: attrs.last_name,
+        tenant_id: tenantId,
       });
       return created;
     } catch (err: unknown) {
@@ -106,6 +109,7 @@ export class LoginService {
     first_name?: string;
     last_name?: string;
     role?: 'admin' | 'user';
+    tenantId: number;
     permissions?: {
       read?: boolean;
       create?: boolean;
@@ -113,7 +117,10 @@ export class LoginService {
       delete?: boolean;
     };
   }) {
-    const userExists = await this.repo.findByLogin(attrs.login);
+    const userExists = await this.repo.findByLoginForTenant(
+      attrs.login,
+      attrs.tenantId,
+    );
     if (userExists) throw new Error('Usuário já cadastrado');
 
     validateStrongPassword(attrs.password);
@@ -137,6 +144,7 @@ export class LoginService {
         last_name: attrs.last_name,
         role,
         permissions,
+        tenant_id: attrs.tenantId,
       });
       const user = await this.repo.findById(created.id);
       if (!user) return null;
@@ -159,8 +167,9 @@ export class LoginService {
     }
   }
 
-  async authenticate(login: string, password: string) {
-    const user = await this.repo.findByLogin(login);
+  async authenticate(login: string, password: string, tenantId: number) {
+    // login is unique per tenant
+    const user = await this.repo.findByLoginForTenant(login, tenantId);
     if (!user) return null;
 
     const match = await bcrypt.compare(password, user.password);
@@ -180,6 +189,10 @@ export class LoginService {
         id: user.id,
         login: user.login,
         role: user.role,
+        tenantId: (user as unknown as { tenant_id?: number }).tenant_id ?? 1,
+        isSuperAdmin: Boolean(
+          (user as unknown as { is_super_admin?: boolean }).is_super_admin,
+        ),
       },
     };
   }

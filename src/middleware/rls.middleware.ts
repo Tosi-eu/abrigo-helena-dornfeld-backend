@@ -4,6 +4,7 @@ import type { RlsContextVars } from '../infrastructure/database/rls.context';
 import type { Transaction } from 'sequelize';
 import type { Sequelize } from 'sequelize';
 import { withRlsContext } from '../infrastructure/database/rls.context';
+import type { TenantRequest } from './tenant.middleware';
 
 export interface RlsRequest extends AuthRequest {
   rlsContext?: RlsContextVars;
@@ -11,7 +12,7 @@ export interface RlsRequest extends AuthRequest {
 }
 
 export function rlsContextMiddleware(
-  req: RlsRequest,
+  req: RlsRequest & TenantRequest,
   _res: Response,
   next: NextFunction,
 ) {
@@ -22,9 +23,11 @@ export function rlsContextMiddleware(
       user_can_create: p?.create ? 'true' : 'false',
       user_can_update: p?.update ? 'true' : 'false',
       user_can_delete: p?.delete ? 'true' : 'false',
+      tenant_id: req.tenant?.id ?? 1,
+      is_super_admin: req.user.isSuperAdmin ? 'true' : 'false',
     };
   } else {
-    req.rlsContext = {};
+    req.rlsContext = { tenant_id: req.tenant?.id ?? 1 };
   }
   next();
 }
