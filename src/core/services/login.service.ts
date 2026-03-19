@@ -75,7 +75,10 @@ export class LoginService {
   async create(attrs: Login & { tenant_id?: number }) {
     const tenantId =
       (attrs as unknown as { tenant_id?: number }).tenant_id ?? 1;
-    const userExists = await this.repo.findByLoginForTenant(attrs.login, tenantId);
+    const userExists = await this.repo.findByLoginForTenant(
+      attrs.login,
+      tenantId,
+    );
 
     if (userExists) {
       throw new Error('Usuário já cadastrado');

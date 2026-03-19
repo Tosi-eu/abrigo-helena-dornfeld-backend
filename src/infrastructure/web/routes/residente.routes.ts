@@ -14,11 +14,8 @@ const controller = new ResidentController(service);
 
 const router = Router();
 
-router.get(
-  '/',
-  validatePagination,
-  requireModule('residents'),
-  (req, res) => controller.findAll(req, res),
+router.get('/', validatePagination, requireModule('residents'), (req, res) =>
+  controller.findAll(req, res),
 );
 router.get('/count', requireModule('residents'), (req, res) =>
   controller.getCount(req, res),

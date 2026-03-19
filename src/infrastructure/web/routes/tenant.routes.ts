@@ -9,4 +9,3 @@ router.put('/config', (req, res) => controller.updateConfig(req, res));
 router.put('/branding', (req, res) => controller.updateBranding(req, res));
 
 export default router;
-

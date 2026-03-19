@@ -38,7 +38,9 @@ export class TenantController {
   async updateConfig(req: AuthRequest & TenantRequest, res: Response) {
     try {
       if (req.user?.role !== 'admin') {
-        return res.status(403).json({ error: 'Apenas admin pode editar módulos' });
+        return res
+          .status(403)
+          .json({ error: 'Apenas admin pode editar módulos' });
       }
       const tenantId = req.tenant?.id ?? 1;
       const modules = await service.set(tenantId, req.body?.modules);
@@ -53,7 +55,9 @@ export class TenantController {
   async updateBranding(req: AuthRequest & TenantRequest, res: Response) {
     try {
       if (req.user?.role !== 'admin') {
-        return res.status(403).json({ error: 'Apenas admin pode editar branding' });
+        return res
+          .status(403)
+          .json({ error: 'Apenas admin pode editar branding' });
       }
       const tenantId = req.tenant?.id ?? 1;
       const brandNameRaw =
@@ -95,4 +99,3 @@ export class TenantController {
     }
   }
 }
-

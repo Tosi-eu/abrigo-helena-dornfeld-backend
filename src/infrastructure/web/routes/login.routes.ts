@@ -39,11 +39,8 @@ const registerLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-router.post(
-  '/',
-  registerLimiter,
-  publicTenantContextMiddleware,
-  (req, res) => controller.create(req, res),
+router.post('/', registerLimiter, publicTenantContextMiddleware, (req, res) =>
+  controller.create(req, res),
 );
 router.post(
   '/authenticate',

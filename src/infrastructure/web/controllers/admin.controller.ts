@@ -812,10 +812,12 @@ export class AdminController {
   async normalizeMedicineUnits(req: AuthRequest, res: Response) {
     const dryRun = req.body?.dryRun === true;
     try {
-      const rows = await sequelize.query<{ id: number; unidade_medida: string }>(
-        `SELECT id, unidade_medida FROM medicamento`,
-        { type: QueryTypes.SELECT },
-      );
+      const rows = await sequelize.query<{
+        id: number;
+        unidade_medida: string;
+      }>(`SELECT id, unidade_medida FROM medicamento`, {
+        type: QueryTypes.SELECT,
+      });
       let updated = 0;
       const changes: Array<{ id: number; from: string; to: string }> = [];
       for (const row of rows) {

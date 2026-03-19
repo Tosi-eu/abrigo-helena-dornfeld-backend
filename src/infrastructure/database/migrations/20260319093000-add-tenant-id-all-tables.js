@@ -44,7 +44,8 @@ module.exports = {
       try {
         await queryInterface.addIndex(table, ['tenant_id']);
       } catch (e) {
-        if (!e.message || !String(e.message).includes('already exists')) throw e;
+        if (!e.message || !String(e.message).includes('already exists'))
+          throw e;
       }
     }
   },
@@ -76,4 +77,3 @@ module.exports = {
     }
   },
 };
-

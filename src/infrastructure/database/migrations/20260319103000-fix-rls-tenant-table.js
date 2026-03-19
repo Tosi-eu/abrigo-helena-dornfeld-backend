@@ -10,10 +10,18 @@ module.exports = {
   async up(queryInterface) {
     const { sequelize } = queryInterface;
 
-    await sequelize.query(`DROP POLICY IF EXISTS "tenant_rls_select" ON "tenant";`);
-    await sequelize.query(`DROP POLICY IF EXISTS "tenant_rls_insert" ON "tenant";`);
-    await sequelize.query(`DROP POLICY IF EXISTS "tenant_rls_update" ON "tenant";`);
-    await sequelize.query(`DROP POLICY IF EXISTS "tenant_rls_delete" ON "tenant";`);
+    await sequelize.query(
+      `DROP POLICY IF EXISTS "tenant_rls_select" ON "tenant";`,
+    );
+    await sequelize.query(
+      `DROP POLICY IF EXISTS "tenant_rls_insert" ON "tenant";`,
+    );
+    await sequelize.query(
+      `DROP POLICY IF EXISTS "tenant_rls_update" ON "tenant";`,
+    );
+    await sequelize.query(
+      `DROP POLICY IF EXISTS "tenant_rls_delete" ON "tenant";`,
+    );
 
     const tenantMatch =
       "(current_setting('app.tenant_id', true) IS NULL OR id = (current_setting('app.tenant_id', true))::int)";
@@ -45,10 +53,17 @@ module.exports = {
 
   async down(queryInterface) {
     const { sequelize } = queryInterface;
-    await sequelize.query(`DROP POLICY IF EXISTS "tenant_rls_select" ON "tenant";`);
-    await sequelize.query(`DROP POLICY IF EXISTS "tenant_rls_insert" ON "tenant";`);
-    await sequelize.query(`DROP POLICY IF EXISTS "tenant_rls_update" ON "tenant";`);
-    await sequelize.query(`DROP POLICY IF EXISTS "tenant_rls_delete" ON "tenant";`);
+    await sequelize.query(
+      `DROP POLICY IF EXISTS "tenant_rls_select" ON "tenant";`,
+    );
+    await sequelize.query(
+      `DROP POLICY IF EXISTS "tenant_rls_insert" ON "tenant";`,
+    );
+    await sequelize.query(
+      `DROP POLICY IF EXISTS "tenant_rls_update" ON "tenant";`,
+    );
+    await sequelize.query(
+      `DROP POLICY IF EXISTS "tenant_rls_delete" ON "tenant";`,
+    );
   },
 };
-

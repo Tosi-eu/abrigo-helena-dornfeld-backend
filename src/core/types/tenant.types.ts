@@ -12,4 +12,3 @@ export type ModuleKey =
 export type TenantModulesConfig = {
   enabled: ModuleKey[];
 };
-

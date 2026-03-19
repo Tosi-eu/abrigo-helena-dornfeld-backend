@@ -17,26 +17,17 @@ const controller = new MedicineController(service);
 
 const router = Router();
 
- router.post('/', requireModule('medicines'), (req, res) =>
-   controller.create(req, res),
- );
-router.get(
-  '/',
-  validatePagination,
-  requireModule('medicines'),
-  (req, res) => controller.getAll(req, res),
+router.post('/', requireModule('medicines'), (req, res) =>
+  controller.create(req, res),
 );
- router.put(
-   '/:id',
-   validateIdParam,
-   requireModule('medicines'),
-   (req, res) => controller.update(req, res),
- );
- router.delete(
-   '/:id',
-   validateIdParam,
-   requireModule('medicines'),
-   (req, res) => controller.delete(req, res),
- );
+router.get('/', validatePagination, requireModule('medicines'), (req, res) =>
+  controller.getAll(req, res),
+);
+router.put('/:id', validateIdParam, requireModule('medicines'), (req, res) =>
+  controller.update(req, res),
+);
+router.delete('/:id', validateIdParam, requireModule('medicines'), (req, res) =>
+  controller.delete(req, res),
+);
 
 export default router;

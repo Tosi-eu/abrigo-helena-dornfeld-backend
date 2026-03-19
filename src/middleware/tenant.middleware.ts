@@ -104,11 +104,14 @@ export async function publicTenantContextMiddleware(
     }
     const fallback = await repo.findById(1);
     if (fallback) {
-      req.tenant = { id: fallback.id, slug: fallback.slug, name: fallback.name };
+      req.tenant = {
+        id: fallback.id,
+        slug: fallback.slug,
+        name: fallback.name,
+      };
     }
   } catch {
     // ignore
   }
   next();
 }
-

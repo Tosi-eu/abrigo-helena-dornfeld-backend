@@ -71,7 +71,14 @@ export async function authMiddleware(
       async () => {
         const user = await LoginModel.findOne({
           where: { refresh_token: token },
-          attributes: ['id', 'login', 'role', 'permissions', 'tenant_id', 'is_super_admin'],
+          attributes: [
+            'id',
+            'login',
+            'role',
+            'permissions',
+            'tenant_id',
+            'is_super_admin',
+          ],
         });
 
         if (!user) return null;
@@ -86,7 +93,9 @@ export async function authMiddleware(
           role,
           permissions,
           tenantId: Number(user.tenant_id) || 1,
-          isSuperAdmin: Boolean((user as unknown as { is_super_admin?: boolean }).is_super_admin),
+          isSuperAdmin: Boolean(
+            (user as unknown as { is_super_admin?: boolean }).is_super_admin,
+          ),
         } as AuthCacheEntry;
       },
       authCacheTtlSeconds,
@@ -150,7 +159,14 @@ export async function optionalAuthMiddleware(
       async () => {
         const user = await LoginModel.findOne({
           where: { refresh_token: token },
-          attributes: ['id', 'login', 'role', 'permissions', 'tenant_id', 'is_super_admin'],
+          attributes: [
+            'id',
+            'login',
+            'role',
+            'permissions',
+            'tenant_id',
+            'is_super_admin',
+          ],
         });
 
         if (!user) return null;
@@ -165,7 +181,9 @@ export async function optionalAuthMiddleware(
           role,
           permissions,
           tenantId: Number(user.tenant_id) || 1,
-          isSuperAdmin: Boolean((user as unknown as { is_super_admin?: boolean }).is_super_admin),
+          isSuperAdmin: Boolean(
+            (user as unknown as { is_super_admin?: boolean }).is_super_admin,
+          ),
         } as AuthCacheEntry;
       },
       authCacheTtlSeconds,

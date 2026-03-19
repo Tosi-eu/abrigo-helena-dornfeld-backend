@@ -8,7 +8,11 @@ import type { ModuleKey } from '../core/types/tenant.types';
 const service = new TenantConfigService(new TenantConfigRepository());
 
 export function requireModule(moduleKey: ModuleKey) {
-  return async (req: AuthRequest & TenantRequest, res: Response, next: NextFunction) => {
+  return async (
+    req: AuthRequest & TenantRequest,
+    res: Response,
+    next: NextFunction,
+  ) => {
     try {
       const tenantId = req.tenant?.id ?? 1;
       const cfg = await service.get(tenantId);
@@ -19,8 +23,9 @@ export function requireModule(moduleKey: ModuleKey) {
       }
       next();
     } catch {
-      return res.status(500).json({ error: 'Erro ao validar módulos do tenant' });
+      return res
+        .status(500)
+        .json({ error: 'Erro ao validar módulos do tenant' });
     }
   };
 }
-

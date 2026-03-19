@@ -20,7 +20,8 @@ module.exports = {
         });
       } catch (e) {
         // Be idempotent-ish: ignore if already exists
-        if (!e?.message || !String(e.message).includes('already exists')) throw e;
+        if (!e?.message || !String(e.message).includes('already exists'))
+          throw e;
       }
     };
 
@@ -83,4 +84,3 @@ module.exports = {
     }
   },
 };
-

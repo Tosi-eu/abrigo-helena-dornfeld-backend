@@ -9,13 +9,17 @@ export class TenantConfigRepository {
   }
 
   async setByTenantId(tenantId: number, modulesJson: object) {
-    const row = await TenantConfigModel.findOne({ where: { tenant_id: tenantId } });
+    const row = await TenantConfigModel.findOne({
+      where: { tenant_id: tenantId },
+    });
     if (row) {
       await row.update({ modules_json: modulesJson });
     } else {
-      await TenantConfigModel.create({ tenant_id: tenantId, modules_json: modulesJson });
+      await TenantConfigModel.create({
+        tenant_id: tenantId,
+        modules_json: modulesJson,
+      });
     }
     return this.getByTenantId(tenantId);
   }
 }
-

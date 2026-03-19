@@ -66,7 +66,10 @@ describe('LoginService (unit)', () => {
     });
 
     it('deve rejeitar login já cadastrado', async () => {
-      mockRepo.findByLoginForTenant.mockResolvedValue({ id: 1, login: 'user1' } as any);
+      mockRepo.findByLoginForTenant.mockResolvedValue({
+        id: 1,
+        login: 'user1',
+      } as any);
 
       await expect(
         service.create({

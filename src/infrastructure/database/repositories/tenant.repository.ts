@@ -83,4 +83,3 @@ export class TenantRepository {
     return (await TenantModel.destroy({ where: { id } })) > 0;
   }
 }
-

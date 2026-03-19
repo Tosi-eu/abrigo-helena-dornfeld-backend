@@ -59,4 +59,3 @@ export class TenantConfigService {
     return Array.isArray(config.enabled) && config.enabled.includes(key);
   }
 }
-

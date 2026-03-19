@@ -11,7 +11,8 @@ export class AppController {
   async listTenants(req: Request, res: Response) {
     try {
       const q = req.query.q != null ? String(req.query.q) : '';
-      const limit = req.query.limit != null ? Number(req.query.limit) : undefined;
+      const limit =
+        req.query.limit != null ? Number(req.query.limit) : undefined;
       const repo = new TenantRepository();
       const rows = await repo.listPublic({ q, limit });
       return res.json({ data: rows });

@@ -56,7 +56,8 @@ export class AdminTenantsController {
   async updateTenant(req: AuthRequest, res: Response) {
     try {
       const id = Number(req.params.id);
-      if (!id || Number.isNaN(id)) return res.status(400).json({ error: 'id inválido' });
+      if (!id || Number.isNaN(id))
+        return res.status(400).json({ error: 'id inválido' });
       const slug =
         req.body?.slug != null ? String(req.body.slug).trim() : undefined;
       const name =
@@ -73,8 +74,12 @@ export class AdminTenantsController {
   async deleteTenant(req: AuthRequest, res: Response) {
     try {
       const id = Number(req.params.id);
-      if (!id || Number.isNaN(id)) return res.status(400).json({ error: 'id inválido' });
-      if (id === 1) return res.status(400).json({ error: 'Não é permitido remover o tenant padrão' });
+      if (!id || Number.isNaN(id))
+        return res.status(400).json({ error: 'id inválido' });
+      if (id === 1)
+        return res
+          .status(400)
+          .json({ error: 'Não é permitido remover o tenant padrão' });
       const ok = await tenantRepo.delete(id);
       return res.json({ ok });
     } catch (error: unknown) {
@@ -114,4 +119,3 @@ export class AdminTenantsController {
     }
   }
 }
-

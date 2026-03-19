@@ -28,7 +28,10 @@ module.exports = {
 
   async down(queryInterface) {
     try {
-      await queryInterface.removeIndex('login', 'idx_login_tenant_login_unique');
+      await queryInterface.removeIndex(
+        'login',
+        'idx_login_tenant_login_unique',
+      );
     } catch {
       /* ignore */
     }
@@ -42,4 +45,3 @@ module.exports = {
     }
   },
 };
-

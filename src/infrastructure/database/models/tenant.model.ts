@@ -37,4 +37,3 @@ TenantModel.init(
 );
 
 export default TenantModel;
-
