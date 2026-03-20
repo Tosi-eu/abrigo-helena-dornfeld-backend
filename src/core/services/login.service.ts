@@ -254,6 +254,23 @@ export class LoginService {
     }));
   }
 
+  async listUsersPaginated(page = 1, limit = 25) {
+    const result = await this.repo.listPaginated(page, limit);
+    return {
+      data: result.data.map(u => ({
+        id: u.id,
+        login: u.login,
+        firstName: u.first_name,
+        lastName: u.last_name,
+        role: u.role,
+        permissions: effectivePermissions(u.role, u.permissions),
+      })),
+      total: result.total,
+      page: result.page,
+      limit: result.limit,
+    };
+  }
+
   async updateUserByAdmin(
     userId: number,
     data: {

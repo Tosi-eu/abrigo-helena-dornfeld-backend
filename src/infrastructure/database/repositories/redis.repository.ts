@@ -119,4 +119,18 @@ export class RedisRepository {
       return false;
     }
   }
+
+  async incrBy(key: string, value = 1): Promise<number> {
+    if (!isRedisAvailable()) return 0;
+
+    const client = this.client;
+    if (!client) return 0;
+
+    try {
+      return await client.incrby(key, value);
+    } catch (error) {
+      logger.error('Redis incrBy error', { key, value, error });
+      return 0;
+    }
+  }
 }
