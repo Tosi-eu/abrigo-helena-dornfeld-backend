@@ -1,12 +1,18 @@
 import { Request, Response } from 'express';
 import { CabinetCategoryService } from '../../../core/services/categoria-armario.service';
 import { sendErrorResponse } from '../../helpers/error-response.helper';
+import {
+  type TenantRequest,
+  requireTenantId,
+} from '../../../middleware/tenant.middleware';
 
 export class CabinetCategoryController {
   constructor(private readonly service: CabinetCategoryService) {}
 
-  async create(req: Request, res: Response) {
+  async create(req: Request & TenantRequest, res: Response) {
     try {
+      const tenantId = requireTenantId(req, res);
+      if (tenantId === null) return;
       const { nome } = req.body;
 
       if (!nome || typeof nome !== 'string' || nome.trim() === '') {
@@ -15,7 +21,7 @@ export class CabinetCategoryController {
           .json({ error: 'Nome da categoria é obrigatório' });
       }
 
-      const created = await this.service.create(nome.trim());
+      const created = await this.service.create(nome.trim(), tenantId);
       return res.status(201).json(created);
     } catch (error: unknown) {
       return sendErrorResponse(res, 400, error, 'Erro ao criar categoria');

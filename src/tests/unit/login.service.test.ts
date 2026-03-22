@@ -32,6 +32,7 @@ describe('LoginService (unit)', () => {
           password: 'ab1',
           first_name: 'A',
           last_name: 'B',
+          tenant_id: 1,
         }),
       ).rejects.toThrow(/mínimo 8 caracteres/);
       expect(mockRepo.create).not.toHaveBeenCalled();
@@ -46,6 +47,7 @@ describe('LoginService (unit)', () => {
           password: '12345678',
           first_name: 'A',
           last_name: 'B',
+          tenant_id: 1,
         }),
       ).rejects.toThrow(/pelo menos uma letra/);
       expect(mockRepo.create).not.toHaveBeenCalled();
@@ -60,6 +62,7 @@ describe('LoginService (unit)', () => {
           password: 'abcdefgh',
           first_name: 'A',
           last_name: 'B',
+          tenant_id: 1,
         }),
       ).rejects.toThrow(/pelo menos um número/);
       expect(mockRepo.create).not.toHaveBeenCalled();
@@ -77,6 +80,7 @@ describe('LoginService (unit)', () => {
           password: 'senha1234',
           first_name: 'A',
           last_name: 'B',
+          tenant_id: 1,
         }),
       ).rejects.toThrow('Usuário já cadastrado');
       expect(mockRepo.create).not.toHaveBeenCalled();
@@ -95,6 +99,7 @@ describe('LoginService (unit)', () => {
         password: 'senha1234',
         first_name: 'João',
         last_name: 'Silva',
+        tenant_id: 1,
       });
 
       expect(mockRepo.create).toHaveBeenCalledWith(
@@ -138,6 +143,8 @@ describe('LoginService (unit)', () => {
         login: 'user1',
         password: hashed,
         role: 'user',
+        tenant_id: 1,
+        is_super_admin: false,
       } as any);
       mockRepo.update.mockResolvedValue(undefined as any);
 

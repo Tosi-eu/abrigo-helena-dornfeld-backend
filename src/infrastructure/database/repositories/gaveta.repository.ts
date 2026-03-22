@@ -5,8 +5,9 @@ import DrawerModel, {
 } from '../models/gaveta.model';
 
 export class DrawerRepository {
-  async createDrawer(data: Drawer): Promise<Drawer> {
+  async createDrawer(data: Drawer, tenantId: number): Promise<Drawer> {
     const item = await DrawerModel.create({
+      tenant_id: tenantId,
       num_gaveta: data.numero,
       categoria_id: data.categoria_id,
     });

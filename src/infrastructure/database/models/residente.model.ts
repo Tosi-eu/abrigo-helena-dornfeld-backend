@@ -4,6 +4,7 @@ import { sequelize } from '../sequelize';
 export interface ResidentAttributes {
   num_casela: number;
   nome: string;
+  tenant_id: number;
 }
 
 export type ResidentCreationAttributes = Optional<
@@ -17,6 +18,7 @@ export class ResidentModel
 {
   declare num_casela: number;
   declare nome: string;
+  declare tenant_id: number;
 }
 
 ResidentModel.init(
@@ -31,6 +33,11 @@ ResidentModel.init(
       type: DataTypes.STRING(255),
       allowNull: false,
       field: 'nome',
+    },
+    tenant_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 1,
     },
   },
   {

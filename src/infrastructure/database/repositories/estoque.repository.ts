@@ -52,7 +52,11 @@ interface StockModel {
 }
 
 export class StockRepository {
-  async createMedicineStockIn(data: MedicineStock, transaction?: Transaction) {
+  async createMedicineStockIn(
+    data: MedicineStock,
+    tenantId: number,
+    transaction?: Transaction,
+  ) {
     try {
       const existing = await MedicineStockModel.findOne({
         where: {
@@ -80,6 +84,7 @@ export class StockRepository {
 
       const created = await MedicineStockModel.create(
         {
+          tenant_id: tenantId,
           medicamento_id: data.medicamento_id,
           casela_id: data.casela_id ?? null,
           armario_id: data.armario_id,
@@ -105,7 +110,11 @@ export class StockRepository {
     }
   }
 
-  async createInputStockIn(data: InputStock, transaction?: Transaction) {
+  async createInputStockIn(
+    data: InputStock,
+    tenantId: number,
+    transaction?: Transaction,
+  ) {
     const existing = await InputStockModel.findOne({
       where: {
         insumo_id: data.insumo_id,
@@ -135,6 +144,7 @@ export class StockRepository {
 
     const created = await InputStockModel.create(
       {
+        tenant_id: tenantId,
         insumo_id: data.insumo_id,
         casela_id: data.casela_id ?? null,
         armario_id: data.armario_id,
@@ -1297,8 +1307,13 @@ export class StockRepository {
 
       await existing.save({ transaction });
     } else {
+      const stockTenantId = stock.tenant_id;
+      if (stockTenantId == null) {
+        throw new Error('Tenant não identificado no registro de estoque');
+      }
       await MedicineStockModel.create(
         {
+          tenant_id: stockTenantId,
           medicamento_id: stock.medicamento_id,
           casela_id: finalCaselaId,
           armario_id: stock.armario_id,
@@ -1422,8 +1437,13 @@ export class StockRepository {
 
       await existing.save({ transaction });
     } else {
+      const stockTenantId = stock.tenant_id;
+      if (stockTenantId == null) {
+        throw new Error('Tenant não identificado no registro de estoque');
+      }
       await InputStockModel.create(
         {
+          tenant_id: stockTenantId,
           insumo_id: stock.insumo_id,
           casela_id: casela_id,
           armario_id: stock.armario_id,

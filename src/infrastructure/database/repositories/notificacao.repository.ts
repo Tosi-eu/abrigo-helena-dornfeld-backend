@@ -49,6 +49,7 @@ export function getTodayInBrazil(): string {
 export class NotificationEventRepository {
   async create(
     data: {
+      tenant_id: number;
       medicamento_id: number;
       residente_id: number;
       destino: NotificationDestinoType;
@@ -308,7 +309,12 @@ export class NotificationEventRepository {
 
       if (existsNotification) continue;
 
+      const stockTenantId = stock.tenant_id;
+      if (stockTenantId == null) {
+        throw new Error('Tenant não identificado no registro de estoque');
+      }
       await NotificationEventModel.create({
+        tenant_id: stockTenantId,
         tipo_evento: NotificationEventType.REPOSICAO_ESTOQUE,
         destino: NotificationDestinoType.ESTOQUE,
         medicamento_id: stock.medicamento_id,

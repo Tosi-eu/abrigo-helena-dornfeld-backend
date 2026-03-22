@@ -1,6 +1,7 @@
 import { MovementType } from '../utils/utils';
 
 export interface Movement {
+  tenant_id: number;
   tipo: MovementType;
   login_id: number;
   armario_id?: number;

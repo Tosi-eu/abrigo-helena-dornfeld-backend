@@ -4,6 +4,7 @@ import { StockItemStatus } from '../../../core/utils/utils';
 
 export interface InputStockAttributes {
   id?: number;
+  tenant_id?: number;
   insumo_id: number;
   casela_id?: number | null;
   armario_id?: number | null;
@@ -26,6 +27,7 @@ export class InputStockModel
   implements InputStockAttributes
 {
   declare id?: number;
+  declare tenant_id?: number;
   declare insumo_id: number;
   declare casela_id?: number | null;
   declare armario_id?: number | null;
@@ -49,6 +51,11 @@ InputStockModel.init(
       type: DataTypes.INTEGER,
       primaryKey: true,
       autoIncrement: true,
+    },
+    tenant_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 1,
     },
     insumo_id: { type: DataTypes.INTEGER, allowNull: false },
 

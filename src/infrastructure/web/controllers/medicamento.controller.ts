@@ -1,6 +1,10 @@
 import { Response } from 'express';
 import { MedicineService } from '../../../core/services/medicamento.service';
 import { ValidatedRequest } from '../../../middleware/validation.middleware';
+import {
+  type TenantRequest,
+  requireTenantId,
+} from '../../../middleware/tenant.middleware';
 import { sendErrorResponse } from '../../helpers/error-response.helper';
 import { handleETagResponse } from '../../helpers/etag.helper';
 
@@ -12,9 +16,11 @@ export interface PaginationParams {
 export class MedicineController {
   constructor(private readonly service: MedicineService) {}
 
-  async create(req: ValidatedRequest, res: Response) {
+  async create(req: ValidatedRequest & TenantRequest, res: Response) {
     try {
-      const data = await this.service.createMedicine(req.body);
+      const tenantId = requireTenantId(req, res);
+      if (tenantId === null) return;
+      const data = await this.service.createMedicine(tenantId, req.body);
       res.status(201).json(data);
     } catch (error: unknown) {
       return sendErrorResponse(res, 400, error, 'Erro ao criar medicamento');
@@ -34,10 +40,12 @@ export class MedicineController {
     res.json(list);
   }
 
-  async update(req: ValidatedRequest, res: Response) {
+  async update(req: ValidatedRequest & TenantRequest, res: Response) {
     const id = Number(req.params.id);
     try {
-      const updated = await this.service.updateMedicine(id, req.body);
+      const tenantId = requireTenantId(req, res);
+      if (tenantId === null) return;
+      const updated = await this.service.updateMedicine(tenantId, id, req.body);
       if (!updated) return res.status(404).json({ error: 'Não encontrado' });
       res.json(updated);
     } catch (error: unknown) {

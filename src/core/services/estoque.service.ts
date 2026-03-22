@@ -19,6 +19,8 @@ import {
   NotificationDestinoType,
   NotificationEventType,
 } from '../../infrastructure/database/models/notificacao.model';
+import MedicineStockModel from '../../infrastructure/database/models/estoque-medicamento.model';
+import InputStockModel from '../../infrastructure/database/models/estoque-insumo.model';
 import type { Transaction } from 'sequelize';
 
 export class StockService {
@@ -56,6 +58,7 @@ export class StockService {
   async medicineStockIn(
     data: MedicineStock,
     login_id: number,
+    tenantId: number,
     transaction?: Transaction,
   ): Promise<{ message: string }> {
     if (
@@ -97,11 +100,13 @@ export class StockService {
 
     const result = await this.repo.createMedicineStockIn(
       normalized,
+      tenantId,
       transaction,
     );
 
     await this.movementRepo.create(
       {
+        tenant_id: tenantId,
         tipo: MovementType.ENTRADA,
         login_id,
         medicamento_id: normalized.medicamento_id,
@@ -125,6 +130,7 @@ export class StockService {
   async inputStockIn(
     data: InputStock,
     login_id: number,
+    tenantId: number,
     transaction?: Transaction,
   ): Promise<{ message: string }> {
     if (
@@ -151,10 +157,15 @@ export class StockService {
             : new Date(),
     };
 
-    const result = await this.repo.createInputStockIn(normalized, transaction);
+    const result = await this.repo.createInputStockIn(
+      normalized,
+      tenantId,
+      transaction,
+    );
 
     await this.movementRepo.create(
       {
+        tenant_id: tenantId,
         tipo: MovementType.ENTRADA,
         login_id,
         medicamento_id: null,
@@ -191,7 +202,7 @@ export class StockService {
     if (!tipo) throw new Error('Tipo de item inválido.');
     if (!login_id) throw new Error('Usuário não autenticado');
 
-    let stockItem;
+    let stockItem: MedicineStockModel | InputStockModel | null = null;
     if (tipo === ItemType.MEDICAMENTO) {
       stockItem = await this.repo.findMedicineStockById(estoqueId, transaction);
     } else {
@@ -209,18 +220,23 @@ export class StockService {
       transaction,
     );
 
-    type MedicineStock = { medicamento_id: number; lote?: string | null };
-    type InputStock = { insumo_id: number; lote?: string | null };
     const medicamentoId =
       tipo === ItemType.MEDICAMENTO
-        ? (stockItem as MedicineStock).medicamento_id
+        ? (stockItem as MedicineStockModel).medicamento_id
         : null;
     const insumoId =
-      tipo === ItemType.INSUMO ? (stockItem as InputStock).insumo_id : null;
-    const lote = (stockItem as { lote?: string | null }).lote ?? null;
+      tipo === ItemType.INSUMO
+        ? (stockItem as InputStockModel).insumo_id
+        : null;
+    const lote = stockItem.lote ?? null;
+    const tenantId = stockItem.tenant_id;
+    if (tenantId == null) {
+      throw new Error('Tenant não identificado no registro de estoque');
+    }
 
     await this.movementRepo.create(
       {
+        tenant_id: tenantId,
         tipo: MovementType.SAIDA,
         login_id,
         medicamento_id: medicamentoId,
@@ -430,8 +446,13 @@ export class StockService {
       transaction,
     );
 
+    const tenantId = stock.tenant_id;
+    if (tenantId == null) {
+      throw new Error('Tenant não identificado no registro de estoque');
+    }
     await this.movementRepo.create(
       {
+        tenant_id: tenantId,
         tipo: MovementType.TRANSFERENCIA,
         login_id,
         medicamento_id: stock.medicamento_id,
@@ -458,6 +479,7 @@ export class StockService {
       dataPrevista.setDate(dataPrevista.getDate() + dias_para_repor);
       await this.notificationRepo.create(
         {
+          tenant_id: tenantId,
           medicamento_id: stock.medicamento_id,
           residente_id: targetCaselaId as number,
           destino: NotificationDestinoType.ESTOQUE,
@@ -563,8 +585,13 @@ export class StockService {
       transaction,
     );
 
+    const tenantId = stock.tenant_id;
+    if (tenantId == null) {
+      throw new Error('Tenant não identificado no registro de estoque');
+    }
     await this.movementRepo.create(
       {
+        tenant_id: tenantId,
         tipo: MovementType.TRANSFERENCIA,
         login_id,
         medicamento_id: null,
@@ -670,8 +697,13 @@ export class StockService {
         const validade = updated.validade
           ? new Date(updated.validade as string | Date)
           : new Date();
+        const tenantId = updated.tenant_id as number | undefined;
+        if (tenantId == null) {
+          throw new Error('Tenant não identificado no registro de estoque');
+        }
         await this.movementRepo.create(
           {
+            tenant_id: tenantId,
             tipo: diff > 0 ? MovementType.ENTRADA : MovementType.SAIDA,
             login_id: loginId,
             medicamento_id:

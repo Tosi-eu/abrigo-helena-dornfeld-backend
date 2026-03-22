@@ -26,6 +26,7 @@ export type NotificationItemType = 'medicamento' | 'insumo';
 
 interface NotificationEventAttrs {
   id: number;
+  tenant_id: number;
 
   tipo_evento: NotificationEventType;
 
@@ -53,6 +54,7 @@ export class NotificationEventModel
   implements NotificationEventAttrs
 {
   declare id: number;
+  declare tenant_id: number;
 
   declare tipo_evento: NotificationEventType;
 
@@ -79,7 +81,11 @@ NotificationEventModel.init(
       autoIncrement: true,
       primaryKey: true,
     },
-
+    tenant_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 1,
+    },
     tipo_evento: {
       type: DataTypes.ENUM(...Object.values(NotificationEventType)),
       allowNull: false,

@@ -4,8 +4,12 @@ import { Input } from '../../../core/domain/insumo';
 import { Op } from 'sequelize';
 
 export class InputRepository {
-  async createInput(data: Omit<Input, 'id'>): Promise<Input> {
+  async createInput(
+    data: Omit<Input, 'id'>,
+    tenantId: number,
+  ): Promise<Input> {
     const input = await InputModel.create({
+      tenant_id: tenantId,
       ...data,
       preco: data.preco ?? null,
     });

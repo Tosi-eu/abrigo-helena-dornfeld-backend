@@ -6,13 +6,22 @@ import {
   NotificationEventType,
 } from '../../database/models/notificacao.model';
 import type { RlsRequest } from '../../../middleware/rls.middleware';
+import {
+  type TenantRequest,
+  requireTenantId,
+} from '../../../middleware/tenant.middleware';
 
 export class NotificationEventController {
   constructor(private readonly service: NotificationEventService) {}
 
-  async create(req: RlsRequest, res: Response) {
+  async create(req: RlsRequest & TenantRequest, res: Response) {
     try {
-      const created = await this.service.create(req.body, req.transaction);
+      const tenantId = requireTenantId(req, res);
+      if (tenantId === null) return;
+      const created = await this.service.create(
+        { ...req.body, tenant_id: tenantId },
+        req.transaction,
+      );
       return res.status(201).json(created);
     } catch (error: unknown) {
       return sendErrorResponse(res, 400, error, 'Erro ao criar notificação');

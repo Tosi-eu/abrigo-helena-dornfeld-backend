@@ -47,7 +47,11 @@ export class MovementService {
       throw new Error('Campos obrigatórios faltando.');
     }
 
+    if (data.tenant_id == null) {
+      throw new Error('Tenant não identificado');
+    }
     const movement: Movement = {
+      tenant_id: data.tenant_id,
       tipo: data.tipo as MovementType,
       login_id: data.login_id,
       armario_id: data.armario_id,

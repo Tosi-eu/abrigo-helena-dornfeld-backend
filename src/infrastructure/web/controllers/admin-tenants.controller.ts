@@ -2,7 +2,10 @@ import type { Response } from 'express';
 import type { AuthRequest } from '../../../middleware/auth.middleware';
 import { TenantRepository } from '../../database/repositories/tenant.repository';
 import { TenantConfigRepository } from '../../database/repositories/tenant-config.repository';
-import { TenantConfigService } from '../../../core/services/tenant-config.service';
+import {
+  DEFAULT_TENANT_MODULES,
+  TenantConfigService,
+} from '../../../core/services/tenant-config.service';
 import { getErrorMessage } from '../../types/error.types';
 import { hashContractCode } from '../../helpers/contract-code.helper';
 
@@ -50,6 +53,7 @@ export class AdminTenantsController {
         name,
         contract_code_hash,
       });
+      await configService.set(created.id, DEFAULT_TENANT_MODULES);
       return res.status(201).json(created);
     } catch (error: unknown) {
       return res
@@ -153,6 +157,7 @@ export class AdminTenantsController {
           name,
           contract_code_hash: hash,
         });
+        await configService.set(created.id, DEFAULT_TENANT_MODULES);
         return res.status(201).json({
           ok: true,
           slug,

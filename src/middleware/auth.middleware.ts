@@ -93,10 +93,8 @@ export async function authMiddleware(
           role,
           permissions,
           tenantId: Number(user.tenant_id) || 1,
-          isSuperAdmin: Boolean(
-            (user as unknown as { is_super_admin?: boolean }).is_super_admin,
-          ),
-        } as AuthCacheEntry;
+          isSuperAdmin: Boolean(user.is_super_admin),
+        } satisfies AuthCacheEntry;
       },
       authCacheTtlSeconds,
     );
@@ -181,10 +179,8 @@ export async function optionalAuthMiddleware(
           role,
           permissions,
           tenantId: Number(user.tenant_id) || 1,
-          isSuperAdmin: Boolean(
-            (user as unknown as { is_super_admin?: boolean }).is_super_admin,
-          ),
-        } as AuthCacheEntry;
+          isSuperAdmin: Boolean(user.is_super_admin),
+        } satisfies AuthCacheEntry;
       },
       authCacheTtlSeconds,
     );

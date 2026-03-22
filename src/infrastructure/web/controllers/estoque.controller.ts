@@ -5,13 +5,19 @@ import { handleETagResponse } from '../../helpers/etag.helper';
 import { ItemType, SectorType } from '../../../core/utils/utils';
 import { ValidatedRequest } from '../../../middleware/validation.middleware';
 import type { RlsRequest } from '../../../middleware/rls.middleware';
+import {
+  type TenantRequest,
+  requireTenantId,
+} from '../../../middleware/tenant.middleware';
 import { toSectorType } from '../../helpers/stock.helper';
 
 export class StockController {
   constructor(private readonly service: StockService) {}
 
-  async stockIn(req: RlsRequest & ValidatedRequest, res: Response) {
+  async stockIn(req: RlsRequest & ValidatedRequest & TenantRequest, res: Response) {
     try {
+      const tenantId = requireTenantId(req, res);
+      if (tenantId === null) return;
       const { medicamento_id, insumo_id } = req.body;
       const login_id = req.user?.id;
 
@@ -23,6 +29,7 @@ export class StockController {
         const result = await this.service.medicineStockIn(
           req.body,
           login_id,
+          tenantId,
           req.transaction,
         );
         return res.json(result);
@@ -32,6 +39,7 @@ export class StockController {
         const result = await this.service.inputStockIn(
           req.body,
           login_id,
+          tenantId,
           req.transaction,
         );
         return res.json(result);

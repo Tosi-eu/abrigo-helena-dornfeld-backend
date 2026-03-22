@@ -1,6 +1,9 @@
 import type { Response, NextFunction } from 'express';
 import type { AuthRequest } from './auth.middleware';
-import type { TenantRequest } from './tenant.middleware';
+import {
+  type TenantRequest,
+  requireTenantId,
+} from './tenant.middleware';
 import { TenantConfigService } from '../core/services/tenant-config.service';
 import { TenantConfigRepository } from '../infrastructure/database/repositories/tenant-config.repository';
 import type { ModuleKey } from '../core/types/tenant.types';
@@ -14,7 +17,8 @@ export function requireModule(moduleKey: ModuleKey) {
     next: NextFunction,
   ) => {
     try {
-      const tenantId = req.tenant?.id ?? 1;
+      const tenantId = requireTenantId(req, res);
+      if (tenantId === null) return;
       const cfg = await service.get(tenantId);
       if (!service.isEnabled(cfg, moduleKey)) {
         return res.status(403).json({

@@ -140,10 +140,11 @@ void (async () => {
       startNotificationBootstrapJob();
     }
 
-    app.listen(port, () => {
+    app.listen(port, '0.0.0.0', () => {
       logger.info('Servidor iniciado', {
         operation: 'server',
         port,
+        host: '0.0.0.0',
         status: 'running',
       });
     });

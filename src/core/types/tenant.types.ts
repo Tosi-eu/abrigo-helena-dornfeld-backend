@@ -7,7 +7,10 @@ export type ModuleKey =
   | 'reports'
   | 'notifications'
   | 'dashboard'
-  | 'admin';
+  | 'admin'
+  | 'cabinets'
+  | 'drawers'
+  | 'profile';
 
 export type TenantModulesConfig = {
   enabled: ModuleKey[];

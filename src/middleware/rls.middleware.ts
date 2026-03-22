@@ -13,9 +13,13 @@ export interface RlsRequest extends AuthRequest {
 
 export function rlsContextMiddleware(
   req: RlsRequest & TenantRequest,
-  _res: Response,
+  res: Response,
   next: NextFunction,
 ) {
+  if (!req.tenant?.id) {
+    res.status(403).json({ error: 'Tenant não identificado' });
+    return;
+  }
   if (req.user?.id != null) {
     const p = req.user.permissions;
     req.rlsContext = {
@@ -23,11 +27,11 @@ export function rlsContextMiddleware(
       user_can_create: p?.create ? 'true' : 'false',
       user_can_update: p?.update ? 'true' : 'false',
       user_can_delete: p?.delete ? 'true' : 'false',
-      tenant_id: req.tenant?.id ?? 1,
+      tenant_id: String(req.tenant.id),
       is_super_admin: req.user.isSuperAdmin ? 'true' : 'false',
     };
   } else {
-    req.rlsContext = { tenant_id: req.tenant?.id ?? 1 };
+    req.rlsContext = { tenant_id: String(req.tenant.id) };
   }
   next();
 }

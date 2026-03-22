@@ -4,8 +4,12 @@ import { Medicine } from '../../../core/domain/medicamento';
 import { Op } from 'sequelize';
 
 export class MedicineRepository {
-  async createMedicine(data: Medicine): Promise<Medicine> {
+  async createMedicine(
+    data: Medicine,
+    tenantId: number,
+  ): Promise<Medicine> {
     const record = await MedicineModel.create({
+      tenant_id: tenantId,
       nome: data.nome,
       dosagem: data.dosagem,
       unidade_medida: data.unidade_medida,
@@ -82,14 +86,18 @@ export class MedicineRepository {
       : null;
   }
 
-  async findByUniqueFields(fields: {
-    nome: string;
-    principio_ativo: string;
-    dosagem: string;
-    unidade_medida: string;
-  }): Promise<Medicine | null> {
+  async findByUniqueFields(
+    tenantId: number,
+    fields: {
+      nome: string;
+      principio_ativo: string;
+      dosagem: string;
+      unidade_medida: string;
+    },
+  ): Promise<Medicine | null> {
     const row = await MedicineModel.findOne({
       where: {
+        tenant_id: tenantId,
         nome: fields.nome,
         principio_ativo: fields.principio_ativo,
         dosagem: fields.dosagem,

@@ -11,6 +11,17 @@ export interface TenantRequest extends Request {
   requestedTenantSlug?: string | null;
 }
 
+export function requireTenantId(
+  req: TenantRequest,
+  res: Response,
+): number | null {
+  if (!req.tenant?.id) {
+    res.status(403).json({ error: 'Tenant não identificado' });
+    return null;
+  }
+  return req.tenant.id;
+}
+
 const repo = new TenantRepository();
 
 function parseSubdomain(hostname: string): string | null {
@@ -69,18 +80,12 @@ export async function enforceTenantMiddleware(
       }
     }
 
-    const fallback = await repo.findById(1);
-    if (fallback) {
-      authReq.tenant = {
-        id: fallback.id,
-        slug: fallback.slug,
-        name: fallback.name,
-      };
-    }
+    _res.status(403).json({ error: 'Tenant não identificado' });
+    return;
   } catch {
-    // ignore
+    _res.status(500).json({ error: 'Erro ao identificar tenant' });
+    return;
   }
-  next();
 }
 
 export async function publicTenantContextMiddleware(
@@ -100,16 +105,8 @@ export async function publicTenantContextMiddleware(
       }
       return res.status(404).json({ error: 'Abrigo não encontrado' });
     }
-    const fallback = await repo.findById(1);
-    if (fallback) {
-      req.tenant = {
-        id: fallback.id,
-        slug: fallback.slug,
-        name: fallback.name,
-      };
-    }
+    return res.status(400).json({ error: 'Tenant não informado (X-Tenant ou subdomínio)' });
   } catch {
-    // ignore
+    return res.status(500).json({ error: 'Erro ao identificar tenant' });
   }
-  next();
 }

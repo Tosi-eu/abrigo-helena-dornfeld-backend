@@ -12,6 +12,7 @@ export class NotificationEventService {
 
   async create(
     data: {
+      tenant_id: number;
       medicamento_id: number;
       residente_id: number;
       destino: NotificationDestinoType;

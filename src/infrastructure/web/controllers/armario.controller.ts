@@ -1,13 +1,19 @@
 import { CabinetService } from '../../../core/services/armario.service';
 import { Request, Response } from 'express';
+import {
+  type TenantRequest,
+  requireTenantId,
+} from '../../../middleware/tenant.middleware';
 import { sendErrorResponse } from '../../helpers/error-response.helper';
 
 export class CabinetController {
   constructor(private readonly service: CabinetService) {}
 
-  async create(req: Request, res: Response) {
+  async create(req: Request & TenantRequest, res: Response) {
     try {
-      const data = await this.service.createCabinet(req.body);
+      const tenantId = requireTenantId(req, res);
+      if (tenantId === null) return;
+      const data = await this.service.createCabinet(tenantId, req.body);
       return res.status(201).json(data);
     } catch (error: unknown) {
       return sendErrorResponse(res, 400, error, 'Erro ao criar armário');

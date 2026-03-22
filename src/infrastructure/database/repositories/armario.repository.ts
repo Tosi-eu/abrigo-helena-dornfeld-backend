@@ -5,8 +5,9 @@ import InputStockModel from '../models/estoque-insumo.model';
 import MedicineStockModel from '../models/estoque-medicamento.model';
 
 export class CabinetRepository {
-  async createCabinet(data: Cabinet): Promise<Cabinet> {
+  async createCabinet(data: Cabinet, tenantId: number): Promise<Cabinet> {
     const item = await CabinetModel.create({
+      tenant_id: tenantId,
       num_armario: data.numero,
       categoria_id: data.categoria_id,
     });

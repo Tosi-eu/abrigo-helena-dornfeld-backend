@@ -1,8 +1,8 @@
 import CabinetCategoryModel from '../models/categorias-armario.model';
 
 export class CabinetCategoryRepository {
-  async create(nome: string) {
-    return CabinetCategoryModel.create({ nome });
+  async create(nome: string, tenantId: number) {
+    return CabinetCategoryModel.create({ nome, tenant_id: tenantId });
   }
 
   async list(page: number = 1, limit: number = 10) {
@@ -30,8 +30,10 @@ export class CabinetCategoryRepository {
     return CabinetCategoryModel.findByPk(id);
   }
 
-  async findByName(nome: string) {
-    return CabinetCategoryModel.findOne({ where: { nome } });
+  async findByName(nome: string, tenantId: number) {
+    return CabinetCategoryModel.findOne({
+      where: { nome, tenant_id: tenantId },
+    });
   }
 
   async update(id: number, nome: string) {

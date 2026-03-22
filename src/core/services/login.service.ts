@@ -4,7 +4,7 @@ import { jwtConfig } from '../../infrastructure/helpers/auth.helper';
 import jwt from 'jsonwebtoken';
 import { BaseError } from 'sequelize';
 import { HttpError } from '../../infrastructure/types/error.types';
-import { Login } from '../domain/login';
+import { LoginCreateWithTenant } from '../domain/login';
 
 const MIN_PASSWORD_LENGTH = 8;
 
@@ -74,9 +74,8 @@ export class LoginService {
     };
   }
 
-  async create(attrs: Login & { tenant_id?: number }) {
-    const tenantId =
-      (attrs as unknown as { tenant_id?: number }).tenant_id ?? 1;
+  async create(attrs: LoginCreateWithTenant) {
+    const tenantId = attrs.tenant_id;
     const userExists = await this.repo.findByLoginForTenant(
       attrs.login,
       tenantId,
@@ -193,10 +192,8 @@ export class LoginService {
         id: user.id,
         login: user.login,
         role: user.role,
-        tenantId: (user as unknown as { tenant_id?: number }).tenant_id ?? 1,
-        isSuperAdmin: Boolean(
-          (user as unknown as { is_super_admin?: boolean }).is_super_admin,
-        ),
+        tenantId: user.tenant_id,
+        isSuperAdmin: user.is_super_admin,
       },
     };
   }

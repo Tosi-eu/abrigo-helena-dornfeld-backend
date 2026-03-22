@@ -36,10 +36,10 @@ export class InputService {
     });
   }
 
-  async createInput(data: Omit<Input, 'id'>) {
+  async createInput(tenantId: number, data: Omit<Input, 'id'>) {
     if (!data.nome) throw new Error('Nome é obrigatório');
 
-    const created = await this.repo.createInput(data);
+    const created = await this.repo.createInput(data, tenantId);
 
     if (this.priceSearchService && created.id) {
       this.triggerPriceSearchInBackground(created);

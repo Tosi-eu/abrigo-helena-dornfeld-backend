@@ -11,7 +11,11 @@ import {
   blockNonAdminWrites,
 } from '../../../middleware/admin.middleware';
 import { auditLog } from '../../../middleware/audit.middleware';
-import { publicTenantContextMiddleware } from '../../../middleware/tenant.middleware';
+import {
+  publicTenantContextMiddleware,
+  enforceTenantMiddleware,
+} from '../../../middleware/tenant.middleware';
+import { requireModule } from '../../../middleware/module.middleware';
 
 const router = Router();
 
@@ -64,7 +68,17 @@ router.get('/usuario-logado', (req, res) =>
   controller.getCurrentUser(req, res),
 );
 
-router.put('/', (req, res) => controller.update(req, res));
-router.delete('/', (req, res) => controller.delete(req, res));
+router.put(
+  '/',
+  enforceTenantMiddleware,
+  requireModule('profile'),
+  (req, res) => controller.update(req, res),
+);
+router.delete(
+  '/',
+  enforceTenantMiddleware,
+  requireModule('profile'),
+  (req, res) => controller.delete(req, res),
+);
 
 export default router;

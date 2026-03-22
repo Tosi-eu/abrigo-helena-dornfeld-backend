@@ -1,7 +1,13 @@
 import type { Response } from 'express';
 import type { AuthRequest } from '../../../middleware/auth.middleware';
-import type { TenantRequest } from '../../../middleware/tenant.middleware';
-import { TenantConfigService } from '../../../core/services/tenant-config.service';
+import {
+  type TenantRequest,
+  requireTenantId,
+} from '../../../middleware/tenant.middleware';
+import {
+  DEFAULT_TENANT_MODULES,
+  TenantConfigService,
+} from '../../../core/services/tenant-config.service';
 import { TenantConfigRepository } from '../../database/repositories/tenant-config.repository';
 import { getErrorMessage } from '../../types/error.types';
 import { TenantRepository } from '../../database/repositories/tenant.repository';
@@ -10,50 +16,43 @@ const configRepo = new TenantConfigRepository();
 const service = new TenantConfigService(configRepo);
 const tenantRepo = new TenantRepository();
 
-/** Enquanto não há módulos persistidos ou identidade (marca ou logo), permite onboarding sem ser admin. */
-function isTenantSetupIncomplete(
-  cfgRow: { modules_json?: unknown } | null,
-  tenant: {
-    brand_name?: string | null;
-    logo_data_url?: string | null;
-  } | null,
-): boolean {
-  if (!tenant) return false;
-  const mj = cfgRow?.modules_json;
-  let enabledLen = 0;
-  if (mj && typeof mj === 'object' && mj !== null && 'enabled' in mj) {
-    const en = (mj as { enabled?: unknown }).enabled;
-    if (Array.isArray(en)) enabledLen = en.length;
-  }
-  const noModulesRow = !cfgRow;
-  const noEnabledModules = enabledLen === 0;
-  const noBrandIdentity =
-    !String(tenant.brand_name ?? '').trim() &&
-    !String(tenant.logo_data_url ?? '').trim();
-  return noModulesRow || noEnabledModules || noBrandIdentity;
+function assertCanUpdateModules(req: AuthRequest): boolean {
+  return (
+    req.user?.role === 'admin' || Boolean(req.user?.isSuperAdmin)
+  );
 }
 
-async function assertCanConfigureTenant(
-  req: AuthRequest & TenantRequest,
+/** Usuários comuns podem definir marca/logo só enquanto o abrigo ainda não tem identidade visual. */
+async function assertCanUpdateBranding(
+  req: AuthRequest,
+  tenantId: number,
 ): Promise<boolean> {
-  if (req.user?.role === 'admin') return true;
-  const tenantId = req.tenant?.id ?? 1;
-  const [cfgRow, tenant] = await Promise.all([
-    configRepo.getByTenantId(tenantId),
-    tenantRepo.findById(tenantId),
-  ]);
-  return isTenantSetupIncomplete(cfgRow, tenant);
+  if (req.user?.role === 'admin' || req.user?.isSuperAdmin) return true;
+  const tenant = await tenantRepo.findById(tenantId);
+  const noBrandIdentity =
+    !String(tenant?.brand_name ?? '').trim() &&
+    !String(tenant?.logo_data_url ?? '').trim();
+  return noBrandIdentity;
 }
 
 export class TenantController {
   async getConfig(req: AuthRequest & TenantRequest, res: Response) {
     try {
-      const tenantId = req.tenant?.id ?? 1;
-      const cfgRow = await configRepo.getByTenantId(tenantId);
+      const tenantId = requireTenantId(req, res);
+      if (tenantId === null) return;
+      let cfgRow = await configRepo.getByTenantId(tenantId);
+      if (!cfgRow) {
+        await service.set(tenantId, DEFAULT_TENANT_MODULES);
+        cfgRow = await configRepo.getByTenantId(tenantId);
+      }
       const cfg = await service.get(tenantId);
       const tenant = await tenantRepo.findById(tenantId);
-      /** Onboarding pendente = ainda não existe linha em tenant_config para o tenant. */
-      const onboardingComplete = Boolean(cfgRow);
+      const hasIdentity = Boolean(
+        String(tenant?.brand_name ?? '').trim() ||
+          String(tenant?.logo_data_url ?? '').trim(),
+      );
+      /** Onboarding = falta nome/logo; módulos vêm do padrão ou do admin. */
+      const onboardingComplete = hasIdentity;
 
       return res.json({
         tenantId,
@@ -79,12 +78,14 @@ export class TenantController {
 
   async updateConfig(req: AuthRequest & TenantRequest, res: Response) {
     try {
-      if (!(await assertCanConfigureTenant(req))) {
-        return res
-          .status(403)
-          .json({ error: 'Apenas admin pode editar módulos' });
+      const tenantId = requireTenantId(req, res);
+      if (tenantId === null) return;
+      if (!assertCanUpdateModules(req)) {
+        return res.status(403).json({
+          error:
+            'Apenas administradores do painel (ou super admin) podem alterar os módulos do sistema.',
+        });
       }
-      const tenantId = req.tenant?.id ?? 1;
       const modules = await service.set(tenantId, req.body?.modules);
       return res.json({ tenantId, modules });
     } catch (error: unknown) {
@@ -96,12 +97,14 @@ export class TenantController {
 
   async updateBranding(req: AuthRequest & TenantRequest, res: Response) {
     try {
-      if (!(await assertCanConfigureTenant(req))) {
-        return res
-          .status(403)
-          .json({ error: 'Apenas admin pode editar branding' });
+      const tenantId = requireTenantId(req, res);
+      if (tenantId === null) return;
+      if (!(await assertCanUpdateBranding(req, tenantId))) {
+        return res.status(403).json({
+          error:
+            'Apenas administradores podem alterar a identidade visual após a configuração inicial.',
+        });
       }
-      const tenantId = req.tenant?.id ?? 1;
       const brandNameRaw =
         req.body?.brandName != null ? String(req.body.brandName).trim() : null;
       const logoDataUrlRaw =

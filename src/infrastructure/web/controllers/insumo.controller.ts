@@ -1,15 +1,21 @@
 import { Response } from 'express';
 import { InputService } from '../../../core/services/insumo.service';
 import { ValidatedRequest } from '../../../middleware/validation.middleware';
+import {
+  type TenantRequest,
+  requireTenantId,
+} from '../../../middleware/tenant.middleware';
 import { sendErrorResponse } from '../../helpers/error-response.helper';
 import { handleETagResponse } from '../../helpers/etag.helper';
 
 export class InsumoController {
   constructor(private readonly service: InputService) {}
 
-  async create(req: ValidatedRequest, res: Response) {
+  async create(req: ValidatedRequest & TenantRequest, res: Response) {
     try {
-      const created = await this.service.createInput(req.body);
+      const tenantId = requireTenantId(req, res);
+      if (tenantId === null) return;
+      const created = await this.service.createInput(tenantId, req.body);
       return res.status(201).json(created);
     } catch (error: unknown) {
       return sendErrorResponse(res, 400, error, 'Erro ao criar insumo');

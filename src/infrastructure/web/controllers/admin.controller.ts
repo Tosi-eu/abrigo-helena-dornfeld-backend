@@ -13,6 +13,10 @@ import { AuditRepository } from '../../database/repositories/audit.repository';
 import { LoginLogRepository } from '../../database/repositories/login-log.repository';
 import { SystemConfigRepository } from '../../database/repositories/system-config.repository';
 import { AuthRequest } from '../../../middleware/auth.middleware';
+import {
+  type TenantRequest,
+  requireTenantId,
+} from '../../../middleware/tenant.middleware';
 import { getErrorMessage } from '../../types/error.types';
 import { sequelize } from '../../database/sequelize';
 import { getRedisClient } from '../../database/redis/client.redis';
@@ -53,7 +57,7 @@ export class AdminController {
     }
   }
 
-  async createUser(req: AuthRequest, res: Response) {
+  async createUser(req: AuthRequest & TenantRequest, res: Response) {
     const body = req.body ?? {};
     const login = body.login;
     const password = body.password;
@@ -65,6 +69,9 @@ export class AdminController {
     if (!login || !password) {
       return res.status(400).json({ error: 'Login e senha são obrigatórios' });
     }
+
+    const tenantId = requireTenantId(req, res);
+    if (tenantId === null) return;
 
     const data: {
       login: string;
@@ -79,7 +86,7 @@ export class AdminController {
         update?: boolean;
         delete?: boolean;
       };
-    } = { login, password, tenantId: req.user?.tenantId ?? 1 };
+    } = { login, password, tenantId };
     if (firstName !== undefined) data.first_name = firstName;
     if (lastName !== undefined) data.last_name = lastName;
     if (role !== undefined) {

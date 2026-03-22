@@ -3,6 +3,7 @@ import { sequelize } from '../sequelize';
 
 export interface InputAttrs {
   id: number;
+  tenant_id: number;
   nome: string;
   descricao?: string | null;
   estoque_minimo?: number;
@@ -16,6 +17,7 @@ export class InputModel
   implements InputAttrs
 {
   declare id: number;
+  declare tenant_id: number;
   declare nome: string;
   declare descricao?: string | null;
   declare estoque_minimo?: number;
@@ -45,6 +47,11 @@ InputModel.init(
       type: DataTypes.DECIMAL(10, 2),
       allowNull: true,
     },
+    tenant_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 1,
+    },
   },
   {
     sequelize,
@@ -53,8 +60,8 @@ InputModel.init(
     indexes: [
       {
         unique: true,
-        fields: ['nome'],
-        name: 'uniq_insumo_nome',
+        fields: ['tenant_id', 'nome'],
+        name: 'uniq_insumo_tenant_nome',
       },
     ],
   },

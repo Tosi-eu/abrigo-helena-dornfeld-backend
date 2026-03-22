@@ -1,7 +1,10 @@
 import { Request, Response } from 'express';
 import { LoginService } from '../../../core/services/login.service';
 import { AuthRequest } from '../../../middleware/auth.middleware';
-import type { TenantRequest } from '../../../middleware/tenant.middleware';
+import {
+  type TenantRequest,
+  requireTenantId,
+} from '../../../middleware/tenant.middleware';
 import { getErrorMessage, isHttpError } from '../../types/error.types';
 import type { LoginLogRepository } from '../../database/repositories/login-log.repository';
 import { logger } from '../../helpers/logger.helper';
@@ -52,7 +55,8 @@ export class LoginController {
       return res.status(400).json({ error: 'E-mail e senha obrigatórios' });
 
     try {
-      const tenantId = req.tenant?.id ?? 1;
+      const tenantId = requireTenantId(req, res);
+      if (tenantId === null) return;
       const hash =
         await tenantRepoForRegister.getContractCodeHashByTenantId(tenantId);
       const verdict = await verifyContractCode(
@@ -77,7 +81,7 @@ export class LoginController {
       });
       return res.status(201).json(user);
     } catch (error: unknown) {
-      const tenantId = req.tenant?.id ?? 1;
+      const tenantId = req.tenant?.id ?? 0;
       const hint = loginHintForLog(login);
 
       if (isHttpError(error)) {
@@ -148,7 +152,8 @@ export class LoginController {
     if (!login || !password)
       return res.status(400).json({ error: 'E-mail e senha obrigatórios' });
 
-    const tenantId = req.tenant?.id ?? 1;
+    const tenantId = requireTenantId(req, res);
+    if (tenantId === null) return;
     const result = await this.service.authenticate(login, password, tenantId);
 
     if (this.loginLogRepo) {
