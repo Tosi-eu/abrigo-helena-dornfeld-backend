@@ -1,5 +1,6 @@
 import request from 'supertest';
 import { App } from 'supertest/types';
+import { E2E_TENANT_SLUG } from '../../helpers/e2e-tenant-seed.helper';
 
 export interface SeedResult {
   categoryId: number;
@@ -13,9 +14,13 @@ export interface SeedResult {
 const SEED_USER = { login: 'seed_user', password: 'senha1234' };
 
 export async function seedDB(app: App): Promise<SeedResult> {
-  await request(app).post('/api/v1/login').send(SEED_USER);
+  await request(app)
+    .post('/api/v1/login')
+    .set('X-Tenant', E2E_TENANT_SLUG)
+    .send(SEED_USER);
   const authRes = await request(app)
     .post('/api/v1/login/authenticate')
+    .set('X-Tenant', E2E_TENANT_SLUG)
     .send(SEED_USER);
   const setCookie = authRes.headers['set-cookie']?.[0] ?? '';
   const cookie = setCookie ? setCookie.split(';')[0].trim() : '';

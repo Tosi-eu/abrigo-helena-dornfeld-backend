@@ -24,9 +24,14 @@ export function requireTenantId(
 
 const repo = new TenantRepository();
 
-function parseSubdomain(hostname: string): string | null {
+/**
+ * Extrai slug de host estilo `slug.dominio.tld`. Ignora IPv4 (ex.: 127.0.0.1 no supertest).
+ * Exportada para testes unitários.
+ */
+export function parseTenantSubdomainFromHost(hostname: string): string | null {
   const host = hostname.split(':')[0]?.trim();
   if (!host) return null;
+  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(host)) return null;
   const parts = host.split('.').filter(Boolean);
   if (parts.length < 3) return null;
   return parts[0] ?? null;
@@ -40,7 +45,7 @@ export async function tenantMiddleware(
   try {
     const headerSlugRaw = req.header('X-Tenant') ?? req.header('x-tenant');
     const host = req.hostname || req.get('host') || '';
-    const subdomainSlug = parseSubdomain(host);
+    const subdomainSlug = parseTenantSubdomainFromHost(host);
     const slug =
       (headerSlugRaw && String(headerSlugRaw).trim()) || subdomainSlug || '';
 

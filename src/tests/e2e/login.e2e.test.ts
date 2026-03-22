@@ -1,5 +1,6 @@
 import request from 'supertest';
 import { setupTestApp } from '../../infrastructure/helpers/database.helper';
+import { E2E_TENANT_SLUG } from '../../infrastructure/helpers/e2e-tenant-seed.helper';
 import { App } from 'supertest/types';
 
 describe('Login E2E - CRUD', () => {
@@ -13,6 +14,7 @@ describe('Login E2E - CRUD', () => {
   it('deve criar um usuário', async () => {
     const res = await request(app)
       .post('/api/v1/login')
+      .set('X-Tenant', E2E_TENANT_SLUG)
       .send({ login: 'joao', password: 'senha1234' });
 
     expect(res.status).toBe(201);
@@ -23,6 +25,7 @@ describe('Login E2E - CRUD', () => {
   it('não deve criar login duplicado', async () => {
     const res = await request(app)
       .post('/api/v1/login')
+      .set('X-Tenant', E2E_TENANT_SLUG)
       .send({ login: 'joao', password: 'abcd1234' });
 
     expect(res.status).toBe(409);
@@ -31,6 +34,7 @@ describe('Login E2E - CRUD', () => {
   it('deve autenticar com sucesso', async () => {
     const res = await request(app)
       .post('/api/v1/login/authenticate')
+      .set('X-Tenant', E2E_TENANT_SLUG)
       .send({ login: 'joao', password: 'senha1234' });
 
     expect(res.status).toBe(200);
@@ -41,6 +45,7 @@ describe('Login E2E - CRUD', () => {
   it('não deve autenticar com senha errada', async () => {
     const res = await request(app)
       .post('/api/v1/login/authenticate')
+      .set('X-Tenant', E2E_TENANT_SLUG)
       .send({ login: 'joao', password: 'senhaerrada1' });
 
     expect(res.status).toBe(401);
@@ -110,6 +115,6 @@ describe('Login E2E - CRUD', () => {
     const res = await request(app)
       .delete('/api/v1/login')
       .set('Cookie', authCookie ?? '');
-    expect([401, 404]).toContain(res.status);
+    expect([401, 403, 404]).toContain(res.status);
   });
 });

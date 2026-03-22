@@ -5,6 +5,7 @@ import routes from '../web/routes/index.routes';
 import { setupAssociations } from '../database/models/index.models';
 import { errorHandler } from '../../middleware/error-handler.middleware';
 import { getDatabaseConfig } from './database-config.helper';
+import { seedE2EDefaultTenant } from './e2e-tenant-seed.helper';
 
 function isTestEnv(): boolean {
   return process.env.NODE_ENV === 'test';
@@ -17,6 +18,9 @@ async function setupDatabase() {
 
   setupAssociations();
   await sequelize.sync({ force: isTestEnv() });
+  if (isTestEnv()) {
+    await seedE2EDefaultTenant();
+  }
 }
 
 export function createApp() {

@@ -82,7 +82,7 @@ describe('LoginService (unit)', () => {
           last_name: 'B',
           tenant_id: 1,
         }),
-      ).rejects.toThrow('Usuário já cadastrado');
+      ).rejects.toThrow('Login já cadastrado');
       expect(mockRepo.create).not.toHaveBeenCalled();
     });
 

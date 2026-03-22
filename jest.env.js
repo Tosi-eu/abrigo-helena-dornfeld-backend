@@ -10,6 +10,8 @@ const testEnvVars = {
   DB_NAME: process.env.TEST_DB_NAME || TEST_DB_NAME_DEFAULT,
   JWT_SECRET: process.env.JWT_SECRET || 'test-jwt-secret',
   ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS || 'http://localhost',
+  /** Usado por e2e de `/admin/tenants` e testes que chamam `requireSuperAdminOrApiKey`. */
+  X_API_KEY: process.env.X_API_KEY || 'jest-test-x-api-key',
 };
 
 function requireTestEnv() {
