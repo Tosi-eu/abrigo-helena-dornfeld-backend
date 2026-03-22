@@ -39,7 +39,7 @@ export const INSUFFICIENT_PRIVILEGES_MESSAGE =
 function isTenantSetupWrite(req: AuthRequest): boolean {
   if (!['PUT', 'PATCH', 'POST', 'DELETE'].includes(req.method)) return false;
   const path = (req.originalUrl || req.url || '').split('?')[0];
-  return /\/tenant\/(?:config|branding)(?:\/|$)/.test(path);
+  return /\/tenant\/(?:config|branding)/.test(path);
 }
 
 export function blockNonAdminWrites(

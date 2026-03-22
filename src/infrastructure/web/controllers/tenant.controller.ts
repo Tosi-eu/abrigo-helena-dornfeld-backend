@@ -11,6 +11,12 @@ import {
 import { TenantConfigRepository } from '../../database/repositories/tenant-config.repository';
 import { getErrorMessage } from '../../types/error.types';
 import { TenantRepository } from '../../database/repositories/tenant.repository';
+import {
+  assertLogoUrlBelongsToOurR2,
+  invalidateTenantLogoResolveCacheForSlug,
+  isR2AssetsConfigured,
+  uploadTenantLogoToR2,
+} from '../../storage/r2-assets.service';
 
 const configRepo = new TenantConfigRepository();
 const service = new TenantConfigService(configRepo);
@@ -28,8 +34,21 @@ async function assertCanUpdateBranding(
   const tenant = await tenantRepo.findById(tenantId);
   const noBrandIdentity =
     !String(tenant?.brand_name ?? '').trim() &&
-    !String(tenant?.logo_data_url ?? '').trim();
+    !String(tenant?.logo_data_url ?? '').trim() &&
+    !String(tenant?.logo_url ?? '').trim();
   return noBrandIdentity;
+}
+
+function hasIdentity(tenant: {
+  brand_name?: string | null;
+  logo_data_url?: string | null;
+  logo_url?: string | null;
+} | null): boolean {
+  return Boolean(
+    String(tenant?.brand_name ?? '').trim() ||
+      String(tenant?.logo_data_url ?? '').trim() ||
+      String(tenant?.logo_url ?? '').trim(),
+  );
 }
 
 export class TenantController {
@@ -44,11 +63,7 @@ export class TenantController {
       }
       const cfg = await service.get(tenantId);
       const tenant = await tenantRepo.findById(tenantId);
-      const hasIdentity = Boolean(
-        String(tenant?.brand_name ?? '').trim() ||
-        String(tenant?.logo_data_url ?? '').trim(),
-      );
-      const onboardingComplete = hasIdentity;
+      const onboardingComplete = hasIdentity(tenant);
 
       return res.json({
         tenantId,
@@ -58,6 +73,7 @@ export class TenantController {
               slug: tenant.slug,
               name: tenant.name,
               brandName: tenant.brand_name ?? null,
+              logoUrl: tenant.logo_url ?? null,
               logoDataUrl: tenant.logo_data_url ?? null,
             }
           : null,
@@ -91,6 +107,74 @@ export class TenantController {
     }
   }
 
+  async uploadLogo(
+    req: AuthRequest & TenantRequest & { file?: Express.Multer.File },
+    res: Response,
+  ) {
+    try {
+      if (!isR2AssetsConfigured()) {
+        return res.status(503).json({
+          error:
+            'Armazenamento de logos (R2) não configurado. Use as mesmas credenciais da conta; defina R2_ASSETS_BUCKET_NAME (ex.: porto-assets) e R2_PUBLIC_BASE_URL.',
+        });
+      }
+      const tenantId = requireTenantId(req, res);
+      if (tenantId === null) return;
+      if (!(await assertCanUpdateBranding(req, tenantId))) {
+        return res.status(403).json({
+          error:
+            'Apenas administradores podem alterar o logo após a configuração inicial.',
+        });
+      }
+      const file = req.file;
+      if (!file?.buffer?.length) {
+        return res.status(400).json({ error: 'Arquivo de imagem obrigatório' });
+      }
+      const allowedMime = [
+        'image/png',
+        'image/jpeg',
+        'image/webp',
+        'image/gif',
+      ] as const;
+      if (!allowedMime.includes(file.mimetype as (typeof allowedMime)[number])) {
+        return res
+          .status(400)
+          .json({ error: 'Use imagem PNG, JPEG, WebP ou GIF' });
+      }
+
+      const tenantRow = await tenantRepo.findById(tenantId);
+      if (!tenantRow?.slug) {
+        return res.status(404).json({ error: 'Tenant não encontrado' });
+      }
+      const brandFromBody =
+        req.body?.brandName != null ? String(req.body.brandName).trim() : '';
+      const brandForKey =
+        brandFromBody ||
+        String(tenantRow.brand_name ?? '').trim() ||
+        String(tenantRow.name ?? '').trim() ||
+        'logo';
+
+      const { publicUrl } = await uploadTenantLogoToR2({
+        slug: tenantRow.slug,
+        brandName: brandForKey,
+        buffer: file.buffer,
+        contentType: file.mimetype,
+      });
+
+      invalidateTenantLogoResolveCacheForSlug(tenantRow.slug);
+
+      return res.status(201).json({ logoUrl: publicUrl });
+    } catch (error: unknown) {
+      const msg = getErrorMessage(error);
+      if (msg?.includes('não permitido')) {
+        return res.status(400).json({ error: msg });
+      }
+      return res.status(500).json({
+        error: getErrorMessage(error) || 'Erro ao enviar logo',
+      });
+    }
+  }
+
   async updateBranding(req: AuthRequest & TenantRequest, res: Response) {
     try {
       const tenantId = requireTenantId(req, res);
@@ -103,6 +187,8 @@ export class TenantController {
       }
       const brandNameRaw =
         req.body?.brandName != null ? String(req.body.brandName).trim() : null;
+      const logoUrlRaw =
+        req.body?.logoUrl != null ? String(req.body.logoUrl).trim() : null;
       const logoDataUrlRaw =
         req.body?.logoDataUrl != null ? String(req.body.logoDataUrl) : null;
 
@@ -115,11 +201,54 @@ export class TenantController {
       if (logoDataUrlRaw && !logoDataUrlRaw.startsWith('data:image/')) {
         return res.status(400).json({ error: 'logoDataUrl inválido' });
       }
+      if (logoUrlRaw) {
+        if (logoUrlRaw.length > 2048) {
+          return res.status(400).json({ error: 'logoUrl muito longo' });
+        }
+        if (!logoUrlRaw.startsWith('https://')) {
+          return res.status(400).json({ error: 'logoUrl deve ser HTTPS' });
+        }
+        if (!assertLogoUrlBelongsToOurR2(logoUrlRaw)) {
+          return res.status(400).json({
+            error: 'logoUrl inválido para este ambiente',
+          });
+        }
+      }
 
-      const updated = await tenantRepo.updateBranding(tenantId, {
+      const hasUrl = Object.prototype.hasOwnProperty.call(req.body, 'logoUrl');
+      const hasData = Object.prototype.hasOwnProperty.call(
+        req.body,
+        'logoDataUrl',
+      );
+      if (hasUrl && hasData) {
+        return res.status(400).json({
+          error: 'Envie apenas logoUrl ou logoDataUrl, não ambos',
+        });
+      }
+
+      const patch: {
+        brand_name: string | null;
+        logo_url: string | null;
+        logo_data_url: string | null;
+      } = {
         brand_name: brandNameRaw || null,
-        logo_data_url: logoDataUrlRaw || null,
-      });
+        logo_url: null,
+        logo_data_url: null,
+      };
+
+      if (hasUrl) {
+        patch.logo_url = logoUrlRaw || null;
+        patch.logo_data_url = null;
+      } else if (hasData) {
+        patch.logo_data_url = logoDataUrlRaw || null;
+        patch.logo_url = null;
+      } else {
+        const current = await tenantRepo.findById(tenantId);
+        patch.logo_url = current?.logo_url ?? null;
+        patch.logo_data_url = current?.logo_data_url ?? null;
+      }
+
+      const updated = await tenantRepo.updateBranding(tenantId, patch);
 
       return res.json({
         tenantId,
@@ -129,6 +258,7 @@ export class TenantController {
               slug: updated.slug,
               name: updated.name,
               brandName: updated.brand_name ?? null,
+              logoUrl: updated.logo_url ?? null,
               logoDataUrl: updated.logo_data_url ?? null,
             }
           : null,

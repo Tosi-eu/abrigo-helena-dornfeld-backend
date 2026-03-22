@@ -6,7 +6,10 @@ export interface TenantAttrs {
   slug: string;
   name: string;
   brand_name?: string | null;
+  /** @deprecated Prefer logo_url (R2); mantido para dados antigos em base64 */
   logo_data_url?: string | null;
+  /** URL pública HTTPS do logo no bucket R2 */
+  logo_url?: string | null;
   contract_code_hash?: string | null;
 }
 
@@ -18,6 +21,7 @@ export class TenantModel extends Model<TenantAttrs, TenantCreation> {
   declare name: string;
   declare brand_name?: string | null;
   declare logo_data_url?: string | null;
+  declare logo_url?: string | null;
   declare contract_code_hash?: string | null;
 }
 
@@ -28,6 +32,7 @@ TenantModel.init(
     name: { type: DataTypes.STRING(120), allowNull: false },
     brand_name: { type: DataTypes.STRING(160), allowNull: true },
     logo_data_url: { type: DataTypes.TEXT, allowNull: true },
+    logo_url: { type: DataTypes.TEXT, allowNull: true },
     contract_code_hash: { type: DataTypes.STRING(255), allowNull: true },
   },
   {

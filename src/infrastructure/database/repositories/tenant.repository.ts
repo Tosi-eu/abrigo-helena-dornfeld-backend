@@ -4,14 +4,28 @@ import { Op } from 'sequelize';
 export class TenantRepository {
   async findById(id: number) {
     return TenantModel.findByPk(id, {
-      attributes: ['id', 'slug', 'name', 'brand_name', 'logo_data_url'],
+      attributes: [
+        'id',
+        'slug',
+        'name',
+        'brand_name',
+        'logo_data_url',
+        'logo_url',
+      ],
     });
   }
 
   async findBySlug(slug: string) {
     return TenantModel.findOne({
       where: { slug },
-      attributes: ['id', 'slug', 'name', 'brand_name', 'logo_data_url'],
+      attributes: [
+        'id',
+        'slug',
+        'name',
+        'brand_name',
+        'logo_data_url',
+        'logo_url',
+      ],
     });
   }
 
@@ -23,6 +37,7 @@ export class TenantRepository {
         'name',
         'brand_name',
         'logo_data_url',
+        'logo_url',
         'contract_code_hash',
       ],
     });
@@ -32,6 +47,7 @@ export class TenantRepository {
       name: row.name,
       brandName: row.brand_name ?? null,
       logoDataUrl: row.logo_data_url ?? null,
+      logoUrl: row.logo_url ?? null,
       requiresContractCode: true,
       contractCodeMandatory: Boolean(row.contract_code_hash),
     };
@@ -89,7 +105,14 @@ export class TenantRepository {
 
     const [data, total] = await Promise.all([
       TenantModel.findAll({
-        attributes: ['id', 'slug', 'name', 'brand_name', 'logo_data_url'],
+        attributes: [
+          'id',
+          'slug',
+          'name',
+          'brand_name',
+          'logo_data_url',
+          'logo_url',
+        ],
         order: [['id', 'ASC']],
         limit: safeLimit,
         offset,
@@ -143,10 +166,37 @@ export class TenantRepository {
 
   async updateBranding(
     id: number,
-    data: Partial<{ brand_name: string | null; logo_data_url: string | null }>,
+    data: Partial<{
+      brand_name: string | null;
+      logo_data_url: string | null;
+      logo_url: string | null;
+    }>,
   ) {
     await TenantModel.update(data, { where: { id } });
     return this.findById(id);
+  }
+
+  /**
+   * Grava logo_url descoberto no R2 (só se ainda não há logo na BD).
+   * Evita repetir ListObjects em pedidos futuros.
+   */
+  async tryPersistLogoUrlFromR2Discovery(
+    slug: string,
+    logoUrl: string,
+  ): Promise<boolean> {
+    const s = String(slug).trim();
+    if (!s || !logoUrl.startsWith('https://')) return false;
+    const [affected] = await TenantModel.update(
+      { logo_url: logoUrl },
+      {
+        where: {
+          slug: s,
+          logo_url: { [Op.is]: null },
+          logo_data_url: { [Op.is]: null },
+        },
+      },
+    );
+    return affected > 0;
   }
 
   async update(

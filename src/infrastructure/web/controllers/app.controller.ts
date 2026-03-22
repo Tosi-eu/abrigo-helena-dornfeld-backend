@@ -1,6 +1,10 @@
 import { Request, Response } from 'express';
 import { TenantRepository } from '../../database/repositories/tenant.repository';
 import { verifyContractCode as matchContractCode } from '../../helpers/contract-code.helper';
+import {
+  invalidateTenantLogoResolveCacheForSlug,
+  tryResolveTenantLogoPublicUrlFromR2,
+} from '../../storage/r2-assets.service';
 
 export class AppController {
   constructor() {}
@@ -33,12 +37,32 @@ export class AppController {
       if (!t) {
         return res.status(200).json({ found: false });
       }
+      let logoUrl = t.logoUrl ?? null;
+      const logoDataUrl = t.logoDataUrl ?? null;
+      if (!logoUrl && !logoDataUrl) {
+        const fromR2 = await tryResolveTenantLogoPublicUrlFromR2({
+          slug: t.slug,
+          brandName: t.brandName ?? null,
+          name: t.name,
+        });
+        if (fromR2) {
+          logoUrl = fromR2;
+          const persisted = await repo.tryPersistLogoUrlFromR2Discovery(
+            t.slug,
+            fromR2,
+          );
+          if (persisted) {
+            invalidateTenantLogoResolveCacheForSlug(t.slug);
+          }
+        }
+      }
       return res.status(200).json({
         found: true,
         slug: t.slug,
         name: t.name,
         brandName: t.brandName ?? null,
-        logoDataUrl: t.logoDataUrl ?? null,
+        logoUrl,
+        logoDataUrl,
         requiresContractCode: true,
         contractCodeMandatory: t.contractCodeMandatory,
       });
