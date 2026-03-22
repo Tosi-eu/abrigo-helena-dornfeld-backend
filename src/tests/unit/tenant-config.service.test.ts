@@ -52,7 +52,9 @@ describe('TenantConfigService (unit)', () => {
 
   describe('set', () => {
     it('lança erro quando módulos são inválidos', async () => {
-      await expect(service.set(1, { enabled: ['nao_existe'] })).rejects.toThrow();
+      await expect(
+        service.set(1, { enabled: ['nao_existe'] }),
+      ).rejects.toThrow();
       expect(mockRepo.setByTenantId).not.toHaveBeenCalled();
     });
 
