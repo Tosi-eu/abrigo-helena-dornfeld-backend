@@ -11,9 +11,6 @@ export async function hashContractCode(plain: string): Promise<string> {
   return bcrypt.hash(pepperedPlain(plain), SALT_ROUNDS);
 }
 
-/**
- * @param storedHash — hash guardado no banco (ou null se o abrigo não exige código)
- */
 export async function verifyContractCode(
   storedHash: string | null | undefined,
   plain: string | undefined,

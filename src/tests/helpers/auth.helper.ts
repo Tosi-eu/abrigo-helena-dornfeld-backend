@@ -3,10 +3,6 @@ import { App } from 'supertest/types';
 
 const E2E_USER = { login: 'e2e_user', password: 'senha1234' };
 
-/**
- * Cria um usuário e retorna o cookie de autenticação para usar em requisições protegidas.
- * Usar em beforeAll dos testes e2e que precisam de auth.
- */
 export async function getAuthCookie(app: App): Promise<string> {
   await request(app).post('/api/v1/login').send(E2E_USER);
   const res = await request(app)

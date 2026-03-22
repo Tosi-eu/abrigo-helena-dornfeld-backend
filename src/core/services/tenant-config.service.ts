@@ -21,7 +21,6 @@ export const tenantModulesConfigSchema = z.object({
   enabled: z.array(moduleKeySchema).default([]),
 });
 
-/** Módulos habilitados por padrão ao criar abrigo ou ao corrigir linha ausente em `tenant_config`. */
 export const DEFAULT_TENANT_MODULES: TenantModulesConfig = {
   enabled: [
     'dashboard',
@@ -39,7 +38,6 @@ export const DEFAULT_TENANT_MODULES: TenantModulesConfig = {
   ],
 };
 
-/** Chaves adicionadas depois; em configs antigas passam a entrar como habilitadas por omissão. */
 const OPTIONAL_DEFAULT_ON: ModuleKey[] = ['cabinets', 'drawers', 'profile'];
 
 export class TenantConfigService {

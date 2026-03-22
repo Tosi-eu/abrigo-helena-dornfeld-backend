@@ -19,11 +19,6 @@ function safeEqualApiKey(provided: string, expected: string): boolean {
   return crypto.timingSafeEqual(p, e);
 }
 
-/**
- * Credencial do **operador do sistema** (só quem tem o valor no `.env` do servidor).
- * Não depende de usuário JWT: quem conhece a chave é tratado como administrador da plataforma.
- * Rotas de gestão de tenants usam só este middleware + handler.
- */
 export function requireSuperAdminApiKey(
   req: AuthRequest,
   res: Response,
@@ -45,7 +40,6 @@ export function requireSuperAdminApiKey(
   next();
 }
 
-/** Usuário logado como super-admin no banco (além de JWT admin). */
 export function requireSuperAdmin(
   req: AuthRequest,
   res: Response,

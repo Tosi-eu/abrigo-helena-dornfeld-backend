@@ -7,7 +7,6 @@ import {
   ValidationError,
 } from 'sequelize';
 
-/** Metadados seguros para log (sem dados sensíveis). */
 export function sequelizeErrorLogMeta(err: unknown): LogContext {
   if (!(err instanceof Error)) {
     return { errorKind: 'non_error', raw: String(err) };
@@ -66,9 +65,6 @@ export function sequelizeErrorLogMeta(err: unknown): LogContext {
   return base;
 }
 
-/**
- * Mapeia erro ORM → status HTTP + mensagem segura para o cliente.
- */
 export function mapSequelizeToClientError(
   err: unknown,
 ): { status: number; message: string } | null {

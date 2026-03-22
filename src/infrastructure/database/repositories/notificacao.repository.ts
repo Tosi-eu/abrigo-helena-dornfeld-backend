@@ -196,7 +196,6 @@ export class NotificationEventRepository {
     };
   }
 
-  /** Admin: list all notifications with optional filters (tipo optional). */
   async listAllForAdmin(
     {
       page = 1,
@@ -320,7 +319,7 @@ export class NotificationEventRepository {
         medicamento_id: stock.medicamento_id,
         residente_id: stock.casela_id,
         data_prevista: nextReposition,
-        criado_por: 1, // Sistema
+        criado_por: 1,
         visto: false,
         status: EventStatus.PENDENTE,
         quantidade: stock.quantidade,

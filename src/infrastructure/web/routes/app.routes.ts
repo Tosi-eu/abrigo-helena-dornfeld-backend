@@ -8,7 +8,6 @@ const appController = new AppController();
 const tenantsController = new AdminTenantsController();
 const router = Router();
 
-/** Só para /status — não compartilhar com outras rotas públicas. */
 const statusLimiter = rateLimit({
   windowMs: 1 * 60 * 1000,
   max: 60,
@@ -17,7 +16,6 @@ const statusLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-/** Busca de abrigos na tela de login (pode gerar várias requisições ao digitar). */
 const tenantListLimiter = rateLimit({
   windowMs: 1 * 60 * 1000,
   max: 180,
@@ -34,7 +32,6 @@ const tenantBrandingLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-/** Verificação de código de contrato (público) — limite para reduzir brute force. */
 const verifyContractCodeLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 40,
@@ -45,7 +42,6 @@ const verifyContractCodeLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-/** Gestão de tenants: só operador do sistema (header X-API-Key = X_API_KEY no .env). Sem JWT. */
 const systemTenantsLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 120,

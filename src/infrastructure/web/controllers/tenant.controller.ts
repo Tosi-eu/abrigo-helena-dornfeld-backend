@@ -20,7 +20,6 @@ function assertCanUpdateModules(req: AuthRequest): boolean {
   return req.user?.role === 'admin' || Boolean(req.user?.isSuperAdmin);
 }
 
-/** Usuários comuns podem definir marca/logo só enquanto o abrigo ainda não tem identidade visual. */
 async function assertCanUpdateBranding(
   req: AuthRequest,
   tenantId: number,
@@ -49,7 +48,6 @@ export class TenantController {
         String(tenant?.brand_name ?? '').trim() ||
         String(tenant?.logo_data_url ?? '').trim(),
       );
-      /** Onboarding = falta nome/logo; módulos vêm do padrão ou do admin. */
       const onboardingComplete = hasIdentity;
 
       return res.json({

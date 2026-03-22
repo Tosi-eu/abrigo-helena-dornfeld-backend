@@ -22,7 +22,6 @@ export class AppController {
     }
   }
 
-  /** Público: nome/logo do abrigo para tela de login (multi-tenant). */
   async getTenantPublicBranding(req: Request, res: Response) {
     try {
       const slug = String(req.params.slug ?? '').trim();
@@ -48,10 +47,6 @@ export class AppController {
     }
   }
 
-  /**
-   * Público: confere se o código informado corresponde ao hash do abrigo (slug).
-   * Sem código configurado no tenant, retorna valid: true e contractCodeRequired: false.
-   */
   async verifyTenantContractCode(req: Request, res: Response) {
     try {
       const slug = String(req.params.slug ?? '').trim();

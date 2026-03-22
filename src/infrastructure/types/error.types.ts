@@ -3,7 +3,6 @@ export interface AppError extends Error {
   status?: number;
 }
 
-/** Erro de regra de negócio / validação com status HTTP explícito. */
 export class HttpError extends Error {
   statusCode: number;
 

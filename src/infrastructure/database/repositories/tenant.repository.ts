@@ -15,7 +15,6 @@ export class TenantRepository {
     });
   }
 
-  /** Branding público + se o cadastro exige código de contrato (sem expor o hash). */
   async findPublicBrandingBySlug(slug: string) {
     const row = await TenantModel.findOne({
       where: { slug },
@@ -33,9 +32,7 @@ export class TenantRepository {
       name: row.name,
       brandName: row.brand_name ?? null,
       logoDataUrl: row.logo_data_url ?? null,
-      /** Sempre true no cadastro: campo de código de contrato é exibido para configurar o acesso. */
       requiresContractCode: true,
-      /** Só então o preenchimento é obrigatório (hash definido no tenant). */
       contractCodeMandatory: Boolean(row.contract_code_hash),
     };
   }
@@ -47,7 +44,6 @@ export class TenantRepository {
     return row?.contract_code_hash ?? null;
   }
 
-  /** Para verificação pública: slug existe e hash (se houver). */
   async findContractVerifyPayloadBySlug(slug: string) {
     const row = await TenantModel.findOne({
       where: { slug: String(slug).trim() },
@@ -69,10 +65,6 @@ export class TenantRepository {
     return row?.id ?? null;
   }
 
-  /**
-   * Verifica se outro abrigo (diferente de excludeTenantId) já usa este hash de contrato.
-   * Garante que cada slug tenha código de contrato exclusivo.
-   */
   async findOtherTenantWithContractHash(
     excludeTenantId: number | null,
     hash: string,

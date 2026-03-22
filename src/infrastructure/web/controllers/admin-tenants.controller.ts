@@ -110,10 +110,6 @@ export class AdminTenantsController {
     }
   }
 
-  /**
-   * Define o código de contrato (hash) por slug, ou cria o abrigo se ainda não existir.
-   * Body: `{ contract_code: string, name?: string }` ou `{ clear_contract_code: true }` (só se já existir).
-   */
   async setContractCodeBySlug(req: AuthRequest, res: Response) {
     try {
       const slug = String(req.params.slug ?? '').trim();

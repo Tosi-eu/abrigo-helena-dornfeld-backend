@@ -7,7 +7,6 @@ export interface TenantAttrs {
   name: string;
   brand_name?: string | null;
   logo_data_url?: string | null;
-  /** bcrypt(pepper+plain); null = cadastro sem código de contrato */
   contract_code_hash?: string | null;
 }
 

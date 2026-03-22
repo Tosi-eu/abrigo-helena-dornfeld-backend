@@ -84,7 +84,6 @@ export class LoginLogRepository {
     };
   }
 
-  /** Count distinct users with at least one successful login in the current month. */
   async countActiveUsersThisMonth(): Promise<number> {
     const now = new Date();
     const start = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);

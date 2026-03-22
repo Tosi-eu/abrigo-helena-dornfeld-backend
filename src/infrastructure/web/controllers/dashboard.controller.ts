@@ -7,11 +7,6 @@ import type { RlsRequest } from '../../../middleware/rls.middleware';
 export class DashboardController {
   constructor(private readonly service: DashboardService) {}
 
-  /**
-   * Single endpoint for dashboard data. Replaces multiple frontend requests
-   * with one aggregated response for better performance and scalability.
-   * Query: expiringDays (optional) – number of days for "expiring soon" count (default 45).
-   */
   async getSummary(req: RlsRequest, res: Response) {
     try {
       const expiringDays = req.query.expiringDays
@@ -34,7 +29,6 @@ export class DashboardController {
     }
   }
 
-  /** GET /dashboard/expiring-items?days=30&page=1&limit=50 */
   async getExpiringItems(req: RlsRequest, res: Response) {
     try {
       const days = Math.min(365, Math.max(1, Number(req.query.days) || 30));
