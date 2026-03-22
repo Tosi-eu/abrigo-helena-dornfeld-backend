@@ -1,3 +1,4 @@
+import type { TenantConfigResponse, TenantProfile } from '@abrigo/sdk';
 import type { Response } from 'express';
 import type { AuthRequest } from '../../../middleware/auth.middleware';
 import {
@@ -46,7 +47,7 @@ function hasIdentity(
 ): boolean {
   return Boolean(
     String(tenant?.brand_name ?? '').trim() ||
-      String(tenant?.logo_url ?? '').trim(),
+    String(tenant?.logo_url ?? '').trim(),
   );
 }
 
@@ -64,21 +65,24 @@ export class TenantController {
       const tenant = await tenantRepo.findById(tenantId);
       const onboardingComplete = hasIdentity(tenant);
 
-      return res.json({
+      const tenantProfile: TenantProfile | null = tenant
+        ? {
+            id: tenant.id,
+            slug: tenant.slug,
+            name: tenant.name,
+            brandName: tenant.brand_name ?? null,
+            logoUrl: tenant.logo_url ?? null,
+          }
+        : null;
+
+      const payload: TenantConfigResponse = {
         tenantId,
-        tenant: tenant
-          ? {
-              id: tenant.id,
-              slug: tenant.slug,
-              name: tenant.name,
-              brandName: tenant.brand_name ?? null,
-              logoUrl: tenant.logo_url ?? null,
-            }
-          : null,
+        tenant: tenantProfile,
         modules: cfg,
         modulesConfigured: Boolean(cfgRow?.modules_json),
         onboardingComplete,
-      });
+      };
+      return res.json(payload);
     } catch (error: unknown) {
       return res.status(500).json({
         error: getErrorMessage(error) || 'Erro ao carregar configuração',
@@ -97,7 +101,11 @@ export class TenantController {
         });
       }
       const modules = await service.set(tenantId, req.body?.modules);
-      return res.json({ tenantId, modules });
+      const updated: Pick<TenantConfigResponse, 'tenantId' | 'modules'> = {
+        tenantId,
+        modules,
+      };
+      return res.json(updated);
     } catch (error: unknown) {
       return res.status(400).json({
         error: getErrorMessage(error) || 'Config inválida',
@@ -226,18 +234,21 @@ export class TenantController {
 
       const updated = await tenantRepo.updateBranding(tenantId, patch);
 
-      return res.json({
+      const tenantAfter: TenantProfile | null = updated
+        ? {
+            id: updated.id,
+            slug: updated.slug,
+            name: updated.name,
+            brandName: updated.brand_name ?? null,
+            logoUrl: updated.logo_url ?? null,
+          }
+        : null;
+
+      const brandingRes: Pick<TenantConfigResponse, 'tenantId' | 'tenant'> = {
         tenantId,
-        tenant: updated
-          ? {
-              id: updated.id,
-              slug: updated.slug,
-              name: updated.name,
-              brandName: updated.brand_name ?? null,
-              logoUrl: updated.logo_url ?? null,
-            }
-          : null,
-      });
+        tenant: tenantAfter,
+      };
+      return res.json(brandingRes);
     } catch (error: unknown) {
       return res.status(500).json({
         error: getErrorMessage(error) || 'Erro ao atualizar branding',

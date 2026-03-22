@@ -9,6 +9,10 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
+    "baseUrl": ".",
+    "paths": {
+      "@abrigo/sdk": ["./node_modules/@abrigo/sdk/dist/index.d.ts"]
+    }
   },
   "include": [
     "src",

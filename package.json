@@ -23,6 +23,7 @@
     "db:seed": "docker exec backend npx sequelize-cli db:seed:all"
   },
   "dependencies": {
+    "@abrigo/sdk": "file:../sdk",
     "@aws-sdk/client-s3": "^3.1014.0",
     "@types/pdfkit": "^0.17.3",
     "axios": "^1.13.2",

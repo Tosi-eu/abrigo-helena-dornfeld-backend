@@ -1,3 +1,4 @@
+import type { TenantBrandingApiResponse } from '@abrigo/sdk';
 import { Request, Response } from 'express';
 import { TenantRepository } from '../../database/repositories/tenant.repository';
 import { verifyContractCode as matchContractCode } from '../../helpers/contract-code.helper';
@@ -35,7 +36,8 @@ export class AppController {
       const repo = new TenantRepository();
       const t = await repo.findPublicBrandingBySlug(slug);
       if (!t) {
-        return res.status(200).json({ found: false });
+        const notFound: TenantBrandingApiResponse = { found: false };
+        return res.status(200).json(notFound);
       }
       let logoUrl = t.logoUrl ?? null;
       if (!logoUrl) {
@@ -55,7 +57,7 @@ export class AppController {
           }
         }
       }
-      return res.status(200).json({
+      const branding: TenantBrandingApiResponse = {
         found: true,
         slug: t.slug,
         name: t.name,
@@ -63,7 +65,8 @@ export class AppController {
         logoUrl,
         requiresContractCode: true,
         contractCodeMandatory: t.contractCodeMandatory,
-      });
+      };
+      return res.status(200).json(branding);
     } catch {
       return res.status(500).json({ error: 'Erro ao carregar abrigo' });
     }

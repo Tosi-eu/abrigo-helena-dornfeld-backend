@@ -23,6 +23,7 @@ import {
   enforceTenantMiddleware,
   tenantMiddleware,
 } from '../../../middleware/tenant.middleware';
+import { tenantRequestContextLogMiddleware } from '../../../middleware/tenant-request-log.middleware';
 import tenantRoutes from './tenant.routes';
 
 const router = Router();
@@ -34,6 +35,7 @@ router.use('/', appRoutes);
 
 router.use(authMiddleware);
 router.use(enforceTenantMiddleware);
+router.use(tenantRequestContextLogMiddleware);
 router.use(blockNonAdminWrites);
 router.use(rlsContextMiddleware);
 router.use(auditLog);

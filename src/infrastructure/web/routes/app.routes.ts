@@ -9,6 +9,13 @@ const appController = new AppController();
 const tenantsController = new AdminTenantsController();
 const router = Router();
 
+/** Janela única para endpoints públicos de tenant (GET /tenants, GET /tenants/:slug/branding). */
+const publicTenantWindowMs =
+  Number(process.env.PUBLIC_TENANT_RATE_WINDOW_MS) || 60_000;
+const publicTenantListMax = Number(process.env.PUBLIC_TENANT_LIST_MAX) || 120;
+const publicTenantBrandingMax =
+  Number(process.env.PUBLIC_TENANT_BRANDING_MAX) || 120;
+
 const statusLimiter = rateLimit({
   windowMs: 1 * 60 * 1000,
   max: 60,
@@ -18,17 +25,18 @@ const statusLimiter = rateLimit({
 });
 
 const tenantListLimiter = rateLimit({
-  windowMs: 1 * 60 * 1000,
-  max: 180,
-  message: 'Too many tenant search requests, please try again later.',
+  windowMs: publicTenantWindowMs,
+  max: publicTenantListMax,
+  message:
+    'Muitas requisições à lista de abrigos. Tente novamente em instantes.',
   standardHeaders: true,
   legacyHeaders: false,
 });
 
 const tenantBrandingLimiter = rateLimit({
-  windowMs: 1 * 60 * 1000,
-  max: 90,
-  message: 'Too many requests, please try again later.',
+  windowMs: publicTenantWindowMs,
+  max: publicTenantBrandingMax,
+  message: 'Muitas requisições de branding. Tente novamente em instantes.',
   standardHeaders: true,
   legacyHeaders: false,
 });

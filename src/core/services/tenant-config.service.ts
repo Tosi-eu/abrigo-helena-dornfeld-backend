@@ -38,8 +38,6 @@ export const DEFAULT_TENANT_MODULES: TenantModulesConfig = {
   ],
 };
 
-const OPTIONAL_DEFAULT_ON: ModuleKey[] = ['cabinets', 'drawers', 'profile'];
-
 export class TenantConfigService {
   constructor(private readonly repo: TenantConfigRepository) {}
 
@@ -48,17 +46,7 @@ export class TenantConfigService {
     if (!row?.modules_json) return { enabled: [] };
     const parsed = tenantModulesConfigSchema.safeParse(row.modules_json);
     if (!parsed.success) return { enabled: [] };
-    const enabled = parsed.data.enabled;
-    if (enabled.length === 0) return parsed.data;
-    const set = new Set(enabled);
-    let changed = false;
-    for (const k of OPTIONAL_DEFAULT_ON) {
-      if (!set.has(k)) {
-        set.add(k);
-        changed = true;
-      }
-    }
-    return changed ? { enabled: Array.from(set) as ModuleKey[] } : parsed.data;
+    return parsed.data;
   }
 
   async set(

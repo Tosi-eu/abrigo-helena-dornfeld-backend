@@ -1,29 +1,18 @@
+import type { PublicTenantListItem } from '@abrigo/sdk';
 import TenantModel from '../models/tenant.model';
 import { Op } from 'sequelize';
 
 export class TenantRepository {
   async findById(id: number) {
     return TenantModel.findByPk(id, {
-      attributes: [
-        'id',
-        'slug',
-        'name',
-        'brand_name',
-        'logo_url',
-      ],
+      attributes: ['id', 'slug', 'name', 'brand_name', 'logo_url'],
     });
   }
 
   async findBySlug(slug: string) {
     return TenantModel.findOne({
       where: { slug },
-      attributes: [
-        'id',
-        'slug',
-        'name',
-        'brand_name',
-        'logo_url',
-      ],
+      attributes: ['id', 'slug', 'name', 'brand_name', 'logo_url'],
     });
   }
 
@@ -101,13 +90,7 @@ export class TenantRepository {
 
     const [data, total] = await Promise.all([
       TenantModel.findAll({
-        attributes: [
-          'id',
-          'slug',
-          'name',
-          'brand_name',
-          'logo_url',
-        ],
+        attributes: ['id', 'slug', 'name', 'brand_name', 'logo_url'],
         order: [['id', 'ASC']],
         limit: safeLimit,
         offset,
@@ -118,7 +101,10 @@ export class TenantRepository {
     return { data, total, page: safePage, limit: safeLimit };
   }
 
-  async listPublic(params?: { q?: string; limit?: number }) {
+  async listPublic(params?: {
+    q?: string;
+    limit?: number;
+  }): Promise<PublicTenantListItem[]> {
     const q = String(params?.q ?? '').trim();
     const limit = Math.min(50, Math.max(1, Number(params?.limit) || 20));
     const where =
@@ -138,12 +124,14 @@ export class TenantRepository {
       order: [['id', 'ASC']],
       limit,
     });
-    return rows.map(r => ({
-      id: r.id,
-      slug: r.slug,
-      name: r.name,
-      brandName: r.brand_name ?? null,
-    }));
+    return rows.map(
+      (r): PublicTenantListItem => ({
+        id: r.id,
+        slug: r.slug,
+        name: r.name,
+        brandName: r.brand_name ?? null,
+      }),
+    );
   }
 
   async create(data: {
