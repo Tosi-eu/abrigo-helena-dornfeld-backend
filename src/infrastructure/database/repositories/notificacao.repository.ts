@@ -186,7 +186,7 @@ export class NotificationEventRepository {
         tipo_evento: row.tipo_evento,
         dias_para_repor:
           tipo === NotificationEventType.REPOSICAO_ESTOQUE
-            ? (Number(row.estoque?.dias_para_repor) ?? null)
+            ? Number(row.estoque?.dias_para_repor)
             : null,
       })),
       total: count,

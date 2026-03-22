@@ -39,15 +39,17 @@ async function assertCanUpdateBranding(
   return noBrandIdentity;
 }
 
-function hasIdentity(tenant: {
-  brand_name?: string | null;
-  logo_data_url?: string | null;
-  logo_url?: string | null;
-} | null): boolean {
+function hasIdentity(
+  tenant: {
+    brand_name?: string | null;
+    logo_data_url?: string | null;
+    logo_url?: string | null;
+  } | null,
+): boolean {
   return Boolean(
     String(tenant?.brand_name ?? '').trim() ||
-      String(tenant?.logo_data_url ?? '').trim() ||
-      String(tenant?.logo_url ?? '').trim(),
+    String(tenant?.logo_data_url ?? '').trim() ||
+    String(tenant?.logo_url ?? '').trim(),
   );
 }
 
@@ -136,7 +138,9 @@ export class TenantController {
         'image/webp',
         'image/gif',
       ] as const;
-      if (!allowedMime.includes(file.mimetype as (typeof allowedMime)[number])) {
+      if (
+        !allowedMime.includes(file.mimetype as (typeof allowedMime)[number])
+      ) {
         return res
           .status(400)
           .json({ error: 'Use imagem PNG, JPEG, WebP ou GIF' });

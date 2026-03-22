@@ -15,10 +15,10 @@ export function getR2AssetsBucketName(): string | undefined {
 export function isR2AssetsConfigured(): boolean {
   return Boolean(
     process.env.R2_ACCOUNT_ID?.trim() &&
-      process.env.R2_ACCESS_KEY_ID?.trim() &&
-      process.env.R2_SECRET_ACCESS_KEY?.trim() &&
-      getR2AssetsBucketName() &&
-      process.env.R2_PUBLIC_BASE_URL?.trim(),
+    process.env.R2_ACCESS_KEY_ID?.trim() &&
+    process.env.R2_SECRET_ACCESS_KEY?.trim() &&
+    getR2AssetsBucketName() &&
+    process.env.R2_PUBLIC_BASE_URL?.trim(),
   );
 }
 
@@ -63,7 +63,9 @@ export async function uploadTenantLogoToR2(params: {
   }
   const ext = MIME_TO_EXT[params.contentType];
   if (!ext) {
-    throw new Error('Tipo de imagem não permitido (use PNG, JPEG, WebP ou GIF)');
+    throw new Error(
+      'Tipo de imagem não permitido (use PNG, JPEG, WebP ou GIF)',
+    );
   }
 
   const bucket = getR2AssetsBucketName()!;
@@ -167,7 +169,9 @@ async function listTenantLogoKeyFromR2(tenant: {
       MaxKeys: 20,
     }),
   );
-  const key = out.Contents?.map((c) => c.Key).find((k) => k && LOGO_KEY_IMAGE_RE.test(k));
+  const key = out.Contents?.map(c => c.Key).find(
+    k => k && LOGO_KEY_IMAGE_RE.test(k),
+  );
   if (!key) return null;
   return `${getR2PublicBaseUrl()}/${key}`;
 }

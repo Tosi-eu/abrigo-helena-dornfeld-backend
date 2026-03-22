@@ -8,7 +8,9 @@ export function getR2S3Client(): S3Client {
   const accessKeyId = process.env.R2_ACCESS_KEY_ID?.trim();
   const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY?.trim();
   if (!accountId || !accessKeyId || !secretAccessKey) {
-    throw new Error('R2_ACCOUNT_ID / R2_ACCESS_KEY_ID / R2_SECRET_ACCESS_KEY em falta');
+    throw new Error(
+      'R2_ACCOUNT_ID / R2_ACCESS_KEY_ID / R2_SECRET_ACCESS_KEY em falta',
+    );
   }
   cached = new S3Client({
     region: 'auto',
