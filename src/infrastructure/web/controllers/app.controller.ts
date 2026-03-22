@@ -1,4 +1,4 @@
-import type { TenantBrandingApiResponse } from '@abrigo/sdk';
+import type { TenantBrandingApiResponse } from '@porto-sdk/sdk';
 import { Request, Response } from 'express';
 import { TenantRepository } from '../../database/repositories/tenant.repository';
 import { verifyContractCode as matchContractCode } from '../../helpers/contract-code.helper';

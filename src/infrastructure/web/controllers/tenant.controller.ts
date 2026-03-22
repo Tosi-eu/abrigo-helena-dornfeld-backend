@@ -1,4 +1,4 @@
-import type { TenantConfigResponse, TenantProfile } from '@abrigo/sdk';
+import type { TenantConfigResponse, TenantProfile } from '@porto-sdk/sdk';
 import type { Response } from 'express';
 import type { AuthRequest } from '../../../middleware/auth.middleware';
 import {

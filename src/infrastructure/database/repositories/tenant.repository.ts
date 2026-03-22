@@ -1,4 +1,4 @@
-import type { PublicTenantListItem } from '@abrigo/sdk';
+import type { PublicTenantListItem } from '@porto-sdk/sdk';
 import TenantModel from '../models/tenant.model';
 import { Op } from 'sequelize';
 
