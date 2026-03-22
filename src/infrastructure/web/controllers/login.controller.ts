@@ -2,10 +2,7 @@ import { Request, Response } from 'express';
 import { LoginService } from '../../../core/services/login.service';
 import { AuthRequest } from '../../../middleware/auth.middleware';
 import type { TenantRequest } from '../../../middleware/tenant.middleware';
-import {
-  getErrorMessage,
-  isHttpError,
-} from '../../types/error.types';
+import { getErrorMessage, isHttpError } from '../../types/error.types';
 import type { LoginLogRepository } from '../../database/repositories/login-log.repository';
 import { logger } from '../../helpers/logger.helper';
 import {
