@@ -1,9 +1,6 @@
 'use strict';
 
-const {
-  addColumnIfNotExists,
-  tableExists,
-} = require('../migration-helpers');
+const { addColumnIfNotExists, tableExists } = require('../migration-helpers');
 
 /**
  * Repara bases onde a coluna login.tenant_id (e/ou is_super_admin) nunca foi criada

@@ -51,8 +51,7 @@ export async function enforceTenantMiddleware(
     const isSuper = Boolean(authReq.user?.isSuperAdmin);
 
     const requestedRaw = authReq.requestedTenantSlug;
-    const requested =
-      requestedRaw != null ? String(requestedRaw).trim() : '';
+    const requested = requestedRaw != null ? String(requestedRaw).trim() : '';
 
     if (isSuper && requested !== '') {
       const t = await repo.findBySlug(requested);
@@ -92,8 +91,7 @@ export async function publicTenantContextMiddleware(
   try {
     if (req.tenant) return next();
     const requestedRaw = req.requestedTenantSlug;
-    const requested =
-      requestedRaw != null ? String(requestedRaw).trim() : '';
+    const requested = requestedRaw != null ? String(requestedRaw).trim() : '';
     if (requested !== '') {
       const t = await repo.findBySlug(requested);
       if (t) {

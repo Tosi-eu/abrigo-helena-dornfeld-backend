@@ -60,10 +60,8 @@ router.get('/status', statusLimiter, (req, res) =>
   appController.getStatus(req, res),
 );
 
-router.get(
-  '/tenants/:slug/branding',
-  tenantBrandingLimiter,
-  (req, res) => appController.getTenantPublicBranding(req, res),
+router.get('/tenants/:slug/branding', tenantBrandingLimiter, (req, res) =>
+  appController.getTenantPublicBranding(req, res),
 );
 
 router.post(

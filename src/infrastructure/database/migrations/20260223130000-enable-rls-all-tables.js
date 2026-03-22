@@ -1,9 +1,6 @@
 'use strict';
 
-const {
-  addColumnIfNotExists,
-  tableExists,
-} = require('../migration-helpers');
+const { addColumnIfNotExists, tableExists } = require('../migration-helpers');
 
 /**
  * Mesma lista que 20260319093000-add-tenant-id-all-tables (tabelas com coluna tenant_id).

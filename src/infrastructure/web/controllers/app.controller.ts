@@ -80,10 +80,7 @@ export class AppController {
         });
       }
 
-      const verdict = await matchContractCode(
-        tenant.contract_code_hash,
-        plain,
-      );
+      const verdict = await matchContractCode(tenant.contract_code_hash, plain);
       if (verdict === 'required') {
         return res.status(200).json({
           valid: false,

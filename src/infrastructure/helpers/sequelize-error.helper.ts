@@ -75,7 +75,8 @@ export function mapSequelizeToClientError(
   if (err instanceof ValidationError) {
     const first = err.errors[0];
     const msg =
-      (first && `${first.path ? `${String(first.path)}: ` : ''}${first.message}`) ||
+      (first &&
+        `${first.path ? `${String(first.path)}: ` : ''}${first.message}`) ||
       'Dados inválidos';
     return { status: 400, message: msg };
   }
