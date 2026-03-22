@@ -26,7 +26,6 @@ export function getR2PublicBaseUrl(): string {
   return process.env.R2_PUBLIC_BASE_URL!.replace(/\/$/, '');
 }
 
-/** Nome de marca → segmento seguro para chave S3 (minúsculas, hífens). */
 export function normalizeBrandNameForR2Key(raw: string): string {
   const s = String(raw ?? '')
     .normalize('NFD')
@@ -49,9 +48,6 @@ export function normalizeSlugForR2Key(raw: string): string {
   return s || 'tenant';
 }
 
-/**
- * Chave no bucket: `{marca-normalizada}-{slug}.{ext}`
- */
 export async function uploadTenantLogoToR2(params: {
   slug: string;
   brandName: string;

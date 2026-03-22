@@ -38,8 +38,7 @@ export class AppController {
         return res.status(200).json({ found: false });
       }
       let logoUrl = t.logoUrl ?? null;
-      const logoDataUrl = t.logoDataUrl ?? null;
-      if (!logoUrl && !logoDataUrl) {
+      if (!logoUrl) {
         const fromR2 = await tryResolveTenantLogoPublicUrlFromR2({
           slug: t.slug,
           brandName: t.brandName ?? null,
@@ -62,7 +61,6 @@ export class AppController {
         name: t.name,
         brandName: t.brandName ?? null,
         logoUrl,
-        logoDataUrl,
         requiresContractCode: true,
         contractCodeMandatory: t.contractCodeMandatory,
       });

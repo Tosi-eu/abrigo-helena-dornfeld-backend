@@ -9,7 +9,6 @@ export class TenantRepository {
         'slug',
         'name',
         'brand_name',
-        'logo_data_url',
         'logo_url',
       ],
     });
@@ -23,7 +22,6 @@ export class TenantRepository {
         'slug',
         'name',
         'brand_name',
-        'logo_data_url',
         'logo_url',
       ],
     });
@@ -36,7 +34,6 @@ export class TenantRepository {
         'slug',
         'name',
         'brand_name',
-        'logo_data_url',
         'logo_url',
         'contract_code_hash',
       ],
@@ -46,7 +43,6 @@ export class TenantRepository {
       slug: row.slug,
       name: row.name,
       brandName: row.brand_name ?? null,
-      logoDataUrl: row.logo_data_url ?? null,
       logoUrl: row.logo_url ?? null,
       requiresContractCode: true,
       contractCodeMandatory: Boolean(row.contract_code_hash),
@@ -110,7 +106,6 @@ export class TenantRepository {
           'slug',
           'name',
           'brand_name',
-          'logo_data_url',
           'logo_url',
         ],
         order: [['id', 'ASC']],
@@ -168,7 +163,6 @@ export class TenantRepository {
     id: number,
     data: Partial<{
       brand_name: string | null;
-      logo_data_url: string | null;
       logo_url: string | null;
     }>,
   ) {
@@ -176,10 +170,6 @@ export class TenantRepository {
     return this.findById(id);
   }
 
-  /**
-   * Grava logo_url descoberto no R2 (só se ainda não há logo na BD).
-   * Evita repetir ListObjects em pedidos futuros.
-   */
   async tryPersistLogoUrlFromR2Discovery(
     slug: string,
     logoUrl: string,
@@ -192,7 +182,6 @@ export class TenantRepository {
         where: {
           slug: s,
           logo_url: { [Op.is]: null },
-          logo_data_url: { [Op.is]: null },
         },
       },
     );

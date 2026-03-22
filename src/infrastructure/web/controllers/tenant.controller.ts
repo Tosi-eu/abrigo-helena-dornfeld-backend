@@ -34,7 +34,6 @@ async function assertCanUpdateBranding(
   const tenant = await tenantRepo.findById(tenantId);
   const noBrandIdentity =
     !String(tenant?.brand_name ?? '').trim() &&
-    !String(tenant?.logo_data_url ?? '').trim() &&
     !String(tenant?.logo_url ?? '').trim();
   return noBrandIdentity;
 }
@@ -42,14 +41,12 @@ async function assertCanUpdateBranding(
 function hasIdentity(
   tenant: {
     brand_name?: string | null;
-    logo_data_url?: string | null;
     logo_url?: string | null;
   } | null,
 ): boolean {
   return Boolean(
     String(tenant?.brand_name ?? '').trim() ||
-    String(tenant?.logo_data_url ?? '').trim() ||
-    String(tenant?.logo_url ?? '').trim(),
+      String(tenant?.logo_url ?? '').trim(),
   );
 }
 
@@ -76,7 +73,6 @@ export class TenantController {
               name: tenant.name,
               brandName: tenant.brand_name ?? null,
               logoUrl: tenant.logo_url ?? null,
-              logoDataUrl: tenant.logo_data_url ?? null,
             }
           : null,
         modules: cfg,
@@ -193,17 +189,9 @@ export class TenantController {
         req.body?.brandName != null ? String(req.body.brandName).trim() : null;
       const logoUrlRaw =
         req.body?.logoUrl != null ? String(req.body.logoUrl).trim() : null;
-      const logoDataUrlRaw =
-        req.body?.logoDataUrl != null ? String(req.body.logoDataUrl) : null;
 
       if (brandNameRaw && brandNameRaw.length > 160) {
         return res.status(400).json({ error: 'brandName muito longo' });
-      }
-      if (logoDataUrlRaw && logoDataUrlRaw.length > 800_000) {
-        return res.status(400).json({ error: 'logo muito grande' });
-      }
-      if (logoDataUrlRaw && !logoDataUrlRaw.startsWith('data:image/')) {
-        return res.status(400).json({ error: 'logoDataUrl inválido' });
       }
       if (logoUrlRaw) {
         if (logoUrlRaw.length > 2048) {
@@ -220,36 +208,20 @@ export class TenantController {
       }
 
       const hasUrl = Object.prototype.hasOwnProperty.call(req.body, 'logoUrl');
-      const hasData = Object.prototype.hasOwnProperty.call(
-        req.body,
-        'logoDataUrl',
-      );
-      if (hasUrl && hasData) {
-        return res.status(400).json({
-          error: 'Envie apenas logoUrl ou logoDataUrl, não ambos',
-        });
-      }
 
       const patch: {
         brand_name: string | null;
         logo_url: string | null;
-        logo_data_url: string | null;
       } = {
         brand_name: brandNameRaw || null,
         logo_url: null,
-        logo_data_url: null,
       };
 
       if (hasUrl) {
         patch.logo_url = logoUrlRaw || null;
-        patch.logo_data_url = null;
-      } else if (hasData) {
-        patch.logo_data_url = logoDataUrlRaw || null;
-        patch.logo_url = null;
       } else {
         const current = await tenantRepo.findById(tenantId);
         patch.logo_url = current?.logo_url ?? null;
-        patch.logo_data_url = current?.logo_data_url ?? null;
       }
 
       const updated = await tenantRepo.updateBranding(tenantId, patch);
@@ -263,7 +235,6 @@ export class TenantController {
               name: updated.name,
               brandName: updated.brand_name ?? null,
               logoUrl: updated.logo_url ?? null,
-              logoDataUrl: updated.logo_data_url ?? null,
             }
           : null,
       });

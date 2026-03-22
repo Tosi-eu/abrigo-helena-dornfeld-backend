@@ -10,6 +10,5 @@ function createPriceSearchService(): IPriceSearchService | undefined {
   return new PricingApiClient(url, key);
 }
 
-/** Cliente HTTP para o microsserviço `porto-api-price-search` (pasta na raiz do repositório). */
 export const priceSearchService: IPriceSearchService | undefined =
   createPriceSearchService();
