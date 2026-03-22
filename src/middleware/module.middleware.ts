@@ -1,9 +1,6 @@
 import type { Response, NextFunction } from 'express';
 import type { AuthRequest } from './auth.middleware';
-import {
-  type TenantRequest,
-  requireTenantId,
-} from './tenant.middleware';
+import { type TenantRequest, requireTenantId } from './tenant.middleware';
 import { TenantConfigService } from '../core/services/tenant-config.service';
 import { TenantConfigRepository } from '../infrastructure/database/repositories/tenant-config.repository';
 import type { ModuleKey } from '../core/types/tenant.types';

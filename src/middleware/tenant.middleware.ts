@@ -105,7 +105,9 @@ export async function publicTenantContextMiddleware(
       }
       return res.status(404).json({ error: 'Abrigo não encontrado' });
     }
-    return res.status(400).json({ error: 'Tenant não informado (X-Tenant ou subdomínio)' });
+    return res
+      .status(400)
+      .json({ error: 'Tenant não informado (X-Tenant ou subdomínio)' });
   } catch {
     return res.status(500).json({ error: 'Erro ao identificar tenant' });
   }

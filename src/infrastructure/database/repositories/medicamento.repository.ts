@@ -4,10 +4,7 @@ import { Medicine } from '../../../core/domain/medicamento';
 import { Op } from 'sequelize';
 
 export class MedicineRepository {
-  async createMedicine(
-    data: Medicine,
-    tenantId: number,
-  ): Promise<Medicine> {
+  async createMedicine(data: Medicine, tenantId: number): Promise<Medicine> {
     const record = await MedicineModel.create({
       tenant_id: tenantId,
       nome: data.nome,

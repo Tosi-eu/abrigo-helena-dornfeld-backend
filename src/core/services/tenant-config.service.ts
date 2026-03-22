@@ -60,9 +60,7 @@ export class TenantConfigService {
         changed = true;
       }
     }
-    return changed
-      ? { enabled: Array.from(set) as ModuleKey[] }
-      : parsed.data;
+    return changed ? { enabled: Array.from(set) as ModuleKey[] } : parsed.data;
   }
 
   async set(

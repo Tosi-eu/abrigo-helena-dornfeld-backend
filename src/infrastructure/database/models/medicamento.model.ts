@@ -75,7 +75,13 @@ MedicineModel.init(
     indexes: [
       {
         unique: true,
-        fields: ['tenant_id', 'nome', 'principio_ativo', 'dosagem', 'unidade_medida'],
+        fields: [
+          'tenant_id',
+          'nome',
+          'principio_ativo',
+          'dosagem',
+          'unidade_medida',
+        ],
         name: 'uniq_medicamento_tenant_nome_principio_dosagem',
       },
       {

@@ -17,9 +17,7 @@ const service = new TenantConfigService(configRepo);
 const tenantRepo = new TenantRepository();
 
 function assertCanUpdateModules(req: AuthRequest): boolean {
-  return (
-    req.user?.role === 'admin' || Boolean(req.user?.isSuperAdmin)
-  );
+  return req.user?.role === 'admin' || Boolean(req.user?.isSuperAdmin);
 }
 
 /** Usuários comuns podem definir marca/logo só enquanto o abrigo ainda não tem identidade visual. */
@@ -49,7 +47,7 @@ export class TenantController {
       const tenant = await tenantRepo.findById(tenantId);
       const hasIdentity = Boolean(
         String(tenant?.brand_name ?? '').trim() ||
-          String(tenant?.logo_data_url ?? '').trim(),
+        String(tenant?.logo_data_url ?? '').trim(),
       );
       /** Onboarding = falta nome/logo; módulos vêm do padrão ou do admin. */
       const onboardingComplete = hasIdentity;

@@ -17,11 +17,8 @@ const router = Router();
 router.post('/', requireModule('cabinets'), (req, res) =>
   controller.create(req, res),
 );
-router.get(
-  '/',
-  validatePagination,
-  requireModule('cabinets'),
-  (req, res) => controller.getAll(req, res),
+router.get('/', validatePagination, requireModule('cabinets'), (req, res) =>
+  controller.getAll(req, res),
 );
 router.get('/count', requireModule('cabinets'), (req, res) =>
   controller.getCount(req, res),

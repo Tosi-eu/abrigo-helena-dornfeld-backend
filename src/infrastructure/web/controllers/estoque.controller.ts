@@ -14,7 +14,10 @@ import { toSectorType } from '../../helpers/stock.helper';
 export class StockController {
   constructor(private readonly service: StockService) {}
 
-  async stockIn(req: RlsRequest & ValidatedRequest & TenantRequest, res: Response) {
+  async stockIn(
+    req: RlsRequest & ValidatedRequest & TenantRequest,
+    res: Response,
+  ) {
     try {
       const tenantId = requireTenantId(req, res);
       if (tenantId === null) return;

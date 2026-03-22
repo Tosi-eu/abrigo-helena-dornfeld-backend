@@ -68,11 +68,8 @@ router.get('/usuario-logado', (req, res) =>
   controller.getCurrentUser(req, res),
 );
 
-router.put(
-  '/',
-  enforceTenantMiddleware,
-  requireModule('profile'),
-  (req, res) => controller.update(req, res),
+router.put('/', enforceTenantMiddleware, requireModule('profile'), (req, res) =>
+  controller.update(req, res),
 );
 router.delete(
   '/',
