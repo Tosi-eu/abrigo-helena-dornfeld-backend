@@ -7,6 +7,8 @@ const { addColumnIfNotExists } = require('../migration-helpers');
  * - tenant_id: tenant ownership for the user
  * - is_super_admin: can manage all tenants / switch tenant context
  *
+ * Evita changeColumn em tenant_id: políticas RLS já referenciam a coluna (Postgres).
+ *
  * @type {import('sequelize-cli').Migration}
  */
 module.exports = {
@@ -19,11 +21,18 @@ module.exports = {
     await queryInterface.sequelize.query(
       `UPDATE "login" SET tenant_id = 1 WHERE tenant_id IS NULL;`,
     );
-    await queryInterface.changeColumn('login', 'tenant_id', {
-      type: Sequelize.INTEGER,
-      allowNull: false,
-      defaultValue: 1,
-    });
+    await queryInterface.sequelize.query(
+      `ALTER TABLE "login" ALTER COLUMN tenant_id SET DEFAULT 1;`,
+    );
+    const [rows] = await queryInterface.sequelize.query(
+      `SELECT is_nullable::text AS n FROM information_schema.columns
+       WHERE table_schema = 'public' AND table_name = 'login' AND column_name = 'tenant_id'`,
+    );
+    if (rows?.[0]?.n === 'YES') {
+      await queryInterface.sequelize.query(
+        `ALTER TABLE "login" ALTER COLUMN tenant_id SET NOT NULL;`,
+      );
+    }
 
     await addColumnIfNotExists(queryInterface, 'login', 'is_super_admin', {
       type: Sequelize.BOOLEAN,

@@ -1685,7 +1685,6 @@ export class StockRepository {
         },
         transaction,
       }),
-      // Próximos do mínimo = acima do mínimo, dentro de 20% (só borda positiva)
       MedicineStockModel.count({
         include: [
           {

@@ -49,7 +49,6 @@ export function auditLog(req: AuthRequest, res: Response, next: NextFunction) {
       try {
         capturedOld = await oldValuePromise;
       } catch {
-        // If audit old-value fails, we still want to log the event.
         capturedOld = null;
       }
     }
@@ -73,7 +72,6 @@ export function auditLog(req: AuthRequest, res: Response, next: NextFunction) {
     SENSITIVE_METHODS.includes(req.method) &&
     ['PUT', 'PATCH', 'DELETE'].includes(req.method)
   ) {
-    // Kick off in background; avoid delaying the handler execution.
     oldValuePromise = getOldValueForAudit(pathForAudit, req.method, req).catch(
       () => null,
     );

@@ -494,7 +494,6 @@ export class AdminController {
     };
 
     try {
-      // 1) pg_dump data-only to tmpSql
       await new Promise<void>((resolve, reject) => {
         let stderr = '';
         const p = spawn(
@@ -521,7 +520,6 @@ export class AdminController {
         });
       });
 
-      // 2) gzip it
       await new Promise<void>((resolve, reject) => {
         let stderr = '';
         const p = spawn('gzip', ['-f', tmpSql], {
@@ -1150,7 +1148,6 @@ export class AdminController {
       }
     };
 
-    // Truncate all tables (except SequelizeMeta) so restore does not collide with existing data.
     const truncateSql =
       "DO $$ DECLARE tbls text; BEGIN SELECT string_agg(quote_ident(tablename), ', ') INTO tbls FROM pg_tables WHERE schemaname = 'public' AND tablename <> 'SequelizeMeta'; IF tbls IS NOT NULL AND tbls <> '' THEN EXECUTE 'TRUNCATE TABLE ' || tbls || ' RESTART IDENTITY CASCADE'; END IF; END $$;";
     let truncateStderr = '';

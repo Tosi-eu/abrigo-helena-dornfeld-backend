@@ -7,6 +7,8 @@ export interface TenantAttrs {
   name: string;
   brand_name?: string | null;
   logo_data_url?: string | null;
+  /** bcrypt(pepper+plain); null = cadastro sem código de contrato */
+  contract_code_hash?: string | null;
 }
 
 type TenantCreation = Optional<TenantAttrs, 'id'>;
@@ -17,6 +19,7 @@ export class TenantModel extends Model<TenantAttrs, TenantCreation> {
   declare name: string;
   declare brand_name?: string | null;
   declare logo_data_url?: string | null;
+  declare contract_code_hash?: string | null;
 }
 
 TenantModel.init(
@@ -26,6 +29,7 @@ TenantModel.init(
     name: { type: DataTypes.STRING(120), allowNull: false },
     brand_name: { type: DataTypes.STRING(160), allowNull: true },
     logo_data_url: { type: DataTypes.TEXT, allowNull: true },
+    contract_code_hash: { type: DataTypes.STRING(255), allowNull: true },
   },
   {
     sequelize,

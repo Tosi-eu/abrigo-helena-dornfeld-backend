@@ -16,8 +16,6 @@ export async function withRlsContext<T>(
     );
 
     if (keys.length > 0) {
-      // Consolidates multiple set_config calls into a single query to reduce
-      // round-trips against Postgres (helps under concurrency).
       const replacements: Record<string, string> = {};
       const setClauses = keys
         .map((key, i) => {

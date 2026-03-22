@@ -6,15 +6,55 @@ import { TenantConfigRepository } from '../../database/repositories/tenant-confi
 import { getErrorMessage } from '../../types/error.types';
 import { TenantRepository } from '../../database/repositories/tenant.repository';
 
-const service = new TenantConfigService(new TenantConfigRepository());
+const configRepo = new TenantConfigRepository();
+const service = new TenantConfigService(configRepo);
 const tenantRepo = new TenantRepository();
+
+/** Enquanto não há módulos persistidos ou identidade (marca ou logo), permite onboarding sem ser admin. */
+function isTenantSetupIncomplete(
+  cfgRow: { modules_json?: unknown } | null,
+  tenant: {
+    brand_name?: string | null;
+    logo_data_url?: string | null;
+  } | null,
+): boolean {
+  if (!tenant) return false;
+  const mj = cfgRow?.modules_json;
+  let enabledLen = 0;
+  if (mj && typeof mj === 'object' && mj !== null && 'enabled' in mj) {
+    const en = (mj as { enabled?: unknown }).enabled;
+    if (Array.isArray(en)) enabledLen = en.length;
+  }
+  const noModulesRow = !cfgRow;
+  const noEnabledModules = enabledLen === 0;
+  const noBrandIdentity =
+    !String(tenant.brand_name ?? '').trim() &&
+    !String(tenant.logo_data_url ?? '').trim();
+  return noModulesRow || noEnabledModules || noBrandIdentity;
+}
+
+async function assertCanConfigureTenant(
+  req: AuthRequest & TenantRequest,
+): Promise<boolean> {
+  if (req.user?.role === 'admin') return true;
+  const tenantId = req.tenant?.id ?? 1;
+  const [cfgRow, tenant] = await Promise.all([
+    configRepo.getByTenantId(tenantId),
+    tenantRepo.findById(tenantId),
+  ]);
+  return isTenantSetupIncomplete(cfgRow, tenant);
+}
 
 export class TenantController {
   async getConfig(req: AuthRequest & TenantRequest, res: Response) {
     try {
       const tenantId = req.tenant?.id ?? 1;
+      const cfgRow = await configRepo.getByTenantId(tenantId);
       const cfg = await service.get(tenantId);
       const tenant = await tenantRepo.findById(tenantId);
+      /** Onboarding pendente = ainda não existe linha em tenant_config para o tenant. */
+      const onboardingComplete = Boolean(cfgRow);
+
       return res.json({
         tenantId,
         tenant: tenant
@@ -27,6 +67,8 @@ export class TenantController {
             }
           : null,
         modules: cfg,
+        modulesConfigured: Boolean(cfgRow?.modules_json),
+        onboardingComplete,
       });
     } catch (error: unknown) {
       return res.status(500).json({
@@ -37,7 +79,7 @@ export class TenantController {
 
   async updateConfig(req: AuthRequest & TenantRequest, res: Response) {
     try {
-      if (req.user?.role !== 'admin') {
+      if (!(await assertCanConfigureTenant(req))) {
         return res
           .status(403)
           .json({ error: 'Apenas admin pode editar módulos' });
@@ -54,7 +96,7 @@ export class TenantController {
 
   async updateBranding(req: AuthRequest & TenantRequest, res: Response) {
     try {
-      if (req.user?.role !== 'admin') {
+      if (!(await assertCanConfigureTenant(req))) {
         return res
           .status(403)
           .json({ error: 'Apenas admin pode editar branding' });

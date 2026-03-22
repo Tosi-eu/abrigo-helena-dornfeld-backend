@@ -11,6 +11,10 @@ module.exports = {
     const { sequelize } = queryInterface;
 
     await sequelize.query(
+      `ALTER TABLE "tenant" ENABLE ROW LEVEL SECURITY;`,
+    );
+
+    await sequelize.query(
       `DROP POLICY IF EXISTS "tenant_rls_select" ON "tenant";`,
     );
     await sequelize.query(

@@ -20,7 +20,6 @@ export async function getOldValueForAudit(
     .filter(Boolean);
   const resource = segments[0] ?? null;
 
-  // PUT /login: update current user (own profile), need req.user.id
   if (resource === 'login' && method === 'PUT' && req?.user?.id) {
     try {
       const row = await LoginModel.findByPk(req.user.id);
@@ -34,7 +33,6 @@ export async function getOldValueForAudit(
     }
   }
 
-  // PUT/DELETE /admin/users/:id: admin editing another user
   if (resource === 'admin' && segments[1] === 'users' && segments[2]) {
     const id = Number(segments[2]);
     if (!Number.isNaN(id)) {

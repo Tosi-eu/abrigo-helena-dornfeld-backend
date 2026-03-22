@@ -19,6 +19,5 @@ export async function getAuthCookie(app: App): Promise<string> {
   }
   const setCookie = res.headers['set-cookie']?.[0];
   if (!setCookie) throw new Error('Cookie de auth não retornado');
-  // Cookie request header must be only "name=value" (no Path; HttpOnly; etc.)
   return setCookie.split(';')[0].trim();
 }

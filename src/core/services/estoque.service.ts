@@ -42,7 +42,6 @@ export class StockService {
       this.stockCacheVersionKey,
     );
     if (current == null) {
-      // Default version = 1. Redis may be unavailable; set() is a no-op then.
       await redisRepository.set(this.stockCacheVersionKey, 1);
       return 1;
     }
@@ -51,7 +50,6 @@ export class StockService {
   }
 
   private async bumpStockCacheVersion(): Promise<void> {
-    // IncrBy will create the key if it doesn't exist.
     await redisRepository.incrBy(this.stockCacheVersionKey, 1);
   }
 

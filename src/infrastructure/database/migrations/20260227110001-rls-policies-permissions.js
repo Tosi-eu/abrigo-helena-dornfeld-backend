@@ -1,5 +1,7 @@
 'use strict';
 
+const { tableExists } = require('../migration-helpers');
+
 /**
  * Updates RLS write policies to use granular permissions.
  * Session vars: app.current_user_id, app.user_can_create, app.user_can_update, app.user_can_delete.
@@ -37,10 +39,16 @@ module.exports = {
       "(current_setting('app.current_user_id', true) IS NULL OR (current_setting('app.current_user_id', true))::int = 1 OR current_setting('app.user_can_update', true) = 'true')";
     const deleteExpr =
       "(current_setting('app.current_user_id', true) IS NULL OR (current_setting('app.current_user_id', true))::int = 1 OR current_setting('app.user_can_delete', true) = 'true')";
-    const tenantMatch =
-      "(current_setting('app.tenant_id', true) IS NULL OR tenant_id = (current_setting('app.tenant_id', true))::int)";
+    const tenantMatchFor = table =>
+      table === 'tenant'
+        ? "(current_setting('app.tenant_id', true) IS NULL OR id = (current_setting('app.tenant_id', true))::int)"
+        : "(current_setting('app.tenant_id', true) IS NULL OR tenant_id = (current_setting('app.tenant_id', true))::int)";
 
     for (const table of allTables) {
+      if (!(await tableExists(queryInterface, table))) continue;
+
+      const tenantMatch = tenantMatchFor(table);
+
       await sequelize.query(
         `DROP POLICY IF EXISTS "${table}_rls_insert" ON "${table}";`,
       );
@@ -70,7 +78,7 @@ module.exports = {
     const { sequelize } = queryInterface;
     const adminOnly =
       "(current_setting('app.current_user_id', true) IS NULL OR (current_setting('app.current_user_id', true))::int = 1)";
-    const allTables = [
+    const allTablesDown = [
       'notificacao',
       'movimentacao',
       'login',
@@ -90,7 +98,8 @@ module.exports = {
       'tenant_config',
     ];
 
-    for (const table of allTables) {
+    for (const table of allTablesDown) {
+      if (!(await tableExists(queryInterface, table))) continue;
       await sequelize.query(
         `DROP POLICY IF EXISTS "${table}_rls_insert" ON "${table}";`,
       );

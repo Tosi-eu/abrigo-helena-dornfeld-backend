@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { TenantRepository } from '../../database/repositories/tenant.repository';
+import { verifyContractCode as matchContractCode } from '../../helpers/contract-code.helper';
 
 export class AppController {
   constructor() {}
@@ -18,6 +19,91 @@ export class AppController {
       return res.json({ data: rows });
     } catch {
       return res.status(500).json({ error: 'Erro ao listar abrigos' });
+    }
+  }
+
+  /** Público: nome/logo do abrigo para tela de login (multi-tenant). */
+  async getTenantPublicBranding(req: Request, res: Response) {
+    try {
+      const slug = String(req.params.slug ?? '').trim();
+      if (!slug) {
+        return res.status(400).json({ error: 'Slug obrigatório' });
+      }
+      const repo = new TenantRepository();
+      const t = await repo.findPublicBrandingBySlug(slug);
+      if (!t) {
+        return res.status(200).json({ found: false });
+      }
+      return res.status(200).json({
+        found: true,
+        slug: t.slug,
+        name: t.name,
+        brandName: t.brandName ?? null,
+        logoDataUrl: t.logoDataUrl ?? null,
+        requiresContractCode: true,
+        contractCodeMandatory: t.contractCodeMandatory,
+      });
+    } catch {
+      return res.status(500).json({ error: 'Erro ao carregar abrigo' });
+    }
+  }
+
+  /**
+   * Público: confere se o código informado corresponde ao hash do abrigo (slug).
+   * Sem código configurado no tenant, retorna valid: true e contractCodeRequired: false.
+   */
+  async verifyTenantContractCode(req: Request, res: Response) {
+    try {
+      const slug = String(req.params.slug ?? '').trim();
+      if (!slug) {
+        return res.status(400).json({ error: 'Slug obrigatório' });
+      }
+      const body = req.body ?? {};
+      const plain =
+        body.contract_code != null
+          ? String(body.contract_code)
+          : body.contractCode != null
+            ? String(body.contractCode)
+            : '';
+
+      const repo = new TenantRepository();
+      const tenant = await repo.findContractVerifyPayloadBySlug(slug);
+      if (!tenant) {
+        return res.status(404).json({ error: 'Abrigo não encontrado' });
+      }
+
+      const required = Boolean(tenant.contract_code_hash);
+      if (!required) {
+        return res.status(200).json({
+          valid: true,
+          contractCodeRequired: false,
+        });
+      }
+
+      const verdict = await matchContractCode(
+        tenant.contract_code_hash,
+        plain,
+      );
+      if (verdict === 'required') {
+        return res.status(200).json({
+          valid: false,
+          contractCodeRequired: true,
+          reason: 'missing',
+        });
+      }
+      if (verdict === 'invalid') {
+        return res.status(200).json({
+          valid: false,
+          contractCodeRequired: true,
+          reason: 'mismatch',
+        });
+      }
+      return res.status(200).json({
+        valid: true,
+        contractCodeRequired: true,
+      });
+    } catch {
+      return res.status(500).json({ error: 'Erro ao verificar código' });
     }
   }
 }

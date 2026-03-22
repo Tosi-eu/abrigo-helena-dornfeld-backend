@@ -3,6 +3,7 @@ import { LoginRepository } from '../../infrastructure/database/repositories/logi
 import { jwtConfig } from '../../infrastructure/helpers/auth.helper';
 import jwt from 'jsonwebtoken';
 import { BaseError } from 'sequelize';
+import { HttpError } from '../../infrastructure/types/error.types';
 import { Login } from '../domain/login';
 
 const MIN_PASSWORD_LENGTH = 8;
@@ -34,15 +35,16 @@ function effectivePermissions(
 
 function validateStrongPassword(password: string): void {
   if (password.length < MIN_PASSWORD_LENGTH) {
-    throw new Error(
+    throw new HttpError(
       `Senha deve ter no mínimo ${MIN_PASSWORD_LENGTH} caracteres`,
+      400,
     );
   }
   if (!/[a-zA-Z]/.test(password)) {
-    throw new Error('Senha deve conter pelo menos uma letra');
+    throw new HttpError('Senha deve conter pelo menos uma letra', 400);
   }
   if (!/[0-9]/.test(password)) {
-    throw new Error('Senha deve conter pelo menos um número');
+    throw new HttpError('Senha deve conter pelo menos um número', 400);
   }
 }
 
@@ -81,7 +83,7 @@ export class LoginService {
     );
 
     if (userExists) {
-      throw new Error('Usuário já cadastrado');
+      throw new HttpError('Login já cadastrado', 409);
     }
 
     validateStrongPassword(attrs.password);
@@ -171,7 +173,6 @@ export class LoginService {
   }
 
   async authenticate(login: string, password: string, tenantId: number) {
-    // login is unique per tenant
     const user = await this.repo.findByLoginForTenant(login, tenantId);
     if (!user) return null;
 

@@ -15,6 +15,81 @@ export class TenantRepository {
     });
   }
 
+  /** Branding público + se o cadastro exige código de contrato (sem expor o hash). */
+  async findPublicBrandingBySlug(slug: string) {
+    const row = await TenantModel.findOne({
+      where: { slug },
+      attributes: [
+        'slug',
+        'name',
+        'brand_name',
+        'logo_data_url',
+        'contract_code_hash',
+      ],
+    });
+    if (!row) return null;
+    return {
+      slug: row.slug,
+      name: row.name,
+      brandName: row.brand_name ?? null,
+      logoDataUrl: row.logo_data_url ?? null,
+      /** Sempre true no cadastro: campo de código de contrato é exibido para configurar o acesso. */
+      requiresContractCode: true,
+      /** Só então o preenchimento é obrigatório (hash definido no tenant). */
+      contractCodeMandatory: Boolean(row.contract_code_hash),
+    };
+  }
+
+  async getContractCodeHashByTenantId(id: number): Promise<string | null> {
+    const row = await TenantModel.findByPk(id, {
+      attributes: ['contract_code_hash'],
+    });
+    return row?.contract_code_hash ?? null;
+  }
+
+  /** Para verificação pública: slug existe e hash (se houver). */
+  async findContractVerifyPayloadBySlug(slug: string) {
+    const row = await TenantModel.findOne({
+      where: { slug: String(slug).trim() },
+      attributes: ['id', 'slug', 'contract_code_hash'],
+    });
+    if (!row) return null;
+    return {
+      id: row.id,
+      slug: row.slug,
+      contract_code_hash: row.contract_code_hash ?? null,
+    };
+  }
+
+  async findIdBySlug(slug: string): Promise<number | null> {
+    const row = await TenantModel.findOne({
+      where: { slug: String(slug).trim() },
+      attributes: ['id'],
+    });
+    return row?.id ?? null;
+  }
+
+  /**
+   * Verifica se outro abrigo (diferente de excludeTenantId) já usa este hash de contrato.
+   * Garante que cada slug tenha código de contrato exclusivo.
+   */
+  async findOtherTenantWithContractHash(
+    excludeTenantId: number | null,
+    hash: string,
+  ): Promise<{ id: number; slug: string } | null> {
+    const where: Record<string, unknown> = {
+      contract_code_hash: hash,
+    };
+    if (excludeTenantId != null) {
+      where.id = { [Op.ne]: excludeTenantId };
+    }
+    const row = await TenantModel.findOne({
+      where,
+      attributes: ['id', 'slug'],
+    });
+    return row ? { id: row.id, slug: row.slug } : null;
+  }
+
   async list(page = 1, limit = 25) {
     const safePage = Math.max(1, Number(page) || 1);
     const safeLimit = Math.min(100, Math.max(1, Number(limit) || 25));
@@ -61,8 +136,16 @@ export class TenantRepository {
     }));
   }
 
-  async create(data: { slug: string; name: string }) {
-    const row = await TenantModel.create({ slug: data.slug, name: data.name });
+  async create(data: {
+    slug: string;
+    name: string;
+    contract_code_hash?: string | null;
+  }) {
+    const row = await TenantModel.create({
+      slug: data.slug,
+      name: data.name,
+      contract_code_hash: data.contract_code_hash ?? null,
+    });
     return { id: row.id, slug: row.slug, name: row.name };
   }
 
@@ -74,7 +157,14 @@ export class TenantRepository {
     return this.findById(id);
   }
 
-  async update(id: number, data: Partial<{ slug: string; name: string }>) {
+  async update(
+    id: number,
+    data: Partial<{
+      slug: string;
+      name: string;
+      contract_code_hash: string | null;
+    }>,
+  ) {
     await TenantModel.update(data, { where: { id } });
     return this.findById(id);
   }

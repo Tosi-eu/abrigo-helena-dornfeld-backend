@@ -2,8 +2,26 @@ import { Request, Response } from 'express';
 import { LoginService } from '../../../core/services/login.service';
 import { AuthRequest } from '../../../middleware/auth.middleware';
 import type { TenantRequest } from '../../../middleware/tenant.middleware';
-import { getErrorMessage } from '../../types/error.types';
+import { getErrorMessage, HttpError, isHttpError } from '../../types/error.types';
 import type { LoginLogRepository } from '../../database/repositories/login-log.repository';
+import { logger } from '../../helpers/logger.helper';
+import {
+  mapSequelizeToClientError,
+  sequelizeErrorLogMeta,
+} from '../../helpers/sequelize-error.helper';
+import { verifyContractCode } from '../../helpers/contract-code.helper';
+import { TenantRepository } from '../../database/repositories/tenant.repository';
+
+const tenantRepoForRegister = new TenantRepository();
+
+function loginHintForLog(login: string): string {
+  if (!login) return '';
+  const at = login.indexOf('@');
+  if (at > 0) {
+    return `${login.slice(0, 2)}***@${login.slice(at + 1)}`;
+  }
+  return `${login.slice(0, 2)}***`;
+}
 
 function getClientIp(req: Request): string | null {
   const forwarded = req.headers['x-forwarded-for'];
@@ -19,18 +37,37 @@ export class LoginController {
   ) {}
 
   async create(req: AuthRequest & TenantRequest, res: Response) {
-    // Only whitelisted fields: new accounts are always created as normal user (no id/role from client)
     const body = req.body ?? {};
-    const login = body.login;
+    const loginRaw = body.login ?? body.email;
     const password = body.password;
     const first_name = body.first_name;
     const last_name = body.last_name;
+    const contractCodeRaw = body.contract_code ?? body.contractCode;
+    const login =
+      loginRaw != null && String(loginRaw).trim() !== ''
+        ? String(loginRaw).trim()
+        : '';
 
     if (!login || !password)
-      return res.status(400).json({ error: 'Login e senha obrigatórios' });
+      return res.status(400).json({ error: 'E-mail e senha obrigatórios' });
 
     try {
       const tenantId = req.tenant?.id ?? 1;
+      const hash =
+        await tenantRepoForRegister.getContractCodeHashByTenantId(tenantId);
+      const verdict = await verifyContractCode(
+        hash,
+        contractCodeRaw != null ? String(contractCodeRaw) : undefined,
+      );
+      if (verdict === 'required') {
+        return res
+          .status(400)
+          .json({ error: 'Código de contrato obrigatório para este abrigo' });
+      }
+      if (verdict === 'invalid') {
+        return res.status(403).json({ error: 'Código de contrato inválido' });
+      }
+
       const user = await this.service.create({
         login,
         password,
@@ -40,6 +77,13 @@ export class LoginController {
       });
       return res.status(201).json(user);
     } catch (error: unknown) {
+      const tenantId = req.tenant?.id ?? 1;
+      const hint = loginHintForLog(login);
+
+      if (isHttpError(error)) {
+        return res.status(error.statusCode).json({ error: error.message });
+      }
+
       const err = error as {
         message?: string;
         name?: string;
@@ -56,15 +100,53 @@ export class LoginController {
       if (isDuplicate) {
         return res.status(409).json({ error: 'Login já cadastrado' });
       }
-      return res.status(500).json({ error: 'Erro ao criar usuário' });
+
+      const mapped = mapSequelizeToClientError(error);
+      if (mapped) {
+        logger.warn('Registro público rejeitado (ORM)', {
+          operation: 'login_create',
+          tenantId,
+          login: hint,
+          ...sequelizeErrorLogMeta(error),
+        });
+        return res.status(mapped.status).json({ error: mapped.message });
+      }
+
+      logger.error(
+        'Falha ao criar usuário (registro público)',
+        {
+          operation: 'login_create',
+          tenantId,
+          login: hint,
+          ...sequelizeErrorLogMeta(error),
+        },
+        error instanceof Error ? error : new Error(String(error)),
+      );
+
+      const isProd = process.env.NODE_ENV === 'production';
+      return res.status(500).json({
+        error: 'Erro ao criar usuário',
+        ...(!isProd
+          ? {
+              details: message,
+              errorName: err?.name,
+            }
+          : {}),
+      });
     }
   }
 
   async authenticate(req: AuthRequest & TenantRequest, res: Response) {
-    const { login, password } = req.body;
+    const body = req.body ?? {};
+    const loginRaw = body.login ?? body.email;
+    const password = body.password;
+    const login =
+      loginRaw != null && String(loginRaw).trim() !== ''
+        ? String(loginRaw).trim()
+        : '';
 
     if (!login || !password)
-      return res.status(400).json({ error: 'Login e senha obrigatórios' });
+      return res.status(400).json({ error: 'E-mail e senha obrigatórios' });
 
     const tenantId = req.tenant?.id ?? 1;
     const result = await this.service.authenticate(login, password, tenantId);

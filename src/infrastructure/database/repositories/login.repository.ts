@@ -29,15 +29,26 @@ export type CreateUserData = Login & {
 
 export class LoginRepository {
   async create(data: CreateUserData) {
-    let role: 'admin' | 'user' = data.role ?? 'user';
-    let permissions: typeof FULL_PERMISSIONS | typeof DEFAULT_USER_PERMISSIONS =
-      data.permissions ?? DEFAULT_USER_PERMISSIONS;
+    const tenantId = Number(data.tenant_id) || 1;
 
-    if (process.env.NODE_ENV === 'test') {
-      const count = await LoginModel.count();
-      if (count === 0) {
+    let role: 'admin' | 'user';
+    let permissions: typeof FULL_PERMISSIONS | typeof DEFAULT_USER_PERMISSIONS;
+
+    if (data.role !== undefined && data.role !== null) {
+      role = data.role;
+      permissions =
+        data.permissions ??
+        (role === 'admin' ? FULL_PERMISSIONS : DEFAULT_USER_PERMISSIONS);
+    } else {
+      const usersInTenant = await LoginModel.count({
+        where: { tenant_id: tenantId },
+      });
+      if (usersInTenant === 0) {
         role = 'admin';
         permissions = FULL_PERMISSIONS;
+      } else {
+        role = 'user';
+        permissions = data.permissions ?? DEFAULT_USER_PERMISSIONS;
       }
     }
 

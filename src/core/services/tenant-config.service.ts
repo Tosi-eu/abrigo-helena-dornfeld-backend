@@ -18,28 +18,14 @@ export const tenantModulesConfigSchema = z.object({
   enabled: z.array(moduleKeySchema).default([]),
 });
 
-const DEFAULT_CONFIG: TenantModulesConfig = {
-  enabled: [
-    'dashboard',
-    'admin',
-    'residents',
-    'medicines',
-    'inputs',
-    'stock',
-    'movements',
-    'reports',
-    'notifications',
-  ],
-};
-
 export class TenantConfigService {
   constructor(private readonly repo: TenantConfigRepository) {}
 
   async get(tenantId: number): Promise<TenantModulesConfig> {
     const row = await this.repo.getByTenantId(tenantId);
-    if (!row?.modules_json) return DEFAULT_CONFIG;
+    if (!row?.modules_json) return { enabled: [] };
     const parsed = tenantModulesConfigSchema.safeParse(row.modules_json);
-    return parsed.success ? parsed.data : DEFAULT_CONFIG;
+    return parsed.success ? parsed.data : { enabled: [] };
   }
 
   async set(

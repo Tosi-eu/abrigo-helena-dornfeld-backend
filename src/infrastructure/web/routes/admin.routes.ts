@@ -13,9 +13,7 @@ import { NotificationEventService } from '../../../core/services/notificacao.ser
 import { MovementService } from '../../../core/services/movimentacao.service';
 import { AuditRepository } from '../../database/repositories/audit.repository';
 import { AdminController } from '../controllers/admin.controller';
-import { AdminTenantsController } from '../controllers/admin-tenants.controller';
 import { requireAdmin } from '../../../middleware/admin.middleware';
-import { requireSuperAdmin } from '../../../middleware/super-admin.middleware';
 import { cacheService } from '../../database/redis/client.redis';
 
 const router = Router();
@@ -44,8 +42,6 @@ const controller = new AdminController(
   systemConfigRepo,
   notificationService,
 );
-const tenantsController = new AdminTenantsController();
-
 const adminLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 400,
@@ -84,24 +80,6 @@ router.post('/backup/run', (req, res) => controller.runBackupNow(req, res));
 router.get('/config', (req, res) => controller.getConfig(req, res));
 router.put('/config', (req, res) => controller.updateConfig(req, res));
 
-router.get('/tenants', requireSuperAdmin, (req, res) =>
-  tenantsController.listTenants(req, res),
-);
-router.post('/tenants', requireSuperAdmin, (req, res) =>
-  tenantsController.createTenant(req, res),
-);
-router.put('/tenants/:id', requireSuperAdmin, (req, res) =>
-  tenantsController.updateTenant(req, res),
-);
-router.delete('/tenants/:id', requireSuperAdmin, (req, res) =>
-  tenantsController.deleteTenant(req, res),
-);
-router.get('/tenants/:id/config', requireSuperAdmin, (req, res) =>
-  tenantsController.getTenantConfig(req, res),
-);
-router.put('/tenants/:id/config', requireSuperAdmin, (req, res) =>
-  tenantsController.setTenantConfig(req, res),
-);
 router.get('/data-quality/summary', (req, res) =>
   controller.getDataQualitySummary(req, res),
 );

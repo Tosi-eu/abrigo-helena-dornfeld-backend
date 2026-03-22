@@ -681,7 +681,6 @@ export class ReportRepository {
     return results.map(row => {
       const plain = row.get({ plain: true }) as MovementPlain;
 
-      // Combinar nome, dosagem e unidade_medida para medicamentos
       let nomeCompleto = '';
       if (plain.MedicineModel) {
         const nome = plain.MedicineModel.nome || '';
@@ -765,7 +764,6 @@ export class ReportRepository {
     return results.map(row => {
       const plain = row.get({ plain: true }) as MovementPlain;
 
-      // Combinar nome, dosagem e unidade_medida para medicamentos
       let nomeCompleto = '';
       if (plain.MedicineModel) {
         const nome = plain.MedicineModel.nome || '';
@@ -1009,7 +1007,6 @@ export class ReportRepository {
 
     const results: ExpiringSoonReport[] = [];
 
-    // Buscar medicamentos próximos ao vencimento
     const medicines = await MedicineStockModel.findAll({
       attributes: [
         [col('validade'), 'validade'],
@@ -1079,7 +1076,6 @@ export class ReportRepository {
       });
     });
 
-    // Buscar insumos próximos ao vencimento
     const inputs = await InputStockModel.findAll({
       attributes: [
         [col('validade'), 'validade'],
