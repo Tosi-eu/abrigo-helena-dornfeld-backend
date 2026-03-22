@@ -19,25 +19,45 @@ function safeEqualApiKey(provided: string, expected: string): boolean {
   return crypto.timingSafeEqual(p, e);
 }
 
-export function requireSuperAdminApiKey(
+/**
+ * Gestão de tenants no painel (browser): cookie JWT + `is_super_admin` no DB.
+ * Automação / scripts: header `X-API-Key` igual a `X_API_KEY` (sem expor no frontend).
+ * Requer `optionalAuthMiddleware` antes desta função nas rotas públicas (antes do auth global).
+ */
+export function requireSuperAdminOrApiKey(
   req: AuthRequest,
   res: Response,
   next: NextFunction,
 ) {
   const expected = process.env.X_API_KEY?.trim();
+
+  if (expected) {
+    const provided = readApiKeyFromRequest(req);
+    if (provided && safeEqualApiKey(provided, expected)) {
+      return next();
+    }
+  }
+
+  if (req.user?.isSuperAdmin) {
+    return next();
+  }
+
+  if (req.user) {
+    return res.status(403).json({
+      error: 'Acesso negado. Apenas super-admin pode gerenciar tenants.',
+    });
+  }
+
   if (!expected) {
     return res.status(503).json({
       error:
-        'Servidor não configurado: defina X_API_KEY no ambiente para gestão de tenants.',
+        'Servidor não configurado: defina X_API_KEY no ambiente para gestão de tenants via API, ou faça login como super-admin.',
     });
   }
-  const provided = readApiKeyFromRequest(req);
-  if (!provided || !safeEqualApiKey(provided, expected)) {
-    return res.status(401).json({
-      error: 'API key inválida ou ausente (header X-API-Key).',
-    });
-  }
-  next();
+
+  return res.status(401).json({
+    error: 'API key inválida ou ausente (header X-API-Key).',
+  });
 }
 
 export function requireSuperAdmin(

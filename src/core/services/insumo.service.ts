@@ -1,12 +1,12 @@
 import { InputRepository } from '../../infrastructure/database/repositories/insumo.repository';
 import { Input } from '../domain/insumo';
-import { PriceSearchService } from './price-search.service';
+import type { IPriceSearchService } from './price-search.types';
 import { logger } from '../../infrastructure/helpers/logger.helper';
 
 export class InputService {
   constructor(
     private readonly repo: InputRepository,
-    private readonly priceSearchService?: PriceSearchService,
+    private readonly priceSearchService?: IPriceSearchService,
   ) {}
 
   private triggerPriceSearchInBackground(input: Input) {

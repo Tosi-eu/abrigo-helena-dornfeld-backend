@@ -1,6 +1,6 @@
 import { Medicine } from '../domain/medicamento';
 import { MedicineRepository } from '../../infrastructure/database/repositories/medicamento.repository';
-import { PriceSearchService } from './price-search.service';
+import type { IPriceSearchService } from './price-search.types';
 import { logger } from '../../infrastructure/helpers/logger.helper';
 import { normalizeDosage } from '../../infrastructure/helpers/dosage.helper';
 
@@ -9,7 +9,7 @@ const DOSAGE_REGEX = /^\d+([.,]\d+)?(\/\d+([,]\d+)?)?$/;
 export class MedicineService {
   constructor(
     private readonly repo: MedicineRepository,
-    private readonly priceSearchService?: PriceSearchService,
+    private readonly priceSearchService?: IPriceSearchService,
   ) {}
 
   private triggerPriceSearchInBackground(

@@ -2,7 +2,8 @@ import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
 import { AppController } from '../controllers/app.controller';
 import { AdminTenantsController } from '../controllers/admin-tenants.controller';
-import { requireSuperAdminApiKey } from '../../../middleware/super-admin.middleware';
+import { optionalAuthMiddleware } from '../../../middleware/auth.middleware';
+import { requireSuperAdminOrApiKey } from '../../../middleware/super-admin.middleware';
 
 const appController = new AppController();
 const tenantsController = new AdminTenantsController();
@@ -73,43 +74,50 @@ router.get('/tenants', tenantListLimiter, (req, res) =>
 router.get(
   '/admin/tenants',
   systemTenantsLimiter,
-  requireSuperAdminApiKey,
+  optionalAuthMiddleware,
+  requireSuperAdminOrApiKey,
   (req, res) => tenantsController.listTenants(req, res),
 );
 router.post(
   '/admin/tenants',
   systemTenantsLimiter,
-  requireSuperAdminApiKey,
+  optionalAuthMiddleware,
+  requireSuperAdminOrApiKey,
   (req, res) => tenantsController.createTenant(req, res),
 );
 router.put(
   '/admin/tenants/by-slug/:slug/contract-code',
   systemTenantsLimiter,
-  requireSuperAdminApiKey,
+  optionalAuthMiddleware,
+  requireSuperAdminOrApiKey,
   (req, res) => tenantsController.setContractCodeBySlug(req, res),
 );
 router.put(
   '/admin/tenants/:id',
   systemTenantsLimiter,
-  requireSuperAdminApiKey,
+  optionalAuthMiddleware,
+  requireSuperAdminOrApiKey,
   (req, res) => tenantsController.updateTenant(req, res),
 );
 router.delete(
   '/admin/tenants/:id',
   systemTenantsLimiter,
-  requireSuperAdminApiKey,
+  optionalAuthMiddleware,
+  requireSuperAdminOrApiKey,
   (req, res) => tenantsController.deleteTenant(req, res),
 );
 router.get(
   '/admin/tenants/:id/config',
   systemTenantsLimiter,
-  requireSuperAdminApiKey,
+  optionalAuthMiddleware,
+  requireSuperAdminOrApiKey,
   (req, res) => tenantsController.getTenantConfig(req, res),
 );
 router.put(
   '/admin/tenants/:id/config',
   systemTenantsLimiter,
-  requireSuperAdminApiKey,
+  optionalAuthMiddleware,
+  requireSuperAdminOrApiKey,
   (req, res) => tenantsController.setTenantConfig(req, res),
 );
 
