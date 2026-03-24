@@ -10,6 +10,7 @@ describe('LoginService (unit)', () => {
     mockRepo = {
       findByLogin: jest.fn(),
       findByLoginForTenant: jest.fn(),
+      findTenantSummariesForLogin: jest.fn(),
       create: jest.fn(),
       findById: jest.fn(),
       update: jest.fn(),

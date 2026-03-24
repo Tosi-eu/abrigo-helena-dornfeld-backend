@@ -4,7 +4,7 @@ import { jwtConfig } from '../../infrastructure/helpers/auth.helper';
 import jwt from 'jsonwebtoken';
 import { BaseError } from 'sequelize';
 import { HttpError } from '../../infrastructure/types/error.types';
-import { LoginCreateWithTenant } from '../domain/login';
+import type { LoginCreateWithTenant } from '@porto-sdk/sdk';
 
 const MIN_PASSWORD_LENGTH = 8;
 
@@ -196,6 +196,20 @@ export class LoginService {
         isSuperAdmin: user.is_super_admin,
       },
     };
+  }
+
+  /**
+   * Descobre o abrigo a partir do e-mail/login, quando há correspondência única.
+   */
+  async resolveTenantByLogin(login: string): Promise<
+    | { type: 'unique'; slug: string }
+    | { type: 'not_found' }
+    | { type: 'ambiguous'; tenants: { slug: string; label: string }[] }
+  > {
+    const list = await this.repo.findTenantSummariesForLogin(login);
+    if (list.length === 0) return { type: 'not_found' };
+    if (list.length === 1) return { type: 'unique', slug: list[0]!.slug };
+    return { type: 'ambiguous', tenants: list };
   }
 
   async updateUser({

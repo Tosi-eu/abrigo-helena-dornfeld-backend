@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { type Request, Response } from 'express';
 import { LoginService } from '../../../core/services/login.service';
 import { AuthRequest } from '../../../middleware/auth.middleware';
 import {
@@ -137,6 +137,42 @@ export class LoginController {
             }
           : {}),
       });
+    }
+  }
+
+  async resolveTenant(req: Request, res: Response) {
+    const q = req.query ?? {};
+    const loginRaw = q.login ?? q.email;
+    const login =
+      loginRaw != null && String(loginRaw).trim() !== ''
+        ? String(loginRaw).trim()
+        : '';
+
+    if (!login)
+      return res.status(400).json({ error: 'Informe o e-mail (parâmetro login)' });
+
+    try {
+      const result = await this.service.resolveTenantByLogin(login);
+      if (result.type === 'unique') {
+        return res.json({ slug: result.slug });
+      }
+      if (result.type === 'ambiguous') {
+        return res.status(409).json({
+          error:
+            'Este e-mail está vinculado a mais de um abrigo. Selecione o abrigo antes de entrar.',
+          tenants: result.tenants,
+        });
+      }
+      return res.status(404).json({
+        error: 'Nenhum abrigo encontrado para este e-mail',
+      });
+    } catch (error: unknown) {
+      logger.error(
+        'Falha ao resolver abrigo por e-mail',
+        { operation: 'login_resolve_tenant' },
+        error instanceof Error ? error : new Error(String(error)),
+      );
+      return res.status(500).json({ error: 'Erro ao identificar o abrigo' });
     }
   }
 

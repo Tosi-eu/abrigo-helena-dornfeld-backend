@@ -1,6 +1,6 @@
 import type { WhereOptions } from 'sequelize';
 import InputModel from '../models/insumo.model';
-import { Input } from '../../../core/domain/insumo';
+import type { Input } from '@porto-sdk/sdk';
 import { Op } from 'sequelize';
 
 export class InputRepository {

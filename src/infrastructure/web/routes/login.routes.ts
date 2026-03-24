@@ -46,6 +46,9 @@ const registerLimiter = rateLimit({
 router.post('/', registerLimiter, publicTenantContextMiddleware, (req, res) =>
   controller.create(req, res),
 );
+router.get('/resolve-tenant', loginLimiter, (req, res) =>
+  controller.resolveTenant(req, res),
+);
 router.post(
   '/authenticate',
   loginLimiter,

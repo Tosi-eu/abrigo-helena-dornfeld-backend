@@ -1,4 +1,8 @@
-import { ListObjectsV2Command, PutObjectCommand } from '@aws-sdk/client-s3';
+import {
+  DeleteObjectCommand,
+  ListObjectsV2Command,
+  PutObjectCommand,
+} from '@aws-sdk/client-s3';
 import { getR2S3Client } from './r2-s3-client';
 
 const MIME_TO_EXT: Record<string, string> = {
@@ -26,6 +30,28 @@ export function getR2PublicBaseUrl(): string {
   return process.env.R2_PUBLIC_BASE_URL!.replace(/\/$/, '');
 }
 
+/** Base pública do bucket (só leitura de env), sem exigir credenciais S3 — para URLs estáticas como default_logo. */
+export function tryGetR2PublicBaseUrl(): string | null {
+  const raw = process.env.R2_PUBLIC_BASE_URL?.trim();
+  if (!raw) return null;
+  let s = raw;
+  if (!s.startsWith('http://') && !s.startsWith('https://')) {
+    s = `https://${s}`;
+  }
+  s = s.replace(/\/$/, '');
+  if (s.endsWith('/default_logo.png')) {
+    s = s.slice(0, -'/default_logo.png'.length);
+  }
+  return s || null;
+}
+
+/** URL completa do logo padrão na raiz do bucket R2. */
+export function getPublicDefaultLogoUrl(): string | null {
+  const base = tryGetR2PublicBaseUrl();
+  if (!base) return null;
+  return `${base}/default_logo.png`;
+}
+
 export function normalizeBrandNameForR2Key(raw: string): string {
   const s = String(raw ?? '')
     .normalize('NFD')
@@ -47,6 +73,8 @@ export function normalizeSlugForR2Key(raw: string): string {
     .slice(0, 60);
   return s || 'tenant';
 }
+
+const LOGO_KEY_IMAGE_RE = /\.(png|jpe?g|webp|gif)$/i;
 
 export async function uploadTenantLogoToR2(params: {
   slug: string;
@@ -90,7 +118,77 @@ export function assertLogoUrlBelongsToOurR2(url: string): boolean {
   return url.startsWith(`${base}/`);
 }
 
-const LOGO_KEY_IMAGE_RE = /\.(png|jpe?g|webp|gif)$/i;
+/** Chave do objeto no bucket a partir da URL pública (só se for nosso R2). */
+export function publicUrlToR2KeyIfOurBucket(url: string | null | undefined): string | null {
+  if (!url?.trim()) return null;
+  if (!assertLogoUrlBelongsToOurR2(url)) return null;
+  const base = getR2PublicBaseUrl();
+  let path = url.slice(base.length);
+  if (path.startsWith('/')) path = path.slice(1);
+  return path || null;
+}
+
+/**
+ * Após gravar o logo novo no R2: apaga outras variantes (`.png` vs `.jpg`, nome de marca
+ * antigo no prefixo, ou URL antiga no DB) mantendo só `keepKey`.
+ */
+export async function deleteTenantLogoObjectsExceptKey(params: {
+  slug: string;
+  keepKey: string;
+  brandNameSegmentsToScan: string[];
+  previousLogoUrlFromDb: string | null | undefined;
+}): Promise<void> {
+  if (!isR2AssetsConfigured()) return;
+  const bucket = getR2AssetsBucketName()!;
+  const client = getR2S3Client();
+  const slugSeg = normalizeSlugForR2Key(params.slug);
+  const toDelete = new Set<string>();
+
+  const prevKey = publicUrlToR2KeyIfOurBucket(params.previousLogoUrlFromDb);
+  if (prevKey && prevKey !== params.keepKey) {
+    toDelete.add(prevKey);
+  }
+
+  const seenPrefixes = new Set<string>();
+  for (const raw of params.brandNameSegmentsToScan) {
+    const prefix = `${normalizeBrandNameForR2Key(raw)}-${slugSeg}.`;
+    if (seenPrefixes.has(prefix)) continue;
+    seenPrefixes.add(prefix);
+    let continuationToken: string | undefined;
+    do {
+      const out = await client.send(
+        new ListObjectsV2Command({
+          Bucket: bucket,
+          Prefix: prefix,
+          ContinuationToken: continuationToken,
+        }),
+      );
+      for (const c of out.Contents ?? []) {
+        const k = c.Key;
+        if (
+          k &&
+          k !== params.keepKey &&
+          LOGO_KEY_IMAGE_RE.test(k)
+        ) {
+          toDelete.add(k);
+        }
+      }
+      continuationToken = out.IsTruncated
+        ? out.NextContinuationToken
+        : undefined;
+    } while (continuationToken);
+  }
+
+  for (const key of toDelete) {
+    try {
+      await client.send(
+        new DeleteObjectCommand({ Bucket: bucket, Key: key }),
+      );
+    } catch {
+      /* ignora */
+    }
+  }
+}
 
 function logoListCacheTtlMs(): number {
   const raw = process.env.R2_LOGO_LIST_CACHE_TTL_MS?.trim();

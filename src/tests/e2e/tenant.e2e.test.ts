@@ -57,6 +57,27 @@ describe('Tenant E2E — API pública e contexto', () => {
     expect(auth.status).toBe(400);
   });
 
+  it('GET /login/resolve-tenant retorna o slug quando o e-mail existe em um único abrigo', async () => {
+    await request(app)
+      .post('/api/v1/login')
+      .set('X-Tenant', E2E_TENANT_SLUG)
+      .send({ login: 'resolver@example.com', password: 'senha1234' });
+
+    const res = await request(app)
+      .get('/api/v1/login/resolve-tenant')
+      .query({ login: 'resolver@example.com' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.slug).toBe(E2E_TENANT_SLUG);
+  });
+
+  it('GET /login/resolve-tenant sem correspondência retorna 404', async () => {
+    const res = await request(app)
+      .get('/api/v1/login/resolve-tenant')
+      .query({ login: 'naoexiste99999@example.com' });
+    expect(res.status).toBe(404);
+  });
+
   it('rota autenticada sem cookie deve retornar 401', async () => {
     const res = await request(app).get('/api/v1/medicamentos?page=1&limit=5');
     expect(res.status).toBe(401);

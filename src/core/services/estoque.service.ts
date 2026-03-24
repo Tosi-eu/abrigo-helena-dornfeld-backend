@@ -1,6 +1,6 @@
 import { StockRepository } from '../../infrastructure/database/repositories/estoque.repository';
 import { CacheKeyHelper } from '../../infrastructure/helpers/redis.helper';
-import { MedicineStock, InputStock } from '../domain/estoque';
+import type { InputStockRecord, MedicineStockRecord } from '@porto-sdk/sdk';
 import {
   ItemType,
   StockItemStatus,
@@ -56,7 +56,7 @@ export class StockService {
   }
 
   async medicineStockIn(
-    data: MedicineStock,
+    data: MedicineStockRecord,
     login_id: number,
     tenantId: number,
     transaction?: Transaction,
@@ -128,7 +128,7 @@ export class StockService {
   }
 
   async inputStockIn(
-    data: InputStock,
+    data: InputStockRecord,
     login_id: number,
     tenantId: number,
     transaction?: Transaction,

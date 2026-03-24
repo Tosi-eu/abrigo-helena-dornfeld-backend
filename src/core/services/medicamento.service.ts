@@ -1,4 +1,4 @@
-import { Medicine } from '../domain/medicamento';
+import type { Medicine } from '@porto-sdk/sdk';
 import { MedicineRepository } from '../../infrastructure/database/repositories/medicamento.repository';
 import type { IPriceSearchService } from './price-search.types';
 import { logger } from '../../infrastructure/helpers/logger.helper';

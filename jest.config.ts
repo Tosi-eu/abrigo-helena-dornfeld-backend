@@ -1,4 +1,7 @@
-import { requireTestEnv, testEnvVars } from './jest.env.js';
+/* eslint-disable @typescript-eslint/no-require-imports -- jest.config carrega jest.env.js em CJS */
+const { requireTestEnv } = require('./jest.env.js') as {
+  requireTestEnv: () => void;
+};
 
 requireTestEnv();
 

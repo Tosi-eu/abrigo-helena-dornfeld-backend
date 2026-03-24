@@ -1,6 +1,6 @@
 import { ResidentRepository } from '../../infrastructure/database/repositories/residente.repository';
 import ResidentModel from '../../infrastructure/database/models/residente.model';
-import { Resident } from '../domain/residente';
+import type { Resident } from '@porto-sdk/sdk';
 
 export class ResidentService {
   constructor(private readonly repo: ResidentRepository) {}

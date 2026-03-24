@@ -1,11 +1,14 @@
-import { Cabinet } from '../../../core/domain/armario';
+import type { CabinetPersist } from '@porto-sdk/sdk';
 import CabinetModel from '../models/armario.model';
 import CabinetCategoryModel from '../models/categorias-armario.model';
 import InputStockModel from '../models/estoque-insumo.model';
 import MedicineStockModel from '../models/estoque-medicamento.model';
 
 export class CabinetRepository {
-  async createCabinet(data: Cabinet, tenantId: number): Promise<Cabinet> {
+  async createCabinet(
+    data: CabinetPersist,
+    tenantId: number,
+  ): Promise<CabinetPersist> {
     const item = await CabinetModel.create({
       tenant_id: tenantId,
       num_armario: data.numero,
@@ -47,7 +50,7 @@ export class CabinetRepository {
     };
   }
 
-  async findByCabinetNumber(number: number): Promise<Cabinet | null> {
+  async findByCabinetNumber(number: number): Promise<CabinetPersist | null> {
     const item = await CabinetModel.findByPk(number);
     if (!item) return null;
     return {
@@ -56,7 +59,10 @@ export class CabinetRepository {
     };
   }
 
-  async update(number: number, categoria_id: number): Promise<Cabinet | null> {
+  async update(
+    number: number,
+    categoria_id: number,
+  ): Promise<CabinetPersist | null> {
     const item = await CabinetModel.findByPk(number);
     if (!item) return null;
     await item.update({ categoria_id });

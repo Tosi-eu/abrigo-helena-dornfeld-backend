@@ -1,5 +1,6 @@
-import { Login } from '../../../core/domain/login';
+import type { Login } from '@porto-sdk/sdk';
 import { LoginModel } from '../models/login.model';
+import { sequelize } from '../sequelize';
 
 const FULL_PERMISSIONS = {
   read: true,
@@ -66,6 +67,39 @@ export class LoginRepository {
       }
       throw err;
     }
+  }
+
+  /**
+   * Lista abrigos (slug + rótulo) que possuem um login com o mesmo e-mail/identificador,
+   * comparando de forma case-insensitive após trim.
+   */
+  async findTenantSummariesForLogin(login: string): Promise<
+    { slug: string; label: string }[]
+  > {
+    const trimmed = login.trim();
+    if (!trimmed) return [];
+
+    const [rawRows] = await sequelize.query(
+      `
+      SELECT DISTINCT t.slug, t.name, t.brand_name
+      FROM login l
+      INNER JOIN tenant t ON t.id = l.tenant_id
+      WHERE LOWER(TRIM(BOTH FROM l.login)) = LOWER(TRIM(BOTH FROM :login))
+      ORDER BY t.slug ASC
+      `,
+      { replacements: { login: trimmed } },
+    );
+
+    const rows = rawRows as {
+      slug: string;
+      name: string;
+      brand_name: string | null;
+    }[];
+
+    return rows.map((r) => ({
+      slug: r.slug,
+      label: (r.brand_name && String(r.brand_name).trim()) || r.name,
+    }));
   }
 
   async findByLogin(login: string) {

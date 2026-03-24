@@ -1,10 +1,13 @@
+import type { CabinetPersist } from '@porto-sdk/sdk';
 import { CabinetRepository } from '../../infrastructure/database/repositories/armario.repository';
-import { Cabinet } from '../domain/armario';
 
 export class CabinetService {
   constructor(private readonly repo: CabinetRepository) {}
 
-  async createCabinet(tenantId: number, data: Cabinet): Promise<Cabinet> {
+  async createCabinet(
+    tenantId: number,
+    data: CabinetPersist,
+  ): Promise<CabinetPersist> {
     if (!data.numero || data.numero <= 0) {
       throw new Error('Número do armário inválido');
     }

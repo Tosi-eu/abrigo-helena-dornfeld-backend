@@ -1,7 +1,7 @@
 import { Op, QueryTypes } from 'sequelize';
 import type { Transaction } from 'sequelize';
 import MovementModel from '../models/movimentacao.model';
-import Movement from '../../../core/domain/movimentacao';
+import type { MovementRecord } from '@porto-sdk/sdk';
 import MedicineModel from '../models/medicamento.model';
 import MedicineStockModel from '../models/estoque-medicamento.model';
 import InputStockModel from '../models/estoque-insumo.model';
@@ -141,7 +141,7 @@ export class MovementRepository {
     };
   }
 
-  async create(data: Movement, transaction?: Transaction) {
+  async create(data: MovementRecord, transaction?: Transaction) {
     return await MovementModel.create(
       {
         ...data,

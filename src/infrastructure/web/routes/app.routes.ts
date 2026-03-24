@@ -9,7 +9,7 @@ const appController = new AppController();
 const tenantsController = new AdminTenantsController();
 const router = Router();
 
-/** Janela única para endpoints públicos de tenant (GET /tenants, GET /tenants/:slug/branding). */
+/** Janela única para endpoints públicos de tenant (lista, branding, logo proxy). */
 const publicTenantWindowMs =
   Number(process.env.PUBLIC_TENANT_RATE_WINDOW_MS) || 60_000;
 const publicTenantListMax = Number(process.env.PUBLIC_TENANT_LIST_MAX) || 120;
@@ -65,8 +65,16 @@ router.get('/status', statusLimiter, (req, res) =>
   appController.getStatus(req, res),
 );
 
+router.get('/public/app-config', statusLimiter, (req, res) =>
+  appController.getPublicAppConfig(req, res),
+);
+
 router.get('/tenants/:slug/branding', tenantBrandingLimiter, (req, res) =>
   appController.getTenantPublicBranding(req, res),
+);
+
+router.get('/public/tenants/:slug/logo', tenantBrandingLimiter, (req, res) =>
+  appController.streamTenantLogoBySlug(req, res),
 );
 
 router.post(

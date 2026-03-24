@@ -1,4 +1,4 @@
-import { MedicineStock, InputStock } from '../../../core/domain/estoque';
+import type { InputStockRecord, MedicineStockRecord } from '@porto-sdk/sdk';
 import MedicineStockModel, {
   MedicineStockAttributes,
 } from '../models/estoque-medicamento.model';
@@ -53,7 +53,7 @@ interface StockModel {
 
 export class StockRepository {
   async createMedicineStockIn(
-    data: MedicineStock,
+    data: MedicineStockRecord,
     tenantId: number,
     transaction?: Transaction,
   ) {
@@ -111,7 +111,7 @@ export class StockRepository {
   }
 
   async createInputStockIn(
-    data: InputStock,
+    data: InputStockRecord,
     tenantId: number,
     transaction?: Transaction,
   ) {
@@ -154,7 +154,7 @@ export class StockRepository {
         tipo: data.tipo,
         setor: data.setor,
         lote: data.lote ?? null,
-        status: data.status ?? StockItemStatus.ATIVO,
+        status: (data.status ?? StockItemStatus.ATIVO) as StockItemStatus,
         suspended_at: data.suspended_at ?? null,
       },
       { transaction },

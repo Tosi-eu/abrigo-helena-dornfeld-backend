@@ -11,9 +11,11 @@ import {
 } from '../../../core/services/tenant-config.service';
 import { TenantConfigRepository } from '../../database/repositories/tenant-config.repository';
 import { getErrorMessage } from '../../types/error.types';
+import { inferImageContentTypeFromBuffer } from '../../helpers/image-mime.helper';
 import { TenantRepository } from '../../database/repositories/tenant.repository';
 import {
   assertLogoUrlBelongsToOurR2,
+  deleteTenantLogoObjectsExceptKey,
   invalidateTenantLogoResolveCacheForSlug,
   isR2AssetsConfigured,
   uploadTenantLogoToR2,
@@ -142,12 +144,21 @@ export class TenantController {
         'image/webp',
         'image/gif',
       ] as const;
+      let contentType = file.mimetype;
       if (
-        !allowedMime.includes(file.mimetype as (typeof allowedMime)[number])
+        !allowedMime.includes(contentType as (typeof allowedMime)[number])
       ) {
-        return res
-          .status(400)
-          .json({ error: 'Use imagem PNG, JPEG, WebP ou GIF' });
+        const inferred = inferImageContentTypeFromBuffer(file.buffer);
+        if (
+          inferred &&
+          allowedMime.includes(inferred as (typeof allowedMime)[number])
+        ) {
+          contentType = inferred;
+        } else {
+          return res
+            .status(400)
+            .json({ error: 'Use imagem PNG, JPEG, WebP ou GIF' });
+        }
       }
 
       const tenantRow = await tenantRepo.findById(tenantId);
@@ -162,11 +173,26 @@ export class TenantController {
         String(tenantRow.name ?? '').trim() ||
         'logo';
 
-      const { publicUrl } = await uploadTenantLogoToR2({
+      const oldBrandForCleanup =
+        String(tenantRow.brand_name ?? '').trim() ||
+        String(tenantRow.name ?? '').trim() ||
+        'logo';
+      const brandSegmentsForR2 = Array.from(
+        new Set([oldBrandForCleanup, brandForKey]),
+      );
+
+      const { key: newObjectKey, publicUrl } = await uploadTenantLogoToR2({
         slug: tenantRow.slug,
         brandName: brandForKey,
         buffer: file.buffer,
-        contentType: file.mimetype,
+        contentType,
+      });
+
+      await deleteTenantLogoObjectsExceptKey({
+        slug: tenantRow.slug,
+        keepKey: newObjectKey,
+        brandNameSegmentsToScan: brandSegmentsForR2,
+        previousLogoUrlFromDb: tenantRow.logo_url ?? null,
       });
 
       invalidateTenantLogoResolveCacheForSlug(tenantRow.slug);

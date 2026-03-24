@@ -1,6 +1,6 @@
 import type { WhereOptions } from 'sequelize';
 import MedicineModel from '../models/medicamento.model';
-import { Medicine } from '../../../core/domain/medicamento';
+import type { Medicine } from '@porto-sdk/sdk';
 import { Op } from 'sequelize';
 
 export class MedicineRepository {

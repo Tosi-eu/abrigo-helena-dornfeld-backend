@@ -1,5 +1,5 @@
 import { InputRepository } from '../../infrastructure/database/repositories/insumo.repository';
-import { Input } from '../domain/insumo';
+import type { Input } from '@porto-sdk/sdk';
 import type { IPriceSearchService } from './price-search.types';
 import { logger } from '../../infrastructure/helpers/logger.helper';
 

@@ -1,14 +1,14 @@
+# Build context: pasta backend/ (ver docker-compose: context ../backend)
 FROM node:20-alpine
 
 RUN apk add --no-cache curl postgresql-client
 
-WORKDIR /repo
+WORKDIR /app
 
-COPY backend/package.json backend/package-lock.json* ./backend/
-WORKDIR /repo/backend
+COPY package.json package-lock.json* ./
 RUN npm install --legacy-peer-deps
 
-COPY backend .
+COPY . .
 
 EXPOSE 3000
 
