@@ -38,28 +38,25 @@ jobs:
       postgres:
         image: postgres:16-alpine
         env:
-          POSTGRES_USER: ${{ secrets.CI_DB_USER }}
-          POSTGRES_PASSWORD: ${{ secrets.CI_DB_PASSWORD }}
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
           POSTGRES_DB: postgres
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U ${{ secrets.CI_DB_USER }} -d postgres"
+          --health-cmd "pg_isready -U postgres -d postgres"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
-
+    
     env:
-      NODE_ENV: ${{ secrets.CI_NODE_ENV }}
-      DB_HOST: ${{ secrets.CI_DB_HOST }}
-      DB_PORT: ${{ secrets.CI_DB_PORT }}
-      DB_USER: ${{ secrets.CI_DB_USER }}
-      DB_PASSWORD: ${{ secrets.CI_DB_PASSWORD }}
-      TEST_DB_NAME: ${{ secrets.CI_TEST_DB_NAME }}
-      DB_NAME: ${{ secrets.CI_TEST_DB_NAME }}
-      JWT_SECRET: ${{ secrets.CI_JWT_SECRET }}
-      ALLOWED_ORIGINS: ${{ secrets.CI_ALLOWED_ORIGINS }}
-      X_API_KEY: ${{ secrets.CI_X_API_KEY }}
+      NODE_ENV: test
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      TEST_DB_NAME: test_db
+      DB_NAME: test_db
 
     steps:
       - uses: actions/checkout@v4
