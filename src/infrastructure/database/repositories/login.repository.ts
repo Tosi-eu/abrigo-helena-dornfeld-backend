@@ -73,9 +73,9 @@ export class LoginRepository {
    * Lista abrigos (slug + rótulo) que possuem um login com o mesmo e-mail/identificador,
    * comparando de forma case-insensitive após trim.
    */
-  async findTenantSummariesForLogin(login: string): Promise<
-    { slug: string; label: string }[]
-  > {
+  async findTenantSummariesForLogin(
+    login: string,
+  ): Promise<{ slug: string; label: string }[]> {
     const trimmed = login.trim();
     if (!trimmed) return [];
 
@@ -96,7 +96,7 @@ export class LoginRepository {
       brand_name: string | null;
     }[];
 
-    return rows.map((r) => ({
+    return rows.map(r => ({
       slug: r.slug,
       label: (r.brand_name && String(r.brand_name).trim()) || r.name,
     }));

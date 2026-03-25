@@ -49,6 +49,9 @@ router.post('/', registerLimiter, publicTenantContextMiddleware, (req, res) =>
 router.get('/resolve-tenant', loginLimiter, (req, res) =>
   controller.resolveTenant(req, res),
 );
+router.get('/tenants-for-email', loginLimiter, (req, res) =>
+  controller.tenantsForEmail(req, res),
+);
 router.post(
   '/authenticate',
   loginLimiter,

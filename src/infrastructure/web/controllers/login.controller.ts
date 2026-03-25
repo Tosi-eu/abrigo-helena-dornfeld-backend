@@ -149,7 +149,9 @@ export class LoginController {
         : '';
 
     if (!login)
-      return res.status(400).json({ error: 'Informe o e-mail (parâmetro login)' });
+      return res
+        .status(400)
+        .json({ error: 'Informe o e-mail (parâmetro login)' });
 
     try {
       const result = await this.service.resolveTenantByLogin(login);
@@ -173,6 +175,36 @@ export class LoginController {
         error instanceof Error ? error : new Error(String(error)),
       );
       return res.status(500).json({ error: 'Erro ao identificar o abrigo' });
+    }
+  }
+
+  /**
+   * Lista abrigos onde o e-mail tem utilizador (0, 1 ou N). Sempre 200 com `tenants`.
+   * Evita ao cliente tratar 404/409 só para montar o seletor.
+   */
+  async tenantsForEmail(req: Request, res: Response) {
+    const q = req.query ?? {};
+    const loginRaw = q.login ?? q.email;
+    const login =
+      loginRaw != null && String(loginRaw).trim() !== ''
+        ? String(loginRaw).trim()
+        : '';
+
+    if (!login)
+      return res
+        .status(400)
+        .json({ error: 'Informe o e-mail (parâmetro login)' });
+
+    try {
+      const tenants = await this.service.listTenantSummariesForLogin(login);
+      return res.json({ tenants });
+    } catch (error: unknown) {
+      logger.error(
+        'Falha ao listar abrigos por e-mail',
+        { operation: 'login_tenants_for_email' },
+        error instanceof Error ? error : new Error(String(error)),
+      );
+      return res.status(500).json({ error: 'Erro ao listar abrigos' });
     }
   }
 

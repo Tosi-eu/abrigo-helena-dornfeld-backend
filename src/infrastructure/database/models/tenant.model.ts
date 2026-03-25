@@ -8,6 +8,7 @@ export interface TenantAttrs {
   brand_name?: string | null;
   logo_url?: string | null;
   contract_code_hash?: string | null;
+  contract_portfolio_id?: number | null;
 }
 
 type TenantCreation = Optional<TenantAttrs, 'id'>;
@@ -19,6 +20,7 @@ export class TenantModel extends Model<TenantAttrs, TenantCreation> {
   declare brand_name?: string | null;
   declare logo_url?: string | null;
   declare contract_code_hash?: string | null;
+  declare contract_portfolio_id?: number | null;
 }
 
 TenantModel.init(
@@ -29,6 +31,7 @@ TenantModel.init(
     brand_name: { type: DataTypes.STRING(160), allowNull: true },
     logo_url: { type: DataTypes.TEXT, allowNull: true },
     contract_code_hash: { type: DataTypes.STRING(255), allowNull: true },
+    contract_portfolio_id: { type: DataTypes.INTEGER, allowNull: true },
   },
   {
     sequelize,

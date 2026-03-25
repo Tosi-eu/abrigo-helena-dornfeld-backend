@@ -2,14 +2,15 @@ import type { Response } from 'express';
 import type { AuthRequest } from '../../../middleware/auth.middleware';
 import { TenantRepository } from '../../database/repositories/tenant.repository';
 import { TenantConfigRepository } from '../../database/repositories/tenant-config.repository';
+import { ContractPortfolioRepository } from '../../database/repositories/contract-portfolio.repository';
 import {
   DEFAULT_TENANT_MODULES,
   TenantConfigService,
 } from '../../../core/services/tenant-config.service';
 import { getErrorMessage } from '../../types/error.types';
-import { hashContractCode } from '../../helpers/contract-code.helper';
 
 const tenantRepo = new TenantRepository();
+const portfolioRepo = new ContractPortfolioRepository();
 const configRepo = new TenantConfigRepository();
 const configService = new TenantConfigService(configRepo);
 
@@ -19,7 +20,17 @@ export class AdminTenantsController {
       const page = Math.max(1, Number(req.query.page) || 1);
       const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 25));
       const result = await tenantRepo.list(page, limit);
-      return res.json(result);
+      return res.json({
+        ...result,
+        data: result.data.map(t => ({
+          id: t.id,
+          slug: t.slug,
+          name: t.name,
+          brandName: t.brand_name ?? null,
+          logoUrl: t.logo_url ?? null,
+          contractPortfolioId: t.contract_portfolio_id ?? null,
+        })),
+      });
     } catch (error: unknown) {
       return res
         .status(500)
@@ -36,22 +47,19 @@ export class AdminTenantsController {
       }
       const ccRaw = req.body?.contract_code;
       let contract_code_hash: string | null = null;
+      let contract_portfolio_id: number | null = null;
       if (ccRaw != null && String(ccRaw).trim() !== '') {
-        contract_code_hash = await hashContractCode(String(ccRaw).trim());
-        const other = await tenantRepo.findOtherTenantWithContractHash(
-          null,
-          contract_code_hash,
+        const resolved = await portfolioRepo.resolveOrCreateByPlainText(
+          String(ccRaw).trim(),
         );
-        if (other) {
-          return res.status(409).json({
-            error: `Código de contrato já vinculado ao abrigo "${other.slug}". Cada abrigo deve ter código exclusivo.`,
-          });
-        }
+        contract_code_hash = resolved.hash;
+        contract_portfolio_id = resolved.id;
       }
       const created = await tenantRepo.create({
         slug,
         name,
         contract_code_hash,
+        contract_portfolio_id,
       });
       await configService.set(created.id, DEFAULT_TENANT_MODULES);
       return res.status(201).json(created);
@@ -75,28 +83,22 @@ export class AdminTenantsController {
         slug: string;
         name: string;
         contract_code_hash: string | null;
+        contract_portfolio_id: number | null;
       }> = {};
       if (slug !== undefined) patch.slug = slug;
       if (name !== undefined) patch.name = name;
       if (req.body?.clear_contract_code === true) {
         patch.contract_code_hash = null;
+        patch.contract_portfolio_id = null;
       } else if (
         req.body?.contract_code != null &&
         String(req.body.contract_code).trim() !== ''
       ) {
-        const hash = await hashContractCode(
+        const resolved = await portfolioRepo.resolveOrCreateByPlainText(
           String(req.body.contract_code).trim(),
         );
-        const other = await tenantRepo.findOtherTenantWithContractHash(
-          id,
-          hash,
-        );
-        if (other) {
-          return res.status(409).json({
-            error: `Código de contrato já vinculado ao abrigo "${other.slug}". Cada abrigo deve ter código exclusivo.`,
-          });
-        }
-        patch.contract_code_hash = hash;
+        patch.contract_code_hash = resolved.hash;
+        patch.contract_portfolio_id = resolved.id;
       }
       if (Object.keys(patch).length === 0) {
         return res.status(400).json({ error: 'Nada para atualizar' });
@@ -122,7 +124,10 @@ export class AdminTenantsController {
         if (!id) {
           return res.status(404).json({ error: 'Abrigo não encontrado' });
         }
-        await tenantRepo.update(id, { contract_code_hash: null });
+        await tenantRepo.update(id, {
+          contract_code_hash: null,
+          contract_portfolio_id: null,
+        });
         return res.json({ ok: true, slug, contractCodeConfigured: false });
       }
 
@@ -134,24 +139,17 @@ export class AdminTenantsController {
         });
       }
 
-      const hash = await hashContractCode(String(cc).trim());
-
-      const otherTenant = await tenantRepo.findOtherTenantWithContractHash(
-        id,
-        hash,
+      const resolved = await portfolioRepo.resolveOrCreateByPlainText(
+        String(cc).trim(),
       );
-      if (otherTenant) {
-        return res.status(409).json({
-          error: `Código de contrato já vinculado ao abrigo "${otherTenant.slug}". Cada abrigo deve ter código exclusivo.`,
-        });
-      }
 
       if (!id) {
         const name = String(req.body?.name ?? '').trim() || slug;
         const created = await tenantRepo.create({
           slug,
           name,
-          contract_code_hash: hash,
+          contract_code_hash: resolved.hash,
+          contract_portfolio_id: resolved.id,
         });
         await configService.set(created.id, DEFAULT_TENANT_MODULES);
         return res.status(201).json({
@@ -163,7 +161,10 @@ export class AdminTenantsController {
         });
       }
 
-      await tenantRepo.update(id, { contract_code_hash: hash });
+      await tenantRepo.update(id, {
+        contract_code_hash: resolved.hash,
+        contract_portfolio_id: resolved.id,
+      });
       return res.json({
         ok: true,
         slug,

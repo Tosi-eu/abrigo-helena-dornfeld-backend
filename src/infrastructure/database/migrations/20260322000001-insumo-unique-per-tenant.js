@@ -1,11 +1,5 @@
 'use strict';
 
-/**
- * Permite que cada tenant cadastre o mesmo insumo (ex: luvas M).
- * Troca o índice UNIQUE global por um por tenant.
- *
- * @type {import('sequelize-cli').Migration}
- */
 module.exports = {
   async up(queryInterface) {
     const { sequelize } = queryInterface;
@@ -15,7 +9,7 @@ module.exports = {
     `);
 
     await sequelize.query(`
-      CREATE UNIQUE INDEX "uniq_insumo_tenant_nome"
+      CREATE UNIQUE INDEX IF NOT EXISTS "uniq_insumo_tenant_nome"
       ON "insumo" (tenant_id, nome);
     `);
   },
@@ -28,7 +22,7 @@ module.exports = {
     `);
 
     await sequelize.query(`
-      CREATE UNIQUE INDEX "uniq_insumo_nome"
+      CREATE UNIQUE INDEX IF NOT EXISTS "uniq_insumo_nome"
       ON "insumo" (nome);
     `);
   },

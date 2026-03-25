@@ -66,23 +66,6 @@ export class TenantRepository {
     return row?.id ?? null;
   }
 
-  async findOtherTenantWithContractHash(
-    excludeTenantId: number | null,
-    hash: string,
-  ): Promise<{ id: number; slug: string } | null> {
-    const where: Record<string, unknown> = {
-      contract_code_hash: hash,
-    };
-    if (excludeTenantId != null) {
-      where.id = { [Op.ne]: excludeTenantId };
-    }
-    const row = await TenantModel.findOne({
-      where,
-      attributes: ['id', 'slug'],
-    });
-    return row ? { id: row.id, slug: row.slug } : null;
-  }
-
   async list(page = 1, limit = 25) {
     const safePage = Math.max(1, Number(page) || 1);
     const safeLimit = Math.min(100, Math.max(1, Number(limit) || 25));
@@ -90,7 +73,14 @@ export class TenantRepository {
 
     const [data, total] = await Promise.all([
       TenantModel.findAll({
-        attributes: ['id', 'slug', 'name', 'brand_name', 'logo_url'],
+        attributes: [
+          'id',
+          'slug',
+          'name',
+          'brand_name',
+          'logo_url',
+          'contract_portfolio_id',
+        ],
         order: [['id', 'ASC']],
         limit: safeLimit,
         offset,
@@ -138,13 +128,20 @@ export class TenantRepository {
     slug: string;
     name: string;
     contract_code_hash?: string | null;
+    contract_portfolio_id?: number | null;
   }) {
     const row = await TenantModel.create({
       slug: data.slug,
       name: data.name,
       contract_code_hash: data.contract_code_hash ?? null,
+      contract_portfolio_id: data.contract_portfolio_id ?? null,
     });
-    return { id: row.id, slug: row.slug, name: row.name };
+    return {
+      id: row.id,
+      slug: row.slug,
+      name: row.name,
+      contract_portfolio_id: row.contract_portfolio_id ?? null,
+    };
   }
 
   async updateBranding(
@@ -182,6 +179,7 @@ export class TenantRepository {
       slug: string;
       name: string;
       contract_code_hash: string | null;
+      contract_portfolio_id: number | null;
     }>,
   ) {
     await TenantModel.update(data, { where: { id } });

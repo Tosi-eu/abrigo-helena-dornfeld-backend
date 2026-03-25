@@ -119,7 +119,9 @@ export function assertLogoUrlBelongsToOurR2(url: string): boolean {
 }
 
 /** Chave do objeto no bucket a partir da URL pública (só se for nosso R2). */
-export function publicUrlToR2KeyIfOurBucket(url: string | null | undefined): string | null {
+export function publicUrlToR2KeyIfOurBucket(
+  url: string | null | undefined,
+): string | null {
   if (!url?.trim()) return null;
   if (!assertLogoUrlBelongsToOurR2(url)) return null;
   const base = getR2PublicBaseUrl();
@@ -165,11 +167,7 @@ export async function deleteTenantLogoObjectsExceptKey(params: {
       );
       for (const c of out.Contents ?? []) {
         const k = c.Key;
-        if (
-          k &&
-          k !== params.keepKey &&
-          LOGO_KEY_IMAGE_RE.test(k)
-        ) {
+        if (k && k !== params.keepKey && LOGO_KEY_IMAGE_RE.test(k)) {
           toDelete.add(k);
         }
       }
@@ -181,9 +179,7 @@ export async function deleteTenantLogoObjectsExceptKey(params: {
 
   for (const key of toDelete) {
     try {
-      await client.send(
-        new DeleteObjectCommand({ Bucket: bucket, Key: key }),
-      );
+      await client.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
     } catch {
       /* ignora */
     }

@@ -1,11 +1,5 @@
 'use strict';
 
-/**
- * Permite que cada tenant cadastre o mesmo medicamento (ex: dipirona 500mg).
- * Troca o índice UNIQUE global por um por tenant.
- *
- * @type {import('sequelize-cli').Migration}
- */
 module.exports = {
   async up(queryInterface) {
     const { sequelize } = queryInterface;
@@ -15,7 +9,7 @@ module.exports = {
     `);
 
     await sequelize.query(`
-      CREATE UNIQUE INDEX "uniq_medicamento_tenant_nome_principio_dosagem"
+      CREATE UNIQUE INDEX IF NOT EXISTS "uniq_medicamento_tenant_nome_principio_dosagem"
       ON "medicamento" (tenant_id, nome, principio_ativo, dosagem, unidade_medida);
     `);
   },
@@ -28,7 +22,7 @@ module.exports = {
     `);
 
     await sequelize.query(`
-      CREATE UNIQUE INDEX "uniq_medicamento_nome_principio_dosagem"
+      CREATE UNIQUE INDEX IF NOT EXISTS "uniq_medicamento_nome_principio_dosagem"
       ON "medicamento" (nome, principio_ativo, dosagem, unidade_medida);
     `);
   },

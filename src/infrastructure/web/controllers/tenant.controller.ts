@@ -145,9 +145,7 @@ export class TenantController {
         'image/gif',
       ] as const;
       let contentType = file.mimetype;
-      if (
-        !allowedMime.includes(contentType as (typeof allowedMime)[number])
-      ) {
+      if (!allowedMime.includes(contentType as (typeof allowedMime)[number])) {
         const inferred = inferImageContentTypeFromBuffer(file.buffer);
         if (
           inferred &&

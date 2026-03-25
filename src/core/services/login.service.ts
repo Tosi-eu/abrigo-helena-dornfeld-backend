@@ -201,7 +201,9 @@ export class LoginService {
   /**
    * Descobre o abrigo a partir do e-mail/login, quando há correspondência única.
    */
-  async resolveTenantByLogin(login: string): Promise<
+  async resolveTenantByLogin(
+    login: string,
+  ): Promise<
     | { type: 'unique'; slug: string }
     | { type: 'not_found' }
     | { type: 'ambiguous'; tenants: { slug: string; label: string }[] }
@@ -210,6 +212,15 @@ export class LoginService {
     if (list.length === 0) return { type: 'not_found' };
     if (list.length === 1) return { type: 'unique', slug: list[0]!.slug };
     return { type: 'ambiguous', tenants: list };
+  }
+
+  /** Lista todos os abrigos com conta para o e-mail (mesma query que resolve-tenant). */
+  async listTenantSummariesForLogin(
+    login: string,
+  ): Promise<{ slug: string; label: string }[]> {
+    const trimmed = login.trim();
+    if (!trimmed) return [];
+    return this.repo.findTenantSummariesForLogin(trimmed);
   }
 
   async updateUser({
