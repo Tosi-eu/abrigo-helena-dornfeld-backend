@@ -9,6 +9,7 @@ export interface TenantAttrs {
   logo_url?: string | null;
   contract_code_hash?: string | null;
   contract_portfolio_id?: number | null;
+  updated_at?: Date;
 }
 
 type TenantCreation = Optional<TenantAttrs, 'id'>;

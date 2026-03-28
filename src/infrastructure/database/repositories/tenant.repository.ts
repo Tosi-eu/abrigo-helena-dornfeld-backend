@@ -5,14 +5,28 @@ import { Op } from 'sequelize';
 export class TenantRepository {
   async findById(id: number) {
     return TenantModel.findByPk(id, {
-      attributes: ['id', 'slug', 'name', 'brand_name', 'logo_url'],
+      attributes: [
+        'id',
+        'slug',
+        'name',
+        'brand_name',
+        'logo_url',
+        'updated_at',
+      ],
     });
   }
 
   async findBySlug(slug: string) {
     return TenantModel.findOne({
       where: { slug },
-      attributes: ['id', 'slug', 'name', 'brand_name', 'logo_url'],
+      attributes: [
+        'id',
+        'slug',
+        'name',
+        'brand_name',
+        'logo_url',
+        'updated_at',
+      ],
     });
   }
 

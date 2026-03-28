@@ -14,6 +14,7 @@ import { SystemConfigRepository } from '../../database/repositories/system-confi
 import { getErrorMessage } from '../../types/error.types';
 import { inferImageContentTypeFromBuffer } from '../../helpers/image-mime.helper';
 import { TenantRepository } from '../../database/repositories/tenant.repository';
+import TenantModel from '../../database/models/tenant.model';
 import {
   assertLogoUrlBelongsToOurR2,
   deleteTenantLogoObjectsExceptKey,
@@ -71,6 +72,25 @@ function hasIdentity(
   );
 }
 
+function mapTenantRowToProfile(row: TenantModel | null): TenantProfile | null {
+  if (!row) return null;
+  const raw = row.getDataValue('updated_at') as
+    | Date
+    | string
+    | null
+    | undefined;
+  const brandingUpdatedAt =
+    raw instanceof Date ? raw.toISOString() : raw ? String(raw) : null;
+  return {
+    id: row.id,
+    slug: row.slug,
+    name: row.name,
+    brandName: row.brand_name ?? null,
+    logoUrl: row.logo_url ?? null,
+    brandingUpdatedAt,
+  } as TenantProfile;
+}
+
 export class TenantController {
   async getConfig(req: AuthRequest & TenantRequest, res: Response) {
     try {
@@ -85,15 +105,7 @@ export class TenantController {
       const tenant = await tenantRepo.findById(tenantId);
       const onboardingComplete = hasIdentity(tenant);
 
-      const tenantProfile: TenantProfile | null = tenant
-        ? {
-            id: tenant.id,
-            slug: tenant.slug,
-            name: tenant.name,
-            brandName: tenant.brand_name ?? null,
-            logoUrl: tenant.logo_url ?? null,
-          }
-        : null;
+      const tenantProfile = mapTenantRowToProfile(tenant);
 
       const uiDisplay = await loadUiDisplayForPayload();
 
@@ -279,15 +291,7 @@ export class TenantController {
 
       const updated = await tenantRepo.updateBranding(tenantId, patch);
 
-      const tenantAfter: TenantProfile | null = updated
-        ? {
-            id: updated.id,
-            slug: updated.slug,
-            name: updated.name,
-            brandName: updated.brand_name ?? null,
-            logoUrl: updated.logo_url ?? null,
-          }
-        : null;
+      const tenantAfter = mapTenantRowToProfile(updated);
 
       const brandingRes: Pick<TenantConfigResponse, 'tenantId' | 'tenant'> = {
         tenantId,

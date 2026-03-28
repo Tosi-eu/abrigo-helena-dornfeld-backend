@@ -135,7 +135,11 @@ export class AppController {
         return res.status(413).end();
       }
       res.setHeader('Content-Type', ct);
-      res.setHeader('Cache-Control', 'public, max-age=300');
+      res.setHeader(
+        'Cache-Control',
+        'private, no-cache, no-store, must-revalidate',
+      );
+      res.setHeader('Pragma', 'no-cache');
       return res.status(200).send(buf);
     } catch {
       return res.status(502).end();
