@@ -10,6 +10,7 @@ import {
   TenantConfigService,
 } from '../../../core/services/tenant-config.service';
 import { TenantConfigRepository } from '../../database/repositories/tenant-config.repository';
+import { SystemConfigRepository } from '../../database/repositories/system-config.repository';
 import { getErrorMessage } from '../../types/error.types';
 import { inferImageContentTypeFromBuffer } from '../../helpers/image-mime.helper';
 import { TenantRepository } from '../../database/repositories/tenant.repository';
@@ -24,6 +25,23 @@ import {
 const configRepo = new TenantConfigRepository();
 const service = new TenantConfigService(configRepo);
 const tenantRepo = new TenantRepository();
+const systemConfigRepo = new SystemConfigRepository();
+
+type UiDisplayPayload = {
+  casela: 'numero' | 'nome';
+  gaveta: 'numero' | 'categoria';
+};
+
+async function loadUiDisplayForPayload(): Promise<UiDisplayPayload> {
+  const [rawCasela, rawGaveta] = await Promise.all([
+    systemConfigRepo.get('display_casela'),
+    systemConfigRepo.get('display_gaveta'),
+  ]);
+  return {
+    casela: rawCasela === 'numero' ? 'numero' : 'nome',
+    gaveta: rawGaveta === 'categoria' ? 'categoria' : 'numero',
+  };
+}
 
 function assertCanUpdateModules(req: AuthRequest): boolean {
   return req.user?.role === 'admin' || Boolean(req.user?.isSuperAdmin);
@@ -77,12 +95,15 @@ export class TenantController {
           }
         : null;
 
-      const payload: TenantConfigResponse = {
+      const uiDisplay = await loadUiDisplayForPayload();
+
+      const payload: TenantConfigResponse & { uiDisplay: UiDisplayPayload } = {
         tenantId,
         tenant: tenantProfile,
         modules: cfg,
         modulesConfigured: Boolean(cfgRow?.modules_json),
         onboardingComplete,
+        uiDisplay,
       };
       return res.json(payload);
     } catch (error: unknown) {

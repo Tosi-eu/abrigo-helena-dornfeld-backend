@@ -33,6 +33,7 @@ jobs:
   test:
     name: Unit + E2E (PostgreSQL)
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     services:
       postgres:

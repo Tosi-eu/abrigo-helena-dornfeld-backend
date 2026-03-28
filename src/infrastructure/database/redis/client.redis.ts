@@ -7,6 +7,10 @@ let redisAvailable = false;
 let redisClient: Redis | null = null;
 
 const createRedisClient = (): Redis | null => {
+  if (process.env.NODE_ENV === 'test') {
+    return null;
+  }
+
   const host = process.env.REDIS_HOST || 'localhost';
   const port = Number(process.env.REDIS_PORT) || 6379;
 
@@ -58,8 +62,24 @@ const createRedisClient = (): Redis | null => {
 
 redisClient = createRedisClient();
 
+/** Encerra conexão Redis (usado no globalTeardown do Jest). */
+export async function closeRedisClient(): Promise<void> {
+  if (!redisClient) return;
+  redisAvailable = false;
+  try {
+    await redisClient.quit();
+  } catch {
+    try {
+      redisClient.disconnect(false);
+    } catch {
+      /* ignore */
+    }
+  }
+  redisClient = null;
+}
+
 export const getRedisClient = (): Redis | null => {
-  return redisAvailable ? redisClient : null;
+  return redisAvailable && redisClient ? redisClient : null;
 };
 
 export const isRedisAvailable = (): boolean => {
