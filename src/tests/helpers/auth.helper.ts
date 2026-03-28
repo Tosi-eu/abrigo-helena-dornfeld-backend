@@ -1,10 +1,16 @@
 import request from 'supertest';
 import { App } from 'supertest/types';
-import { E2E_TENANT_SLUG } from '../../infrastructure/helpers/e2e-tenant-seed.helper';
+import {
+  E2E_TENANT_SLUG,
+  E2E_SEED_USER,
+} from '../../infrastructure/helpers/e2e-tenant-seed.helper';
 
-const E2E_USER = { login: 'e2e_user', password: 'senha1234' };
+const E2E_USER = {
+  login: E2E_SEED_USER.login,
+  password: E2E_SEED_USER.password,
+};
 
-export { E2E_TENANT_SLUG };
+export { E2E_TENANT_SLUG, E2E_SEED_USER };
 
 export async function getAuthCookie(app: App): Promise<string> {
   await request(app)

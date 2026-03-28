@@ -1,16 +1,19 @@
+import bcrypt from 'bcrypt';
 import TenantModel from '../database/models/tenant.model';
 import { TenantConfigRepository } from '../database/repositories/tenant-config.repository';
+import { LoginRepository } from '../database/repositories/login.repository';
 import { DEFAULT_TENANT_MODULES } from '../../core/services/tenant-config.service';
 
-/** Slug do tenant criado em `NODE_ENV=test` após `sync({ force })` — usar com header `X-Tenant` em login/cadastro. */
 export const E2E_TENANT_SLUG = 'e2e';
 
-const tenantConfigRepo = new TenantConfigRepository();
+export const E2E_SEED_USER = {
+  login: 'e2e_user',
+  password: 'senha1234',
+} as const;
 
-/**
- * Garante um tenant padrão para e2e + `tenant_config` com todos os módulos (senão `requireModule` retorna 403).
- * O primeiro utilizador cadastrado nesse tenant vira admin (regra do repositório).
- */
+const tenantConfigRepo = new TenantConfigRepository();
+const loginRepo = new LoginRepository();
+
 export async function seedE2EDefaultTenant(): Promise<void> {
   const [tenant] = await TenantModel.findOrCreate({
     where: { slug: E2E_TENANT_SLUG },
@@ -20,4 +23,19 @@ export async function seedE2EDefaultTenant(): Promise<void> {
     },
   });
   await tenantConfigRepo.setByTenantId(tenant.id, DEFAULT_TENANT_MODULES);
+
+  const existing = await loginRepo.findByLoginForTenant(
+    E2E_SEED_USER.login,
+    tenant.id,
+  );
+  if (existing) return;
+
+  const hashed = await bcrypt.hash(E2E_SEED_USER.password, 10);
+  await loginRepo.create({
+    login: E2E_SEED_USER.login,
+    password: hashed,
+    first_name: 'E2E',
+    last_name: 'User',
+    tenant_id: tenant.id,
+  });
 }
