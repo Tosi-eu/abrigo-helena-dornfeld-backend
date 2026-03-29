@@ -20,6 +20,11 @@ const port = Number(process.env.PORT) || 3001;
 
 app.set('trust proxy', 1);
 
+let lastHealthCheckAt = 0;
+let lastHealthHttpStatus = 503;
+let lastHealthBody: Record<string, unknown> | null = null;
+const healthCacheTtlMs = Number(process.env.HEALTHCHECK_CACHE_TTL_MS) || 10_000;
+
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: 'cross-origin' },
@@ -66,22 +71,33 @@ app.use((req, res, next) => {
 });
 
 app.get('/api/v1/health', async (_req, res) => {
+  const now = Date.now();
+  if (lastHealthBody && now - lastHealthCheckAt < healthCacheTtlMs) {
+    return res.status(lastHealthHttpStatus).json(lastHealthBody);
+  }
+
   try {
     await sequelize.authenticate();
     const redis = getRedisClient();
     const redisOk = redis ? (await redis.ping()) === 'PONG' : false;
-    res.status(200).json({
+    lastHealthHttpStatus = 200;
+    lastHealthBody = {
       status: 'ok',
       database: 'connected',
       redis: redisOk ? 'connected' : 'unavailable',
-    });
+    };
+    lastHealthCheckAt = now;
+    res.status(200).json(lastHealthBody);
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';
-    res.status(503).json({
+    lastHealthHttpStatus = 503;
+    lastHealthBody = {
       status: 'unhealthy',
       database: 'error',
       error: message,
-    });
+    };
+    lastHealthCheckAt = now;
+    res.status(503).json(lastHealthBody);
   }
 });
 

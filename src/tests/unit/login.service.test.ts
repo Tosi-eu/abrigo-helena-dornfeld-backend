@@ -14,6 +14,7 @@ describe('LoginService (unit)', () => {
       update: jest.fn(),
       delete: jest.fn(),
       findAll: jest.fn(),
+      listPaginated: jest.fn(),
       clearToken: jest.fn(),
       findByToken: jest.fn(),
     };
@@ -174,6 +175,12 @@ describe('LoginService (unit)', () => {
         firstName: 'João',
         lastName: 'Silva',
         role: 'user',
+        permissions: {
+          read: true,
+          create: false,
+          update: false,
+          delete: false,
+        },
       });
     });
   });
