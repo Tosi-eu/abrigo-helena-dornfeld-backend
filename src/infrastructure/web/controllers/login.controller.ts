@@ -7,6 +7,11 @@ import {
 } from '../../../middleware/tenant.middleware';
 import { getErrorMessage, isHttpError } from '../../types/error.types';
 import type { LoginLogRepository } from '../../database/repositories/login-log.repository';
+import type { SystemConfigRepository } from '../../database/repositories/system-config.repository';
+import {
+  uiDisplayFromConfigRow,
+  type UiDisplayConfig,
+} from '../../helpers/ui-display.helper';
 import { logger } from '../../helpers/logger.helper';
 import {
   mapSequelizeToClientError,
