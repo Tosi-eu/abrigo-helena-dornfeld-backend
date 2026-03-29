@@ -14,6 +14,7 @@ import { SystemConfigRepository } from '../../database/repositories/system-confi
 import { getErrorMessage } from '../../types/error.types';
 import { inferImageContentTypeFromBuffer } from '../../helpers/image-mime.helper';
 import { TenantRepository } from '../../database/repositories/tenant.repository';
+import { uiDisplayFromConfigRow } from '../../helpers/ui-display.helper';
 import TenantModel from '../../database/models/tenant.model';
 import {
   assertLogoUrlBelongsToOurR2,
@@ -30,17 +31,19 @@ const systemConfigRepo = new SystemConfigRepository();
 
 type UiDisplayPayload = {
   casela: 'numero' | 'nome';
+  caselaSetor: 'farmacia' | 'enfermagem' | 'todos';
+  armario: 'numero' | 'categoria';
   gaveta: 'numero' | 'categoria';
 };
 
 async function loadUiDisplayForPayload(): Promise<UiDisplayPayload> {
-  const [rawCasela, rawGaveta] = await Promise.all([
-    systemConfigRepo.get('display_casela'),
-    systemConfigRepo.get('display_gaveta'),
-  ]);
+  const all = await systemConfigRepo.getAll();
+  const u = uiDisplayFromConfigRow(all);
   return {
-    casela: rawCasela === 'numero' ? 'numero' : 'nome',
-    gaveta: rawGaveta === 'categoria' ? 'categoria' : 'numero',
+    casela: u.casela,
+    caselaSetor: u.caselaSetor,
+    armario: u.armario,
+    gaveta: u.gaveta,
   };
 }
 
