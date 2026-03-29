@@ -188,7 +188,9 @@ export class LoginController {
 
   async getDisplayConfig(_req: AuthRequest, res: Response) {
     if (!this.systemConfigRepo) {
-      return res.status(501).json({ error: 'Configuração de exibição indisponível' });
+      return res
+        .status(501)
+        .json({ error: 'Configuração de exibição indisponível' });
     }
     try {
       const all = await this.systemConfigRepo.getAll();
@@ -196,7 +198,8 @@ export class LoginController {
       return res.json({ uiDisplay });
     } catch (error: unknown) {
       return res.status(500).json({
-        error: getErrorMessage(error) || 'Erro ao carregar preferências de exibição',
+        error:
+          getErrorMessage(error) || 'Erro ao carregar preferências de exibição',
       });
     }
   }

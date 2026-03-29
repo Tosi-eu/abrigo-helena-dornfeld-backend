@@ -76,7 +76,9 @@ export function validateDisplayConfigPatch(
       k === DISPLAY_CONFIG_KEYS.gaveta,
   );
   for (const [key, raw] of entries) {
-    const v = String(raw ?? '').trim().toLowerCase();
+    const v = String(raw ?? '')
+      .trim()
+      .toLowerCase();
     if (key === DISPLAY_CONFIG_KEYS.casela) {
       if (!CASELA_VALUES.includes(v as DisplayCaselaMode)) {
         return `display_casela deve ser: ${CASELA_VALUES.join(' ou ')}`;

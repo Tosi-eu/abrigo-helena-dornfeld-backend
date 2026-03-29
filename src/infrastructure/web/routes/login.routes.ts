@@ -19,11 +19,7 @@ const repo = new LoginRepository();
 const loginLogRepo = new LoginLogRepository();
 const systemConfigRepo = new SystemConfigRepository();
 const service = new LoginService(repo);
-const controller = new LoginController(
-  service,
-  loginLogRepo,
-  systemConfigRepo,
-);
+const controller = new LoginController(service, loginLogRepo, systemConfigRepo);
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 20,
