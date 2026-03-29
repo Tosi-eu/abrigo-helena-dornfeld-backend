@@ -3,6 +3,11 @@ import { LoginService } from '../../../core/services/login.service';
 import { AuthRequest } from '../../../middleware/auth.middleware';
 import { getErrorMessage } from '../../types/error.types';
 import type { LoginLogRepository } from '../../database/repositories/login-log.repository';
+import type { SystemConfigRepository } from '../../database/repositories/system-config.repository';
+import {
+  uiDisplayFromConfigRow,
+  type UiDisplayConfig,
+} from '../../helpers/ui-display.helper';
 
 function getClientIp(req: Request): string | null {
   const forwarded = req.headers['x-forwarded-for'];
@@ -15,6 +20,7 @@ export class LoginController {
   constructor(
     private readonly service: LoginService,
     private readonly loginLogRepo?: LoginLogRepository,
+    private readonly systemConfigRepo?: SystemConfigRepository,
   ) {}
 
   async create(req: AuthRequest, res: Response) {
@@ -178,6 +184,24 @@ export class LoginController {
     }
 
     return res.json(user);
+  }
+
+  async getDisplayConfig(_req: AuthRequest, res: Response) {
+    if (!this.systemConfigRepo) {
+      return res
+        .status(501)
+        .json({ error: 'Configuração de exibição indisponível' });
+    }
+    try {
+      const all = await this.systemConfigRepo.getAll();
+      const uiDisplay: UiDisplayConfig = uiDisplayFromConfigRow(all);
+      return res.json({ uiDisplay });
+    } catch (error: unknown) {
+      return res.status(500).json({
+        error:
+          getErrorMessage(error) || 'Erro ao carregar preferências de exibição',
+      });
+    }
   }
 
   async logout(req: AuthRequest, res: Response) {
