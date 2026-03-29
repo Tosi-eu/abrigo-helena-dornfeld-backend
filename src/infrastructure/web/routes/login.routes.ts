@@ -4,6 +4,7 @@ import rateLimit from 'express-rate-limit';
 import { LoginController } from '../controllers/login.controller';
 import { LoginRepository } from '../../database/repositories/login.repository';
 import { LoginLogRepository } from '../../database/repositories/login-log.repository';
+import { SystemConfigRepository } from '../../database/repositories/system-config.repository';
 import { LoginService } from '../../../core/services/login.service';
 import { authMiddleware } from '../../../middleware/auth.middleware';
 import {
@@ -21,8 +22,9 @@ const router = Router();
 
 const repo = new LoginRepository();
 const loginLogRepo = new LoginLogRepository();
+const systemConfigRepo = new SystemConfigRepository();
 const service = new LoginService(repo);
-const controller = new LoginController(service, loginLogRepo);
+const controller = new LoginController(service, loginLogRepo, systemConfigRepo);
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 20,
@@ -66,6 +68,9 @@ router.post('/reset-password', authMiddleware, requireAdmin, (req, res) =>
 router.use(authMiddleware);
 
 router.post('/logout', (req, res) => controller.logout(req, res));
+router.get('/display-config', (req, res) =>
+  controller.getDisplayConfig(req, res),
+);
 
 router.use(blockNonAdminWrites);
 router.use(auditLog);

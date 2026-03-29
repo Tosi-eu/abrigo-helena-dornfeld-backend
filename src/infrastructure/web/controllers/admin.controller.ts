@@ -29,6 +29,7 @@ import {
   EventStatus,
   NotificationEventType,
 } from '../../database/models/notificacao.model';
+import { validateDisplayConfigPatch } from '../../helpers/ui-display.helper';
 
 const DEFAULT_DAYS = 30;
 const MAX_DAYS = 365;
@@ -1004,6 +1005,10 @@ export class AdminController {
     for (const [key, value] of Object.entries(body)) {
       if (typeof key !== 'string' || key.trim() === '') continue;
       config[key.trim()] = value == null ? '' : String(value);
+    }
+    const displayErr = validateDisplayConfigPatch(config);
+    if (displayErr) {
+      return res.status(400).json({ error: displayErr });
     }
     try {
       await this.systemConfigRepo.setMany(config);

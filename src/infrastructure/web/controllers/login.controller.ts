@@ -37,6 +37,7 @@ export class LoginController {
   constructor(
     private readonly service: LoginService,
     private readonly loginLogRepo?: LoginLogRepository,
+    private readonly systemConfigRepo?: SystemConfigRepository,
   ) {}
 
   async create(req: AuthRequest & TenantRequest, res: Response) {
@@ -337,6 +338,24 @@ export class LoginController {
     }
 
     return res.json(user);
+  }
+
+  async getDisplayConfig(_req: AuthRequest, res: Response) {
+    if (!this.systemConfigRepo) {
+      return res
+        .status(501)
+        .json({ error: 'Configuração de exibição indisponível' });
+    }
+    try {
+      const all = await this.systemConfigRepo.getAll();
+      const uiDisplay: UiDisplayConfig = uiDisplayFromConfigRow(all);
+      return res.json({ uiDisplay });
+    } catch (error: unknown) {
+      return res.status(500).json({
+        error:
+          getErrorMessage(error) || 'Erro ao carregar preferências de exibição',
+      });
+    }
   }
 
   async logout(req: AuthRequest, res: Response) {
