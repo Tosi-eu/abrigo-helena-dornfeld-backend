@@ -3,6 +3,7 @@ import { sequelize } from '../sequelize';
 
 export interface MedicineAttrs {
   id: number;
+  tenant_id: number;
   nome: string;
   dosagem: string;
   unidade_medida: string;
@@ -21,6 +22,7 @@ export class MedicineModel
   implements MedicineAttrs
 {
   declare id: number;
+  declare tenant_id: number;
   declare nome: string;
   declare dosagem: string;
   declare unidade_medida: string;
@@ -60,6 +62,11 @@ MedicineModel.init(
       type: DataTypes.DECIMAL(10, 2),
       allowNull: true,
     },
+    tenant_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 1,
+    },
   },
   {
     sequelize,
@@ -68,8 +75,14 @@ MedicineModel.init(
     indexes: [
       {
         unique: true,
-        fields: ['nome', 'principio_ativo', 'dosagem', 'unidade_medida'],
-        name: 'uniq_medicamento_nome_principio_dosagem',
+        fields: [
+          'tenant_id',
+          'nome',
+          'principio_ativo',
+          'dosagem',
+          'unidade_medida',
+        ],
+        name: 'uniq_medicamento_tenant_nome_principio_dosagem',
       },
       {
         fields: ['nome'],

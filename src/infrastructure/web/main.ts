@@ -3,10 +3,10 @@ import dotenv from 'dotenv';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import cookieParser from 'cookie-parser';
-import routes from './routes/index.routes';
 import { sequelize } from '../database/sequelize';
-import { getRedisClient } from '../database/redis/client.redis';
 import '../database/models/index.models';
+import routes from './routes/index.routes';
+import { getRedisClient } from '../database/redis/client.redis';
 import { setupAssociations } from '../database/models/associations.models';
 import { errorHandler } from '../../middleware/error-handler.middleware';
 import { sanitizeInput } from '../../middleware/sanitize.middleware';
@@ -60,7 +60,7 @@ app.use((req, res, next) => {
   );
   res.header(
     'Access-Control-Allow-Headers',
-    'Origin, X-Requested-With, Content-Type, Accept, Authorization',
+    'Origin, X-Requested-With, Content-Type, Accept, Authorization, X-API-Key',
   );
 
   if (req.method === 'OPTIONS') {
@@ -140,10 +140,11 @@ void (async () => {
       startNotificationBootstrapJob();
     }
 
-    app.listen(port, () => {
+    app.listen(port, '0.0.0.0', () => {
       logger.info('Servidor iniciado', {
         operation: 'server',
         port,
+        host: '0.0.0.0',
         status: 'running',
       });
     });

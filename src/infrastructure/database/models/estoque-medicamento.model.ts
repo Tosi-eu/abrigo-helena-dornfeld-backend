@@ -4,6 +4,7 @@ import { StockItemStatus } from '../../../core/utils/utils';
 
 export interface MedicineStockAttributes {
   id?: number;
+  tenant_id?: number;
   medicamento_id: number;
   casela_id?: number | null;
   armario_id?: number | null;
@@ -26,6 +27,7 @@ export class MedicineStockModel
   implements MedicineStockAttributes
 {
   declare id: number;
+  declare tenant_id?: number;
   declare medicamento_id: number;
   declare casela_id: number | null;
   declare armario_id?: number | null;
@@ -50,7 +52,11 @@ MedicineStockModel.init(
       primaryKey: true,
       autoIncrement: true,
     },
-
+    tenant_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 1,
+    },
     medicamento_id: { type: DataTypes.INTEGER, allowNull: false },
 
     casela_id: {

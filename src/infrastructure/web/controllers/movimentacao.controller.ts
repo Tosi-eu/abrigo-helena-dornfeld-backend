@@ -3,6 +3,10 @@ import { MovementService } from '../../../core/services/movimentacao.service';
 import { ValidatedRequest } from '../../../middleware/validation.middleware';
 import { sendErrorResponse } from '../../helpers/error-response.helper';
 import { handleETagResponse } from '../../helpers/etag.helper';
+import {
+  type TenantRequest,
+  requireTenantId,
+} from '../../../middleware/tenant.middleware';
 
 export class MovementController {
   constructor(private readonly service: MovementService) {}
@@ -53,9 +57,14 @@ export class MovementController {
     }
   }
 
-  async create(req: ValidatedRequest, res: Response) {
+  async create(req: ValidatedRequest & TenantRequest, res: Response) {
     try {
-      const data = await this.service.createMovement(req.body);
+      const tenantId = requireTenantId(req, res);
+      if (tenantId === null) return;
+      const data = await this.service.createMovement({
+        ...req.body,
+        tenant_id: tenantId,
+      });
       res.status(201).json(data);
     } catch (error: unknown) {
       return sendErrorResponse(res, 400, error, 'Erro ao criar movimentação');

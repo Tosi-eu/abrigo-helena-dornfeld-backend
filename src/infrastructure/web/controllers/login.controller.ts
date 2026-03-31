@@ -1,13 +1,35 @@
-import { Request, Response } from 'express';
+import { type Request, type Response } from 'express';
 import { LoginService } from '../../../core/services/login.service';
 import { AuthRequest } from '../../../middleware/auth.middleware';
-import { getErrorMessage } from '../../types/error.types';
+import {
+  type TenantRequest,
+  requireTenantId,
+} from '../../../middleware/tenant.middleware';
+import { getErrorMessage, isHttpError } from '../../types/error.types';
 import type { LoginLogRepository } from '../../database/repositories/login-log.repository';
 import type { SystemConfigRepository } from '../../database/repositories/system-config.repository';
 import {
   uiDisplayFromConfigRow,
   type UiDisplayConfig,
 } from '../../helpers/ui-display.helper';
+import { logger } from '../../helpers/logger.helper';
+import {
+  mapSequelizeToClientError,
+  sequelizeErrorLogMeta,
+} from '../../helpers/sequelize-error.helper';
+import { verifyContractCode } from '../../helpers/contract-code.helper';
+import { TenantRepository } from '../../database/repositories/tenant.repository';
+
+const tenantRepoForRegister = new TenantRepository();
+
+function loginHintForLog(login: string): string {
+  if (!login) return '';
+  const at = login.indexOf('@');
+  if (at > 0) {
+    return `${login.slice(0, 2)}***@${login.slice(at + 1)}`;
+  }
+  return `${login.slice(0, 2)}***`;
+}
 
 function getClientIp(req: Request): string | null {
   const forwarded = req.headers['x-forwarded-for'];
@@ -23,26 +45,286 @@ export class LoginController {
     private readonly systemConfigRepo?: SystemConfigRepository,
   ) {}
 
-  async create(req: AuthRequest, res: Response) {
-    // Only whitelisted fields: new accounts are always created as normal user (no id/role from client)
+  async registerUser(req: Request, res: Response) {
     const body = req.body ?? {};
-    const login = body.login;
+    const loginRaw = body.login ?? body.email;
     const password = body.password;
     const first_name = body.first_name;
     const last_name = body.last_name;
+    const contract_code = body.contract_code ?? body.contractCode;
+    const login =
+      loginRaw != null && String(loginRaw).trim() !== ''
+        ? String(loginRaw).trim()
+        : '';
 
-    if (!login || !password)
-      return res.status(400).json({ error: 'Login e senha obrigatórios' });
+    if (!login || !password) {
+      return res.status(400).json({ error: 'E-mail e senha obrigatórios' });
+    }
 
     try {
-      const user = await this.service.create({
+      const result = await this.service.registerAccountWithNewTenant({
+        login,
+        password,
+        first_name,
+        last_name,
+        contract_code:
+          contract_code != null && String(contract_code).trim() !== ''
+            ? String(contract_code)
+            : undefined,
+      });
+      return res.status(201).json({
+        tenant: { id: result.tenantId, slug: result.slug },
+        user: {
+          id: result.userId,
+          login: result.login,
+          role: 'user' as const,
+        },
+      });
+    } catch (error: unknown) {
+      if (isHttpError(error)) {
+        return res.status(error.statusCode).json({ error: error.message });
+      }
+      const message = getErrorMessage(error);
+      const err = error as { name?: string; original?: { code?: string } };
+      if (
+        message.includes('duplicate') ||
+        err?.name === 'SequelizeUniqueConstraintError' ||
+        err?.original?.code === '23505'
+      ) {
+        return res
+          .status(409)
+          .json({ error: 'Este e-mail já está em uso. Tente fazer login.' });
+      }
+      logger.error(
+        'Falha ao cadastrar utilizador (tenant provisório)',
+        { operation: 'login_register_user' },
+        error instanceof Error ? error : new Error(String(error)),
+      );
+      return res.status(500).json({ error: 'Erro ao criar conta' });
+    }
+  }
+
+  async registerShelter(req: Request, res: Response) {
+    const body = req.body ?? {};
+    const loginRaw = body.login ?? body.email;
+    const password = body.password;
+    const first_name = body.first_name;
+    const last_name = body.last_name;
+    const slug = body.slug != null ? String(body.slug) : '';
+    const name = body.name != null ? String(body.name) : '';
+    const contract_code = body.contract_code ?? body.contractCode;
+    const login =
+      loginRaw != null && String(loginRaw).trim() !== ''
+        ? String(loginRaw).trim()
+        : '';
+
+    if (!login || !password) {
+      return res.status(400).json({ error: 'E-mail e senha obrigatórios' });
+    }
+
+    try {
+      const result = await this.service.registerShelterWithAdmin({
+        slug,
+        name,
+        contract_code: contract_code != null ? String(contract_code) : '',
         login,
         password,
         first_name,
         last_name,
       });
+      return res.status(201).json({
+        tenant: { id: result.tenantId, slug: result.slug },
+        user: {
+          id: result.userId,
+          login: result.login,
+          role: 'admin' as const,
+        },
+      });
+    } catch (error: unknown) {
+      if (isHttpError(error)) {
+        return res.status(error.statusCode).json({ error: error.message });
+      }
+      const message = getErrorMessage(error);
+      const err = error as { name?: string; original?: { code?: string } };
+      if (
+        message.includes('duplicate') ||
+        err?.name === 'SequelizeUniqueConstraintError' ||
+        err?.original?.code === '23505'
+      ) {
+        return res
+          .status(409)
+          .json({ error: 'Conflito ao criar o abrigo ou o utilizador.' });
+      }
+      logger.error(
+        'Falha ao cadastrar abrigo',
+        { operation: 'login_register_shelter' },
+        error instanceof Error ? error : new Error(String(error)),
+      );
+      return res.status(500).json({ error: 'Erro ao criar abrigo' });
+    }
+  }
+
+  async joinByToken(req: Request, res: Response) {
+    const body = req.body ?? {};
+    const token = body.token != null ? String(body.token) : '';
+    const loginRaw = body.login ?? body.email;
+    const password = body.password;
+    const first_name = body.first_name;
+    const last_name = body.last_name;
+    const login =
+      loginRaw != null && String(loginRaw).trim() !== ''
+        ? String(loginRaw).trim()
+        : '';
+
+    if (!token.trim() || !login || !password) {
+      return res
+        .status(400)
+        .json({ error: 'Token, e-mail e senha são obrigatórios' });
+    }
+
+    try {
+      const result = await this.service.joinByInviteToken({
+        token,
+        login,
+        password,
+        first_name,
+        last_name,
+      });
+      return res.status(201).json({
+        tenant: { id: result.tenantId, slug: result.slug },
+        user: {
+          id: result.userId,
+          login: result.login,
+          role: 'user' as const,
+        },
+      });
+    } catch (error: unknown) {
+      if (isHttpError(error)) {
+        return res.status(error.statusCode).json({ error: error.message });
+      }
+      const message = getErrorMessage(error);
+      const err = error as { name?: string; original?: { code?: string } };
+      if (
+        message.includes('duplicate') ||
+        err?.name === 'SequelizeUniqueConstraintError' ||
+        err?.original?.code === '23505'
+      ) {
+        return res
+          .status(409)
+          .json({ error: 'Este e-mail já está em uso neste abrigo.' });
+      }
+      logger.error(
+        'Falha ao entrar por convite',
+        { operation: 'login_join_by_token' },
+        error instanceof Error ? error : new Error(String(error)),
+      );
+      return res.status(500).json({ error: 'Erro ao concluir cadastro' });
+    }
+  }
+
+  async createAccount(req: Request, res: Response) {
+    const body = req.body ?? {};
+    const loginRaw = body.login ?? body.email;
+    const password = body.password;
+    const first_name = body.first_name;
+    const last_name = body.last_name;
+    const login =
+      loginRaw != null && String(loginRaw).trim() !== ''
+        ? String(loginRaw).trim()
+        : '';
+
+    if (!login || !password) {
+      return res.status(400).json({ error: 'E-mail e senha obrigatórios' });
+    }
+
+    try {
+      const result = await this.service.registerAccountWithNewTenant({
+        login,
+        password,
+        first_name,
+        last_name,
+      });
+      return res.status(201).json({
+        tenant: { id: result.tenantId, slug: result.slug },
+        user: {
+          id: result.userId,
+          login: result.login,
+          role: 'user' as const,
+        },
+      });
+    } catch (error: unknown) {
+      if (isHttpError(error)) {
+        return res.status(error.statusCode).json({ error: error.message });
+      }
+      const message = getErrorMessage(error);
+      const err = error as { name?: string; original?: { code?: string } };
+      if (
+        message.includes('duplicate') ||
+        err?.name === 'SequelizeUniqueConstraintError' ||
+        err?.original?.code === '23505'
+      ) {
+        return res
+          .status(409)
+          .json({ error: 'Este e-mail já está em uso. Tente fazer login.' });
+      }
+      logger.error(
+        'Falha ao criar conta com novo abrigo',
+        { operation: 'login_create_account' },
+        error instanceof Error ? error : new Error(String(error)),
+      );
+      return res.status(500).json({ error: 'Erro ao criar conta' });
+    }
+  }
+
+  async create(req: AuthRequest & TenantRequest, res: Response) {
+    const body = req.body ?? {};
+    const loginRaw = body.login ?? body.email;
+    const password = body.password;
+    const first_name = body.first_name;
+    const last_name = body.last_name;
+    const contractCodeRaw = body.contract_code ?? body.contractCode;
+    const login =
+      loginRaw != null && String(loginRaw).trim() !== ''
+        ? String(loginRaw).trim()
+        : '';
+
+    if (!login || !password)
+      return res.status(400).json({ error: 'E-mail e senha obrigatórios' });
+
+    try {
+      const tenantId = requireTenantId(req, res);
+      if (tenantId === null) return;
+      const hash =
+        await tenantRepoForRegister.getContractCodeHashByTenantId(tenantId);
+      const verdict = await verifyContractCode(
+        hash,
+        contractCodeRaw != null ? String(contractCodeRaw) : undefined,
+      );
+      if (verdict === 'required') {
+        return res
+          .status(400)
+          .json({ error: 'Código de contrato obrigatório para este abrigo' });
+      }
+      if (verdict === 'invalid') {
+        return res.status(403).json({ error: 'Código de contrato inválido' });
+      }
+
+      const user = await this.service.create({
+        login,
+        password,
+        first_name,
+        last_name,
+        tenant_id: tenantId,
+      });
       return res.status(201).json(user);
     } catch (error: unknown) {
+      const tenantId = req.tenant?.id ?? 0;
+      const hint = loginHintForLog(login);
+
+      if (isHttpError(error)) {
+        return res.status(error.statusCode).json({ error: error.message });
+      }
+
       const err = error as {
         message?: string;
         name?: string;
@@ -59,22 +341,127 @@ export class LoginController {
       if (isDuplicate) {
         return res.status(409).json({ error: 'Login já cadastrado' });
       }
-      return res.status(500).json({ error: 'Erro ao criar usuário' });
+
+      const mapped = mapSequelizeToClientError(error);
+      if (mapped) {
+        logger.warn('Registro público rejeitado (ORM)', {
+          operation: 'login_create',
+          tenantId,
+          login: hint,
+          ...sequelizeErrorLogMeta(error),
+        });
+        return res.status(mapped.status).json({ error: mapped.message });
+      }
+
+      logger.error(
+        'Falha ao criar usuário (registro público)',
+        {
+          operation: 'login_create',
+          tenantId,
+          login: hint,
+          ...sequelizeErrorLogMeta(error),
+        },
+        error instanceof Error ? error : new Error(String(error)),
+      );
+
+      const isProd = process.env.NODE_ENV === 'production';
+      return res.status(500).json({
+        error: 'Erro ao criar usuário',
+        ...(!isProd
+          ? {
+              details: message,
+              errorName: err?.name,
+            }
+          : {}),
+      });
     }
   }
 
-  async authenticate(req: AuthRequest, res: Response) {
-    const { login, password } = req.body;
+  async resolveTenant(req: Request, res: Response) {
+    const q = req.query ?? {};
+    const loginRaw = q.login ?? q.email;
+    const login =
+      loginRaw != null && String(loginRaw).trim() !== ''
+        ? String(loginRaw).trim()
+        : '';
+
+    if (!login)
+      return res
+        .status(400)
+        .json({ error: 'Informe o e-mail (parâmetro login)' });
+
+    try {
+      const result = await this.service.resolveTenantByLogin(login);
+      if (result.type === 'unique') {
+        return res.json({ slug: result.slug });
+      }
+      if (result.type === 'ambiguous') {
+        return res.status(409).json({
+          error:
+            'Este e-mail está vinculado a mais de um abrigo. Selecione o abrigo antes de entrar.',
+          tenants: result.tenants,
+        });
+      }
+      return res.status(404).json({
+        error: 'Nenhum abrigo encontrado para este e-mail',
+      });
+    } catch (error: unknown) {
+      logger.error(
+        'Falha ao resolver abrigo por e-mail',
+        { operation: 'login_resolve_tenant' },
+        error instanceof Error ? error : new Error(String(error)),
+      );
+      return res.status(500).json({ error: 'Erro ao identificar o abrigo' });
+    }
+  }
+
+  async tenantsForEmail(req: Request, res: Response) {
+    const q = req.query ?? {};
+    const loginRaw = q.login ?? q.email;
+    const login =
+      loginRaw != null && String(loginRaw).trim() !== ''
+        ? String(loginRaw).trim()
+        : '';
+
+    if (!login)
+      return res
+        .status(400)
+        .json({ error: 'Informe o e-mail (parâmetro login)' });
+
+    try {
+      const tenants = await this.service.listTenantSummariesForLogin(login);
+      return res.json({ tenants });
+    } catch (error: unknown) {
+      logger.error(
+        'Falha ao listar abrigos por e-mail',
+        { operation: 'login_tenants_for_email' },
+        error instanceof Error ? error : new Error(String(error)),
+      );
+      return res.status(500).json({ error: 'Erro ao listar abrigos' });
+    }
+  }
+
+  async authenticate(req: AuthRequest & TenantRequest, res: Response) {
+    const body = req.body ?? {};
+    const loginRaw = body.login ?? body.email;
+    const password = body.password;
+    const login =
+      loginRaw != null && String(loginRaw).trim() !== ''
+        ? String(loginRaw).trim()
+        : '';
 
     if (!login || !password)
-      return res.status(400).json({ error: 'Login e senha obrigatórios' });
+      return res.status(400).json({ error: 'E-mail e senha obrigatórios' });
 
-    const result = await this.service.authenticate(login, password);
+    const tenantId = requireTenantId(req, res);
+    if (tenantId === null) return;
+    const result = await this.service.authenticate(login, password, tenantId);
 
     if (this.loginLogRepo) {
       try {
         await this.loginLogRepo.create({
           user_id: result?.user?.id ?? null,
+          tenant_id: tenantId,
           login: String(login),
           success: !!result,
           ip: getClientIp(req),

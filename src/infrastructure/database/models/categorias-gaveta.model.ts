@@ -4,6 +4,7 @@ import { sequelize } from '../sequelize';
 export interface DrawerCategoryAttributes {
   id: number;
   nome: string;
+  tenant_id: number;
 }
 
 export type DrawerCategoryCreationAttributes = Optional<
@@ -17,6 +18,7 @@ export class DrawerCategoryModel
 {
   declare id: number;
   declare nome: string;
+  declare tenant_id: number;
 }
 
 DrawerCategoryModel.init(
@@ -29,6 +31,11 @@ DrawerCategoryModel.init(
     nome: {
       type: DataTypes.STRING(255),
       allowNull: false,
+    },
+    tenant_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 1,
     },
   },
   {

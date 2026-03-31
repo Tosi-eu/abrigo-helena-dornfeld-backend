@@ -1,5 +1,7 @@
-import { Login } from '../../../core/domain/login';
+import type { Login } from '@porto-sdk/sdk';
+import type { Transaction } from 'sequelize';
 import { LoginModel } from '../models/login.model';
+import { sequelize } from '../sequelize';
 
 const FULL_PERMISSIONS = {
   read: true,
@@ -17,6 +19,8 @@ const DEFAULT_USER_PERMISSIONS = {
 
 export type CreateUserData = Login & {
   role?: 'admin' | 'user';
+  tenant_id?: number;
+  is_super_admin?: boolean;
   permissions?: {
     read: boolean;
     create: boolean;
@@ -26,25 +30,41 @@ export type CreateUserData = Login & {
 };
 
 export class LoginRepository {
-  async create(data: CreateUserData) {
-    let role: 'admin' | 'user' = data.role ?? 'user';
-    let permissions: typeof FULL_PERMISSIONS | typeof DEFAULT_USER_PERMISSIONS =
-      data.permissions ?? DEFAULT_USER_PERMISSIONS;
+  async create(data: CreateUserData, options?: { transaction?: Transaction }) {
+    const tenantId = Number(data.tenant_id) || 1;
+    const transaction = options?.transaction;
 
-    if (process.env.NODE_ENV === 'test') {
-      const count = await LoginModel.count();
-      if (count === 0) {
+    let role: 'admin' | 'user';
+    let permissions: typeof FULL_PERMISSIONS | typeof DEFAULT_USER_PERMISSIONS;
+
+    if (data.role !== undefined && data.role !== null) {
+      role = data.role;
+      permissions =
+        data.permissions ??
+        (role === 'admin' ? FULL_PERMISSIONS : DEFAULT_USER_PERMISSIONS);
+    } else {
+      const usersInTenant = await LoginModel.count({
+        where: { tenant_id: tenantId },
+        transaction,
+      });
+      if (usersInTenant === 0) {
         role = 'admin';
         permissions = FULL_PERMISSIONS;
+      } else {
+        role = 'user';
+        permissions = data.permissions ?? DEFAULT_USER_PERMISSIONS;
       }
     }
 
     try {
-      const user = await LoginModel.create({
-        ...data,
-        role,
-        permissions,
-      });
+      const user = await LoginModel.create(
+        {
+          ...data,
+          role,
+          permissions,
+        },
+        { transaction },
+      );
       return { id: user.id, login: user.login, role: user.role };
     } catch (err: unknown) {
       const name = (err as { name?: string })?.name;
@@ -53,6 +73,36 @@ export class LoginRepository {
       }
       throw err;
     }
+  }
+
+  async findTenantSummariesForLogin(
+    login: string,
+    transaction?: Transaction,
+  ): Promise<{ slug: string; label: string }[]> {
+    const trimmed = login.trim();
+    if (!trimmed) return [];
+
+    const [rawRows] = await sequelize.query(
+      `
+      SELECT DISTINCT t.slug, t.name, t.brand_name
+      FROM login l
+      INNER JOIN tenant t ON t.id = l.tenant_id
+      WHERE LOWER(TRIM(BOTH FROM l.login)) = LOWER(TRIM(BOTH FROM :login))
+      ORDER BY t.slug ASC
+      `,
+      { replacements: { login: trimmed }, transaction },
+    );
+
+    const rows = rawRows as {
+      slug: string;
+      name: string;
+      brand_name: string | null;
+    }[];
+
+    return rows.map(r => ({
+      slug: r.slug,
+      label: (r.brand_name && String(r.brand_name).trim()) || r.name,
+    }));
   }
 
   async findByLogin(login: string) {
@@ -66,7 +116,32 @@ export class LoginRepository {
         'first_name',
         'last_name',
         'role',
+        'tenant_id',
+        'is_super_admin',
       ],
+    });
+  }
+
+  async findByLoginForTenant(
+    login: string,
+    tenantId: number,
+    transaction?: Transaction,
+  ) {
+    return LoginModel.findOne({
+      where: { login, tenant_id: tenantId },
+      attributes: [
+        'id',
+        'login',
+        'password',
+        'refresh_token',
+        'first_name',
+        'last_name',
+        'role',
+        'tenant_id',
+        'is_super_admin',
+        'permissions',
+      ],
+      transaction,
     });
   }
 
@@ -81,6 +156,8 @@ export class LoginRepository {
         'last_name',
         'role',
         'permissions',
+        'tenant_id',
+        'is_super_admin',
       ],
     });
   }
@@ -94,6 +171,8 @@ export class LoginRepository {
         'last_name',
         'role',
         'permissions',
+        'tenant_id',
+        'is_super_admin',
       ],
       order: [['id', 'ASC']],
     });
@@ -113,6 +192,8 @@ export class LoginRepository {
           'last_name',
           'role',
           'permissions',
+          'tenant_id',
+          'is_super_admin',
         ],
         order: [['id', 'ASC']],
         limit: safeLimit,
@@ -153,6 +234,8 @@ export class LoginRepository {
         'last_name',
         'role',
         'permissions',
+        'tenant_id',
+        'is_super_admin',
       ],
     });
   }

@@ -5,6 +5,7 @@ import CabinetCategoryModel from './categorias-armario.model';
 export interface CabinetAttributes {
   num_armario: number;
   categoria_id: number;
+  tenant_id: number;
 }
 
 export type CabinetCreationAttributes = Optional<
@@ -18,6 +19,7 @@ export class CabinetModel
 {
   declare num_armario: number;
   declare categoria_id: number;
+  declare tenant_id: number;
   declare CabinetCategoryModel?: CabinetCategoryModel;
 }
 
@@ -35,6 +37,11 @@ CabinetModel.init(
         model: 'categoria_armario',
         key: 'id',
       },
+    },
+    tenant_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 1,
     },
   },
   {

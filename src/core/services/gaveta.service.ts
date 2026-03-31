@@ -1,10 +1,13 @@
+import type { DrawerPersist } from '@porto-sdk/sdk';
 import { DrawerRepository } from '../../infrastructure/database/repositories/gaveta.repository';
-import { Drawer } from '../domain/gaveta';
 
 export class DrawerService {
   constructor(private readonly repo: DrawerRepository) {}
 
-  async createDrawer(data: Drawer): Promise<Drawer> {
+  async createDrawer(
+    tenantId: number,
+    data: DrawerPersist,
+  ): Promise<DrawerPersist> {
     if (!data.numero || data.numero <= 0) {
       throw new Error('Número da gaveta inválido');
     }
@@ -13,7 +16,7 @@ export class DrawerService {
       throw new Error('Categoria inválida');
     }
 
-    return this.repo.createDrawer(data);
+    return this.repo.createDrawer(data, tenantId);
   }
 
   async findAll(page: number, limit: number) {

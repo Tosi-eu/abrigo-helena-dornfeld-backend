@@ -1,12 +1,12 @@
 import { InputRepository } from '../../infrastructure/database/repositories/insumo.repository';
-import { Input } from '../domain/insumo';
-import { PriceSearchService } from './price-search.service';
+import type { Input } from '@porto-sdk/sdk';
+import type { IPriceSearchService } from './price-search.types';
 import { logger } from '../../infrastructure/helpers/logger.helper';
 
 export class InputService {
   constructor(
     private readonly repo: InputRepository,
-    private readonly priceSearchService?: PriceSearchService,
+    private readonly priceSearchService?: IPriceSearchService,
   ) {}
 
   private triggerPriceSearchInBackground(input: Input) {
@@ -36,10 +36,10 @@ export class InputService {
     });
   }
 
-  async createInput(data: Omit<Input, 'id'>) {
+  async createInput(tenantId: number, data: Omit<Input, 'id'>) {
     if (!data.nome) throw new Error('Nome é obrigatório');
 
-    const created = await this.repo.createInput(data);
+    const created = await this.repo.createInput(data, tenantId);
 
     if (this.priceSearchService && created.id) {
       this.triggerPriceSearchInBackground(created);

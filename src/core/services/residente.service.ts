@@ -1,6 +1,6 @@
 import { ResidentRepository } from '../../infrastructure/database/repositories/residente.repository';
 import ResidentModel from '../../infrastructure/database/models/residente.model';
-import { Resident } from '../domain/residente';
+import type { Resident } from '@porto-sdk/sdk';
 
 export class ResidentService {
   constructor(private readonly repo: ResidentRepository) {}
@@ -15,7 +15,7 @@ export class ResidentService {
     return resident;
   }
 
-  async createResident(data: Resident) {
+  async createResident(tenantId: number, data: Resident) {
     if (!data.casela || !Number.isInteger(data.casela) || data.casela <= 0) {
       throw new Error('Número de casela inválido');
     }
@@ -35,12 +35,13 @@ export class ResidentService {
     const model = ResidentModel.build({
       num_casela: data.casela,
       nome: data.nome,
+      tenant_id: tenantId,
     });
 
     return this.repo.createResident(model);
   }
 
-  async updateResident(data: Resident) {
+  async updateResident(tenantId: number, data: Resident) {
     if (
       !data.nome ||
       typeof data.nome !== 'string' ||
@@ -55,6 +56,7 @@ export class ResidentService {
     const model = ResidentModel.build({
       num_casela: data.casela,
       nome: data.nome,
+      tenant_id: tenantId,
     });
 
     return this.repo.updateResidentById(model);

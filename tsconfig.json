@@ -9,6 +9,10 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
+    "baseUrl": ".",
+    "paths": {
+      "@porto-sdk/sdk": ["./node_modules/@porto-sdk/sdk/dist/index.d.ts"]
+    }
   },
   "include": [
     "src",

@@ -5,6 +5,7 @@ import DrawerCategoryModel from './categorias-gaveta.model';
 export interface DrawerAttributes {
   num_gaveta: number;
   categoria_id: number;
+  tenant_id: number;
 }
 
 export type DrawerCreationAttributes = Optional<DrawerAttributes, 'num_gaveta'>;
@@ -15,6 +16,7 @@ export class DrawerModel
 {
   declare num_gaveta: number;
   declare categoria_id: number;
+  declare tenant_id: number;
   declare DrawerCategoryModel?: DrawerCategoryModel;
 }
 
@@ -32,6 +34,11 @@ DrawerModel.init(
         model: 'categoria_gaveta',
         key: 'id',
       },
+    },
+    tenant_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 1,
     },
   },
   {

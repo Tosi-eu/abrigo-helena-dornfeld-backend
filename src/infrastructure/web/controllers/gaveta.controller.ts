@@ -1,13 +1,19 @@
 import { Request, Response } from 'express';
 import { DrawerService } from '../../../core/services/gaveta.service';
 import { sendErrorResponse } from '../../helpers/error-response.helper';
+import {
+  type TenantRequest,
+  requireTenantId,
+} from '../../../middleware/tenant.middleware';
 
 export class DrawerController {
   constructor(private readonly service: DrawerService) {}
 
-  async create(req: Request, res: Response) {
+  async create(req: Request & TenantRequest, res: Response) {
     try {
-      const created = await this.service.createDrawer(req.body);
+      const tenantId = requireTenantId(req, res);
+      if (tenantId === null) return;
+      const created = await this.service.createDrawer(tenantId, req.body);
       return res.status(201).json(created);
     } catch (error: unknown) {
       return sendErrorResponse(res, 400, error, 'Erro ao criar gaveta');

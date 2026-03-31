@@ -1,5 +1,9 @@
 import request from 'supertest';
 import { App } from 'supertest/types';
+import {
+  E2E_TENANT_SLUG,
+  E2E_SEED_USER,
+} from '../../helpers/e2e-tenant-seed.helper';
 
 export interface SeedResult {
   categoryId: number;
@@ -10,15 +14,24 @@ export interface SeedResult {
   cookie: string;
 }
 
-const SEED_USER = { login: 'seed_user', password: 'senha1234' };
-
 export async function seedDB(app: App): Promise<SeedResult> {
-  await request(app).post('/api/v1/login').send(SEED_USER);
   const authRes = await request(app)
     .post('/api/v1/login/authenticate')
-    .send(SEED_USER);
+    .set('X-Tenant', E2E_TENANT_SLUG)
+    .send({
+      login: E2E_SEED_USER.login,
+      password: E2E_SEED_USER.password,
+    });
+  if (authRes.status !== 200) {
+    throw new Error(
+      `seedDB: falha ao autenticar ${E2E_SEED_USER.login}: ${authRes.body?.error ?? authRes.status}`,
+    );
+  }
   const setCookie = authRes.headers['set-cookie']?.[0] ?? '';
   const cookie = setCookie ? setCookie.split(';')[0].trim() : '';
+  if (!cookie) {
+    throw new Error('seedDB: cookie de sessão não retornado após authenticate');
+  }
 
   const catRes = await request(app)
     .post('/api/v1/categoria-armario')

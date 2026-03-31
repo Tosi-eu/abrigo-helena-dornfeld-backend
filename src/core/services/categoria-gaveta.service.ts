@@ -3,8 +3,8 @@ import { DrawerCategoryRepository } from '../../infrastructure/database/reposito
 export class DrawerCategoryService {
   constructor(private readonly repo: DrawerCategoryRepository) {}
 
-  async create(nome: string) {
-    return this.repo.create(nome);
+  async create(nome: string, tenantId: number) {
+    return this.repo.create(nome, tenantId);
   }
 
   async list(page = 1, limit = 10) {
@@ -15,8 +15,8 @@ export class DrawerCategoryService {
     return this.repo.findById(id);
   }
 
-  async getByName(nome: string) {
-    return this.repo.findByName(nome);
+  async getByName(nome: string, tenantId: number) {
+    return this.repo.findByName(nome, tenantId);
   }
 
   async update(id: number, nome: string) {

@@ -6,6 +6,7 @@ export type AuditOperationType = 'create' | 'update' | 'delete';
 export class AuditLogModel extends Model {
   declare id: number;
   declare user_id: number | null;
+  declare tenant_id?: number | null;
   declare method: string;
   declare path: string;
   declare operation_type: AuditOperationType;
@@ -25,6 +26,10 @@ AuditLogModel.init(
       primaryKey: true,
     },
     user_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+    tenant_id: {
       type: DataTypes.INTEGER,
       allowNull: true,
     },

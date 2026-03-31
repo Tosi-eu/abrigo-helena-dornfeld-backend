@@ -1,5 +1,6 @@
 import './armario.model';
 import './audit-log.model';
+import './contract-portfolio.model';
 import './categorias-armario.model';
 import './categorias-gaveta.model';
 import './estoque-insumo.model';
@@ -13,5 +14,8 @@ import './movimentacao.model';
 import './notificacao.model';
 import './residente.model';
 import './system-config.model';
+import './tenant.model';
+import './tenant-config.model';
+import './tenant-invite.model';
 
 export { setupAssociations } from './associations.models';

@@ -4,6 +4,7 @@ import type { RlsContextVars } from '../infrastructure/database/rls.context';
 import type { Transaction } from 'sequelize';
 import type { Sequelize } from 'sequelize';
 import { withRlsContext } from '../infrastructure/database/rls.context';
+import type { TenantRequest } from './tenant.middleware';
 
 export interface RlsRequest extends AuthRequest {
   rlsContext?: RlsContextVars;
@@ -11,10 +12,14 @@ export interface RlsRequest extends AuthRequest {
 }
 
 export function rlsContextMiddleware(
-  req: RlsRequest,
-  _res: Response,
+  req: RlsRequest & TenantRequest,
+  res: Response,
   next: NextFunction,
 ) {
+  if (!req.tenant?.id) {
+    res.status(403).json({ error: 'Tenant não identificado' });
+    return;
+  }
   if (req.user?.id != null) {
     const p = req.user.permissions;
     req.rlsContext = {
@@ -22,9 +27,11 @@ export function rlsContextMiddleware(
       user_can_create: p?.create ? 'true' : 'false',
       user_can_update: p?.update ? 'true' : 'false',
       user_can_delete: p?.delete ? 'true' : 'false',
+      tenant_id: String(req.tenant.id),
+      is_super_admin: req.user.isSuperAdmin ? 'true' : 'false',
     };
   } else {
-    req.rlsContext = {};
+    req.rlsContext = { tenant_id: String(req.tenant.id) };
   }
   next();
 }

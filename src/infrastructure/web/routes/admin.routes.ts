@@ -42,7 +42,6 @@ const controller = new AdminController(
   systemConfigRepo,
   notificationService,
 );
-
 const adminLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 400,
@@ -80,6 +79,7 @@ router.get('/backup/status', (req, res) =>
 router.post('/backup/run', (req, res) => controller.runBackupNow(req, res));
 router.get('/config', (req, res) => controller.getConfig(req, res));
 router.put('/config', (req, res) => controller.updateConfig(req, res));
+
 router.get('/data-quality/summary', (req, res) =>
   controller.getDataQualitySummary(req, res),
 );

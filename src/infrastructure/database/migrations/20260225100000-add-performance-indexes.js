@@ -68,22 +68,7 @@ module.exports = {
       name: 'idx_estoque_insumo_setor',
     });
 
-    const [loginIndexes] = await queryInterface.sequelize.query(
-      "SELECT indexname FROM pg_indexes WHERE tablename = 'login';",
-    );
-    const hasUniqueLogin =
-      loginIndexes &&
-      loginIndexes.some(
-        r =>
-          r.indexname &&
-          (r.indexname.includes('login') || r.indexname.includes('unique')),
-      );
-    if (!hasUniqueLogin) {
-      await addIndexIfNotExists('login', ['login'], {
-        name: 'idx_login_login_unique',
-        unique: true,
-      });
-    }
+    // unique login is now per-tenant (handled by later migration)
   },
 
   async down(queryInterface) {

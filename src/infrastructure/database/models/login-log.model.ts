@@ -4,6 +4,7 @@ import { sequelize } from '../sequelize';
 export class LoginLogModel extends Model {
   declare id: number;
   declare user_id: number | null;
+  declare tenant_id?: number | null;
   declare login: string;
   declare success: boolean;
   declare ip: string | null;
@@ -19,6 +20,10 @@ LoginLogModel.init(
       primaryKey: true,
     },
     user_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+    tenant_id: {
       type: DataTypes.INTEGER,
       allowNull: true,
     },

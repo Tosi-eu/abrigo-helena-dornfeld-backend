@@ -3,7 +3,7 @@ import { formatDateToPtBr } from '../../infrastructure/helpers/date.helper';
 import { CacheKeyHelper } from '../../infrastructure/helpers/redis.helper';
 import { MovementType, NonMovementedItem } from '../utils/utils';
 import { CacheService } from './redis.service';
-import Movement from '../domain/movimentacao';
+import type { MovementRecord } from '@porto-sdk/sdk';
 import {
   MovementQueryParams,
   MovementRankingParams,
@@ -47,7 +47,11 @@ export class MovementService {
       throw new Error('Campos obrigatórios faltando.');
     }
 
-    const movement: Movement = {
+    if (data.tenant_id == null) {
+      throw new Error('Tenant não identificado');
+    }
+    const movement: MovementRecord = {
+      tenant_id: data.tenant_id,
       tipo: data.tipo as MovementType,
       login_id: data.login_id,
       armario_id: data.armario_id,

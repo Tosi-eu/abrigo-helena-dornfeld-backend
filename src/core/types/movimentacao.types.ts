@@ -12,6 +12,7 @@ export interface MovementRankingParams {
 }
 
 export interface CreateMovementData {
+  tenant_id?: number;
   tipo: string;
   quantidade: number;
   armario_id?: number;

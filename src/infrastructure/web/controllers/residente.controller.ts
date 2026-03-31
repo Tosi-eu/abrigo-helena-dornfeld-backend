@@ -1,6 +1,10 @@
 import { Response } from 'express';
 import { ResidentService } from '../../../core/services/residente.service';
 import { ValidatedRequest } from '../../../middleware/validation.middleware';
+import {
+  type TenantRequest,
+  requireTenantId,
+} from '../../../middleware/tenant.middleware';
 import { sendErrorResponse } from '../../helpers/error-response.helper';
 import { getErrorMessage } from '../../types/error.types';
 
@@ -45,9 +49,11 @@ export class ResidentController {
     }
   }
 
-  async create(req: ValidatedRequest, res: Response) {
+  async create(req: ValidatedRequest & TenantRequest, res: Response) {
     try {
-      const novo = await this.service.createResident(req.body);
+      const tenantId = requireTenantId(req, res);
+      if (tenantId === null) return;
+      const novo = await this.service.createResident(tenantId, req.body);
       res.status(201).json(novo);
     } catch (error: unknown) {
       const message = getErrorMessage(error);
@@ -56,10 +62,12 @@ export class ResidentController {
     }
   }
 
-  async update(req: ValidatedRequest, res: Response) {
+  async update(req: ValidatedRequest & TenantRequest, res: Response) {
     const casela = Number(req.params.casela);
+    const tenantId = requireTenantId(req, res);
+    if (tenantId === null) return;
     try {
-      const updated = await this.service.updateResident({
+      const updated = await this.service.updateResident(tenantId, {
         casela,
         nome: req.body.nome,
       });

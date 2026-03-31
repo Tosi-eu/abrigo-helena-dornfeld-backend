@@ -49,6 +49,7 @@ export function getTodayInBrazil(): string {
 export class NotificationEventRepository {
   async create(
     data: {
+      tenant_id: number;
       medicamento_id: number;
       residente_id: number;
       destino: NotificationDestinoType;
@@ -185,7 +186,7 @@ export class NotificationEventRepository {
         tipo_evento: row.tipo_evento,
         dias_para_repor:
           tipo === NotificationEventType.REPOSICAO_ESTOQUE
-            ? (Number(row.estoque?.dias_para_repor) ?? null)
+            ? Number(row.estoque?.dias_para_repor)
             : null,
       })),
       total: count,
@@ -195,7 +196,6 @@ export class NotificationEventRepository {
     };
   }
 
-  /** Admin: list all notifications with optional filters (tipo optional). */
   async listAllForAdmin(
     {
       page = 1,
@@ -308,13 +308,18 @@ export class NotificationEventRepository {
 
       if (existsNotification) continue;
 
+      const stockTenantId = stock.tenant_id;
+      if (stockTenantId == null) {
+        throw new Error('Tenant não identificado no registro de estoque');
+      }
       await NotificationEventModel.create({
+        tenant_id: stockTenantId,
         tipo_evento: NotificationEventType.REPOSICAO_ESTOQUE,
         destino: NotificationDestinoType.ESTOQUE,
         medicamento_id: stock.medicamento_id,
         residente_id: stock.casela_id,
         data_prevista: nextReposition,
-        criado_por: 1, // Sistema
+        criado_por: 1,
         visto: false,
         status: EventStatus.PENDENTE,
         quantidade: stock.quantidade,

@@ -3,11 +3,11 @@ import { CabinetCategoryRepository } from '../../infrastructure/database/reposit
 export class CabinetCategoryService {
   constructor(private readonly repo: CabinetCategoryRepository) {}
 
-  async create(nome: string) {
+  async create(nome: string, tenantId: number) {
     if (!nome || typeof nome !== 'string' || nome.trim() === '') {
       throw new Error('Nome da categoria é obrigatório');
     }
-    return this.repo.create(nome.trim());
+    return this.repo.create(nome.trim(), tenantId);
   }
 
   async list(page = 1, limit = 10) {
@@ -18,8 +18,8 @@ export class CabinetCategoryService {
     return this.repo.findById(id);
   }
 
-  async getByName(nome: string) {
-    return this.repo.findByName(nome);
+  async getByName(nome: string, tenantId: number) {
+    return this.repo.findByName(nome, tenantId);
   }
 
   async update(id: number, nome: string) {

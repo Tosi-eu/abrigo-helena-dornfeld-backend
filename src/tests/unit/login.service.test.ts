@@ -9,6 +9,8 @@ describe('LoginService (unit)', () => {
   beforeEach(() => {
     mockRepo = {
       findByLogin: jest.fn(),
+      findByLoginForTenant: jest.fn(),
+      findTenantSummariesForLogin: jest.fn(),
       create: jest.fn(),
       findById: jest.fn(),
       update: jest.fn(),
@@ -23,7 +25,7 @@ describe('LoginService (unit)', () => {
 
   describe('create', () => {
     it('deve rejeitar senha com menos de 8 caracteres', async () => {
-      mockRepo.findByLogin.mockResolvedValue(null as any);
+      mockRepo.findByLoginForTenant.mockResolvedValue(null as any);
 
       await expect(
         service.create({
@@ -31,13 +33,14 @@ describe('LoginService (unit)', () => {
           password: 'ab1',
           first_name: 'A',
           last_name: 'B',
+          tenant_id: 1,
         }),
       ).rejects.toThrow(/mínimo 8 caracteres/);
       expect(mockRepo.create).not.toHaveBeenCalled();
     });
 
     it('deve rejeitar senha sem letra', async () => {
-      mockRepo.findByLogin.mockResolvedValue(null as any);
+      mockRepo.findByLoginForTenant.mockResolvedValue(null as any);
 
       await expect(
         service.create({
@@ -45,13 +48,14 @@ describe('LoginService (unit)', () => {
           password: '12345678',
           first_name: 'A',
           last_name: 'B',
+          tenant_id: 1,
         }),
       ).rejects.toThrow(/pelo menos uma letra/);
       expect(mockRepo.create).not.toHaveBeenCalled();
     });
 
     it('deve rejeitar senha sem número', async () => {
-      mockRepo.findByLogin.mockResolvedValue(null as any);
+      mockRepo.findByLoginForTenant.mockResolvedValue(null as any);
 
       await expect(
         service.create({
@@ -59,13 +63,17 @@ describe('LoginService (unit)', () => {
           password: 'abcdefgh',
           first_name: 'A',
           last_name: 'B',
+          tenant_id: 1,
         }),
       ).rejects.toThrow(/pelo menos um número/);
       expect(mockRepo.create).not.toHaveBeenCalled();
     });
 
     it('deve rejeitar login já cadastrado', async () => {
-      mockRepo.findByLogin.mockResolvedValue({ id: 1, login: 'user1' } as any);
+      mockRepo.findByLoginForTenant.mockResolvedValue({
+        id: 1,
+        login: 'user1',
+      } as any);
 
       await expect(
         service.create({
@@ -73,13 +81,14 @@ describe('LoginService (unit)', () => {
           password: 'senha1234',
           first_name: 'A',
           last_name: 'B',
+          tenant_id: 1,
         }),
-      ).rejects.toThrow('Usuário já cadastrado');
+      ).rejects.toThrow('Login já cadastrado');
       expect(mockRepo.create).not.toHaveBeenCalled();
     });
 
     it('deve criar usuário com senha válida', async () => {
-      mockRepo.findByLogin.mockResolvedValue(null as any);
+      mockRepo.findByLoginForTenant.mockResolvedValue(null as any);
       mockRepo.create.mockResolvedValue({
         id: 1,
         login: 'user1',
@@ -91,6 +100,7 @@ describe('LoginService (unit)', () => {
         password: 'senha1234',
         first_name: 'João',
         last_name: 'Silva',
+        tenant_id: 1,
       });
 
       expect(mockRepo.create).toHaveBeenCalledWith(
@@ -107,41 +117,49 @@ describe('LoginService (unit)', () => {
 
   describe('authenticate', () => {
     it('deve retornar null se usuário não existe', async () => {
-      mockRepo.findByLogin.mockResolvedValue(null as any);
+      mockRepo.findByLoginForTenant.mockResolvedValue(null as any);
 
-      const result = await service.authenticate('inexistente', 'senha1234');
+      const result = await service.authenticate('inexistente', 'senha1234', 1);
 
       expect(result).toBeNull();
       expect(mockRepo.update).not.toHaveBeenCalled();
     });
 
     it('deve retornar null se senha não confere', async () => {
-      mockRepo.findByLogin.mockResolvedValue({
+      mockRepo.findByLoginForTenant.mockResolvedValue({
         id: 1,
         login: 'user1',
         password: '$2b$10$hashed', // bcrypt hash
       } as any);
 
-      const result = await service.authenticate('user1', 'senhaErrada');
+      const result = await service.authenticate('user1', 'senhaErrada', 1);
 
       expect(result).toBeNull();
     });
 
     it('deve retornar token e user quando credenciais corretas', async () => {
       const hashed = await bcrypt.hash('senha1234', 10);
-      mockRepo.findByLogin.mockResolvedValue({
+      mockRepo.findByLoginForTenant.mockResolvedValue({
         id: 1,
         login: 'user1',
         password: hashed,
         role: 'user',
+        tenant_id: 1,
+        is_super_admin: false,
       } as any);
       mockRepo.update.mockResolvedValue(undefined as any);
 
-      const result = await service.authenticate('user1', 'senha1234');
+      const result = await service.authenticate('user1', 'senha1234', 1);
 
       expect(result).not.toBeNull();
       expect(result!.token).toBeDefined();
-      expect(result!.user).toEqual({ id: 1, login: 'user1', role: 'user' });
+      expect(result!.user).toEqual({
+        id: 1,
+        login: 'user1',
+        role: 'user',
+        tenantId: 1,
+        isSuperAdmin: false,
+      });
       expect(mockRepo.update).toHaveBeenCalledWith(
         1,
         expect.objectContaining({ refresh_token: result!.token }),

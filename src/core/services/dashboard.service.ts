@@ -1,11 +1,8 @@
 import { StockService } from './estoque.service';
 import { MovementService } from './movimentacao.service';
 import { SectorType } from '../utils/utils';
-import { CacheKeyHelper } from '../../infrastructure/helpers/redis.helper';
 import type { Transaction } from 'sequelize';
 import type { CacheService } from './redis.service';
-
-const DASHBOARD_CACHE_TTL = 60;
 
 export class DashboardService {
   constructor(
@@ -14,16 +11,8 @@ export class DashboardService {
     private readonly cache?: CacheService,
   ) {}
 
-  async getSummary(transaction?: Transaction, expiringDays?: number) {
-    if (this.cache && !transaction) {
-      const key = CacheKeyHelper.dashboardSummary(expiringDays);
-      return this.cache.getOrSet(
-        key,
-        () => this.getSummaryInternal(transaction, expiringDays),
-        DASHBOARD_CACHE_TTL,
-      );
-    }
-    return this.getSummaryInternal(transaction, expiringDays);
+  async getSummary(expiringDays?: number) {
+    return this.getSummaryInternal(undefined, expiringDays);
   }
 
   private async getSummaryInternal(

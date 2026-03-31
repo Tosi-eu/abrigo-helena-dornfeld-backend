@@ -15,8 +15,10 @@ export class LoginModel extends Model {
   declare login: string;
   declare password: string;
   declare refresh_token?: string | null;
+  declare tenant_id: number;
   declare role: 'admin' | 'user';
   declare permissions?: UserPermissions | null;
+  declare is_super_admin: boolean;
 }
 
 LoginModel.init(
@@ -37,7 +39,6 @@ LoginModel.init(
     login: {
       type: DataTypes.STRING(255),
       allowNull: false,
-      unique: true,
     },
     password: {
       type: DataTypes.STRING(255),
@@ -47,6 +48,11 @@ LoginModel.init(
       type: DataTypes.STRING,
       allowNull: true,
     },
+    tenant_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 1,
+    },
     role: {
       type: DataTypes.STRING(20),
       allowNull: false,
@@ -55,6 +61,11 @@ LoginModel.init(
     permissions: {
       type: DataTypes.JSONB,
       allowNull: true,
+    },
+    is_super_admin: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
     },
   },
   {

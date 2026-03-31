@@ -126,7 +126,6 @@ docker compose up -d backend
 backend/
 ├── src/
 │   ├── core/                    # Lógica de negócio
-│   │   ├── domain/              # Entidades do domínio
 │   │   ├── services/            # Serviços de negócio
 │   │   ├── types/               # Tipos TypeScript
 │   │   └── utils/               # Utilitários

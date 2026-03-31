@@ -1,12 +1,16 @@
-import { Drawer } from '../../../core/domain/gaveta';
+import type { DrawerPersist } from '@porto-sdk/sdk';
 import DrawerCategoryModel from '../models/categorias-gaveta.model';
 import DrawerModel, {
   DrawerModel as DrawerModelType,
 } from '../models/gaveta.model';
 
 export class DrawerRepository {
-  async createDrawer(data: Drawer): Promise<Drawer> {
+  async createDrawer(
+    data: DrawerPersist,
+    tenantId: number,
+  ): Promise<DrawerPersist> {
     const item = await DrawerModel.create({
+      tenant_id: tenantId,
       num_gaveta: data.numero,
       categoria_id: data.categoria_id,
     });
@@ -47,7 +51,7 @@ export class DrawerRepository {
     };
   }
 
-  async findByDrawerNumber(number: number): Promise<Drawer | null> {
+  async findByDrawerNumber(number: number): Promise<DrawerPersist | null> {
     const item = await DrawerModel.findByPk(number);
     if (!item) return null;
 
@@ -57,7 +61,10 @@ export class DrawerRepository {
     };
   }
 
-  async update(number: number, categoria_id: number): Promise<Drawer | null> {
+  async update(
+    number: number,
+    categoria_id: number,
+  ): Promise<DrawerPersist | null> {
     const item = await DrawerModel.findByPk(number);
     if (!item) return null;
 

@@ -4,6 +4,7 @@ import { writeFileSync, unlinkSync, existsSync, statSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import crypto from 'crypto';
+import { QueryTypes } from 'sequelize';
 import { LoginService } from '../../../core/services/login.service';
 import { MovementService } from '../../../core/services/movimentacao.service';
 import { ReportService } from '../../../core/services/relatorio.service';
@@ -12,6 +13,10 @@ import { AuditRepository } from '../../database/repositories/audit.repository';
 import { LoginLogRepository } from '../../database/repositories/login-log.repository';
 import { SystemConfigRepository } from '../../database/repositories/system-config.repository';
 import { AuthRequest } from '../../../middleware/auth.middleware';
+import {
+  type TenantRequest,
+  requireTenantId,
+} from '../../../middleware/tenant.middleware';
 import { getErrorMessage } from '../../types/error.types';
 import { sequelize } from '../../database/sequelize';
 import { getRedisClient } from '../../database/redis/client.redis';
@@ -53,7 +58,7 @@ export class AdminController {
     }
   }
 
-  async createUser(req: AuthRequest, res: Response) {
+  async createUser(req: AuthRequest & TenantRequest, res: Response) {
     const body = req.body ?? {};
     const login = body.login;
     const password = body.password;
@@ -66,19 +71,23 @@ export class AdminController {
       return res.status(400).json({ error: 'Login e senha são obrigatórios' });
     }
 
+    const tenantId = requireTenantId(req, res);
+    if (tenantId === null) return;
+
     const data: {
       login: string;
       password: string;
       first_name?: string;
       last_name?: string;
       role?: 'admin' | 'user';
+      tenantId: number;
       permissions?: {
         read?: boolean;
         create?: boolean;
         update?: boolean;
         delete?: boolean;
       };
-    } = { login, password };
+    } = { login, password, tenantId };
     if (firstName !== undefined) data.first_name = firstName;
     if (lastName !== undefined) data.last_name = lastName;
     if (role !== undefined) {
@@ -493,7 +502,6 @@ export class AdminController {
     };
 
     try {
-      // 1) pg_dump data-only to tmpSql
       await new Promise<void>((resolve, reject) => {
         let stderr = '';
         const p = spawn(
@@ -520,7 +528,6 @@ export class AdminController {
         });
       });
 
-      // 2) gzip it
       await new Promise<void>((resolve, reject) => {
         let stderr = '';
         const p = spawn('gzip', ['-f', tmpSql], {
@@ -569,27 +576,32 @@ export class AdminController {
 
   async getDataQualitySummary(_req: AuthRequest, res: Response) {
     try {
-      const [[{ count: negMed }]] = await sequelize.query<{ count: number }[]>(
+      const negMedRow = await sequelize.query<{ count: number }>(
         `SELECT COUNT(*)::int as count FROM estoque_medicamento WHERE quantidade < 0`,
+        { type: QueryTypes.SELECT, plain: true },
       );
-      const [[{ count: negInp }]] = await sequelize.query<{ count: number }[]>(
+      const negInpRow = await sequelize.query<{ count: number }>(
         `SELECT COUNT(*)::int as count FROM estoque_insumo WHERE quantidade < 0`,
+        { type: QueryTypes.SELECT, plain: true },
       );
-      const [[{ count: missingLotMed }]] = await sequelize.query<
-        { count: number }[]
-      >(
+      const missingLotMedRow = await sequelize.query<{ count: number }>(
         `SELECT COUNT(*)::int as count FROM estoque_medicamento WHERE (lote IS NULL OR btrim(lote) = '') AND quantidade > 0`,
+        { type: QueryTypes.SELECT, plain: true },
       );
-      const [[{ count: missingLotInp }]] = await sequelize.query<
-        { count: number }[]
-      >(
+      const missingLotInpRow = await sequelize.query<{ count: number }>(
         `SELECT COUNT(*)::int as count FROM estoque_insumo WHERE (lote IS NULL OR btrim(lote) = '') AND quantidade > 0`,
+        { type: QueryTypes.SELECT, plain: true },
       );
-      const [[{ count: orphanMov }]] = await sequelize.query<
-        { count: number }[]
-      >(
+      const orphanMovRow = await sequelize.query<{ count: number }>(
         `SELECT COUNT(*)::int as count FROM movimentacao WHERE medicamento_id IS NULL AND insumo_id IS NULL`,
+        { type: QueryTypes.SELECT, plain: true },
       );
+
+      const negMed = Number(negMedRow?.count) || 0;
+      const negInp = Number(negInpRow?.count) || 0;
+      const missingLotMed = Number(missingLotMedRow?.count) || 0;
+      const missingLotInp = Number(missingLotInpRow?.count) || 0;
+      const orphanMov = Number(orphanMovRow?.count) || 0;
 
       return res.json({
         negativeStock: { medicines: negMed, inputs: negInp },
@@ -617,12 +629,18 @@ export class AdminController {
            WHERE medicamento_id IS NULL AND insumo_id IS NULL
            ORDER BY data DESC
            LIMIT :limit OFFSET :offset`,
-          { replacements: { limit, offset } },
+          { replacements: { limit, offset }, type: QueryTypes.SELECT },
         );
-        const [[{ total }]] = await sequelize.query<{ total: number }[]>(
+        const totalRow = await sequelize.query<{ total: number }>(
           `SELECT COUNT(*)::int as total FROM movimentacao WHERE medicamento_id IS NULL AND insumo_id IS NULL`,
+          { type: QueryTypes.SELECT, plain: true },
         );
-        return res.json({ data: rows, total, page, limit });
+        return res.json({
+          data: rows,
+          total: Number(totalRow?.total) || 0,
+          page,
+          limit,
+        });
       }
 
       if (type === 'negative_stock') {
@@ -634,15 +652,21 @@ export class AdminController {
            FROM estoque_insumo WHERE quantidade < 0
            ORDER BY quantidade ASC
            LIMIT :limit OFFSET :offset`,
-          { replacements: { limit, offset } },
+          { replacements: { limit, offset }, type: QueryTypes.SELECT },
         );
-        const [[{ total }]] = await sequelize.query<{ total: number }[]>(
+        const totalRow = await sequelize.query<{ total: number }>(
           `SELECT (
              (SELECT COUNT(*) FROM estoque_medicamento WHERE quantidade < 0) +
              (SELECT COUNT(*) FROM estoque_insumo WHERE quantidade < 0)
            )::int as total`,
+          { type: QueryTypes.SELECT, plain: true },
         );
-        return res.json({ data: rows, total, page, limit });
+        return res.json({
+          data: rows,
+          total: Number(totalRow?.total) || 0,
+          page,
+          limit,
+        });
       }
 
       if (type === 'missing_lot') {
@@ -654,15 +678,21 @@ export class AdminController {
            FROM estoque_insumo WHERE (lote IS NULL OR btrim(lote) = '') AND quantidade > 0
            ORDER BY validade ASC
            LIMIT :limit OFFSET :offset`,
-          { replacements: { limit, offset } },
+          { replacements: { limit, offset }, type: QueryTypes.SELECT },
         );
-        const [[{ total }]] = await sequelize.query<{ total: number }[]>(
+        const totalRow = await sequelize.query<{ total: number }>(
           `SELECT (
              (SELECT COUNT(*) FROM estoque_medicamento WHERE (lote IS NULL OR btrim(lote) = '') AND quantidade > 0) +
              (SELECT COUNT(*) FROM estoque_insumo WHERE (lote IS NULL OR btrim(lote) = '') AND quantidade > 0)
            )::int as total`,
+          { type: QueryTypes.SELECT, plain: true },
         );
-        return res.json({ data: rows, total, page, limit });
+        return res.json({
+          data: rows,
+          total: Number(totalRow?.total) || 0,
+          page,
+          limit,
+        });
       }
 
       return res.status(400).json({
@@ -697,9 +727,9 @@ export class AdminController {
          SELECT * FROM norm
          ORDER BY count DESC, n_nome ASC
          LIMIT :limit OFFSET :offset`,
-        { replacements: { limit, offset } },
+        { replacements: { limit, offset }, type: QueryTypes.SELECT },
       );
-      const [[{ total }]] = await sequelize.query<{ total: number }[]>(
+      const totalRow = await sequelize.query<{ total: number }>(
         `WITH norm AS (
            SELECT 1
            FROM medicamento
@@ -707,8 +737,14 @@ export class AdminController {
            HAVING COUNT(*) > 1
          )
          SELECT COUNT(*)::int as total FROM norm`,
+        { type: QueryTypes.SELECT, plain: true },
       );
-      return res.json({ data: rows, total, page, limit });
+      return res.json({
+        data: rows,
+        total: Number(totalRow?.total) || 0,
+        page,
+        limit,
+      });
     } catch (error: unknown) {
       return res.status(500).json({
         error: getErrorMessage(error) || 'Erro ao listar possíveis duplicados',
@@ -784,9 +820,12 @@ export class AdminController {
   async normalizeMedicineUnits(req: AuthRequest, res: Response) {
     const dryRun = req.body?.dryRun === true;
     try {
-      const [rows] = await sequelize.query<
-        { id: number; unidade_medida: string }[]
-      >(`SELECT id, unidade_medida FROM medicamento`);
+      const rows = await sequelize.query<{
+        id: number;
+        unidade_medida: string;
+      }>(`SELECT id, unidade_medida FROM medicamento`, {
+        type: QueryTypes.SELECT,
+      });
       let updated = 0;
       const changes: Array<{ id: number; from: string; to: string }> = [];
       for (const row of rows) {
@@ -1121,7 +1160,6 @@ export class AdminController {
       }
     };
 
-    // Truncate all tables (except SequelizeMeta) so restore does not collide with existing data.
     const truncateSql =
       "DO $$ DECLARE tbls text; BEGIN SELECT string_agg(quote_ident(tablename), ', ') INTO tbls FROM pg_tables WHERE schemaname = 'public' AND tablename <> 'SequelizeMeta'; IF tbls IS NOT NULL AND tbls <> '' THEN EXECUTE 'TRUNCATE TABLE ' || tbls || ' RESTART IDENTITY CASCADE'; END IF; END $$;";
     let truncateStderr = '';

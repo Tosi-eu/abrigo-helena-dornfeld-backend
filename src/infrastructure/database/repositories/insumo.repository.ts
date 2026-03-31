@@ -1,11 +1,12 @@
 import type { WhereOptions } from 'sequelize';
 import InputModel from '../models/insumo.model';
-import { Input } from '../../../core/domain/insumo';
+import type { Input } from '@porto-sdk/sdk';
 import { Op } from 'sequelize';
 
 export class InputRepository {
-  async createInput(data: Omit<Input, 'id'>): Promise<Input> {
+  async createInput(data: Omit<Input, 'id'>, tenantId: number): Promise<Input> {
     const input = await InputModel.create({
+      tenant_id: tenantId,
       ...data,
       preco: data.preco ?? null,
     });

@@ -1,6 +1,3 @@
-/**
- * Convert array of objects to CSV string (UTF-8, comma-separated, quoted).
- */
 export function toCSV(rows: Record<string, unknown>[]): string {
   if (rows.length === 0) return '';
 
@@ -26,12 +23,6 @@ export function toCSV(rows: Record<string, unknown>[]): string {
   return [headerLine, ...dataLines].join('\r\n');
 }
 
-/**
- * Flatten report result to one or more arrays for CSV export.
- * - If result is already an array of objects → return [result]
- * - If result is object with array values (e.g. { detalhes: [], consumo_mensal: [] }) → return each array
- * - If result is object with single array (e.g. transferencias) → return [array]
- */
 export function reportResultToArrays(
   result: unknown,
 ): Record<string, unknown>[][] {

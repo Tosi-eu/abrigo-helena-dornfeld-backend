@@ -63,6 +63,7 @@ export function sanitizeErrorMessage(
   if (isProduction) {
     const safeMessages = [
       'Login e senha obrigatórios',
+      'E-mail e senha obrigatórios',
       'Credenciais inválidas',
       'Não encontrado',
       'Dados obrigatórios ausentes',

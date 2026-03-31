@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 import { jwtConfig } from '../infrastructure/helpers/auth.helper';
 import LoginModel from '../infrastructure/database/models/login.model';
 import type { UserPermissions } from '../infrastructure/database/models/login.model';
@@ -20,6 +20,8 @@ export interface AuthRequest extends Request {
     login: string;
     role?: 'admin' | 'user';
     permissions?: UserPermissions;
+    tenantId?: number;
+    isSuperAdmin?: boolean;
   };
 }
 
@@ -53,6 +55,8 @@ export async function authMiddleware(
     type AuthCacheEntry = {
       role: 'admin' | 'user';
       permissions: UserPermissions;
+      tenantId: number;
+      isSuperAdmin: boolean;
     };
 
     const tokenFingerprint = crypto
@@ -67,10 +71,22 @@ export async function authMiddleware(
       async () => {
         const user = await LoginModel.findOne({
           where: { refresh_token: token },
-          attributes: ['id', 'login', 'role', 'permissions'],
+          attributes: [
+            'id',
+            'login',
+            'role',
+            'permissions',
+            'tenant_id',
+            'is_super_admin',
+          ],
         });
 
         if (!user) return null;
+
+        const tidRaw = user.tenant_id;
+        if (tidRaw == null) return null;
+        const tenantId = Number(tidRaw);
+        if (!Number.isInteger(tenantId) || tenantId < 1) return null;
 
         const role = user.role as 'admin' | 'user';
         const permissions: UserPermissions =
@@ -78,7 +94,12 @@ export async function authMiddleware(
             ? { read: true, create: true, update: true, delete: true }
             : { ...DEFAULT_PERMISSIONS, ...(user.permissions ?? {}) };
 
-        return { role, permissions } as AuthCacheEntry;
+        return {
+          role,
+          permissions,
+          tenantId,
+          isSuperAdmin: Boolean(user.is_super_admin),
+        } satisfies AuthCacheEntry;
       },
       authCacheTtlSeconds,
     );
@@ -90,6 +111,8 @@ export async function authMiddleware(
       login: decoded.login,
       role: cached.role,
       permissions: cached.permissions,
+      tenantId: cached.tenantId,
+      isSuperAdmin: cached.isSuperAdmin,
     };
 
     next();
@@ -123,6 +146,8 @@ export async function optionalAuthMiddleware(
     type AuthCacheEntry = {
       role: 'admin' | 'user';
       permissions: UserPermissions;
+      tenantId: number;
+      isSuperAdmin: boolean;
     };
 
     const tokenFingerprint = crypto
@@ -137,10 +162,22 @@ export async function optionalAuthMiddleware(
       async () => {
         const user = await LoginModel.findOne({
           where: { refresh_token: token },
-          attributes: ['id', 'login', 'role', 'permissions'],
+          attributes: [
+            'id',
+            'login',
+            'role',
+            'permissions',
+            'tenant_id',
+            'is_super_admin',
+          ],
         });
 
         if (!user) return null;
+
+        const tidRaw = user.tenant_id;
+        if (tidRaw == null) return null;
+        const tenantId = Number(tidRaw);
+        if (!Number.isInteger(tenantId) || tenantId < 1) return null;
 
         const role = user.role as 'admin' | 'user';
         const permissions: UserPermissions =
@@ -148,7 +185,12 @@ export async function optionalAuthMiddleware(
             ? { read: true, create: true, update: true, delete: true }
             : { ...DEFAULT_PERMISSIONS, ...(user.permissions ?? {}) };
 
-        return { role, permissions } as AuthCacheEntry;
+        return {
+          role,
+          permissions,
+          tenantId,
+          isSuperAdmin: Boolean(user.is_super_admin),
+        } satisfies AuthCacheEntry;
       },
       authCacheTtlSeconds,
     );
@@ -160,6 +202,8 @@ export async function optionalAuthMiddleware(
       login: decoded.login,
       role: cached.role,
       permissions: cached.permissions,
+      tenantId: cached.tenantId,
+      isSuperAdmin: cached.isSuperAdmin,
     };
   } catch {
     // ignore invalid token; proceed without req.user

@@ -1,11 +1,13 @@
 import { Op, QueryTypes } from 'sequelize';
 import type { Transaction } from 'sequelize';
 import MovementModel from '../models/movimentacao.model';
-import Movement from '../../../core/domain/movimentacao';
+import type { MovementRecord } from '@porto-sdk/sdk';
 import MedicineModel from '../models/medicamento.model';
 import MedicineStockModel from '../models/estoque-medicamento.model';
 import InputStockModel from '../models/estoque-insumo.model';
 import CabinetModel from '../models/armario.model';
+import DrawerModel from '../models/gaveta.model';
+import DrawerCategoryModel from '../models/categorias-gaveta.model';
 import ResidenteModel from '../models/residente.model';
 import LoginModel from '../models/login.model';
 import InputModel from '../models/insumo.model';
@@ -49,6 +51,19 @@ function endOfMonth(d: Date) {
   x.setHours(23, 59, 59, 999);
   return x;
 }
+
+const movementDrawerInclude = {
+  model: DrawerModel,
+  attributes: ['num_gaveta'],
+  required: false,
+  include: [
+    {
+      model: DrawerCategoryModel,
+      attributes: ['nome'],
+      required: false,
+    },
+  ],
+};
 
 export class MovementRepository {
   async countMovementsThisMonth(): Promise<number> {
@@ -141,7 +156,7 @@ export class MovementRepository {
     };
   }
 
-  async create(data: Movement, transaction?: Transaction) {
+  async create(data: MovementRecord, transaction?: Transaction) {
     return await MovementModel.create(
       {
         ...data,
@@ -179,6 +194,7 @@ export class MovementRepository {
         { model: CabinetModel, attributes: ['num_armario'] },
         { model: ResidenteModel, attributes: ['num_casela', 'nome'] },
         { model: LoginModel, attributes: ['first_name'] },
+        movementDrawerInclude,
       ],
     });
 
@@ -326,6 +342,7 @@ export class MovementRepository {
         { model: CabinetModel, attributes: ['num_armario'] },
         { model: ResidenteModel, attributes: ['num_casela', 'nome'] },
         { model: LoginModel, attributes: ['first_name'] },
+        movementDrawerInclude,
       ],
     });
 

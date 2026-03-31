@@ -1,8 +1,8 @@
 import DrawerCategoryModel from '../models/categorias-gaveta.model';
 
 export class DrawerCategoryRepository {
-  async create(nome: string) {
-    return DrawerCategoryModel.create({ nome });
+  async create(nome: string, tenantId: number) {
+    return DrawerCategoryModel.create({ nome, tenant_id: tenantId });
   }
 
   async list(page: number = 1, limit: number = 10) {
@@ -30,8 +30,10 @@ export class DrawerCategoryRepository {
     return DrawerCategoryModel.findByPk(id);
   }
 
-  async findByName(nome: string) {
-    return DrawerCategoryModel.findOne({ where: { nome } });
+  async findByName(nome: string, tenantId: number) {
+    return DrawerCategoryModel.findOne({
+      where: { nome, tenant_id: tenantId },
+    });
   }
 
   async update(id: number, nome: string) {

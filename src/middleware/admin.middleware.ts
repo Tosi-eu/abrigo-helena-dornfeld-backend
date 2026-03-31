@@ -35,6 +35,12 @@ export const ADMIN_USER_ID = 1;
 export const INSUFFICIENT_PRIVILEGES_MESSAGE =
   'Você não tem os privilégios necessários. Contate o administrador.';
 
+function isTenantSetupWrite(req: AuthRequest): boolean {
+  if (!['PUT', 'PATCH', 'POST', 'DELETE'].includes(req.method)) return false;
+  const path = (req.originalUrl || req.url || '').split('?')[0];
+  return /\/tenant\/(?:config|branding)/.test(path);
+}
+
 export function blockNonAdminWrites(
   req: AuthRequest,
   res: Response,
@@ -42,6 +48,7 @@ export function blockNonAdminWrites(
 ) {
   if (req.user?.role === ADMIN_ROLE) return next();
   if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) return next();
+  if (isTenantSetupWrite(req)) return next();
 
   return res.status(403).json({
     error: INSUFFICIENT_PRIVILEGES_MESSAGE,

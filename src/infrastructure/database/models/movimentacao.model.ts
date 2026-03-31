@@ -3,6 +3,7 @@ import { sequelize } from '../sequelize';
 
 interface MovementAttrs {
   id: number;
+  tenant_id: number;
   tipo: string;
   data: Date;
   login_id: number;
@@ -21,6 +22,7 @@ interface MovementAttrs {
 type MovementCreation = Optional<
   MovementAttrs,
   | 'id'
+  | 'tenant_id'
   | 'insumo_id'
   | 'medicamento_id'
   | 'casela_id'
@@ -36,6 +38,7 @@ export class MovementModel
   implements MovementAttrs
 {
   declare id: number;
+  declare tenant_id: number;
   declare tipo: string;
   declare data: Date;
   declare login_id: number;
@@ -54,6 +57,11 @@ export class MovementModel
 MovementModel.init(
   {
     id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
+    tenant_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 1,
+    },
     tipo: { type: DataTypes.STRING, allowNull: false },
     data: { type: DataTypes.DATE, allowNull: false },
     login_id: { type: DataTypes.INTEGER, allowNull: false },

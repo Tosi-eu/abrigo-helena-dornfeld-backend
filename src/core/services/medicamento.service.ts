@@ -1,6 +1,6 @@
-import { Medicine } from '../domain/medicamento';
+import type { Medicine } from '@porto-sdk/sdk';
 import { MedicineRepository } from '../../infrastructure/database/repositories/medicamento.repository';
-import { PriceSearchService } from './price-search.service';
+import type { IPriceSearchService } from './price-search.types';
 import { logger } from '../../infrastructure/helpers/logger.helper';
 import { normalizeDosage } from '../../infrastructure/helpers/dosage.helper';
 
@@ -9,7 +9,7 @@ const DOSAGE_REGEX = /^\d+([.,]\d+)?(\/\d+([,]\d+)?)?$/;
 export class MedicineService {
   constructor(
     private readonly repo: MedicineRepository,
-    private readonly priceSearchService?: PriceSearchService,
+    private readonly priceSearchService?: IPriceSearchService,
   ) {}
 
   private triggerPriceSearchInBackground(
@@ -43,14 +43,17 @@ export class MedicineService {
     });
   }
 
-  async createMedicine(data: {
-    nome: string;
-    dosagem: string;
-    unidade_medida: string;
-    principio_ativo: string;
-    estoque_minimo?: number;
-    preco?: number | null;
-  }): Promise<Medicine> {
+  async createMedicine(
+    tenantId: number,
+    data: {
+      nome: string;
+      dosagem: string;
+      unidade_medida: string;
+      principio_ativo: string;
+      estoque_minimo?: number;
+      preco?: number | null;
+    },
+  ): Promise<Medicine> {
     if (!data.nome || !data.unidade_medida || data.dosagem == null) {
       throw new Error('Nome, dosagem e unidade de medida são obrigatórios.');
     }
@@ -68,7 +71,7 @@ export class MedicineService {
 
     const normalizedDosage = normalizeDosage(data.dosagem.trim());
 
-    let existing = await this.repo.findByUniqueFields({
+    let existing = await this.repo.findByUniqueFields(tenantId, {
       nome: data.nome.trim(),
       principio_ativo: data.principio_ativo.trim(),
       dosagem: normalizedDosage,
@@ -76,7 +79,7 @@ export class MedicineService {
     });
 
     if (!existing && data.dosagem.trim() !== normalizedDosage) {
-      existing = await this.repo.findByUniqueFields({
+      existing = await this.repo.findByUniqueFields(tenantId, {
         nome: data.nome.trim(),
         principio_ativo: data.principio_ativo.trim(),
         dosagem: data.dosagem.trim(),
@@ -113,7 +116,7 @@ export class MedicineService {
       dosagem: normalizedDosage,
     };
 
-    const created = await this.repo.createMedicine(dataToSave);
+    const created = await this.repo.createMedicine(dataToSave, tenantId);
 
     if (this.priceSearchService && created.id) {
       this.triggerPriceSearchInBackground(created, normalizedDosage);
@@ -138,7 +141,11 @@ export class MedicineService {
     return this.repo.findMedicineById(id);
   }
 
-  async updateMedicine(id: number, data: Omit<Medicine, 'id'>) {
+  async updateMedicine(
+    tenantId: number,
+    id: number,
+    data: Omit<Medicine, 'id'>,
+  ) {
     if (!data.nome || data.nome.trim() === '') {
       throw new Error('Nome é obrigatório.');
     }
@@ -163,7 +170,7 @@ export class MedicineService {
 
     const normalizedDosage = normalizeDosage(data.dosagem.trim());
 
-    let existing = await this.repo.findByUniqueFields({
+    let existing = await this.repo.findByUniqueFields(tenantId, {
       nome: data.nome.trim(),
       principio_ativo: data.principio_ativo?.trim() || '',
       dosagem: normalizedDosage,
@@ -171,7 +178,7 @@ export class MedicineService {
     });
 
     if (!existing && data.dosagem.trim() !== normalizedDosage) {
-      existing = await this.repo.findByUniqueFields({
+      existing = await this.repo.findByUniqueFields(tenantId, {
         nome: data.nome.trim(),
         principio_ativo: data.principio_ativo?.trim() || '',
         dosagem: data.dosagem.trim(),

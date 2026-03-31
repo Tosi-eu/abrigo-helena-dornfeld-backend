@@ -99,15 +99,3 @@ export interface NonMovementedItem {
   ultima_movimentacao: string | null;
   dias_parados: number;
 }
-
-export interface PriceSourceStrategy {
-  readonly sourceName: string;
-
-  supports(itemType: 'medicine' | 'input'): boolean;
-
-  fetchPrices(params: {
-    itemName: string;
-    dosage?: string;
-    measurementUnit?: string;
-  }): Promise<number[]>;
-}
