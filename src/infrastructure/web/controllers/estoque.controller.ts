@@ -4,7 +4,7 @@ import { sendErrorResponse } from '../../helpers/error-response.helper';
 import { handleETagResponse } from '../../helpers/etag.helper';
 import { ItemType, SectorType } from '../../../core/utils/utils';
 import { ValidatedRequest } from '../../../middleware/validation.middleware';
-import type { RlsRequest } from '../../../middleware/rls.middleware';
+import type { AuthRequest } from '../../../middleware/auth.middleware';
 import {
   type TenantRequest,
   requireTenantId,
@@ -15,7 +15,7 @@ export class StockController {
   constructor(private readonly service: StockService) {}
 
   async stockIn(
-    req: RlsRequest & ValidatedRequest & TenantRequest,
+    req: AuthRequest & ValidatedRequest & TenantRequest,
     res: Response,
   ) {
     try {
@@ -33,7 +33,6 @@ export class StockController {
           req.body,
           login_id,
           tenantId,
-          req.transaction,
         );
         return res.json(result);
       }
@@ -43,7 +42,6 @@ export class StockController {
           req.body,
           login_id,
           tenantId,
-          req.transaction,
         );
         return res.json(result);
       }
@@ -52,7 +50,7 @@ export class StockController {
     }
   }
 
-  async stockOut(req: RlsRequest & ValidatedRequest, res: Response) {
+  async stockOut(req: AuthRequest & ValidatedRequest, res: Response) {
     try {
       const login_id = req.user?.id;
 
@@ -60,18 +58,14 @@ export class StockController {
         return res.status(401).json({ error: 'Usuário não autenticado' });
       }
 
-      const result = await this.service.stockOut(
-        req.body,
-        login_id,
-        req.transaction,
-      );
+      const result = await this.service.stockOut(req.body, login_id);
       return res.json(result);
     } catch (error: unknown) {
       return sendErrorResponse(res, 400, error, 'Erro ao registrar saída');
     }
   }
 
-  async list(req: RlsRequest, res: Response) {
+  async list(req: AuthRequest, res: Response) {
     try {
       const {
         filter,
@@ -87,22 +81,19 @@ export class StockController {
         lot,
       } = req.query;
 
-      const data = await this.service.listStock(
-        {
-          filter: String(filter || ''),
-          type: String(type || ''),
-          page: Number(page) || 1,
-          limit: Number(limit) || 10,
-          name: name ? String(name) : undefined,
-          itemType: itemType ? String(itemType) : undefined,
-          cabinet: cabinet ? String(cabinet) : undefined,
-          drawer: drawer ? String(drawer) : undefined,
-          casela: casela ? String(casela) : undefined,
-          sector: sector ? String(sector) : undefined,
-          lot: lot ? String(lot) : undefined,
-        },
-        req.transaction,
-      );
+      const data = await this.service.listStock({
+        filter: String(filter || ''),
+        type: String(type || ''),
+        page: Number(page) || 1,
+        limit: Number(limit) || 10,
+        name: name ? String(name) : undefined,
+        itemType: itemType ? String(itemType) : undefined,
+        cabinet: cabinet ? String(cabinet) : undefined,
+        drawer: drawer ? String(drawer) : undefined,
+        casela: casela ? String(casela) : undefined,
+        sector: sector ? String(sector) : undefined,
+        lot: lot ? String(lot) : undefined,
+      });
 
       if (handleETagResponse(req, res, data)) {
         return;
@@ -114,9 +105,9 @@ export class StockController {
     }
   }
 
-  async getFilterOptions(req: RlsRequest, res: Response) {
+  async getFilterOptions(req: AuthRequest, res: Response) {
     try {
-      const data = await this.service.getFilterOptions(req.transaction);
+      const data = await this.service.getFilterOptions();
       return res.json(data);
     } catch (error: unknown) {
       return sendErrorResponse(
@@ -128,7 +119,7 @@ export class StockController {
     }
   }
 
-  async getDaysForReplacementForNursing(req: RlsRequest, res: Response) {
+  async getDaysForReplacementForNursing(req: AuthRequest, res: Response) {
     try {
       const medicamento_id = req.query.medicamento_id;
       const casela_id = req.query.casela_id;
@@ -148,7 +139,6 @@ export class StockController {
         await this.service.getDaysForReplacementForNursing(
           Number(medicamento_id),
           Number(casela_id),
-          req.transaction,
         );
 
       return res.json({ dias_para_repor });
@@ -162,7 +152,7 @@ export class StockController {
     }
   }
 
-  async proportion(req: RlsRequest, res: Response) {
+  async proportion(req: AuthRequest, res: Response) {
     try {
       const sectorType = toSectorType(req.query.setor as string | undefined);
 
@@ -172,10 +162,7 @@ export class StockController {
         });
       }
 
-      const data = await this.service.getProportion(
-        sectorType as SectorType,
-        req.transaction,
-      );
+      const data = await this.service.getProportion(sectorType as SectorType);
 
       const totalGeral = Object.values(data).reduce(
         (acc, v) => acc + Number(v || 0),
@@ -218,7 +205,7 @@ export class StockController {
     }
   }
 
-  async removeIndividualMedicine(req: RlsRequest, res: Response) {
+  async removeIndividualMedicine(req: AuthRequest, res: Response) {
     try {
       const { estoque_id } = req.params;
 
@@ -228,7 +215,6 @@ export class StockController {
 
       const result = await this.service.removeIndividualMedicine(
         Number(estoque_id),
-        req.transaction,
       );
 
       return res.json(result);
@@ -237,7 +223,7 @@ export class StockController {
     }
   }
 
-  async suspendIndividualMedicine(req: RlsRequest, res: Response) {
+  async suspendIndividualMedicine(req: AuthRequest, res: Response) {
     try {
       const { estoque_id } = req.params;
 
@@ -247,7 +233,6 @@ export class StockController {
 
       const result = await this.service.suspendIndividualMedicine(
         Number(estoque_id),
-        req.transaction,
       );
 
       return res.json(result);
@@ -261,7 +246,7 @@ export class StockController {
     }
   }
 
-  async resumeIndividualMedicine(req: RlsRequest, res: Response) {
+  async resumeIndividualMedicine(req: AuthRequest, res: Response) {
     try {
       const { estoque_id } = req.params;
 
@@ -271,7 +256,6 @@ export class StockController {
 
       const result = await this.service.resumeIndividualMedicine(
         Number(estoque_id),
-        req.transaction,
       );
 
       return res.json(result);
@@ -281,7 +265,7 @@ export class StockController {
   }
 
   async transferMedicineSector(
-    req: RlsRequest & ValidatedRequest,
+    req: AuthRequest & ValidatedRequest,
     res: Response,
   ) {
     try {
@@ -331,7 +315,6 @@ export class StockController {
         casela_id ?? null,
         observacao ?? null,
         dias_para_repor ?? null,
-        req.transaction,
       );
 
       return res.json(result);
@@ -345,7 +328,10 @@ export class StockController {
     }
   }
 
-  async transferInputSector(req: RlsRequest & ValidatedRequest, res: Response) {
+  async transferInputSector(
+    req: AuthRequest & ValidatedRequest,
+    res: Response,
+  ) {
     try {
       const { estoque_id } = req.params;
       const {
@@ -393,7 +379,6 @@ export class StockController {
         destino ?? null,
         observacao ?? null,
         dias_para_repor ?? null,
-        req.transaction,
       );
 
       return res.json(result);
@@ -402,7 +387,7 @@ export class StockController {
     }
   }
 
-  async updateStockItem(req: RlsRequest, res: Response) {
+  async updateStockItem(req: AuthRequest, res: Response) {
     try {
       const { estoque_id } = req.params;
       const body = req.body as {
@@ -444,7 +429,7 @@ export class StockController {
         Number(estoque_id),
         itemTipo === 'medicamento' ? ItemType.MEDICAMENTO : ItemType.INSUMO,
         processedData,
-        req.transaction,
+        undefined,
         req.user?.id,
       );
 
@@ -459,7 +444,7 @@ export class StockController {
     }
   }
 
-  async deleteStockItem(req: RlsRequest, res: Response) {
+  async deleteStockItem(req: AuthRequest, res: Response) {
     try {
       const { estoque_id, tipo } = req.params as {
         estoque_id: string;
@@ -477,7 +462,6 @@ export class StockController {
       const result = await this.service.deleteStockItem(
         Number(estoque_id),
         tipo === 'medicamento' ? ItemType.MEDICAMENTO : ItemType.INSUMO,
-        req.transaction,
       );
 
       return res.json(result);
@@ -491,7 +475,7 @@ export class StockController {
     }
   }
 
-  async removeIndividualInput(req: RlsRequest, res: Response) {
+  async removeIndividualInput(req: AuthRequest, res: Response) {
     try {
       const { estoque_id } = req.params;
 
@@ -501,7 +485,6 @@ export class StockController {
 
       const result = await this.service.removeIndividualInput(
         Number(estoque_id),
-        req.transaction,
       );
 
       return res.json(result);
@@ -515,7 +498,7 @@ export class StockController {
     }
   }
 
-  async suspendIndividualInput(req: RlsRequest, res: Response) {
+  async suspendIndividualInput(req: AuthRequest, res: Response) {
     try {
       const { estoque_id } = req.params;
 
@@ -525,7 +508,6 @@ export class StockController {
 
       const result = await this.service.suspendIndividualInput(
         Number(estoque_id),
-        req.transaction,
       );
 
       return res.json(result);
@@ -534,7 +516,7 @@ export class StockController {
     }
   }
 
-  async resumeIndividualInput(req: RlsRequest, res: Response) {
+  async resumeIndividualInput(req: AuthRequest, res: Response) {
     try {
       const { estoque_id } = req.params;
 
@@ -544,7 +526,6 @@ export class StockController {
 
       const result = await this.service.resumeIndividualInput(
         Number(estoque_id),
-        req.transaction,
       );
 
       return res.json(result);

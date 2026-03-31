@@ -83,6 +83,11 @@ export async function authMiddleware(
 
         if (!user) return null;
 
+        const tidRaw = user.tenant_id;
+        if (tidRaw == null) return null;
+        const tenantId = Number(tidRaw);
+        if (!Number.isInteger(tenantId) || tenantId < 1) return null;
+
         const role = user.role as 'admin' | 'user';
         const permissions: UserPermissions =
           role === 'admin'
@@ -92,7 +97,7 @@ export async function authMiddleware(
         return {
           role,
           permissions,
-          tenantId: Number(user.tenant_id) || 1,
+          tenantId,
           isSuperAdmin: Boolean(user.is_super_admin),
         } satisfies AuthCacheEntry;
       },
@@ -169,6 +174,11 @@ export async function optionalAuthMiddleware(
 
         if (!user) return null;
 
+        const tidRaw = user.tenant_id;
+        if (tidRaw == null) return null;
+        const tenantId = Number(tidRaw);
+        if (!Number.isInteger(tenantId) || tenantId < 1) return null;
+
         const role = user.role as 'admin' | 'user';
         const permissions: UserPermissions =
           role === 'admin'
@@ -178,7 +188,7 @@ export async function optionalAuthMiddleware(
         return {
           role,
           permissions,
-          tenantId: Number(user.tenant_id) || 1,
+          tenantId,
           isSuperAdmin: Boolean(user.is_super_admin),
         } satisfies AuthCacheEntry;
       },

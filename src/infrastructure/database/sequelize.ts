@@ -1,8 +1,12 @@
 import { Sequelize } from 'sequelize';
+import { createNamespace } from 'cls-hooked';
 import dotenv from 'dotenv';
 import { getDatabaseConfig } from '../helpers/database-config.helper';
 
 dotenv.config();
+
+export const sequelizeClsNamespace = createNamespace('abrigo-sequelize');
+Sequelize.useCLS(sequelizeClsNamespace);
 
 const db = getDatabaseConfig();
 

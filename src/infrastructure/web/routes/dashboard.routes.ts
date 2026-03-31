@@ -7,9 +7,6 @@ import { DashboardService } from '../../../core/services/dashboard.service';
 import { DashboardController } from '../controllers/dashboard.controller';
 import { cacheService } from '../../database/redis/client.redis';
 import { NotificationEventRepository } from '../../database/repositories/notificacao.repository';
-import { withRls } from '../../../middleware/rls.middleware';
-import { sequelize } from '../../database/sequelize';
-
 const stockRepo = new StockRepository();
 const notificationRepo = new NotificationEventRepository();
 const stockService = new StockService(
@@ -28,14 +25,10 @@ const controller = new DashboardController(dashboardService);
 
 const router = Router();
 
-router.get(
-  '/summary',
-  withRls(sequelize, (req, res) => controller.getSummary(req, res)),
-);
+router.get('/summary', (req, res) => controller.getSummary(req, res));
 
-router.get(
-  '/expiring-items',
-  withRls(sequelize, (req, res) => controller.getExpiringItems(req, res)),
+router.get('/expiring-items', (req, res) =>
+  controller.getExpiringItems(req, res),
 );
 
 export default router;

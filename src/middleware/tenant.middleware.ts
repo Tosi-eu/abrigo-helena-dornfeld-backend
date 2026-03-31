@@ -24,10 +24,6 @@ export function requireTenantId(
 
 const repo = new TenantRepository();
 
-/**
- * Extrai slug de host estilo `slug.dominio.tld`. Ignora IPv4 (ex.: 127.0.0.1 no supertest).
- * Exportada para testes unitários.
- */
 export function parseTenantSubdomainFromHost(hostname: string): string | null {
   const host = hostname.split(':')[0]?.trim();
   if (!host) return null;

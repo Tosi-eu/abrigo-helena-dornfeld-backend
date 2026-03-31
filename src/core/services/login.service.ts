@@ -1,10 +1,20 @@
 import bcrypt from 'bcrypt';
+import { randomBytes } from 'crypto';
+import jwt from 'jsonwebtoken';
+import { BaseError, type Transaction } from 'sequelize';
 import { LoginRepository } from '../../infrastructure/database/repositories/login.repository';
 import { jwtConfig } from '../../infrastructure/helpers/auth.helper';
-import jwt from 'jsonwebtoken';
-import { BaseError } from 'sequelize';
-import { HttpError } from '../../infrastructure/types/error.types';
+import { sequelize } from '../../infrastructure/database/sequelize';
+import { setRlsSessionGucs } from '../../infrastructure/database/rls.context';
+import LoginModel from '../../infrastructure/database/models/login.model';
+import TenantModel from '../../infrastructure/database/models/tenant.model';
+import TenantConfigModel from '../../infrastructure/database/models/tenant-config.model';
+import { ContractPortfolioRepository } from '../../infrastructure/database/repositories/contract-portfolio.repository';
+import { TenantInviteRepository } from '../../infrastructure/database/repositories/tenant-invite.repository';
+import { digestInviteTokenPlain } from '../../infrastructure/helpers/invite-token.helper';
+import { HttpError, isHttpError } from '../../infrastructure/types/error.types';
 import type { LoginCreateWithTenant } from '@porto-sdk/sdk';
+import { DEFAULT_TENANT_MODULES } from './tenant-config.service';
 
 const MIN_PASSWORD_LENGTH = 8;
 
@@ -208,7 +218,19 @@ export class LoginService {
     | { type: 'not_found' }
     | { type: 'ambiguous'; tenants: { slug: string; label: string }[] }
   > {
-    const list = await this.repo.findTenantSummariesForLogin(login);
+    const trimmed = login.trim();
+    if (!trimmed) return { type: 'not_found' };
+    const list = await sequelize.transaction(async (t: Transaction) => {
+      await setRlsSessionGucs(
+        sequelize,
+        {
+          allow_email_resolution: 'true',
+          resolution_login: trimmed,
+        },
+        t,
+      );
+      return this.repo.findTenantSummariesForLogin(trimmed, t);
+    });
     if (list.length === 0) return { type: 'not_found' };
     if (list.length === 1) return { type: 'unique', slug: list[0]!.slug };
     return { type: 'ambiguous', tenants: list };
@@ -220,7 +242,17 @@ export class LoginService {
   ): Promise<{ slug: string; label: string }[]> {
     const trimmed = login.trim();
     if (!trimmed) return [];
-    return this.repo.findTenantSummariesForLogin(trimmed);
+    return sequelize.transaction(async (t: Transaction) => {
+      await setRlsSessionGucs(
+        sequelize,
+        {
+          allow_email_resolution: 'true',
+          resolution_login: trimmed,
+        },
+        t,
+      );
+      return this.repo.findTenantSummariesForLogin(trimmed, t);
+    });
   }
 
   async updateUser({
@@ -399,5 +431,514 @@ export class LoginService {
     }
 
     return { id: updated.id, login: updated.login };
+  }
+
+  async registerAccountWithNewTenant(attrs: {
+    login: string;
+    password: string;
+    first_name?: string;
+    last_name?: string;
+    /** Se preenchido, associa o tenant provisório ao portfólio de contrato. */
+    contract_code?: string;
+  }): Promise<{
+    tenantId: number;
+    slug: string;
+    userId: number;
+    login: string;
+  }> {
+    const loginTrim = attrs.login.trim();
+    if (!loginTrim) {
+      throw new HttpError('E-mail obrigatório', 400);
+    }
+    validateStrongPassword(attrs.password);
+    const fn = String(attrs.first_name ?? '').trim();
+    const ln = String(attrs.last_name ?? '').trim();
+    if (fn.length < 2) {
+      throw new HttpError('Nome deve ter pelo menos 2 caracteres', 400);
+    }
+    if (ln.length < 2) {
+      throw new HttpError('Sobrenome deve ter pelo menos 2 caracteres', 400);
+    }
+
+    const cc = String(attrs.contract_code ?? '').trim();
+    let resolved: { id: number; hash: string } | null = null;
+    if (cc) {
+      const portfolioRepo = new ContractPortfolioRepository();
+      resolved = await portfolioRepo.resolveOrCreateByPlainText(cc);
+    }
+
+    const hashed = await bcrypt.hash(attrs.password, 10);
+    const tenantName = `Abrigo de ${fn}`.slice(0, 120);
+
+    try {
+      return await sequelize.transaction(async (t: Transaction) => {
+        await setRlsSessionGucs(
+          sequelize,
+          { allow_tenant_self_registration: 'true' },
+          t,
+        );
+        const slug = await this.generateUniqueTenantSlug(t);
+        const tenant = await TenantModel.create(
+          {
+            slug,
+            name: tenantName,
+            ...(resolved
+              ? {
+                  contract_code_hash: resolved.hash,
+                  contract_portfolio_id: resolved.id,
+                }
+              : {}),
+          },
+          { transaction: t },
+        );
+        await setRlsSessionGucs(
+          sequelize,
+          {
+            tenant_id: String(tenant.id),
+            allow_tenant_self_registration: 'false',
+          },
+          t,
+        );
+        await TenantConfigModel.create(
+          {
+            tenant_id: tenant.id,
+            modules_json: DEFAULT_TENANT_MODULES as object,
+          },
+          { transaction: t },
+        );
+        const user = await LoginModel.create(
+          {
+            login: loginTrim,
+            password: hashed,
+            first_name: fn,
+            last_name: ln,
+            tenant_id: tenant.id,
+            // Tenant provisório (modo visualização): começa como user (somente leitura).
+            // Após concluir o onboarding (definir identidade), promovemos para admin.
+            role: 'user',
+            permissions: { ...DEFAULT_PERMISSIONS },
+            is_super_admin: false,
+          },
+          { transaction: t },
+        );
+        return {
+          tenantId: tenant.id,
+          slug: tenant.slug,
+          userId: user.id,
+          login: user.login,
+        };
+      });
+    } catch (err: unknown) {
+      if (
+        err instanceof BaseError &&
+        err.name === 'SequelizeUniqueConstraintError'
+      ) {
+        throw new HttpError('Este e-mail já está em uso neste contexto', 409);
+      }
+      throw err;
+    }
+  }
+
+  private async generateUniqueTenantSlug(t: Transaction): Promise<string> {
+    for (let i = 0; i < 24; i++) {
+      const slug = `u-${randomBytes(9).toString('hex')}`;
+      const exists = await TenantModel.findOne({
+        where: { slug },
+        attributes: ['id'],
+        transaction: t,
+      });
+      if (!exists) return slug;
+    }
+    throw new HttpError(
+      'Não foi possível reservar um identificador para o abrigo',
+      500,
+    );
+  }
+
+  private static normalizeShelterSlug(raw: string): string {
+    return String(raw ?? '')
+      .trim()
+      .toLowerCase();
+  }
+
+  private static assertValidNewShelterSlug(slug: string): void {
+    if (slug === 'viewer') {
+      throw new HttpError('Identificador reservado pelo sistema', 400);
+    }
+    if (!/^[a-z0-9](?:[a-z0-9-]{0,58}[a-z0-9])?$/.test(slug)) {
+      throw new HttpError(
+        'Identificador do abrigo inválido (use letras minúsculas, números e hífens; não inicie nem termine com hífen)',
+        400,
+      );
+    }
+  }
+
+  async registerUserInViewerTenant(attrs: {
+    login: string;
+    password: string;
+    first_name?: string;
+    last_name?: string;
+  }): Promise<{
+    tenantId: number;
+    slug: string;
+    userId: number;
+    login: string;
+  }> {
+    const loginTrim = attrs.login.trim();
+    if (!loginTrim) throw new HttpError('E-mail obrigatório', 400);
+    validateStrongPassword(attrs.password);
+    const fn = String(attrs.first_name ?? '').trim();
+    const ln = String(attrs.last_name ?? '').trim();
+    if (fn.length < 2) {
+      throw new HttpError('Nome deve ter pelo menos 2 caracteres', 400);
+    }
+    if (ln.length < 2) {
+      throw new HttpError('Sobrenome deve ter pelo menos 2 caracteres', 400);
+    }
+
+    const hashed = await bcrypt.hash(attrs.password, 10);
+    try {
+      return await sequelize.transaction(async (t: Transaction) => {
+        await setRlsSessionGucs(
+          sequelize,
+          { allow_viewer_only_lookup: 'true' },
+          t,
+        );
+        const viewer = await TenantModel.findOne({
+          where: { slug: 'viewer' },
+          attributes: ['id'],
+          transaction: t,
+        });
+        if (!viewer) {
+          throw new HttpError(
+            'Cadastro em modo visualização indisponível. Contacte o suporte.',
+            503,
+          );
+        }
+
+        await setRlsSessionGucs(
+          sequelize,
+          {
+            allow_viewer_only_lookup: 'false',
+            tenant_id: String(viewer.id),
+          },
+          t,
+        );
+
+        const existing = await this.repo.findByLoginForTenant(
+          loginTrim,
+          viewer.id,
+          t,
+        );
+        if (existing) {
+          throw new HttpError('Este e-mail já está cadastrado', 409);
+        }
+
+        const created = await this.repo.create(
+          {
+            login: loginTrim,
+            password: hashed,
+            first_name: fn,
+            last_name: ln,
+            tenant_id: viewer.id,
+            role: 'user',
+            is_super_admin: false,
+          },
+          { transaction: t },
+        );
+        return {
+          tenantId: viewer.id,
+          slug: 'viewer',
+          userId: created.id,
+          login: created.login,
+        };
+      });
+    } catch (err: unknown) {
+      if (isHttpError(err)) throw err;
+      if (
+        err instanceof BaseError &&
+        err.name === 'SequelizeUniqueConstraintError'
+      ) {
+        throw new HttpError('Este e-mail já está em uso neste contexto', 409);
+      }
+      throw err;
+    }
+  }
+
+  async registerShelterWithAdmin(attrs: {
+    slug: string;
+    name: string;
+    contract_code: string;
+    login: string;
+    password: string;
+    first_name?: string;
+    last_name?: string;
+  }): Promise<{
+    tenantId: number;
+    slug: string;
+    userId: number;
+    login: string;
+  }> {
+    const slug = LoginService.normalizeShelterSlug(attrs.slug);
+    const name = String(attrs.name ?? '').trim();
+    LoginService.assertValidNewShelterSlug(slug);
+    if (name.length < 2) {
+      throw new HttpError(
+        'Nome do abrigo deve ter pelo menos 2 caracteres',
+        400,
+      );
+    }
+
+    const cc = String(attrs.contract_code ?? '').trim();
+    if (!cc) {
+      throw new HttpError('Código de contrato obrigatório', 400);
+    }
+
+    const loginTrim = attrs.login.trim();
+    if (!loginTrim) throw new HttpError('E-mail obrigatório', 400);
+    validateStrongPassword(attrs.password);
+    const fn = String(attrs.first_name ?? '').trim();
+    const ln = String(attrs.last_name ?? '').trim();
+    if (fn.length < 2) {
+      throw new HttpError('Nome deve ter pelo menos 2 caracteres', 400);
+    }
+    if (ln.length < 2) {
+      throw new HttpError('Sobrenome deve ter pelo menos 2 caracteres', 400);
+    }
+
+    const portfolioRepo = new ContractPortfolioRepository();
+    const resolved = await portfolioRepo.resolveOrCreateByPlainText(cc);
+    const hashed = await bcrypt.hash(attrs.password, 10);
+
+    try {
+      return await sequelize.transaction(async (t: Transaction) => {
+        await setRlsSessionGucs(
+          sequelize,
+          { allow_tenant_self_registration: 'true' },
+          t,
+        );
+        const taken = await TenantModel.findOne({
+          where: { slug },
+          attributes: ['id'],
+          transaction: t,
+        });
+        if (taken) {
+          throw new HttpError(
+            'Já existe um abrigo com este identificador',
+            409,
+          );
+        }
+
+        const tenant = await TenantModel.create(
+          {
+            slug,
+            name: name.slice(0, 120),
+            contract_code_hash: resolved.hash,
+            contract_portfolio_id: resolved.id,
+          },
+          { transaction: t },
+        );
+        await setRlsSessionGucs(
+          sequelize,
+          {
+            tenant_id: String(tenant.id),
+            allow_tenant_self_registration: 'false',
+          },
+          t,
+        );
+        await TenantConfigModel.create(
+          {
+            tenant_id: tenant.id,
+            modules_json: DEFAULT_TENANT_MODULES as object,
+          },
+          { transaction: t },
+        );
+
+        const userExists = await this.repo.findByLoginForTenant(
+          loginTrim,
+          tenant.id,
+          t,
+        );
+        if (userExists) {
+          throw new HttpError('Este e-mail já está em uso neste abrigo', 409);
+        }
+
+        const created = await this.repo.create(
+          {
+            login: loginTrim,
+            password: hashed,
+            first_name: fn,
+            last_name: ln,
+            tenant_id: tenant.id,
+            role: 'admin',
+            is_super_admin: false,
+          },
+          { transaction: t },
+        );
+
+        return {
+          tenantId: tenant.id,
+          slug: tenant.slug,
+          userId: created.id,
+          login: created.login,
+        };
+      });
+    } catch (err: unknown) {
+      if (isHttpError(err)) throw err;
+      if (
+        err instanceof BaseError &&
+        err.name === 'SequelizeUniqueConstraintError'
+      ) {
+        throw new HttpError('Este e-mail já está em uso neste contexto', 409);
+      }
+      throw err;
+    }
+  }
+
+  async joinByInviteToken(attrs: {
+    token: string;
+    login: string;
+    password: string;
+    first_name?: string;
+    last_name?: string;
+  }): Promise<{
+    tenantId: number;
+    slug: string;
+    userId: number;
+    login: string;
+  }> {
+    const plain = String(attrs.token ?? '').trim();
+    if (!plain) {
+      throw new HttpError('Token de convite obrigatório', 400);
+    }
+    // Erro comum: colar o token_digest (sha256 hex) em vez do token original.
+    // O digest é o que fica salvo na base; o token original só aparece na resposta/URL do convite.
+    if (/^[a-f0-9]{64}$/i.test(plain)) {
+      throw new HttpError(
+        'Token inválido. Você colou o token_digest da base. Use o token original do link/convite (não o digest).',
+        400,
+      );
+    }
+
+    const loginTrim = attrs.login.trim();
+    if (!loginTrim) throw new HttpError('E-mail obrigatório', 400);
+    validateStrongPassword(attrs.password);
+    const fn = String(attrs.first_name ?? '').trim();
+    const ln = String(attrs.last_name ?? '').trim();
+    if (fn.length < 2) {
+      throw new HttpError('Nome deve ter pelo menos 2 caracteres', 400);
+    }
+    if (ln.length < 2) {
+      throw new HttpError('Sobrenome deve ter pelo menos 2 caracteres', 400);
+    }
+
+    const digest = digestInviteTokenPlain(plain);
+    const inviteRepo = new TenantInviteRepository();
+    const hashed = await bcrypt.hash(attrs.password, 10);
+
+    try {
+      return await sequelize.transaction(async (t: Transaction) => {
+        await setRlsSessionGucs(sequelize, { invite_token_digest: digest }, t);
+        const invite = await inviteRepo.findConsumableByDigestForUpdate(
+          digest,
+          t,
+        );
+        if (!invite) {
+          throw new HttpError('Token de convite inválido ou já utilizado', 400);
+        }
+        if (new Date(invite.expires_at) < new Date()) {
+          throw new HttpError('Token de convite expirado', 400);
+        }
+
+        await setRlsSessionGucs(
+          sequelize,
+          {
+            invite_token_digest: '',
+            tenant_id: String(invite.tenant_id),
+          },
+          t,
+        );
+
+        const tenantRow = await TenantModel.findByPk(invite.tenant_id, {
+          attributes: ['id', 'slug'],
+          transaction: t,
+        });
+        if (!tenantRow) {
+          throw new HttpError('Abrigo não encontrado', 500);
+        }
+        if (tenantRow.slug === 'viewer') {
+          throw new HttpError('Convite inválido para este contexto', 400);
+        }
+
+        const existing = await this.repo.findByLoginForTenant(
+          loginTrim,
+          invite.tenant_id,
+          t,
+        );
+        if (existing) {
+          throw new HttpError(
+            'Este e-mail já está cadastrado neste abrigo',
+            409,
+          );
+        }
+
+        const inviteEmail = String(invite.email ?? '').trim();
+        if (
+          inviteEmail &&
+          inviteEmail.toLowerCase() !== loginTrim.toLowerCase()
+        ) {
+          throw new HttpError('Este convite é para outro e-mail', 403);
+        }
+
+        const roleFromInvite =
+          invite.role === 'admin' || invite.role === 'user'
+            ? invite.role
+            : 'user';
+        const permsFromInviteRaw =
+          invite.permissions_json && typeof invite.permissions_json === 'object'
+            ? invite.permissions_json
+            : null;
+        const permsFromInvite = permsFromInviteRaw
+          ? {
+              read: true,
+              create: Boolean(permsFromInviteRaw.create),
+              update: Boolean(permsFromInviteRaw.update),
+              delete: Boolean(permsFromInviteRaw.delete),
+            }
+          : null;
+
+        const created = await this.repo.create(
+          {
+            login: loginTrim,
+            password: hashed,
+            first_name: fn,
+            last_name: ln,
+            tenant_id: invite.tenant_id,
+            role: roleFromInvite,
+            ...(permsFromInvite ? { permissions: permsFromInvite } : {}),
+            is_super_admin: false,
+          },
+          { transaction: t },
+        );
+
+        await inviteRepo.markUsed(invite.id, t);
+
+        return {
+          tenantId: invite.tenant_id,
+          slug: tenantRow.slug,
+          userId: created.id,
+          login: created.login,
+        };
+      });
+    } catch (err: unknown) {
+      if (isHttpError(err)) throw err;
+      if (
+        err instanceof BaseError &&
+        err.name === 'SequelizeUniqueConstraintError'
+      ) {
+        throw new HttpError('Este e-mail já está em uso neste contexto', 409);
+      }
+      throw err;
+    }
   }
 }

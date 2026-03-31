@@ -17,6 +17,7 @@ import adminRoutes from './admin.routes';
 import dashboardRoutes from './dashboard.routes';
 import { authMiddleware } from '../../../middleware/auth.middleware';
 import { rlsContextMiddleware } from '../../../middleware/rls.middleware';
+import { bindRequestToRlsTransaction } from '../../../middleware/request-rls-transaction.middleware';
 import { blockNonAdminWrites } from '../../../middleware/admin.middleware';
 import { auditLog } from '../../../middleware/audit.middleware';
 import {
@@ -38,6 +39,7 @@ router.use(enforceTenantMiddleware);
 router.use(tenantRequestContextLogMiddleware);
 router.use(blockNonAdminWrites);
 router.use(rlsContextMiddleware);
+router.use(bindRequestToRlsTransaction);
 router.use(auditLog);
 
 router.use('/tenant', tenantRoutes);

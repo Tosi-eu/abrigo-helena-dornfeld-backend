@@ -19,11 +19,6 @@ function safeEqualApiKey(provided: string, expected: string): boolean {
   return crypto.timingSafeEqual(p, e);
 }
 
-/**
- * Gestão de tenants no painel (browser): cookie JWT + `is_super_admin` no DB.
- * Automação / scripts: header `X-API-Key` igual a `X_API_KEY` (sem expor no frontend).
- * Requer `optionalAuthMiddleware` antes desta função nas rotas públicas (antes do auth global).
- */
 export function requireSuperAdminOrApiKey(
   req: AuthRequest,
   res: Response,

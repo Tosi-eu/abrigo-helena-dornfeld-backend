@@ -4,6 +4,7 @@ import { sequelize } from '../sequelize';
 
 export type CreateLoginLogData = {
   user_id?: number | null;
+  tenant_id?: number;
   login: string;
   success: boolean;
   ip?: string | null;
@@ -22,6 +23,7 @@ export class LoginLogRepository {
   async create(data: CreateLoginLogData) {
     const record = await LoginLogModel.create({
       user_id: data.user_id ?? null,
+      tenant_id: data.tenant_id ?? null,
       login: data.login,
       success: data.success,
       ip: data.ip ?? null,

@@ -11,11 +11,22 @@ import {
 } from '../../../core/services/tenant-config.service';
 import { TenantConfigRepository } from '../../database/repositories/tenant-config.repository';
 import { SystemConfigRepository } from '../../database/repositories/system-config.repository';
-import { getErrorMessage } from '../../types/error.types';
+import {
+  getErrorMessage,
+  HttpError,
+  isHttpError,
+} from '../../types/error.types';
 import { inferImageContentTypeFromBuffer } from '../../helpers/image-mime.helper';
 import { TenantRepository } from '../../database/repositories/tenant.repository';
 import { uiDisplayFromConfigRow } from '../../helpers/ui-display.helper';
 import TenantModel from '../../database/models/tenant.model';
+import TenantConfigModel from '../../database/models/tenant-config.model';
+import TenantInviteModel from '../../database/models/tenant-invite.model';
+import LoginModel from '../../database/models/login.model';
+import { sequelize } from '../../database/sequelize';
+import { Op } from 'sequelize';
+import { invalidateAuthCacheForRequest } from '../../helpers/auth-token-cache.helper';
+import { ContractPortfolioRepository } from '../../database/repositories/contract-portfolio.repository';
 import {
   assertLogoUrlBelongsToOurR2,
   deleteTenantLogoObjectsExceptKey,
@@ -28,6 +39,14 @@ const configRepo = new TenantConfigRepository();
 const service = new TenantConfigService(configRepo);
 const tenantRepo = new TenantRepository();
 const systemConfigRepo = new SystemConfigRepository();
+const contractPortfolioRepo = new ContractPortfolioRepository();
+
+const FULL_PERMISSIONS = {
+  read: true,
+  create: true,
+  update: true,
+  delete: true,
+} as const;
 
 type UiDisplayPayload = {
   casela: 'numero' | 'nome';
@@ -106,7 +125,8 @@ export class TenantController {
       }
       const cfg = await service.get(tenantId);
       const tenant = await tenantRepo.findById(tenantId);
-      const onboardingComplete = hasIdentity(tenant);
+      const onboardingComplete =
+        tenant?.slug === 'viewer' || hasIdentity(tenant);
 
       const tenantProfile = mapTenantRowToProfile(tenant);
 
@@ -247,6 +267,7 @@ export class TenantController {
     try {
       const tenantId = requireTenantId(req, res);
       if (tenantId === null) return;
+      const before = await tenantRepo.findById(tenantId);
       if (!(await assertCanUpdateBranding(req, tenantId))) {
         return res.status(403).json({
           error:
@@ -276,6 +297,11 @@ export class TenantController {
       }
 
       const hasUrl = Object.prototype.hasOwnProperty.call(req.body, 'logoUrl');
+      if (hasUrl && !logoUrlRaw) {
+        return res.status(400).json({
+          error: 'logoUrl não pode ser vazio. Envie um logo e tente novamente.',
+        });
+      }
 
       const patch: {
         brand_name: string | null;
@@ -296,6 +322,25 @@ export class TenantController {
 
       const tenantAfter = mapTenantRowToProfile(updated);
 
+      // Promoção automática: ao concluir a identidade pela primeira vez num tenant provisório,
+      // o utilizador criador deixa de ser "viewer" e vira admin com permissões completas.
+      const noIdentityBefore = !hasIdentity(before);
+      const hasIdentityAfter = hasIdentity(updated);
+      const isProvisional = String(updated?.slug ?? '').startsWith('u-');
+      if (
+        noIdentityBefore &&
+        hasIdentityAfter &&
+        isProvisional &&
+        req.user?.id != null &&
+        req.user?.role === 'user'
+      ) {
+        await LoginModel.update(
+          { role: 'admin', permissions: { ...FULL_PERMISSIONS } },
+          { where: { id: req.user.id, tenant_id: tenantId } },
+        );
+        await invalidateAuthCacheForRequest(req);
+      }
+
       const brandingRes: Pick<TenantConfigResponse, 'tenantId' | 'tenant'> = {
         tenantId,
         tenant: tenantAfter,
@@ -304,6 +349,156 @@ export class TenantController {
     } catch (error: unknown) {
       return res.status(500).json({
         error: getErrorMessage(error) || 'Erro ao atualizar branding',
+      });
+    }
+  }
+
+  async setContractCode(req: AuthRequest & TenantRequest, res: Response) {
+    try {
+      const tenantId = requireTenantId(req, res);
+      if (tenantId === null) return;
+      if (req.user?.role !== 'admin' && !req.user?.isSuperAdmin) {
+        return res.status(403).json({
+          error: 'Apenas administradores podem definir o código de contrato.',
+        });
+      }
+      const codeRaw = req.body?.contract_code ?? req.body?.contractCode;
+      const code = codeRaw != null ? String(codeRaw).trim() : '';
+      if (!code) {
+        return res.status(400).json({ error: 'Informe contract_code (texto)' });
+      }
+
+      const tenant = await TenantModel.findByPk(tenantId);
+      if (!tenant)
+        return res.status(404).json({ error: 'Tenant não encontrado' });
+      if (String(tenant.slug ?? '') === 'viewer') {
+        return res.status(400).json({ error: 'Tenant inválido para contrato' });
+      }
+
+      const resolved =
+        await contractPortfolioRepo.resolveOrCreateByPlainText(code);
+
+      const provisionalSlug = String(tenant.slug ?? '');
+      const isProvisional = provisionalSlug.startsWith('u-');
+
+      const canonical = await TenantModel.findOne({
+        where: {
+          contract_portfolio_id: resolved.id,
+          id: { [Op.ne]: tenantId },
+          slug: {
+            [Op.and]: [{ [Op.ne]: 'viewer' }, { [Op.notLike]: 'u-%' }],
+          },
+        },
+        order: [['id', 'ASC']],
+      });
+
+      if (canonical && isProvisional && req.user?.id != null) {
+        try {
+          await sequelize.transaction(async t => {
+            const conflict = await LoginModel.findOne({
+              where: {
+                tenant_id: canonical.id,
+                login: String(req.user!.login).trim(),
+              },
+              transaction: t,
+            });
+            if (conflict && conflict.id !== req.user!.id) {
+              throw new HttpError(
+                'Já existe utilizador com este e-mail neste abrigo. Use outro e-mail ou peça ao administrador.',
+                409,
+              );
+            }
+
+            const canonRow = await TenantModel.findByPk(canonical.id, {
+              transaction: t,
+            });
+            const provRow = await TenantModel.findByPk(tenantId, {
+              transaction: t,
+            });
+            if (!canonRow || !provRow) {
+              throw new HttpError('Tenant não encontrado', 404);
+            }
+
+            if (!hasIdentity(canonRow) && hasIdentity(provRow)) {
+              await TenantModel.update(
+                {
+                  brand_name: provRow.brand_name ?? null,
+                  logo_url: provRow.logo_url ?? null,
+                },
+                { where: { id: canonical.id }, transaction: t },
+              );
+            }
+
+            await LoginModel.update(
+              {
+                tenant_id: canonical.id,
+                role: 'admin',
+                permissions: { ...FULL_PERMISSIONS },
+              },
+              { where: { id: req.user!.id }, transaction: t },
+            );
+
+            await TenantInviteModel.destroy({
+              where: { tenant_id: tenantId },
+              transaction: t,
+            });
+            await sequelize.query(
+              `DELETE FROM login_log
+               WHERE user_id IN (SELECT id FROM login WHERE tenant_id = :tid)`,
+              { replacements: { tid: tenantId }, transaction: t },
+            );
+            await TenantConfigModel.destroy({
+              where: { tenant_id: tenantId },
+              transaction: t,
+            });
+            const deleted = await TenantModel.destroy({
+              where: { id: tenantId },
+              transaction: t,
+            });
+            if (!deleted) {
+              throw new HttpError(
+                'Não foi possível remover o abrigo temporário',
+                500,
+              );
+            }
+          });
+        } catch (err: unknown) {
+          if (isHttpError(err)) throw err;
+          const msg = getErrorMessage(err);
+          if (
+            msg.includes('foreign key') ||
+            msg.includes('violates foreign key constraint')
+          ) {
+            throw new HttpError(
+              'O abrigo temporário ainda tem dados associados e não pôde ser removido. Contate o suporte.',
+              409,
+            );
+          }
+          throw err;
+        }
+
+        await invalidateAuthCacheForRequest(req);
+        await invalidateTenantLogoResolveCacheForSlug(provisionalSlug);
+        const afterCanon = await TenantModel.findByPk(canonical.id);
+        return res.status(200).json({
+          ok: true,
+          migrated: true,
+          tenantId: canonical.id,
+          tenantSlug: afterCanon?.slug ?? canonical.slug,
+        });
+      }
+
+      await tenantRepo.setContractCodeForTenant(tenantId, {
+        contract_code_hash: resolved.hash,
+        contract_portfolio_id: resolved.id,
+      });
+      return res.status(200).json({ ok: true, migrated: false });
+    } catch (error: unknown) {
+      if (isHttpError(error)) {
+        return res.status(error.statusCode).json({ error: error.message });
+      }
+      return res.status(400).json({
+        error: getErrorMessage(error) || 'Erro ao definir código de contrato',
       });
     }
   }

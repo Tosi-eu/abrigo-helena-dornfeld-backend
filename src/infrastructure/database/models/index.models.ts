@@ -16,5 +16,6 @@ import './residente.model';
 import './system-config.model';
 import './tenant.model';
 import './tenant-config.model';
+import './tenant-invite.model';
 
 export { setupAssociations } from './associations.models';

@@ -3,10 +3,6 @@ import type { AuthRequest } from './auth.middleware';
 import type { TenantRequest } from './tenant.middleware';
 import { logger } from '../infrastructure/helpers/logger.helper';
 
-/**
- * Registo estruturado com tenant + utilizador autenticado (suporte / auditoria leve).
- * Ative LOG_HTTP_TENANT=1 para nível `info`; caso contrário usa `debug` (só com LOG_LEVEL=debug).
- */
 export function tenantRequestContextLogMiddleware(
   req: AuthRequest & TenantRequest,
   _res: Response,

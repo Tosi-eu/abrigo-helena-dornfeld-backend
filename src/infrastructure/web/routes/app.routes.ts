@@ -4,12 +4,14 @@ import { AppController } from '../controllers/app.controller';
 import { AdminTenantsController } from '../controllers/admin-tenants.controller';
 import { optionalAuthMiddleware } from '../../../middleware/auth.middleware';
 import { requireSuperAdminOrApiKey } from '../../../middleware/super-admin.middleware';
+import { bindSuperAdminRlsTransaction } from '../../../middleware/request-rls-transaction.middleware';
 
 const appController = new AppController();
 const tenantsController = new AdminTenantsController();
 const router = Router();
 
-/** Janela única para endpoints públicos de tenant (lista, branding, logo proxy). */
+router.use('/admin/tenants', bindSuperAdminRlsTransaction);
+
 const publicTenantWindowMs =
   Number(process.env.PUBLIC_TENANT_RATE_WINDOW_MS) || 60_000;
 const publicTenantListMax = Number(process.env.PUBLIC_TENANT_LIST_MAX) || 120;

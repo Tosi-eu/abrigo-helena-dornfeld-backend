@@ -22,6 +22,7 @@ export class TenantModel extends Model<TenantAttrs, TenantCreation> {
   declare logo_url?: string | null;
   declare contract_code_hash?: string | null;
   declare contract_portfolio_id?: number | null;
+  declare updated_at: Date;
 }
 
 TenantModel.init(

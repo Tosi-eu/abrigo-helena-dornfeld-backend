@@ -1,5 +1,8 @@
 import type { TenantBrandingApiResponse } from '@porto-sdk/sdk';
+import { createHash } from 'node:crypto';
 import { Request, Response } from 'express';
+import { withRlsContext } from '../../database/rls.context';
+import { sequelize } from '../../database/sequelize';
 import { TenantRepository } from '../../database/repositories/tenant.repository';
 import { verifyContractCode as matchContractCode } from '../../helpers/contract-code.helper';
 import {
@@ -11,6 +14,30 @@ import {
 
 const TENANT_LOGO_PROXY_MAX_BYTES = 6 * 1024 * 1024;
 
+function weakTenantLogoEtag(
+  slug: string,
+  brandingUpdatedAt: string | null,
+  logoUrl: string,
+): string {
+  const payload = `${slug}\0${brandingUpdatedAt ?? ''}\0${logoUrl}`;
+  const h = createHash('sha256')
+    .update(payload)
+    .digest('base64url')
+    .slice(0, 28);
+  return `W/"tl-${h}"`;
+}
+
+function ifNoneMatchPrecludesSend(req: Request, etag: string): boolean {
+  const raw = req.headers['if-none-match'];
+  if (raw == null || raw === '') return false;
+  const strip = (x: string) => x.trim().replace(/^W\//i, '').replace(/"/g, '');
+  const server = strip(etag);
+  for (const part of raw.split(',')) {
+    if (strip(part) === server) return true;
+  }
+  return false;
+}
+
 export class AppController {
   constructor() {}
 
@@ -18,9 +45,12 @@ export class AppController {
     return res.status(200).json({ ok: true });
   }
 
-  /** Config pública para a SPA (ex.: logo padrão no R2 sem VITE_R2 no build). */
   async getPublicAppConfig(_req: Request, res: Response) {
-    const defaultLogoUrl = getPublicDefaultLogoUrl();
+    const explicit = process.env.PUBLIC_DEFAULT_LOGO_URL?.trim();
+    const defaultLogoUrl =
+      explicit ||
+      (process.env.NODE_ENV === 'development' ? '/default_logo.png' : null) ||
+      getPublicDefaultLogoUrl();
     return res.status(200).json({ defaultLogoUrl });
   }
 
@@ -29,8 +59,14 @@ export class AppController {
       const q = req.query.q != null ? String(req.query.q) : '';
       const limit =
         req.query.limit != null ? Number(req.query.limit) : undefined;
-      const repo = new TenantRepository();
-      const rows = await repo.listPublic({ q, limit });
+      const rows = await withRlsContext(
+        sequelize,
+        { allow_public_directory: 'true' },
+        async trx => {
+          const repo = new TenantRepository();
+          return repo.listPublic({ q, limit }, trx);
+        },
+      );
       return res.json({ data: rows });
     } catch {
       return res.status(500).json({ error: 'Erro ao listar abrigos' });
@@ -43,73 +79,106 @@ export class AppController {
       if (!slug) {
         return res.status(400).json({ error: 'Slug obrigatório' });
       }
-      const repo = new TenantRepository();
-      const t = await repo.findPublicBrandingBySlug(slug);
-      if (!t) {
-        const notFound: TenantBrandingApiResponse = { found: false };
-        return res.status(200).json(notFound);
-      }
-      let logoUrl = t.logoUrl ?? null;
-      if (!logoUrl) {
-        const fromR2 = await tryResolveTenantLogoPublicUrlFromR2({
-          slug: t.slug,
-          brandName: t.brandName ?? null,
-          name: t.name,
-        });
-        if (fromR2) {
-          logoUrl = fromR2;
-          const persisted = await repo.tryPersistLogoUrlFromR2Discovery(
-            t.slug,
-            fromR2,
-          );
-          if (persisted) {
-            invalidateTenantLogoResolveCacheForSlug(t.slug);
+      const branding = await withRlsContext(
+        sequelize,
+        { allow_public_directory: 'true' },
+        async trx => {
+          const repo = new TenantRepository();
+          const t = await repo.findPublicBrandingBySlug(slug, trx);
+          if (!t) {
+            const notFound: TenantBrandingApiResponse = { found: false };
+            return notFound;
           }
-        }
-      }
-      const branding: TenantBrandingApiResponse = {
-        found: true,
-        slug: t.slug,
-        name: t.name,
-        brandName: t.brandName ?? null,
-        logoUrl,
-        requiresContractCode: true,
-        contractCodeMandatory: t.contractCodeMandatory,
-      };
+          let logoUrl = t.logoUrl ?? null;
+          if (!logoUrl) {
+            const fromR2 = await tryResolveTenantLogoPublicUrlFromR2({
+              slug: t.slug,
+              brandName: t.brandName ?? null,
+              name: t.name,
+            });
+            if (fromR2) {
+              logoUrl = fromR2;
+              const persisted = await repo.tryPersistLogoUrlFromR2Discovery(
+                t.slug,
+                fromR2,
+                trx,
+              );
+              if (persisted) {
+                invalidateTenantLogoResolveCacheForSlug(t.slug);
+              }
+            }
+          }
+          const b: TenantBrandingApiResponse = {
+            found: true,
+            slug: t.slug,
+            name: t.name,
+            brandName: t.brandName ?? null,
+            logoUrl,
+            requiresContractCode: true,
+            contractCodeMandatory: t.contractCodeMandatory,
+          };
+          return b;
+        },
+      );
       return res.status(200).json(branding);
     } catch {
       return res.status(500).json({ error: 'Erro ao carregar abrigo' });
     }
   }
 
-  /**
-   * Faz proxy do logo do tenant (R2) pela API — evita `<img src="*.r2.dev">` no browser,
-   * que em alguns contextos dispara erro de frame/origem (ex.: chrome-error://).
-   */
   async streamTenantLogoBySlug(req: Request, res: Response) {
     try {
       const slug = String(req.params.slug ?? '').trim();
       if (!slug) {
         return res.status(400).end();
       }
-      const repo = new TenantRepository();
-      const t = await repo.findPublicBrandingBySlug(slug);
+      const { t, logoUrl: resolvedUrl } = await withRlsContext(
+        sequelize,
+        { allow_public_directory: 'true' },
+        async trx => {
+          const repo = new TenantRepository();
+          const row = await repo.findPublicBrandingBySlug(slug, trx);
+          if (!row) return { t: null, logoUrl: null };
+          let logoUrl = row.logoUrl ?? null;
+          if (!logoUrl) {
+            const fromR2 = await tryResolveTenantLogoPublicUrlFromR2({
+              slug: row.slug,
+              brandName: row.brandName ?? null,
+              name: row.name,
+            });
+            if (fromR2) {
+              logoUrl = fromR2;
+              await repo.tryPersistLogoUrlFromR2Discovery(
+                row.slug,
+                fromR2,
+                trx,
+              );
+            }
+          }
+          return { t: row, logoUrl };
+        },
+      );
       if (!t) {
         return res.status(404).end();
       }
-      let logoUrl = t.logoUrl ?? null;
-      if (!logoUrl) {
-        const fromR2 = await tryResolveTenantLogoPublicUrlFromR2({
-          slug: t.slug,
-          brandName: t.brandName ?? null,
-          name: t.name,
-        });
-        if (fromR2) {
-          logoUrl = fromR2;
-        }
-      }
+      const logoUrl = resolvedUrl;
       if (!logoUrl || !assertLogoUrlBelongsToOurR2(logoUrl)) {
         return res.status(404).end();
+      }
+
+      const etag = weakTenantLogoEtag(
+        t.slug,
+        t.brandingUpdatedAt ?? null,
+        logoUrl,
+      );
+      res.setHeader('ETag', etag);
+      res.setHeader(
+        'Cache-Control',
+        'private, max-age=86400, stale-while-revalidate=604800',
+      );
+
+      if (ifNoneMatchPrecludesSend(req, etag)) {
+        return res.status(304).end();
       }
 
       const upstream = await fetch(logoUrl, {
@@ -135,11 +204,6 @@ export class AppController {
         return res.status(413).end();
       }
       res.setHeader('Content-Type', ct);
-      res.setHeader(
-        'Cache-Control',
-        'private, no-cache, no-store, must-revalidate',
-      );
-      res.setHeader('Pragma', 'no-cache');
       return res.status(200).send(buf);
     } catch {
       return res.status(502).end();
@@ -160,8 +224,14 @@ export class AppController {
             ? String(body.contractCode)
             : '';
 
-      const repo = new TenantRepository();
-      const tenant = await repo.findContractVerifyPayloadBySlug(slug);
+      const tenant = await withRlsContext(
+        sequelize,
+        { allow_public_directory: 'true' },
+        async trx => {
+          const repo = new TenantRepository();
+          return repo.findContractVerifyPayloadBySlug(slug, trx);
+        },
+      );
       if (!tenant) {
         return res.status(404).json({ error: 'Abrigo não encontrado' });
       }

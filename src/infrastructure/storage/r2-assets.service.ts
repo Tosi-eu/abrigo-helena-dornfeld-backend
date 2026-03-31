@@ -30,7 +30,6 @@ export function getR2PublicBaseUrl(): string {
   return process.env.R2_PUBLIC_BASE_URL!.replace(/\/$/, '');
 }
 
-/** Base pública do bucket (só leitura de env), sem exigir credenciais S3 — para URLs estáticas como default_logo. */
 export function tryGetR2PublicBaseUrl(): string | null {
   const raw = process.env.R2_PUBLIC_BASE_URL?.trim();
   if (!raw) return null;
@@ -45,7 +44,6 @@ export function tryGetR2PublicBaseUrl(): string | null {
   return s || null;
 }
 
-/** URL completa do logo padrão na raiz do bucket R2. */
 export function getPublicDefaultLogoUrl(): string | null {
   const base = tryGetR2PublicBaseUrl();
   if (!base) return null;
@@ -118,7 +116,6 @@ export function assertLogoUrlBelongsToOurR2(url: string): boolean {
   return url.startsWith(`${base}/`);
 }
 
-/** Chave do objeto no bucket a partir da URL pública (só se for nosso R2). */
 export function publicUrlToR2KeyIfOurBucket(
   url: string | null | undefined,
 ): string | null {
@@ -130,10 +127,6 @@ export function publicUrlToR2KeyIfOurBucket(
   return path || null;
 }
 
-/**
- * Após gravar o logo novo no R2: apaga outras variantes (`.png` vs `.jpg`, nome de marca
- * antigo no prefixo, ou URL antiga no DB) mantendo só `keepKey`.
- */
 export async function deleteTenantLogoObjectsExceptKey(params: {
   slug: string;
   keepKey: string;

@@ -1,6 +1,6 @@
 import type { PublicTenantListItem } from '@porto-sdk/sdk';
 import TenantModel from '../models/tenant.model';
-import { Op } from 'sequelize';
+import { Op, type Transaction } from 'sequelize';
 
 export class TenantRepository {
   async findById(id: number) {
@@ -30,7 +30,7 @@ export class TenantRepository {
     });
   }
 
-  async findPublicBrandingBySlug(slug: string) {
+  async findPublicBrandingBySlug(slug: string, transaction?: Transaction) {
     const row = await TenantModel.findOne({
       where: { slug },
       attributes: [
@@ -39,9 +39,18 @@ export class TenantRepository {
         'brand_name',
         'logo_url',
         'contract_code_hash',
+        'updated_at',
       ],
+      transaction,
     });
     if (!row) return null;
+    const updatedAt = row.updated_at;
+    const brandingUpdatedAt =
+      updatedAt instanceof Date
+        ? updatedAt.toISOString()
+        : updatedAt != null
+          ? String(updatedAt)
+          : null;
     return {
       slug: row.slug,
       name: row.name,
@@ -49,6 +58,7 @@ export class TenantRepository {
       logoUrl: row.logo_url ?? null,
       requiresContractCode: true,
       contractCodeMandatory: Boolean(row.contract_code_hash),
+      brandingUpdatedAt,
     };
   }
 
@@ -59,10 +69,14 @@ export class TenantRepository {
     return row?.contract_code_hash ?? null;
   }
 
-  async findContractVerifyPayloadBySlug(slug: string) {
+  async findContractVerifyPayloadBySlug(
+    slug: string,
+    transaction?: Transaction,
+  ) {
     const row = await TenantModel.findOne({
       where: { slug: String(slug).trim() },
       attributes: ['id', 'slug', 'contract_code_hash'],
+      transaction,
     });
     if (!row) return null;
     return {
@@ -105,28 +119,38 @@ export class TenantRepository {
     return { data, total, page: safePage, limit: safeLimit };
   }
 
-  async listPublic(params?: {
-    q?: string;
-    limit?: number;
-  }): Promise<PublicTenantListItem[]> {
+  async listPublic(
+    params?: {
+      q?: string;
+      limit?: number;
+    },
+    transaction?: Transaction,
+  ): Promise<PublicTenantListItem[]> {
     const q = String(params?.q ?? '').trim();
     const limit = Math.min(50, Math.max(1, Number(params?.limit) || 20));
+    const notViewer = { slug: { [Op.ne]: 'viewer' } };
     const where =
       q.length > 0
         ? {
-            [Op.or]: [
-              { slug: { [Op.iLike]: `%${q}%` } },
-              { name: { [Op.iLike]: `%${q}%` } },
-              { brand_name: { [Op.iLike]: `%${q}%` } },
+            [Op.and]: [
+              notViewer,
+              {
+                [Op.or]: [
+                  { slug: { [Op.iLike]: `%${q}%` } },
+                  { name: { [Op.iLike]: `%${q}%` } },
+                  { brand_name: { [Op.iLike]: `%${q}%` } },
+                ],
+              },
             ],
           }
-        : undefined;
+        : notViewer;
 
     const rows = await TenantModel.findAll({
       where,
       attributes: ['id', 'slug', 'name', 'brand_name'],
       order: [['id', 'ASC']],
       limit,
+      transaction,
     });
     return rows.map(
       (r): PublicTenantListItem => ({
@@ -172,6 +196,7 @@ export class TenantRepository {
   async tryPersistLogoUrlFromR2Discovery(
     slug: string,
     logoUrl: string,
+    transaction?: Transaction,
   ): Promise<boolean> {
     const s = String(slug).trim();
     if (!s || !logoUrl.startsWith('https://')) return false;
@@ -182,6 +207,7 @@ export class TenantRepository {
           slug: s,
           logo_url: { [Op.is]: null },
         },
+        transaction,
       },
     );
     return affected > 0;
@@ -197,6 +223,20 @@ export class TenantRepository {
     }>,
   ) {
     await TenantModel.update(data, { where: { id } });
+    return this.findById(id);
+  }
+
+  async setContractCodeForTenant(
+    id: number,
+    data: { contract_code_hash: string; contract_portfolio_id: number },
+  ) {
+    await TenantModel.update(
+      {
+        contract_code_hash: data.contract_code_hash,
+        contract_portfolio_id: data.contract_portfolio_id,
+      },
+      { where: { id } },
+    );
     return this.findById(id);
   }
 

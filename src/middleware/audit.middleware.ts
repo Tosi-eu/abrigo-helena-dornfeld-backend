@@ -1,5 +1,6 @@
 import { Response, NextFunction } from 'express';
 import { AuthRequest } from './auth.middleware';
+import type { TenantRequest } from './tenant.middleware';
 import { logger } from '../infrastructure/helpers/logger.helper';
 import AuditLogModel from '../infrastructure/database/models/audit-log.model';
 import { getOldValueForAudit } from './audit-old-value.helper';
@@ -31,7 +32,11 @@ function safeJsonObject(value: unknown): Record<string, unknown> | null {
   }
 }
 
-export function auditLog(req: AuthRequest, res: Response, next: NextFunction) {
+export function auditLog(
+  req: AuthRequest & TenantRequest,
+  res: Response,
+  next: NextFunction,
+) {
   const startTime = Date.now();
   const rawPath = (req.originalUrl ?? req.url ?? req.path ?? '').split('?')[0];
   const pathForAudit = rawPath.replace(/^\/api\/v1/, '') || '/';
@@ -81,7 +86,7 @@ export function auditLog(req: AuthRequest, res: Response, next: NextFunction) {
 }
 
 function logAuditEvent(
-  req: AuthRequest,
+  req: AuthRequest & TenantRequest,
   res: Response,
   duration: number,
   oldValue: Record<string, unknown> | null,
@@ -95,6 +100,7 @@ function logAuditEvent(
   if (!SENSITIVE_METHODS.includes(method)) return;
 
   const userId = req.user?.id ?? null;
+  const tenantId = req.tenant?.id ?? null;
   const operation_type = getOperationType(method);
   const resource = getResource(pathForAudit || path);
 
@@ -114,6 +120,7 @@ function logAuditEvent(
 
   AuditLogModel.create({
     user_id: userId,
+    tenant_id: tenantId,
     method,
     path,
     operation_type,

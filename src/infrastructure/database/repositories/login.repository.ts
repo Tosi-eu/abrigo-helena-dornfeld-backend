@@ -1,4 +1,5 @@
 import type { Login } from '@porto-sdk/sdk';
+import type { Transaction } from 'sequelize';
 import { LoginModel } from '../models/login.model';
 import { sequelize } from '../sequelize';
 
@@ -29,8 +30,9 @@ export type CreateUserData = Login & {
 };
 
 export class LoginRepository {
-  async create(data: CreateUserData) {
+  async create(data: CreateUserData, options?: { transaction?: Transaction }) {
     const tenantId = Number(data.tenant_id) || 1;
+    const transaction = options?.transaction;
 
     let role: 'admin' | 'user';
     let permissions: typeof FULL_PERMISSIONS | typeof DEFAULT_USER_PERMISSIONS;
@@ -43,6 +45,7 @@ export class LoginRepository {
     } else {
       const usersInTenant = await LoginModel.count({
         where: { tenant_id: tenantId },
+        transaction,
       });
       if (usersInTenant === 0) {
         role = 'admin';
@@ -54,11 +57,14 @@ export class LoginRepository {
     }
 
     try {
-      const user = await LoginModel.create({
-        ...data,
-        role,
-        permissions,
-      });
+      const user = await LoginModel.create(
+        {
+          ...data,
+          role,
+          permissions,
+        },
+        { transaction },
+      );
       return { id: user.id, login: user.login, role: user.role };
     } catch (err: unknown) {
       const name = (err as { name?: string })?.name;
@@ -69,12 +75,9 @@ export class LoginRepository {
     }
   }
 
-  /**
-   * Lista abrigos (slug + rótulo) que possuem um login com o mesmo e-mail/identificador,
-   * comparando de forma case-insensitive após trim.
-   */
   async findTenantSummariesForLogin(
     login: string,
+    transaction?: Transaction,
   ): Promise<{ slug: string; label: string }[]> {
     const trimmed = login.trim();
     if (!trimmed) return [];
@@ -87,7 +90,7 @@ export class LoginRepository {
       WHERE LOWER(TRIM(BOTH FROM l.login)) = LOWER(TRIM(BOTH FROM :login))
       ORDER BY t.slug ASC
       `,
-      { replacements: { login: trimmed } },
+      { replacements: { login: trimmed }, transaction },
     );
 
     const rows = rawRows as {
@@ -119,7 +122,11 @@ export class LoginRepository {
     });
   }
 
-  async findByLoginForTenant(login: string, tenantId: number) {
+  async findByLoginForTenant(
+    login: string,
+    tenantId: number,
+    transaction?: Transaction,
+  ) {
     return LoginModel.findOne({
       where: { login, tenant_id: tenantId },
       attributes: [
@@ -134,6 +141,7 @@ export class LoginRepository {
         'is_super_admin',
         'permissions',
       ],
+      transaction,
     });
   }
 

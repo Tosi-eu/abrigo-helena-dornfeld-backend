@@ -40,33 +40,6 @@ module.exports = {
         defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
       },
     });
-
-    // Seed default tenant/config if missing.
-    await queryInterface.sequelize.query(`
-      INSERT INTO tenant (id, slug, name, created_at, updated_at)
-      VALUES (1, 'default', 'Tenant padrão', NOW(), NOW())
-      ON CONFLICT (id) DO NOTHING;
-    `);
-
-    const defaultModules = {
-      enabled: [
-        'dashboard',
-        'admin',
-        'residents',
-        'medicines',
-        'inputs',
-        'stock',
-        'movements',
-        'reports',
-        'notifications',
-      ],
-    };
-    await queryInterface.sequelize.query(
-      `INSERT INTO tenant_config (tenant_id, modules_json, created_at, updated_at)
-       VALUES (1, :modules::jsonb, NOW(), NOW())
-       ON CONFLICT (tenant_id) DO NOTHING;`,
-      { replacements: { modules: JSON.stringify(defaultModules) } },
-    );
   },
 
   async down(queryInterface) {

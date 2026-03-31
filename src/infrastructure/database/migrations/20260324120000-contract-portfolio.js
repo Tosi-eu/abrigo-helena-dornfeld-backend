@@ -2,12 +2,6 @@
 
 const { addColumnIfNotExists } = require('../migration-helpers');
 
-/**
- * Um contrato comercial (mesmo código em texto) pode cobrir vários abrigos.
- * `contract_portfolio` guarda o hash canónico; vários tenants podem apontar para o mesmo portfolio.
- *
- * @type {import('sequelize-cli').Migration}
- */
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable('contract_portfolio', {

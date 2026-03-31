@@ -62,7 +62,6 @@ const createRedisClient = (): Redis | null => {
 
 redisClient = createRedisClient();
 
-/** Encerra conexão Redis (usado no globalTeardown do Jest). */
 export async function closeRedisClient(): Promise<void> {
   if (!redisClient) return;
   redisAvailable = false;

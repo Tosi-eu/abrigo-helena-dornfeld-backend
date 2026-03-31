@@ -4,10 +4,6 @@ import {
 } from '../../helpers/contract-code.helper';
 import ContractPortfolioModel from '../models/contract-portfolio.model';
 
-/**
- * Vários abrigos podem partilhar o mesmo contrato comercial: o texto do código
- * é verificado contra hashes existentes (bcrypt); se não houver match, cria-se um portfolio novo.
- */
 export class ContractPortfolioRepository {
   async resolveOrCreateByPlainText(
     plain: string,
