@@ -1,4 +1,3 @@
-
 export function inferImageContentTypeFromBuffer(buffer: Buffer): string | null {
   if (buffer.length < 12) return null;
 
