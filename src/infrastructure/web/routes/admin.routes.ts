@@ -14,7 +14,10 @@ import { MovementService } from '../../../core/services/movimentacao.service';
 import { AuditRepository } from '../../database/repositories/audit.repository';
 import { AdminController } from '../controllers/admin.controller';
 import { requireAdmin } from '../../../middleware/admin.middleware';
+import { requireSuperAdmin } from '../../../middleware/super-admin.middleware';
 import { cacheService } from '../../database/redis/client.redis';
+import { TenantConfigRepository } from '../../database/repositories/tenant-config.repository';
+import { TenantConfigService } from '../../../core/services/tenant-config.service';
 
 const router = Router();
 const upload = multer({
@@ -27,9 +30,15 @@ const loginLogRepo = new LoginLogRepository();
 const reportRepo = new ReportRepository();
 const systemConfigRepo = new SystemConfigRepository();
 const notificationRepo = new NotificationEventRepository();
+const tenantConfigService = new TenantConfigService(
+  new TenantConfigRepository(),
+);
 const loginService = new LoginService(loginRepo);
 const reportService = new ReportService(reportRepo, cacheService);
-const notificationService = new NotificationEventService(notificationRepo);
+const notificationService = new NotificationEventService(
+  notificationRepo,
+  tenantConfigService,
+);
 const auditRepo = new AuditRepository();
 const movementRepo = new MovementRepository();
 const movementService = new MovementService(movementRepo, cacheService);
@@ -73,10 +82,12 @@ router.get('/metrics/movements', (req, res) =>
   controller.getMovementsThisMonth(req, res),
 );
 router.get('/health', (req, res) => controller.getHealth(req, res));
-router.get('/backup/status', (req, res) =>
+router.get('/backup/status', requireSuperAdmin, (req, res) =>
   controller.getBackupStatus(req, res),
 );
-router.post('/backup/run', (req, res) => controller.runBackupNow(req, res));
+router.post('/backup/run', requireSuperAdmin, (req, res) =>
+  controller.runBackupNow(req, res),
+);
 router.get('/config', (req, res) => controller.getConfig(req, res));
 router.put('/config', (req, res) => controller.updateConfig(req, res));
 
@@ -101,8 +112,11 @@ router.get('/notifications', (req, res) =>
 router.patch('/notifications/:id', (req, res) =>
   controller.patchNotification(req, res),
 );
-router.post('/restore-backup', upload.single('file'), (req, res) =>
-  controller.restoreBackup(req, res),
+router.post(
+  '/restore-backup',
+  requireSuperAdmin,
+  upload.single('file'),
+  (req, res) => controller.restoreBackup(req, res),
 );
 
 export default router;

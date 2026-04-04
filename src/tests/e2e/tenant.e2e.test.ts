@@ -1,7 +1,7 @@
 import request from 'supertest';
 import { setupTestApp } from '../../infrastructure/helpers/database.helper';
 import { E2E_TENANT_SLUG } from '../../infrastructure/helpers/e2e-tenant-seed.helper';
-import { getAuthCookie } from '../helpers/auth.helper';
+import { getAuthToken } from '../helpers/auth.helper';
 import { App } from 'supertest/types';
 
 describe('Tenant E2E — API pública e contexto', () => {
@@ -58,11 +58,8 @@ describe('Tenant E2E — API pública e contexto', () => {
   });
 
   it('GET /login/resolve-tenant retorna o slug quando o e-mail existe em um único abrigo', async () => {
-    await request(app)
-      .post('/api/v1/login')
-      .set('X-Tenant', E2E_TENANT_SLUG)
-      .send({ login: 'resolver@example.com', password: 'senha1234' });
-
+    // resolver@example.com vem do seedE2EDefaultTenant (evita corrida: POST /login só faz
+    // commit da transação RLS após o response; um GET imediato pode ver 404).
     const res = await request(app)
       .get('/api/v1/login/resolve-tenant')
       .query({ login: 'resolver@example.com' });
@@ -104,11 +101,11 @@ describe('Tenant E2E — API pública e contexto', () => {
     expect(res.status).toBe(401);
   });
 
-  it('com cookie válido, tenant vem do JWT (não exige X-Tenant na API)', async () => {
-    const cookie = await getAuthCookie(app);
+  it('com bearer válido, tenant vem do JWT (não exige X-Tenant na API)', async () => {
+    const token = await getAuthToken(app);
     const res = await request(app)
       .get('/api/v1/medicamentos?page=1&limit=5')
-      .set('Cookie', cookie);
+      .set('Authorization', `Bearer ${token}`);
     expect(res.status).toBe(200);
   });
 });

@@ -3,17 +3,22 @@ import { setupTestApp } from '../../infrastructure/helpers/database.helper';
 import {
   E2E_TENANT_SLUG,
   E2E_SEED_USER,
+  E2E_RESOLVER_SEED_USER,
 } from '../../infrastructure/helpers/e2e-tenant-seed.helper';
 import LoginModel from '../../infrastructure/database/models/login.model';
 import { App } from 'supertest/types';
 
 describe('Login E2E - CRUD', () => {
   let app: App;
-  let authCookie: string | undefined;
+  let authToken: string | undefined;
 
   beforeAll(async () => {
     app = await setupTestApp();
-    await LoginModel.destroy({ where: { login: E2E_SEED_USER.login } });
+    await LoginModel.destroy({
+      where: {
+        login: [E2E_SEED_USER.login, E2E_RESOLVER_SEED_USER.login],
+      },
+    });
   });
 
   it('deve criar um usuário', async () => {
@@ -44,7 +49,7 @@ describe('Login E2E - CRUD', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.user?.login).toBe('joao');
-    authCookie = res.headers['set-cookie']?.[0];
+    authToken = res.body.token;
   });
 
   it('não deve autenticar com senha errada', async () => {
@@ -59,7 +64,7 @@ describe('Login E2E - CRUD', () => {
   it('deve atualizar login e senha', async () => {
     const res = await request(app)
       .put('/api/v1/login')
-      .set('Cookie', authCookie ?? '')
+      .set('Authorization', `Bearer ${authToken ?? ''}`)
       .send({
         currentPassword: 'senha1234',
         login: 'joao2',
@@ -73,7 +78,7 @@ describe('Login E2E - CRUD', () => {
   it('não deve atualizar com senha atual incorreta', async () => {
     const res = await request(app)
       .put('/api/v1/login')
-      .set('Cookie', authCookie ?? '')
+      .set('Authorization', `Bearer ${authToken ?? ''}`)
       .send({
         currentPassword: 'errada123',
         login: 'zz',
@@ -86,7 +91,7 @@ describe('Login E2E - CRUD', () => {
   it('deve resetar senha (admin)', async () => {
     const res = await request(app)
       .post('/api/v1/login/reset-password')
-      .set('Cookie', authCookie ?? '')
+      .set('Authorization', `Bearer ${authToken ?? ''}`)
       .send({
         login: 'joao2',
         newPassword: 'senha_resettada1',
@@ -99,7 +104,7 @@ describe('Login E2E - CRUD', () => {
   it('não deve resetar senha com login inexistente', async () => {
     const res = await request(app)
       .post('/api/v1/login/reset-password')
-      .set('Cookie', authCookie ?? '')
+      .set('Authorization', `Bearer ${authToken ?? ''}`)
       .send({
         login: 'usuario_inexistente',
         newPassword: 'nova_senha1',
@@ -112,14 +117,14 @@ describe('Login E2E - CRUD', () => {
   it('deve deletar o usuário', async () => {
     const res = await request(app)
       .delete('/api/v1/login')
-      .set('Cookie', authCookie ?? '');
+      .set('Authorization', `Bearer ${authToken ?? ''}`);
     expect(res.status).toBe(204);
   });
 
   it('não deve deletar novamente', async () => {
     const res = await request(app)
       .delete('/api/v1/login')
-      .set('Cookie', authCookie ?? '');
+      .set('Authorization', `Bearer ${authToken ?? ''}`);
     expect([401, 403, 404]).toContain(res.status);
   });
 });

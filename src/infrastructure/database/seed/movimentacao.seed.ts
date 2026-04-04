@@ -13,7 +13,7 @@ export async function seedEntriesDB(
 ): Promise<SeedEntries> {
   const medEntry = await request(app)
     .post('/api/v1/estoque/entrada')
-    .set('Cookie', seed.cookie)
+    .set('Authorization', `Bearer ${seed.token}`)
     .send({
       medicamento_id: seed.medicineId,
       armario_id: seed.cabinetId,
@@ -31,7 +31,7 @@ export async function seedEntriesDB(
 
   const inputEntry = await request(app)
     .post('/api/v1/estoque/entrada')
-    .set('Cookie', seed.cookie)
+    .set('Authorization', `Bearer ${seed.token}`)
     .send({
       insumo_id: seed.inputId,
       armario_id: seed.cabinetId,

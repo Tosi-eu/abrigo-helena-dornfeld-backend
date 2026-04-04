@@ -9,10 +9,19 @@ import {
 } from '../../../middleware/validation.middleware';
 import { priceSearchService } from '../../helpers/price-service.helper';
 import { requireModule } from '../../../middleware/module.middleware';
+import { TenantConfigRepository } from '../../database/repositories/tenant-config.repository';
+import { TenantConfigService } from '../../../core/services/tenant-config.service';
 
 const repo = new MedicineRepository();
+const tenantConfigService = new TenantConfigService(
+  new TenantConfigRepository(),
+);
 
-const service = new MedicineService(repo, priceSearchService);
+const service = new MedicineService(
+  repo,
+  priceSearchService,
+  tenantConfigService,
+);
 const controller = new MedicineController(service);
 
 const router = Router();

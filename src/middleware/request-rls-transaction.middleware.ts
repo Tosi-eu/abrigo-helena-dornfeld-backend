@@ -19,9 +19,7 @@ function waitForResponse(res: Response, next: NextFunction): Promise<void> {
     res.on('finish', () => done());
     res.on('close', () => done());
     try {
-      next((err?: unknown) => {
-        if (err) done(err);
-      });
+      next();
     } catch (e) {
       done(e);
     }

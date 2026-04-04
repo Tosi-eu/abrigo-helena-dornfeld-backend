@@ -10,7 +10,7 @@
     "start": "node dist/infrastructure/web/main.js",
     "start:local": "NODE_ENV=development npm run dev",
     "test": "NODE_ENV=test jest src/tests/unit",
-    "test:e2e": "NODE_ENV=test jest src/tests/e2e",
+    "test:e2e": "NODE_ENV=test jest src/tests/e2e --forceExit",
     "test:db:create": "node scripts/create-test-db.js",
     "test:watch": "NODE_ENV=test jest --watchAll",
     "check:multi-tenant": "node scripts/check-multi-tenant.js",

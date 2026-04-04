@@ -20,8 +20,11 @@ router.get('/', validatePagination, requireModule('residents'), (req, res) =>
 router.get('/count', requireModule('residents'), (req, res) =>
   controller.getCount(req, res),
 );
-router.get('/:casela', validateCaselaParam, (req, res) =>
-  controller.findByCasela(req, res),
+router.get(
+  '/:casela',
+  validateCaselaParam,
+  requireModule('residents'),
+  (req, res) => controller.findByCasela(req, res),
 );
 router.post('/', requireModule('residents'), (req, res) =>
   controller.create(req, res),

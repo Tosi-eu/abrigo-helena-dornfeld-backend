@@ -4,6 +4,7 @@ import { ReportRepository } from '../../database/repositories/relatorio.reposito
 import { ReportService } from '../../../core/services/relatorio.service';
 import { ReportController } from '../controllers/relatorio.controller';
 import { cacheService } from '../../database/redis/client.redis';
+import { requireModule } from '../../../middleware/module.middleware';
 
 const router = Router();
 
@@ -21,6 +22,8 @@ const reportLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-router.get('/', reportLimiter, (req, res) => controller.generate(req, res));
+router.get('/', reportLimiter, requireModule('reports'), (req, res) =>
+  controller.generate(req, res),
+);
 
 export default router;

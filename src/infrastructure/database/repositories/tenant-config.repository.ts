@@ -8,6 +8,13 @@ export class TenantConfigRepository {
     });
   }
 
+  async listAllTenantIds(): Promise<number[]> {
+    const [rows] = await TenantConfigModel.sequelize!.query(
+      'SELECT id FROM tenant ORDER BY id ASC',
+    );
+    return (rows as { id: number }[]).map(r => Number(r.id));
+  }
+
   async setByTenantId(tenantId: number, modulesJson: object) {
     const row = await TenantConfigModel.findOne({
       where: { tenant_id: tenantId },

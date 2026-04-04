@@ -226,7 +226,10 @@ export class AppController {
 
       const tenant = await withRlsContext(
         sequelize,
-        { allow_public_directory: 'true' },
+        {
+          allow_public_directory: 'true',
+          is_super_admin: 'true',
+        },
         async trx => {
           const repo = new TenantRepository();
           return repo.findContractVerifyPayloadBySlug(slug, trx);

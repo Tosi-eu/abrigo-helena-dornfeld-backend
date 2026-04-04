@@ -52,7 +52,7 @@ export class DrawerRepository {
   }
 
   async findByDrawerNumber(number: number): Promise<DrawerPersist | null> {
-    const item = await DrawerModel.findByPk(number);
+    const item = await DrawerModel.findOne({ where: { num_gaveta: number } });
     if (!item) return null;
 
     return {
@@ -65,7 +65,7 @@ export class DrawerRepository {
     number: number,
     categoria_id: number,
   ): Promise<DrawerPersist | null> {
-    const item = await DrawerModel.findByPk(number);
+    const item = await DrawerModel.findOne({ where: { num_gaveta: number } });
     if (!item) return null;
 
     await item.update({ categoria_id });

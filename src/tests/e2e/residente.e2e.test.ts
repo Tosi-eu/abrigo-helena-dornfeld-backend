@@ -1,22 +1,22 @@
 import { App } from 'supertest/types';
 import { setupTestApp } from '../../infrastructure/helpers/database.helper';
-import { getAuthCookie } from '../helpers/auth.helper';
+import { getAuthToken } from '../helpers/auth.helper';
 import request from 'supertest';
 
 describe('Resident E2E - CRUD básico', () => {
   let createdCasela: number;
   let app: App;
-  let authCookie: string;
+  let authToken: string;
 
   beforeAll(async () => {
     app = await setupTestApp();
-    authCookie = await getAuthCookie(app);
+    authToken = await getAuthToken(app);
   });
 
   it('deve criar um residente', async () => {
     const res = await request(app)
       .post('/api/v1/residentes')
-      .set('Cookie', authCookie)
+      .set('Authorization', `Bearer ${authToken}`)
       .send({ casela: 10, nome: 'Fulano' });
 
     expect(res.status).toBe(201);
@@ -28,7 +28,7 @@ describe('Resident E2E - CRUD básico', () => {
   it('deve atualizar um residente', async () => {
     const res = await request(app)
       .put(`/api/v1/residentes/${createdCasela}`)
-      .set('Cookie', authCookie)
+      .set('Authorization', `Bearer ${authToken}`)
       .send({ nome: 'Fulano Atualizado' });
 
     expect(res.status).toBe(200);
@@ -38,7 +38,7 @@ describe('Resident E2E - CRUD básico', () => {
   it('não deve atualizar com nome inválido', async () => {
     const res = await request(app)
       .put(`/api/v1/residentes/${createdCasela}`)
-      .set('Cookie', authCookie)
+      .set('Authorization', `Bearer ${authToken}`)
       .send({ nome: '' });
 
     expect(res.status).toBe(400);
@@ -47,14 +47,14 @@ describe('Resident E2E - CRUD básico', () => {
   it('deve remover um residente', async () => {
     const res = await request(app)
       .delete(`/api/v1/residentes/${createdCasela}`)
-      .set('Cookie', authCookie);
+      .set('Authorization', `Bearer ${authToken}`);
     expect(res.status).toBe(204);
   });
 
   it('não deve remover novamente', async () => {
     const res = await request(app)
       .delete(`/api/v1/residentes/${createdCasela}`)
-      .set('Cookie', authCookie);
+      .set('Authorization', `Bearer ${authToken}`);
     expect(res.status).toBe(404);
   });
 });

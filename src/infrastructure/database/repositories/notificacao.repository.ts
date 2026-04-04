@@ -277,7 +277,9 @@ export class NotificationEventRepository {
     return NotificationEventModel.findByPk(id, { transaction });
   }
 
-  async bootstrapReplacementNotifications(): Promise<number> {
+  async bootstrapReplacementNotifications(
+    skipTenantIds?: Set<number>,
+  ): Promise<number> {
     let created = 0;
 
     const medicineStocks = await MedicineStockModel.findAll({
@@ -290,6 +292,11 @@ export class NotificationEventRepository {
 
     for (const stock of medicineStocks) {
       if (!stock.ultima_reposicao || !stock.casela_id) continue;
+
+      const stockTenantId = stock.tenant_id;
+      if (stockTenantId != null && skipTenantIds?.has(Number(stockTenantId))) {
+        continue;
+      }
 
       const lastReposition = toBrazilDateOnly(stock.ultima_reposicao);
       const nextReposition = new Date(lastReposition);
@@ -308,7 +315,6 @@ export class NotificationEventRepository {
 
       if (existsNotification) continue;
 
-      const stockTenantId = stock.tenant_id;
       if (stockTenantId == null) {
         throw new Error('Tenant não identificado no registro de estoque');
       }

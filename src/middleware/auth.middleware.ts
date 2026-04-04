@@ -32,17 +32,18 @@ export async function authMiddleware(
 ) {
   let token: string | undefined;
   const authCacheTtlSeconds = Number(process.env.AUTH_CACHE_TTL_SECONDS) || 30;
+  const allowCookieAuth = process.env.ALLOW_COOKIE_AUTH === 'true';
 
-  if (req.cookies && req.cookies.authToken) {
-    token = req.cookies.authToken;
-  } else {
-    const authHeader = req.headers.authorization;
-    if (authHeader) {
-      const [, headerToken] = authHeader.split(' ');
-      if (headerToken) {
-        token = headerToken;
-      }
+  const authHeader = req.headers.authorization;
+  if (authHeader) {
+    const [scheme, headerToken] = authHeader.split(' ');
+    if (scheme?.toLowerCase() === 'bearer' && headerToken) {
+      token = headerToken;
     }
+  }
+
+  if (!token && allowCookieAuth && req.cookies?.authToken) {
+    token = req.cookies.authToken;
   }
 
   if (!token) {
@@ -128,15 +129,18 @@ export async function optionalAuthMiddleware(
 ) {
   let token: string | undefined;
   const authCacheTtlSeconds = Number(process.env.AUTH_CACHE_TTL_SECONDS) || 30;
+  const allowCookieAuth = process.env.ALLOW_COOKIE_AUTH === 'true';
 
-  if (req.cookies && req.cookies.authToken) {
-    token = req.cookies.authToken;
-  } else {
-    const authHeader = req.headers.authorization;
-    if (authHeader) {
-      const [, headerToken] = authHeader.split(' ');
-      if (headerToken) token = headerToken;
+  const authHeader = req.headers.authorization;
+  if (authHeader) {
+    const [scheme, headerToken] = authHeader.split(' ');
+    if (scheme?.toLowerCase() === 'bearer' && headerToken) {
+      token = headerToken;
     }
+  }
+
+  if (!token && allowCookieAuth && req.cookies?.authToken) {
+    token = req.cookies.authToken;
   }
 
   if (!token) return next();

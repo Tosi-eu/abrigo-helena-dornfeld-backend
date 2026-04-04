@@ -1,5 +1,7 @@
 import cron from 'node-cron';
 import { NotificationEventRepository } from '../../database/repositories/notificacao.repository';
+import { TenantConfigRepository } from '../../database/repositories/tenant-config.repository';
+import { TenantConfigService } from '../../../core/services/tenant-config.service';
 import { NotificationEventService } from '../../../core/services/notificacao.service';
 import { logger } from '../../helpers/logger.helper';
 
@@ -8,8 +10,9 @@ async function runReplacementBootstrap(service: NotificationEventService) {
     const createdCount = await service.bootstrapReplacementNotifications();
     if (createdCount > 0) {
       logger.info(`[BOOTSTRAP] ${createdCount} notificações criadas.`);
+    } else {
+      logger.info(`[BOOTSTRAP] 0 notificações criadas.`);
     }
-    logger.info(`[BOOTSTRAP] 0 notificações criadas.`);
   } catch (err) {
     logger.error(`[BOOTSTRAP] Erro ao gerar notificações ${err}`);
   }
@@ -17,7 +20,10 @@ async function runReplacementBootstrap(service: NotificationEventService) {
 
 export function startNotificationBootstrapJob() {
   const repo = new NotificationEventRepository();
-  const service = new NotificationEventService(repo);
+  const tenantConfigService = new TenantConfigService(
+    new TenantConfigRepository(),
+  );
+  const service = new NotificationEventService(repo, tenantConfigService);
 
   void runReplacementBootstrap(service);
 

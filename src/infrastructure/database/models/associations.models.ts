@@ -130,14 +130,12 @@ export function setupAssociations() {
   DrawerModel.hasMany(MovementModel, {
     foreignKey: 'gaveta_id',
     sourceKey: 'num_gaveta',
-    onDelete: 'SET NULL',
-    onUpdate: 'CASCADE',
+    constraints: false,
   });
   MovementModel.belongsTo(DrawerModel, {
     foreignKey: 'gaveta_id',
     targetKey: 'num_gaveta',
-    onDelete: 'SET NULL',
-    onUpdate: 'CASCADE',
+    constraints: false,
   });
 
   ResidentModel.hasMany(MovementModel, {

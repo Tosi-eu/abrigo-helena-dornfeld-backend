@@ -32,6 +32,37 @@ function safeJsonObject(value: unknown): Record<string, unknown> | null {
   }
 }
 
+function redactAuditBody(
+  pathForAudit: string,
+  body: unknown,
+): Record<string, unknown> | null {
+  const obj = safeJsonObject(body);
+  if (!obj) return null;
+
+  // Default: do not persist full response/request bodies (PHI/PII risk).
+  // Allowlist minimal, non-sensitive metadata only.
+  const base: Record<string, unknown> = {};
+
+  // Keep common identifiers if present.
+  for (const k of ['id', 'tenantId', 'tenant_id', 'casela', 'casela_id']) {
+    if (k in obj) base[k] = obj[k];
+  }
+
+  // Keep a small, explicit subset for tenant branding/config to aid ops,
+  // but avoid names/logos/medical text fields.
+  if (/^\/tenant\/(?:config|branding)/.test(pathForAudit)) {
+    if ('modulesConfigured' in obj)
+      base.modulesConfigured = obj.modulesConfigured;
+    if ('onboardingComplete' in obj)
+      base.onboardingComplete = obj.onboardingComplete;
+    if ('ok' in obj) base.ok = obj.ok;
+  }
+
+  // Always include a marker so analysts know body was redacted.
+  base._redacted = true;
+  return base;
+}
+
 export function auditLog(
   req: AuthRequest & TenantRequest,
   res: Response,
@@ -64,7 +95,9 @@ export function auditLog(
 
   const originalJson = res.json.bind(res);
   res.json = function (body: unknown) {
-    if (body != null && typeof body === 'object') capturedNew = body;
+    if (body != null && typeof body === 'object') {
+      capturedNew = redactAuditBody(pathForAudit, body);
+    }
     void runAudit();
     return originalJson(body);
   };
@@ -127,8 +160,8 @@ function logAuditEvent(
     resource,
     status_code: statusCode,
     duration_ms: duration,
-    old_value: safeJsonObject(oldValue),
-    new_value: safeJsonObject(newValue),
+    old_value: redactAuditBody(pathForAudit, oldValue),
+    new_value: redactAuditBody(pathForAudit, newValue),
   }).catch(err => {
     logger.error('Audit log persist failed', {
       path,
