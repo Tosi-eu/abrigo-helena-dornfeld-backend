@@ -9,10 +9,7 @@ export interface CabinetAttributes {
   tenant_id: number;
 }
 
-export type CabinetCreationAttributes = Optional<
-  CabinetAttributes,
-  'id'
->;
+export type CabinetCreationAttributes = Optional<CabinetAttributes, 'id'>;
 
 export class CabinetModel
   extends Model<CabinetAttributes, CabinetCreationAttributes>

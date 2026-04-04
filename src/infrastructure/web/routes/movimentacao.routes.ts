@@ -15,11 +15,17 @@ const controller = new MovementController(service);
 router.get('/produtos-parados', requireModule('movements'), (req, res) =>
   controller.nonMovementMedications(req, res),
 );
-router.get('/medicamentos', validatePagination, requireModule('movements'), (req, res) =>
-  controller.getMedicines(req, res),
+router.get(
+  '/medicamentos',
+  validatePagination,
+  requireModule('movements'),
+  (req, res) => controller.getMedicines(req, res),
 );
-router.get('/insumos', validatePagination, requireModule('movements'), (req, res) =>
-  controller.getInputs(req, res),
+router.get(
+  '/insumos',
+  validatePagination,
+  requireModule('movements'),
+  (req, res) => controller.getInputs(req, res),
 );
 router.post('/', requireModule('movements'), (req, res) =>
   controller.create(req, res),

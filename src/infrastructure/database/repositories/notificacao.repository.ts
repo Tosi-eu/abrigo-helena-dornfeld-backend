@@ -294,10 +294,7 @@ export class NotificationEventRepository {
       if (!stock.ultima_reposicao || !stock.casela_id) continue;
 
       const stockTenantId = stock.tenant_id;
-      if (
-        stockTenantId != null &&
-        skipTenantIds?.has(Number(stockTenantId))
-      ) {
+      if (stockTenantId != null && skipTenantIds?.has(Number(stockTenantId))) {
         continue;
       }
 

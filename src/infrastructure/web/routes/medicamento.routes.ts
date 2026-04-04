@@ -13,7 +13,9 @@ import { TenantConfigRepository } from '../../database/repositories/tenant-confi
 import { TenantConfigService } from '../../../core/services/tenant-config.service';
 
 const repo = new MedicineRepository();
-const tenantConfigService = new TenantConfigService(new TenantConfigRepository());
+const tenantConfigService = new TenantConfigService(
+  new TenantConfigRepository(),
+);
 
 const service = new MedicineService(
   repo,

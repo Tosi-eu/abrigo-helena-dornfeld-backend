@@ -1,9 +1,6 @@
 import request from 'supertest';
 import { App } from 'supertest/types';
-import {
-  E2E_TENANT_SLUG,
-  E2E_SEED_USER,
-} from './e2e-tenant-seed.helper';
+import { E2E_TENANT_SLUG, E2E_SEED_USER } from './e2e-tenant-seed.helper';
 
 const E2E_USER = {
   login: E2E_SEED_USER.login,

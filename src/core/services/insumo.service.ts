@@ -54,7 +54,9 @@ export class InputService {
     return created;
   }
 
-  private async isAutomaticPriceSearchEnabled(tenantId: number): Promise<boolean> {
+  private async isAutomaticPriceSearchEnabled(
+    tenantId: number,
+  ): Promise<boolean> {
     if (!this.tenantConfigService) return true;
     const cfg = await this.tenantConfigService.get(tenantId);
     return cfg.automatic_price_search !== false;

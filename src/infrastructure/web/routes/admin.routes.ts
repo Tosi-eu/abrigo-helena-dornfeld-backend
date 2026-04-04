@@ -30,7 +30,9 @@ const loginLogRepo = new LoginLogRepository();
 const reportRepo = new ReportRepository();
 const systemConfigRepo = new SystemConfigRepository();
 const notificationRepo = new NotificationEventRepository();
-const tenantConfigService = new TenantConfigService(new TenantConfigRepository());
+const tenantConfigService = new TenantConfigService(
+  new TenantConfigRepository(),
+);
 const loginService = new LoginService(loginRepo);
 const reportService = new ReportService(reportRepo, cacheService);
 const notificationService = new NotificationEventService(

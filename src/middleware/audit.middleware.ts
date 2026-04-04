@@ -51,8 +51,10 @@ function redactAuditBody(
   // Keep a small, explicit subset for tenant branding/config to aid ops,
   // but avoid names/logos/medical text fields.
   if (/^\/tenant\/(?:config|branding)/.test(pathForAudit)) {
-    if ('modulesConfigured' in obj) base.modulesConfigured = obj.modulesConfigured;
-    if ('onboardingComplete' in obj) base.onboardingComplete = obj.onboardingComplete;
+    if ('modulesConfigured' in obj)
+      base.modulesConfigured = obj.modulesConfigured;
+    if ('onboardingComplete' in obj)
+      base.onboardingComplete = obj.onboardingComplete;
     if ('ok' in obj) base.ok = obj.ok;
   }
 

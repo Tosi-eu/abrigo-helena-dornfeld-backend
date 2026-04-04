@@ -8,10 +8,7 @@ export interface ResidentAttributes {
   tenant_id: number;
 }
 
-export type ResidentCreationAttributes = Optional<
-  ResidentAttributes,
-  'id'
->;
+export type ResidentCreationAttributes = Optional<ResidentAttributes, 'id'>;
 
 export class ResidentModel
   extends Model<ResidentAttributes, ResidentCreationAttributes>

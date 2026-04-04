@@ -12,13 +12,11 @@ import { TenantConfigRepository } from '../../database/repositories/tenant-confi
 import { TenantConfigService } from '../../../core/services/tenant-config.service';
 
 const repo = new InputRepository();
-const tenantConfigService = new TenantConfigService(new TenantConfigRepository());
-
-const service = new InputService(
-  repo,
-  priceSearchService,
-  tenantConfigService,
+const tenantConfigService = new TenantConfigService(
+  new TenantConfigRepository(),
 );
+
+const service = new InputService(repo, priceSearchService, tenantConfigService);
 const controller = new InsumoController(service);
 
 const router = Router();

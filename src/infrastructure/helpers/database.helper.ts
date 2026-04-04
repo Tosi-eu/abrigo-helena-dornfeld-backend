@@ -23,7 +23,10 @@ async function setupDatabase() {
     if (isTestEnv()) {
       const err = e as { parent?: { message?: string }; message?: string };
       // eslint-disable-next-line no-console -- e2e/debug: Postgres error is otherwise hidden in Jest
-      console.error('[test] sequelize.sync failed:', err.parent?.message ?? err.message);
+      console.error(
+        '[test] sequelize.sync failed:',
+        err.parent?.message ?? err.message,
+      );
     }
     throw e;
   }

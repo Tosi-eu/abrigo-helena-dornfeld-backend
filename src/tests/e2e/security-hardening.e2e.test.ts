@@ -71,9 +71,10 @@ describe('Security hardening (E2E)', () => {
   });
 
   it('Public: /tenants/:slug/branding works without auth', async () => {
-    const res = await request(app).get(`/api/v1/tenants/${E2E_TENANT_SLUG}/branding`);
+    const res = await request(app).get(
+      `/api/v1/tenants/${E2E_TENANT_SLUG}/branding`,
+    );
     expect(res.status).toBe(200);
     expect(typeof res.body.found).toBe('boolean');
   });
 });
-

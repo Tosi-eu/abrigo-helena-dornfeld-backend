@@ -97,8 +97,9 @@ module.exports = {
       await sequelize.query(
         `ALTER TABLE "${s.table}" ADD CONSTRAINT "${s.pkName}" PRIMARY KEY ("${s.numCol}");`,
       );
-      await sequelize.query(`ALTER TABLE "${s.table}" DROP COLUMN IF EXISTS "id";`);
+      await sequelize.query(
+        `ALTER TABLE "${s.table}" DROP COLUMN IF EXISTS "id";`,
+      );
     }
   },
 };
-
