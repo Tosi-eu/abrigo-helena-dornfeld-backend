@@ -1,41 +1,24 @@
 import request from 'supertest';
 import { App } from 'supertest/types';
-import {
-  E2E_TENANT_SLUG,
-  E2E_SEED_USER,
-} from '../../helpers/e2e-tenant-seed.helper';
+import { getAuthTokenForE2EApp } from '../../helpers/e2e-auth-token.helper';
 
 export interface SeedResult {
   categoryId: number;
   medicineId: number;
   inputId: number;
   cabinetId: number;
+  residentId: number;
   residentCasela: number;
-  cookie: string;
+  token: string;
 }
 
 export async function seedDB(app: App): Promise<SeedResult> {
-  const authRes = await request(app)
-    .post('/api/v1/login/authenticate')
-    .set('X-Tenant', E2E_TENANT_SLUG)
-    .send({
-      login: E2E_SEED_USER.login,
-      password: E2E_SEED_USER.password,
-    });
-  if (authRes.status !== 200) {
-    throw new Error(
-      `seedDB: falha ao autenticar ${E2E_SEED_USER.login}: ${authRes.body?.error ?? authRes.status}`,
-    );
-  }
-  const setCookie = authRes.headers['set-cookie']?.[0] ?? '';
-  const cookie = setCookie ? setCookie.split(';')[0].trim() : '';
-  if (!cookie) {
-    throw new Error('seedDB: cookie de sessão não retornado após authenticate');
-  }
+  const token = await getAuthTokenForE2EApp(app);
+  const auth = () => ({ Authorization: `Bearer ${token}` });
 
   const catRes = await request(app)
     .post('/api/v1/categoria-armario')
-    .set('Cookie', cookie)
+    .set(auth())
     .send({
       nome: 'Categoria de Teste',
     });
@@ -46,7 +29,7 @@ export async function seedDB(app: App): Promise<SeedResult> {
 
   const medRes = await request(app)
     .post('/api/v1/medicamentos')
-    .set('Cookie', cookie)
+    .set(auth())
     .send({
       nome: 'Dipirona',
       dosagem: '500',
@@ -61,7 +44,7 @@ export async function seedDB(app: App): Promise<SeedResult> {
 
   const inputRes = await request(app)
     .post('/api/v1/insumos')
-    .set('Cookie', cookie)
+    .set(auth())
     .send({
       nome: 'Gaze Estéril',
       descricao: 'Gaze para curativos',
@@ -74,7 +57,7 @@ export async function seedDB(app: App): Promise<SeedResult> {
 
   const cabRes = await request(app)
     .post('/api/v1/armarios')
-    .set('Cookie', cookie)
+    .set(auth())
     .send({
       numero: 1,
       categoria_id: categoryId,
@@ -85,7 +68,7 @@ export async function seedDB(app: App): Promise<SeedResult> {
 
   const resRes = await request(app)
     .post('/api/v1/residentes')
-    .set('Cookie', cookie)
+    .set(auth())
     .send({
       casela: 101,
       nome: 'Fulano Teste',
@@ -93,6 +76,9 @@ export async function seedDB(app: App): Promise<SeedResult> {
 
   if (resRes.status !== 201)
     throw new Error('Erro ao criar residente no seedDB');
+  const residentId = Number(resRes.body.id);
+  if (!residentId)
+    throw new Error('Resposta de residente sem id no seedDB');
   const residentCasela = resRes.body.casela;
 
   return {
@@ -100,7 +86,8 @@ export async function seedDB(app: App): Promise<SeedResult> {
     medicineId,
     inputId,
     cabinetId,
+    residentId,
     residentCasela,
-    cookie,
+    token,
   };
 }

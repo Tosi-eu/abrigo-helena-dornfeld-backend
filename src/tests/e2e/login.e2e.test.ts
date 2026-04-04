@@ -3,6 +3,7 @@ import { setupTestApp } from '../../infrastructure/helpers/database.helper';
 import {
   E2E_TENANT_SLUG,
   E2E_SEED_USER,
+  E2E_RESOLVER_SEED_USER,
 } from '../../infrastructure/helpers/e2e-tenant-seed.helper';
 import LoginModel from '../../infrastructure/database/models/login.model';
 import { App } from 'supertest/types';
@@ -13,7 +14,11 @@ describe('Login E2E - CRUD', () => {
 
   beforeAll(async () => {
     app = await setupTestApp();
-    await LoginModel.destroy({ where: { login: E2E_SEED_USER.login } });
+    await LoginModel.destroy({
+      where: {
+        login: [E2E_SEED_USER.login, E2E_RESOLVER_SEED_USER.login],
+      },
+    });
   });
 
   it('deve criar um usuário', async () => {

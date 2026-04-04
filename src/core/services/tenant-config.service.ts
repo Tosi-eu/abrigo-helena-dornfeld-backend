@@ -17,8 +17,16 @@ const moduleKeySchema = z.enum([
   'profile',
 ]);
 
-export const tenantModulesConfigSchema = z.object({
+const tenantModulesStoredSchema = z.object({
   enabled: z.array(moduleKeySchema).default([]),
+  automatic_price_search: z.boolean().optional(),
+  automatic_reposicao_notifications: z.boolean().optional(),
+});
+
+export const tenantModulesConfigSchema = z.object({
+  enabled: z.array(moduleKeySchema).min(1),
+  automatic_price_search: z.boolean(),
+  automatic_reposicao_notifications: z.boolean(),
 });
 
 export const DEFAULT_TENANT_MODULES: TenantModulesConfig = {
@@ -36,6 +44,8 @@ export const DEFAULT_TENANT_MODULES: TenantModulesConfig = {
     'drawers',
     'profile',
   ],
+  automatic_price_search: true,
+  automatic_reposicao_notifications: true,
 };
 
 export class TenantConfigService {
@@ -43,17 +53,43 @@ export class TenantConfigService {
 
   async get(tenantId: number): Promise<TenantModulesConfig> {
     const row = await this.repo.getByTenantId(tenantId);
-    if (!row?.modules_json) return { enabled: [] };
-    const parsed = tenantModulesConfigSchema.safeParse(row.modules_json);
-    if (!parsed.success) return { enabled: [] };
-    return parsed.data;
+    if (!row?.modules_json) return { ...DEFAULT_TENANT_MODULES };
+    const parsed = tenantModulesStoredSchema.safeParse(row.modules_json);
+    if (!parsed.success) return { ...DEFAULT_TENANT_MODULES };
+    const d = parsed.data;
+    return {
+      enabled: d.enabled.length ? d.enabled : DEFAULT_TENANT_MODULES.enabled,
+      automatic_price_search: d.automatic_price_search ?? true,
+      automatic_reposicao_notifications:
+        d.automatic_reposicao_notifications ?? true,
+    };
   }
 
   async set(
     tenantId: number,
     modulesJson: unknown,
   ): Promise<TenantModulesConfig> {
-    const parsed = tenantModulesConfigSchema.safeParse(modulesJson);
+    const prev = await this.get(tenantId);
+    const body =
+      modulesJson && typeof modulesJson === 'object'
+        ? (modulesJson as Record<string, unknown>)
+        : {};
+
+    const merged: TenantModulesConfig = {
+      enabled: Array.isArray(body.enabled)
+        ? (body.enabled as ModuleKey[])
+        : prev.enabled,
+      automatic_price_search:
+        typeof body.automatic_price_search === 'boolean'
+          ? body.automatic_price_search
+          : prev.automatic_price_search,
+      automatic_reposicao_notifications:
+        typeof body.automatic_reposicao_notifications === 'boolean'
+          ? body.automatic_reposicao_notifications
+          : prev.automatic_reposicao_notifications,
+    };
+
+    const parsed = tenantModulesConfigSchema.safeParse(merged);
     if (!parsed.success) {
       const msg = parsed.error.issues.map(i => i.message).join('; ');
       throw new Error(msg || 'Config inválida');
@@ -64,5 +100,9 @@ export class TenantConfigService {
 
   isEnabled(config: TenantModulesConfig, key: ModuleKey): boolean {
     return Array.isArray(config.enabled) && config.enabled.includes(key);
+  }
+
+  async listAllTenantIds(): Promise<number[]> {
+    return this.repo.listAllTenantIds();
   }
 }

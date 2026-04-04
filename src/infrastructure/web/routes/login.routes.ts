@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, type RequestHandler } from 'express';
 import rateLimit from 'express-rate-limit';
 
 import { LoginController } from '../controllers/login.controller';
@@ -30,25 +30,34 @@ const loginLogRepo = new LoginLogRepository();
 const systemConfigRepo = new SystemConfigRepository();
 const service = new LoginService(repo);
 const controller = new LoginController(service, loginLogRepo, systemConfigRepo);
-const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 20,
-  message: {
-    error: 'Muitas tentativas de login. Tente novamente em 15 minutos.',
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
 
-const registerLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hora
-  max: 2,
-  message: {
-    error: 'Muitas tentativas de cadastro. Tente novamente em 1 hora.',
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
+const skipRateLimitInTest: RequestHandler = (_req, _res, next) => next();
+
+const loginLimiter =
+  process.env.NODE_ENV === 'test'
+    ? skipRateLimitInTest
+    : rateLimit({
+        windowMs: 15 * 60 * 1000,
+        max: 20,
+        message: {
+          error: 'Muitas tentativas de login. Tente novamente em 15 minutos.',
+        },
+        standardHeaders: true,
+        legacyHeaders: false,
+      });
+
+const registerLimiter =
+  process.env.NODE_ENV === 'test'
+    ? skipRateLimitInTest
+    : rateLimit({
+        windowMs: 60 * 60 * 1000, // 1 hora
+        max: 2,
+        message: {
+          error: 'Muitas tentativas de cadastro. Tente novamente em 1 hora.',
+        },
+        standardHeaders: true,
+        legacyHeaders: false,
+      });
 
 router.post('/register-account', registerLimiter, (req, res) =>
   controller.createAccount(req, res),

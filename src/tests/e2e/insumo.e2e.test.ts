@@ -1,21 +1,21 @@
 import request from 'supertest';
 import { setupTestApp } from '../../infrastructure/helpers/database.helper';
-import { getAuthCookie } from '../helpers/auth.helper';
+import { getAuthToken } from '../helpers/auth.helper';
 import { App } from 'supertest/types';
 
 describe('InsumoController', () => {
   let app: App;
-  let authCookie: string;
+  let authToken: string;
 
   beforeAll(async () => {
     app = await setupTestApp();
-    authCookie = await getAuthCookie(app);
+    authToken = await getAuthToken(app);
   });
 
   it('deve criar um insumo', async () => {
     const res = await request(app)
       .post('/api/v1/insumos')
-      .set('Cookie', authCookie)
+      .set('Authorization', `Bearer ${authToken}`)
       .send({ nome: 'Seringa', descricao: '10ml', estoque_minimo: 5 });
 
     expect(res.status).toBe(201);
@@ -25,7 +25,7 @@ describe('InsumoController', () => {
   it('não deve criar insumo sem nome', async () => {
     const res = await request(app)
       .post('/api/v1/insumos')
-      .set('Cookie', authCookie)
+      .set('Authorization', `Bearer ${authToken}`)
       .send({ descricao: 'Sem nome' });
 
     expect(res.status).toBe(400);
@@ -34,7 +34,7 @@ describe('InsumoController', () => {
   it('deve listar insumos paginados', async () => {
     const res = await request(app)
       .get('/api/v1/insumos?page=1&limit=10')
-      .set('Cookie', authCookie);
+      .set('Authorization', `Bearer ${authToken}`);
     expect(res.status).toBe(200);
     expect(res.body.data.length).toBe(1);
   });
@@ -42,7 +42,7 @@ describe('InsumoController', () => {
   it('deve atualizar um insumo existente', async () => {
     const res = await request(app)
       .put('/api/v1/insumos/1')
-      .set('Cookie', authCookie)
+      .set('Authorization', `Bearer ${authToken}`)
       .send({ nome: 'Seringa Atualizada', descricao: '10ml' });
 
     expect(res.status).toBe(200);
@@ -52,7 +52,7 @@ describe('InsumoController', () => {
   it('deve retornar 404 ao atualizar insumo inexistente', async () => {
     const res = await request(app)
       .put('/api/v1/insumos/9999')
-      .set('Cookie', authCookie)
+      .set('Authorization', `Bearer ${authToken}`)
       .send({ nome: 'Teste' });
 
     expect(res.status).toBe(404);
@@ -61,14 +61,14 @@ describe('InsumoController', () => {
   it('deve deletar um insumo', async () => {
     const res = await request(app)
       .delete('/api/v1/insumos/1')
-      .set('Cookie', authCookie);
+      .set('Authorization', `Bearer ${authToken}`);
     expect(res.status).toBe(204);
   });
 
   it('deve retornar 404 ao deletar insumo inexistente', async () => {
     const res = await request(app)
       .delete('/api/v1/insumos/9999')
-      .set('Cookie', authCookie);
+      .set('Authorization', `Bearer ${authToken}`);
     expect(res.status).toBe(404);
   });
 });

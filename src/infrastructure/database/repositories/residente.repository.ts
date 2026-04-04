@@ -25,7 +25,11 @@ export class ResidentRepository {
 
   async createResident(model: ResidentModel) {
     const row = await model.save();
-    return { casela: row.num_casela, name: row.nome };
+    return {
+      id: Number(row.id),
+      casela: row.num_casela,
+      name: row.nome,
+    };
   }
 
   async updateResidentById(model: ResidentModel) {

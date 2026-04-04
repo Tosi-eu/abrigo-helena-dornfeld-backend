@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import cookieParser from 'cookie-parser';
-import { sequelize } from '../database/sequelize';
+import { sequelize, sequelizeClsNamespace } from '../database/sequelize';
 import '../database/models/index.models';
 import routes from './routes/index.routes';
 import { getRedisClient } from '../database/redis/client.redis';
@@ -115,6 +115,13 @@ const limiter = rateLimit({
 });
 
 app.use(limiter);
+
+/** Mantém CLS ativo durante todo o ciclo do request (handlers async + Sequelize). */
+app.use('/api/v1', (req, res, next) => {
+  sequelizeClsNamespace.bind(() => {
+    next();
+  })();
+});
 
 app.use('/api/v1', routes);
 

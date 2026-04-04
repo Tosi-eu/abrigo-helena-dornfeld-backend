@@ -17,7 +17,16 @@ async function setupDatabase() {
   }
 
   setupAssociations();
-  await sequelize.sync({ force: isTestEnv() });
+  try {
+    await sequelize.sync({ force: isTestEnv() });
+  } catch (e: unknown) {
+    if (isTestEnv()) {
+      const err = e as { parent?: { message?: string }; message?: string };
+      // eslint-disable-next-line no-console -- e2e/debug: Postgres error is otherwise hidden in Jest
+      console.error('[test] sequelize.sync failed:', err.parent?.message ?? err.message);
+    }
+    throw e;
+  }
   if (isTestEnv()) {
     await seedE2EDefaultTenant();
   }

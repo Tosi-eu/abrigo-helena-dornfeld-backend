@@ -14,4 +14,6 @@ export type ModuleKey =
 
 export type TenantModulesConfig = {
   enabled: ModuleKey[];
+  automatic_price_search: boolean;
+  automatic_reposicao_notifications: boolean;
 };

@@ -58,11 +58,8 @@ describe('Tenant E2E — API pública e contexto', () => {
   });
 
   it('GET /login/resolve-tenant retorna o slug quando o e-mail existe em um único abrigo', async () => {
-    await request(app)
-      .post('/api/v1/login')
-      .set('X-Tenant', E2E_TENANT_SLUG)
-      .send({ login: 'resolver@example.com', password: 'senha1234' });
-
+    // resolver@example.com vem do seedE2EDefaultTenant (evita corrida: POST /login só faz
+    // commit da transação RLS após o response; um GET imediato pode ver 404).
     const res = await request(app)
       .get('/api/v1/login/resolve-tenant')
       .query({ login: 'resolver@example.com' });

@@ -1,12 +1,14 @@
 import { InputRepository } from '../../infrastructure/database/repositories/insumo.repository';
 import type { Input } from '@porto-sdk/sdk';
 import type { IPriceSearchService } from './price-search.types';
+import type { TenantConfigService } from './tenant-config.service';
 import { logger } from '../../infrastructure/helpers/logger.helper';
 
 export class InputService {
   constructor(
     private readonly repo: InputRepository,
     private readonly priceSearchService?: IPriceSearchService,
+    private readonly tenantConfigService?: TenantConfigService,
   ) {}
 
   private triggerPriceSearchInBackground(input: Input) {
@@ -41,11 +43,21 @@ export class InputService {
 
     const created = await this.repo.createInput(data, tenantId);
 
-    if (this.priceSearchService && created.id) {
+    if (
+      this.priceSearchService &&
+      created.id &&
+      (await this.isAutomaticPriceSearchEnabled(tenantId))
+    ) {
       this.triggerPriceSearchInBackground(created);
     }
 
     return created;
+  }
+
+  private async isAutomaticPriceSearchEnabled(tenantId: number): Promise<boolean> {
+    if (!this.tenantConfigService) return true;
+    const cfg = await this.tenantConfigService.get(tenantId);
+    return cfg.automatic_price_search !== false;
   }
 
   listPaginated(page: number = 1, limit: number = 10, name?: string) {

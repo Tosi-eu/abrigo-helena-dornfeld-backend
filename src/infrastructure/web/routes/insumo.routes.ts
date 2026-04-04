@@ -8,10 +8,17 @@ import {
   validateIdParam,
 } from '../../../middleware/validation.middleware';
 import { priceSearchService } from '../../helpers/price-service.helper';
+import { TenantConfigRepository } from '../../database/repositories/tenant-config.repository';
+import { TenantConfigService } from '../../../core/services/tenant-config.service';
 
 const repo = new InputRepository();
+const tenantConfigService = new TenantConfigService(new TenantConfigRepository());
 
-const service = new InputService(repo, priceSearchService);
+const service = new InputService(
+  repo,
+  priceSearchService,
+  tenantConfigService,
+);
 const controller = new InsumoController(service);
 
 const router = Router();

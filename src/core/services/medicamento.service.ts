@@ -1,6 +1,7 @@
 import type { Medicine } from '@porto-sdk/sdk';
 import { MedicineRepository } from '../../infrastructure/database/repositories/medicamento.repository';
 import type { IPriceSearchService } from './price-search.types';
+import type { TenantConfigService } from './tenant-config.service';
 import { logger } from '../../infrastructure/helpers/logger.helper';
 import { normalizeDosage } from '../../infrastructure/helpers/dosage.helper';
 
@@ -10,6 +11,7 @@ export class MedicineService {
   constructor(
     private readonly repo: MedicineRepository,
     private readonly priceSearchService?: IPriceSearchService,
+    private readonly tenantConfigService?: TenantConfigService,
   ) {}
 
   private triggerPriceSearchInBackground(
@@ -118,11 +120,21 @@ export class MedicineService {
 
     const created = await this.repo.createMedicine(dataToSave, tenantId);
 
-    if (this.priceSearchService && created.id) {
+    if (
+      this.priceSearchService &&
+      created.id &&
+      (await this.isAutomaticPriceSearchEnabled(tenantId))
+    ) {
       this.triggerPriceSearchInBackground(created, normalizedDosage);
     }
 
     return created;
+  }
+
+  private async isAutomaticPriceSearchEnabled(tenantId: number): Promise<boolean> {
+    if (!this.tenantConfigService) return true;
+    const cfg = await this.tenantConfigService.get(tenantId);
+    return cfg.automatic_price_search !== false;
   }
 
   async findAll({

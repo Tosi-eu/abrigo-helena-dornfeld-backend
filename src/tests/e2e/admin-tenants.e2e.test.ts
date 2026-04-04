@@ -108,13 +108,7 @@ describe('Admin tenants + verify-contract-code (E2E)', () => {
       .send({ slug: s2, name: 'Abrigo B', contract_code: code });
     expect(r1.status).toBe(201);
     expect(r2.status).toBe(201);
-    const list = await request(app)
-      .get('/api/v1/admin/tenants?page=1&limit=500')
-      .set('X-API-Key', apiKey());
-    expect(list.status).toBe(200);
-    const t1 = list.body.data.find((x: { slug: string }) => x.slug === s1);
-    const t2 = list.body.data.find((x: { slug: string }) => x.slug === s2);
-    expect(t1?.contractPortfolioId).toBeDefined();
-    expect(t1?.contractPortfolioId).toBe(t2?.contractPortfolioId);
+    expect(r1.body.contract_portfolio_id).toBeDefined();
+    expect(r1.body.contract_portfolio_id).toBe(r2.body.contract_portfolio_id);
   });
 });

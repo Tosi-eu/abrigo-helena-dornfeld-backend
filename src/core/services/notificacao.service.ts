@@ -1,4 +1,5 @@
 import { NotificationEventRepository } from '../../infrastructure/database/repositories/notificacao.repository';
+import type { TenantConfigService } from './tenant-config.service';
 import { NotificationUpdateData } from '../../infrastructure/types/notificacao.types';
 import {
   EventStatus,
@@ -8,7 +9,10 @@ import {
 import type { Transaction } from 'sequelize';
 
 export class NotificationEventService {
-  constructor(private readonly repo: NotificationEventRepository) {}
+  constructor(
+    private readonly repo: NotificationEventRepository,
+    private readonly tenantConfigService?: TenantConfigService,
+  ) {}
 
   async create(
     data: {
@@ -71,6 +75,17 @@ export class NotificationEventService {
   }
 
   async bootstrapReplacementNotifications() {
-    return this.repo.bootstrapReplacementNotifications();
+    if (!this.tenantConfigService) {
+      return this.repo.bootstrapReplacementNotifications();
+    }
+    const skip = new Set<number>();
+    const ids = await this.tenantConfigService.listAllTenantIds();
+    for (const id of ids) {
+      const cfg = await this.tenantConfigService.get(id);
+      if (cfg.automatic_reposicao_notifications === false) {
+        skip.add(id);
+      }
+    }
+    return this.repo.bootstrapReplacementNotifications(skip);
   }
 }
