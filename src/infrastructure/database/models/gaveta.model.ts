@@ -3,17 +3,19 @@ import { sequelize } from '../sequelize';
 import DrawerCategoryModel from './categorias-gaveta.model';
 
 export interface DrawerAttributes {
+  id: number;
   num_gaveta: number;
   categoria_id: number;
   tenant_id: number;
 }
 
-export type DrawerCreationAttributes = Optional<DrawerAttributes, 'num_gaveta'>;
+export type DrawerCreationAttributes = Optional<DrawerAttributes, 'id'>;
 
 export class DrawerModel
   extends Model<DrawerAttributes, DrawerCreationAttributes>
   implements DrawerAttributes
 {
+  declare id: number;
   declare num_gaveta: number;
   declare categoria_id: number;
   declare tenant_id: number;
@@ -22,9 +24,14 @@ export class DrawerModel
 
 DrawerModel.init(
   {
+    id: {
+      type: DataTypes.BIGINT,
+      primaryKey: true,
+      autoIncrement: true,
+      allowNull: false,
+    },
     num_gaveta: {
       type: DataTypes.INTEGER,
-      primaryKey: true,
       allowNull: false,
     },
     categoria_id: {

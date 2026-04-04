@@ -12,7 +12,7 @@ const E2E_USER = {
 
 export { E2E_TENANT_SLUG, E2E_SEED_USER };
 
-export async function getAuthCookie(app: App): Promise<string> {
+export async function getAuthToken(app: App): Promise<string> {
   await request(app)
     .post('/api/v1/login')
     .set('X-Tenant', E2E_TENANT_SLUG)
@@ -26,7 +26,7 @@ export async function getAuthCookie(app: App): Promise<string> {
       `Falha ao autenticar no e2e: ${res.body?.error ?? res.status}`,
     );
   }
-  const setCookie = res.headers['set-cookie']?.[0];
-  if (!setCookie) throw new Error('Cookie de auth não retornado');
-  return setCookie.split(';')[0].trim();
+  const token = res.body?.token;
+  if (!token) throw new Error('Token de auth não retornado');
+  return String(token);
 }

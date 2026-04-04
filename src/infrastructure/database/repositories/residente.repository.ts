@@ -18,7 +18,7 @@ export class ResidentRepository {
   }
 
   async findByCasela(casela: number) {
-    const row = await ResidentModel.findByPk(casela);
+    const row = await ResidentModel.findOne({ where: { num_casela: casela } });
     if (!row) return null;
     return { casela: row.num_casela, name: row.nome };
   }
@@ -29,7 +29,9 @@ export class ResidentRepository {
   }
 
   async updateResidentById(model: ResidentModel) {
-    const row = await ResidentModel.findByPk(model.num_casela);
+    const row = await ResidentModel.findOne({
+      where: { num_casela: model.num_casela },
+    });
     if (!row) return null;
 
     row.nome = model.nome;

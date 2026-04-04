@@ -3,6 +3,7 @@ import { sequelize } from '../sequelize';
 import CabinetCategoryModel from './categorias-armario.model';
 
 export interface CabinetAttributes {
+  id: number;
   num_armario: number;
   categoria_id: number;
   tenant_id: number;
@@ -10,13 +11,14 @@ export interface CabinetAttributes {
 
 export type CabinetCreationAttributes = Optional<
   CabinetAttributes,
-  'num_armario'
+  'id'
 >;
 
 export class CabinetModel
   extends Model<CabinetAttributes, CabinetCreationAttributes>
   implements CabinetAttributes
 {
+  declare id: number;
   declare num_armario: number;
   declare categoria_id: number;
   declare tenant_id: number;
@@ -25,9 +27,14 @@ export class CabinetModel
 
 CabinetModel.init(
   {
+    id: {
+      type: DataTypes.BIGINT,
+      primaryKey: true,
+      autoIncrement: true,
+      allowNull: false,
+    },
     num_armario: {
       type: DataTypes.INTEGER,
-      primaryKey: true,
       allowNull: false,
     },
     categoria_id: {

@@ -51,7 +51,7 @@ export class CabinetRepository {
   }
 
   async findByCabinetNumber(number: number): Promise<CabinetPersist | null> {
-    const item = await CabinetModel.findByPk(number);
+    const item = await CabinetModel.findOne({ where: { num_armario: number } });
     if (!item) return null;
     return {
       numero: item.num_armario,
@@ -63,7 +63,7 @@ export class CabinetRepository {
     number: number,
     categoria_id: number,
   ): Promise<CabinetPersist | null> {
-    const item = await CabinetModel.findByPk(number);
+    const item = await CabinetModel.findOne({ where: { num_armario: number } });
     if (!item) return null;
     await item.update({ categoria_id });
     return {

@@ -2,6 +2,7 @@ import { DataTypes, Model, Optional } from 'sequelize';
 import { sequelize } from '../sequelize';
 
 export interface ResidentAttributes {
+  id: number;
   num_casela: number;
   nome: string;
   tenant_id: number;
@@ -9,13 +10,14 @@ export interface ResidentAttributes {
 
 export type ResidentCreationAttributes = Optional<
   ResidentAttributes,
-  'num_casela'
+  'id'
 >;
 
 export class ResidentModel
   extends Model<ResidentAttributes, ResidentCreationAttributes>
   implements ResidentAttributes
 {
+  declare id: number;
   declare num_casela: number;
   declare nome: string;
   declare tenant_id: number;
@@ -23,9 +25,15 @@ export class ResidentModel
 
 ResidentModel.init(
   {
+    id: {
+      type: DataTypes.BIGINT,
+      primaryKey: true,
+      autoIncrement: true,
+      allowNull: false,
+      field: 'id',
+    },
     num_casela: {
       type: DataTypes.INTEGER,
-      primaryKey: true,
       allowNull: false,
       field: 'num_casela',
     },

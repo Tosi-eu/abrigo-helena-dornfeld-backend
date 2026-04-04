@@ -1,7 +1,7 @@
 import request from 'supertest';
 import { setupTestApp } from '../../infrastructure/helpers/database.helper';
 import { E2E_TENANT_SLUG } from '../../infrastructure/helpers/e2e-tenant-seed.helper';
-import { getAuthCookie } from '../helpers/auth.helper';
+import { getAuthToken } from '../helpers/auth.helper';
 import { App } from 'supertest/types';
 
 describe('Tenant E2E — API pública e contexto', () => {
@@ -104,11 +104,11 @@ describe('Tenant E2E — API pública e contexto', () => {
     expect(res.status).toBe(401);
   });
 
-  it('com cookie válido, tenant vem do JWT (não exige X-Tenant na API)', async () => {
-    const cookie = await getAuthCookie(app);
+  it('com bearer válido, tenant vem do JWT (não exige X-Tenant na API)', async () => {
+    const token = await getAuthToken(app);
     const res = await request(app)
       .get('/api/v1/medicamentos?page=1&limit=5')
-      .set('Cookie', cookie);
+      .set('Authorization', `Bearer ${token}`);
     expect(res.status).toBe(200);
   });
 });

@@ -48,7 +48,6 @@ export function blockNonAdminWrites(
 ) {
   if (req.user?.role === ADMIN_ROLE) return next();
   if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) return next();
-  if (isTenantSetupWrite(req)) return next();
 
   return res.status(403).json({
     error: INSUFFICIENT_PRIVILEGES_MESSAGE,

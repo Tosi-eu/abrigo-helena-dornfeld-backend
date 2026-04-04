@@ -7,6 +7,7 @@ import { DashboardService } from '../../../core/services/dashboard.service';
 import { DashboardController } from '../controllers/dashboard.controller';
 import { cacheService } from '../../database/redis/client.redis';
 import { NotificationEventRepository } from '../../database/repositories/notificacao.repository';
+import { requireModule } from '../../../middleware/module.middleware';
 const stockRepo = new StockRepository();
 const notificationRepo = new NotificationEventRepository();
 const stockService = new StockService(
@@ -25,9 +26,11 @@ const controller = new DashboardController(dashboardService);
 
 const router = Router();
 
-router.get('/summary', (req, res) => controller.getSummary(req, res));
+router.get('/summary', requireModule('dashboard'), (req, res) =>
+  controller.getSummary(req, res),
+);
 
-router.get('/expiring-items', (req, res) =>
+router.get('/expiring-items', requireModule('dashboard'), (req, res) =>
   controller.getExpiringItems(req, res),
 );
 
