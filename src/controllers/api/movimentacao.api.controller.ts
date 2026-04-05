@@ -1,11 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Req,
-  Res,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Post, Req, Res, UseGuards } from '@nestjs/common';
 import {
   ApiBody,
   ApiCookieAuth,
@@ -40,7 +33,7 @@ export class MovimentacaoApiController {
   @ApiOperation({ summary: 'Medicamentos sem movimento' })
   @UseGuards(movModule)
   produtosParados(@Req() req: Request, @Res() res: Response): void {
-    this.controller.nonMovementMedications(req, res);
+    void this.controller.nonMovementMedications(req, res);
   }
 
   @Get('medicamentos')
@@ -49,7 +42,7 @@ export class MovimentacaoApiController {
   @ApiQuery({ name: 'limit', required: false })
   @UseGuards(movPaginate)
   medicamentos(@Req() req: Request, @Res() res: Response): void {
-    this.controller.getMedicines(req, res);
+    void this.controller.getMedicines(req, res);
   }
 
   @Get('insumos')
@@ -58,7 +51,7 @@ export class MovimentacaoApiController {
   @ApiQuery({ name: 'limit', required: false })
   @UseGuards(movPaginate)
   insumos(@Req() req: Request, @Res() res: Response): void {
-    this.controller.getInputs(req, res);
+    void this.controller.getInputs(req, res);
   }
 
   @Post()
@@ -66,7 +59,7 @@ export class MovimentacaoApiController {
   @ApiBody({ type: MovementCreateBodyDto })
   @UseGuards(movCreateBody, movModule)
   create(@Req() req: Request, @Res() res: Response): void {
-    this.controller.create(req, res);
+    void this.controller.create(req, res);
   }
 
   @Get('medicamentos/ranking')
@@ -75,7 +68,7 @@ export class MovimentacaoApiController {
   @ApiQuery({ name: 'limit', required: false })
   @UseGuards(movPaginate)
   medicamentosRanking(@Req() req: Request, @Res() res: Response): void {
-    this.controller.getMedicineRanking(req, res);
+    void this.controller.getMedicineRanking(req, res);
   }
 
   @Get('transferencias/farmacia-enfermaria')
@@ -84,20 +77,20 @@ export class MovimentacaoApiController {
   @ApiQuery({ name: 'limit', required: false })
   @UseGuards(movPaginate)
   transferencias(@Req() req: Request, @Res() res: Response): void {
-    this.controller.getPharmacyToNursingTransfers(req, res);
+    void this.controller.getPharmacyToNursingTransfers(req, res);
   }
 
   @Get('consumo')
   @ApiOperation({ summary: 'Consumo agregado' })
   @UseGuards(movModule)
   consumo(@Req() req: Request, @Res() res: Response): void {
-    this.controller.getConsumption(req, res);
+    void this.controller.getConsumption(req, res);
   }
 
   @Get('consumo-por-item')
   @ApiOperation({ summary: 'Consumo por item' })
   @UseGuards(movModule)
   consumoPorItem(@Req() req: Request, @Res() res: Response): void {
-    this.controller.getConsumptionByItem(req, res);
+    void this.controller.getConsumptionByItem(req, res);
   }
 }

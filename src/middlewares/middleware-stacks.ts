@@ -1,6 +1,9 @@
 import type { RequestHandler } from 'express';
 import rateLimit from 'express-rate-limit';
-import { chainExpressMiddleware, wrapExpressMiddleware } from '@middlewares/wrap';
+import {
+  chainExpressMiddleware,
+  wrapExpressMiddleware,
+} from '@middlewares/wrap';
 import {
   enforceTenantMiddleware,
   tenantMiddleware,

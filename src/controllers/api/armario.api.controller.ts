@@ -55,7 +55,7 @@ export class ArmarioApiController {
   @ApiBody({ type: CabinetCreateBodyDto })
   @UseGuards(cabCreateBody, cabModule)
   create(@Req() req: Request, @Res() res: Response): void {
-    this.controller.create(req, res);
+    void this.controller.create(req, res);
   }
 
   @Get()
@@ -64,14 +64,14 @@ export class ArmarioApiController {
   @ApiQuery({ name: 'limit', required: false })
   @UseGuards(cabPaginate)
   getAll(@Req() req: Request, @Res() res: Response): void {
-    this.controller.getAll(req, res);
+    void this.controller.getAll(req, res);
   }
 
   @Get('count')
   @ApiOperation({ summary: 'Contagem de armários' })
   @UseGuards(cabModule)
   count(@Req() req: Request, @Res() res: Response): void {
-    this.controller.getCount(req, res);
+    void this.controller.getCount(req, res);
   }
 
   @Put(':numero')
@@ -80,7 +80,7 @@ export class ArmarioApiController {
   @ApiBody({ type: CabinetUpdateBodyDto })
   @UseGuards(cabUpdateBody, cabNumero)
   update(@Req() req: Request, @Res() res: Response): void {
-    this.controller.update(req, res);
+    void this.controller.update(req, res);
   }
 
   @Delete(':numero')
@@ -88,6 +88,6 @@ export class ArmarioApiController {
   @ApiParam({ name: 'numero', type: Number })
   @UseGuards(cabNumero)
   delete(@Req() req: Request, @Res() res: Response): void {
-    this.controller.delete(req, res);
+    void this.controller.delete(req, res);
   }
 }

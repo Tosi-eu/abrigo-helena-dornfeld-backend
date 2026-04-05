@@ -26,10 +26,7 @@ function endOfMonth(d: Date) {
 }
 
 function buildDrawerPlain(
-  gaveta:
-    | { num_gaveta: number; categoria_id: number }
-    | null
-    | undefined,
+  gaveta: { num_gaveta: number; categoria_id: number } | null | undefined,
   categoria: { nome: string } | null | undefined,
 ) {
   if (!gaveta) return null;
@@ -47,13 +44,13 @@ async function loadMovementRelationMaps(
   const client = db(tx);
   const medIds = [
     ...new Set(
-      rows
-        .map(r => r.medicamento_id)
-        .filter((x): x is number => x != null),
+      rows.map(r => r.medicamento_id).filter((x): x is number => x != null),
     ),
   ];
   const insIds = [
-    ...new Set(rows.map(r => r.insumo_id).filter((x): x is number => x != null)),
+    ...new Set(
+      rows.map(r => r.insumo_id).filter((x): x is number => x != null),
+    ),
   ];
   const loginIds = [...new Set(rows.map(r => r.login_id))];
 
@@ -142,9 +139,7 @@ async function loadMovementRelationMaps(
     residentes.map(res => [`${res.tenant_id}:${res.num_casela}`, res]),
   );
 
-  const catIds = [
-    ...new Set(gavetas.map(g => g.categoria_id).filter(Boolean)),
-  ];
+  const catIds = [...new Set(gavetas.map(g => g.categoria_id).filter(Boolean))];
   const cats = catIds.length
     ? await client.categoriaGaveta.findMany({
         where: { id: { in: catIds } },
@@ -170,7 +165,8 @@ function toMovementPlain(
   maps: Awaited<ReturnType<typeof loadMovementRelationMaps>>,
   options: { includeDrawer: boolean },
 ) {
-  const med = m.medicamento_id != null ? maps.medMap.get(m.medicamento_id) : undefined;
+  const med =
+    m.medicamento_id != null ? maps.medMap.get(m.medicamento_id) : undefined;
   const ins = m.insumo_id != null ? maps.insMap.get(m.insumo_id) : undefined;
   const login = maps.loginMap.get(m.login_id);
   const arm =
@@ -184,10 +180,7 @@ function toMovementPlain(
   let drawerPlain: ReturnType<typeof buildDrawerPlain> = null;
   if (options.includeDrawer && m.gaveta_id != null) {
     const g = maps.gavetaMap.get(`${m.tenant_id}:${m.gaveta_id}`);
-    drawerPlain = buildDrawerPlain(
-      g?.gaveta ?? null,
-      g?.categoria ?? null,
-    );
+    drawerPlain = buildDrawerPlain(g?.gaveta ?? null, g?.categoria ?? null);
   }
 
   return {
@@ -214,9 +207,7 @@ function toMovementPlain(
         }
       : null,
     CabinetModel: arm ? { num_armario: arm.num_armario } : null,
-    ResidentModel: res
-      ? { num_casela: res.num_casela, nome: res.nome }
-      : null,
+    ResidentModel: res ? { num_casela: res.num_casela, nome: res.nome } : null,
     DrawerModel: drawerPlain,
   };
 }
@@ -290,10 +281,7 @@ export class PrismaMovementRepository {
     };
   }
 
-  async create(
-    data: MovementRecord,
-    transaction?: Prisma.TransactionClient,
-  ) {
+  async create(data: MovementRecord, transaction?: Prisma.TransactionClient) {
     const r = data as MovementRecord & {
       destino?: string | null;
       lote?: string | null;
@@ -436,10 +424,7 @@ export class PrismaMovementRepository {
         select: { medicamento_id: true, casela_id: true },
       });
       nursingStockMap = new Map(
-        nursingStocks.map(s => [
-          `${s.medicamento_id}-${s.casela_id}`,
-          true,
-        ]),
+        nursingStocks.map(s => [`${s.medicamento_id}-${s.casela_id}`, true]),
       );
     }
 
@@ -451,9 +436,7 @@ export class PrismaMovementRepository {
         if (
           row.medicamento_id &&
           row.casela_id &&
-          nursingStockMap.get(
-            `${row.medicamento_id}-${row.casela_id}`,
-          )
+          nursingStockMap.get(`${row.medicamento_id}-${row.casela_id}`)
         ) {
           return { ...movement, data: formatDateToPtBr(row.data) };
         }
@@ -794,7 +777,11 @@ export class PrismaMovementRepository {
       db(transaction).movimentacao.count({ where }),
     ]);
 
-    const maps = await loadMovementRelationMaps(rows, { includeDrawer: false }, transaction);
+    const maps = await loadMovementRelationMaps(
+      rows,
+      { includeDrawer: false },
+      transaction,
+    );
 
     const data = rows.map(r => {
       const plain = toMovementPlain(r, maps, { includeDrawer: false }) as {
@@ -852,7 +839,11 @@ export class PrismaMovementRepository {
       db(transaction).movimentacao.count({ where }),
     ]);
 
-    const maps = await loadMovementRelationMaps(rows, { includeDrawer: false }, transaction);
+    const maps = await loadMovementRelationMaps(
+      rows,
+      { includeDrawer: false },
+      transaction,
+    );
 
     const data = rows.map(r => {
       const plain = toMovementPlain(r, maps, { includeDrawer: false }) as {

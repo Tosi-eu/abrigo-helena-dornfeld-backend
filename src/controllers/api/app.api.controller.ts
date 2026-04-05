@@ -110,15 +110,17 @@ export class AppApiController {
   @ApiResponse({ status: 200, description: '{ ok: true }' })
   @UseGuards(statusGuard)
   status(@Req() req: Request, @Res() res: Response): void {
-    this.appController.getStatus(req, res);
+    void this.appController.getStatus(req, res);
   }
 
   @Get('public/app-config')
-  @ApiOperation({ summary: 'Configuração pública da app (ex.: logo por defeito)' })
+  @ApiOperation({
+    summary: 'Configuração pública da app (ex.: logo por defeito)',
+  })
   @ApiResponse({ status: 200, description: '{ defaultLogoUrl }' })
   @UseGuards(statusGuard)
   publicAppConfig(@Req() req: Request, @Res() res: Response): void {
-    this.appController.getPublicAppConfig(req, res);
+    void this.appController.getPublicAppConfig(req, res);
   }
 
   @Get('tenants/:slug/branding')
@@ -127,7 +129,7 @@ export class AppApiController {
   @ApiResponse({ status: 200, description: 'Branding ou { found: false }' })
   @UseGuards(tenantBrandingGuard)
   tenantBranding(@Req() req: Request, @Res() res: Response): void {
-    this.appController.getTenantPublicBranding(req, res);
+    void this.appController.getTenantPublicBranding(req, res);
   }
 
   @Get('public/tenants/:slug/logo')
@@ -136,7 +138,7 @@ export class AppApiController {
   @ApiProduces('image/png', 'image/jpeg', 'image/webp')
   @UseGuards(tenantBrandingGuard)
   streamLogoBySlug(@Req() req: Request, @Res() res: Response): void {
-    this.appController.streamTenantLogoBySlug(req, res);
+    void this.appController.streamTenantLogoBySlug(req, res);
   }
 
   @Post('tenants/:slug/verify-contract-code')
@@ -146,7 +148,7 @@ export class AppApiController {
   @ApiResponse({ status: 200, description: 'Resultado da verificação' })
   @UseGuards(verifyContractGuard)
   verifyContractCode(@Req() req: Request, @Res() res: Response): void {
-    this.appController.verifyTenantContractCode(req, res);
+    void this.appController.verifyTenantContractCode(req, res);
   }
 
   @Get('tenants')
@@ -156,7 +158,7 @@ export class AppApiController {
   @ApiResponse({ status: 200, description: '{ data: [...] }' })
   @UseGuards(tenantListGuard)
   listTenants(@Req() req: Request, @Res() res: Response): void {
-    this.appController.listTenants(req, res);
+    void this.appController.listTenants(req, res);
   }
 
   @Get('admin/tenants')
@@ -167,7 +169,7 @@ export class AppApiController {
   @ApiResponse({ status: 200, description: 'Lista paginada' })
   @UseGuards(adminTenantsChain)
   adminListTenants(@Req() req: Request, @Res() res: Response): void {
-    this.tenantsController.listTenants(req, res);
+    void this.tenantsController.listTenants(req, res);
   }
 
   @Post('admin/tenants')
@@ -177,7 +179,7 @@ export class AppApiController {
   @ApiResponse({ status: 201, description: 'Tenant criado' })
   @UseGuards(adminTenantsChain)
   adminCreateTenant(@Req() req: Request, @Res() res: Response): void {
-    this.tenantsController.createTenant(req, res);
+    void this.tenantsController.createTenant(req, res);
   }
 
   @Put('admin/tenants/by-slug/:slug/contract-code')
@@ -189,7 +191,7 @@ export class AppApiController {
   @ApiBody({ type: SetContractCodeBySlugDto })
   @UseGuards(adminTenantsChain)
   setContractCodeBySlug(@Req() req: Request, @Res() res: Response): void {
-    this.tenantsController.setContractCodeBySlug(req, res);
+    void this.tenantsController.setContractCodeBySlug(req, res);
   }
 
   @Put('admin/tenants/:id')
@@ -199,7 +201,7 @@ export class AppApiController {
   @ApiBody({ type: AdminUpdateTenantDto })
   @UseGuards(adminTenantsChain)
   adminUpdateTenant(@Req() req: Request, @Res() res: Response): void {
-    this.tenantsController.updateTenant(req, res);
+    void this.tenantsController.updateTenant(req, res);
   }
 
   @Delete('admin/tenants/:id')
@@ -209,7 +211,7 @@ export class AppApiController {
   @ApiResponse({ status: 200, description: '{ ok: true }' })
   @UseGuards(adminTenantsChain)
   adminDeleteTenant(@Req() req: Request, @Res() res: Response): void {
-    this.tenantsController.deleteTenant(req, res);
+    void this.tenantsController.deleteTenant(req, res);
   }
 
   @Get('admin/tenants/:id/config')
@@ -218,7 +220,7 @@ export class AppApiController {
   @ApiParam({ name: 'id', type: Number })
   @UseGuards(adminTenantsChain)
   getTenantConfig(@Req() req: Request, @Res() res: Response): void {
-    this.tenantsController.getTenantConfig(req, res);
+    void this.tenantsController.getTenantConfig(req, res);
   }
 
   @Put('admin/tenants/:id/config')
@@ -228,6 +230,6 @@ export class AppApiController {
   @ApiBody({ type: AdminTenantModulesBodyDto })
   @UseGuards(adminTenantsChain)
   setTenantConfig(@Req() req: Request, @Res() res: Response): void {
-    this.tenantsController.setTenantConfig(req, res);
+    void this.tenantsController.setTenantConfig(req, res);
   }
 }

@@ -32,7 +32,8 @@ export function bindRequestToRlsTransaction(
   void prisma
     .$transaction(async tx => {
       await setRlsSessionGucs(tx, context);
-      const pass: NextFunction = () => runWithTransactionClient(tx, () => next());
+      const pass: NextFunction = () =>
+        runWithTransactionClient(tx, () => next());
       await waitForResponse(res, pass);
     })
     .catch(next);
@@ -54,7 +55,8 @@ export function bindPublicTenantToRlsTransaction(
         tenant_id: String(tenantId),
         is_super_admin: 'false',
       });
-      const pass: NextFunction = () => runWithTransactionClient(tx, () => next());
+      const pass: NextFunction = () =>
+        runWithTransactionClient(tx, () => next());
       await waitForResponse(res, pass);
     })
     .catch(next);
@@ -68,7 +70,8 @@ export function bindSuperAdminRlsTransaction(
   void prisma
     .$transaction(async tx => {
       await setRlsSessionGucs(tx, { is_super_admin: 'true' });
-      const pass: NextFunction = () => runWithTransactionClient(tx, () => next());
+      const pass: NextFunction = () =>
+        runWithTransactionClient(tx, () => next());
       await waitForResponse(res, pass);
     })
     .catch(next);

@@ -38,14 +38,14 @@ export class CategoriaGavetaApiController {
   @ApiBody({ type: CategoryNomeBodyDto })
   @UseGuards(drCatModule)
   create(@Req() req: Request, @Res() res: Response): void {
-    this.controller.create(req, res);
+    void this.controller.create(req, res);
   }
 
   @Get()
   @ApiOperation({ summary: 'Listar categorias' })
   @UseGuards(drCatModule)
   getAll(@Req() req: Request, @Res() res: Response): void {
-    this.controller.getAll(req, res);
+    void this.controller.getAll(req, res);
   }
 
   @Get(':id')
@@ -53,7 +53,7 @@ export class CategoriaGavetaApiController {
   @ApiParam({ name: 'id', type: Number })
   @UseGuards(drCatModule)
   getById(@Req() req: Request, @Res() res: Response): void {
-    this.controller.getById(req, res);
+    void this.controller.getById(req, res);
   }
 
   @Put(':id')
@@ -62,7 +62,7 @@ export class CategoriaGavetaApiController {
   @ApiBody({ type: CategoryNomeBodyDto })
   @UseGuards(catNomeBody, drCatModule)
   update(@Req() req: Request, @Res() res: Response): void {
-    this.controller.update(req, res);
+    void this.controller.update(req, res);
   }
 
   @Delete(':id')
@@ -70,6 +70,6 @@ export class CategoriaGavetaApiController {
   @ApiParam({ name: 'id', type: Number })
   @UseGuards(drCatModule)
   delete(@Req() req: Request, @Res() res: Response): void {
-    this.controller.delete(req, res);
+    void this.controller.delete(req, res);
   }
 }

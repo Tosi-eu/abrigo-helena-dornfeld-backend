@@ -31,8 +31,11 @@ export class NotificationBootstrapCron implements OnModuleInit {
 
   private async runOnce(tag: string) {
     try {
-      const createdCount = await this.service.bootstrapReplacementNotifications();
-      this.log.log(`[${tag}] ${createdCount} notificações de reposição processadas.`);
+      const createdCount =
+        await this.service.bootstrapReplacementNotifications();
+      this.log.log(
+        `[${tag}] ${createdCount} notificações de reposição processadas.`,
+      );
     } catch (err) {
       this.log.error(`[${tag}] Erro ao gerar notificações`, err as Error);
     }

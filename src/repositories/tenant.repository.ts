@@ -7,7 +7,6 @@ function db(tx?: Prisma.TransactionClient) {
 }
 
 export class PrismaTenantRepository {
-
   async findById(id: number, tx?: Prisma.TransactionClient) {
     return db(tx).tenant.findUnique({
       where: { id },

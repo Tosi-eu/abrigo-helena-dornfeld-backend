@@ -143,7 +143,10 @@ export class ResidentUpdateBodyDto {
 
 export class MovementCreateBodyDto {
   @IsIn(['entrada', 'saida', 'transferencia'])
-  @ApiProperty({ example: 'entrada', description: 'entrada | saida | transferencia' })
+  @ApiProperty({
+    example: 'entrada',
+    description: 'entrada | saida | transferencia',
+  })
   tipo!: string;
 
   @IsInt()
@@ -304,7 +307,10 @@ export class MedicineStockInBodyDto {
 
   @IsOptional()
   @IsIn(['farmacia', 'enfermagem'])
-  @ApiPropertyOptional({ example: 'farmacia', enum: ['farmacia', 'enfermagem'] })
+  @ApiPropertyOptional({
+    example: 'farmacia',
+    enum: ['farmacia', 'enfermagem'],
+  })
   setor?: string;
 
   @IsOptional()
@@ -358,7 +364,10 @@ export class InputStockInBodyDto {
 
   @IsOptional()
   @IsIn(['farmacia', 'enfermagem'])
-  @ApiPropertyOptional({ example: 'farmacia', enum: ['farmacia', 'enfermagem'] })
+  @ApiPropertyOptional({
+    example: 'farmacia',
+    enum: ['farmacia', 'enfermagem'],
+  })
   setor?: string;
 
   @IsOptional()

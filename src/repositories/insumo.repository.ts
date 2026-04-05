@@ -3,10 +3,7 @@ import type { Input } from '@porto-sdk/sdk';
 import { getDb } from '@repositories/prisma';
 
 export class PrismaInputRepository {
-  async createInput(
-    data: Omit<Input, 'id'>,
-    tenantId: number,
-  ): Promise<Input> {
+  async createInput(data: Omit<Input, 'id'>, tenantId: number): Promise<Input> {
     const input = await getDb().insumo.create({
       data: {
         tenant_id: tenantId,

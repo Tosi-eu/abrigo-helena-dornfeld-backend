@@ -20,8 +20,7 @@ export async function setRlsSessionGucs(
     const value = context[key];
     const safeKey = key.replace(/[^a-z0-9_]/gi, '_');
     const appKey = `app.${safeKey}`;
-    const safeValue =
-      typeof value === 'number' ? String(value) : String(value);
+    const safeValue = typeof value === 'number' ? String(value) : String(value);
 
     await db.$executeRawUnsafe(
       `SELECT set_config($1::text, $2::text, true)`,

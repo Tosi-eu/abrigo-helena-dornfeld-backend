@@ -27,9 +27,7 @@ import {
   TenantInviteCreateBodyDto,
   TenantModulesConfigBodyDto,
 } from '@domain/dto/entities.api.dto';
-import {
-  UseValidatedBody,
-} from '@validation/use-validated-body.guard';
+import { UseValidatedBody } from '@validation/use-validated-body.guard';
 
 const requireAdminGuard = UseExpressMwGuard(requireAdmin);
 const inviteBody = UseValidatedBody(TenantInviteCreateBodyDto);
@@ -54,7 +52,7 @@ export class TenantApiController {
   @Get('config')
   @ApiOperation({ summary: 'Configuração do tenant atual (módulos, etc.)' })
   config(@Req() req: Request, @Res() res: Response): void {
-    this.controller.getConfig(req, res);
+    void this.controller.getConfig(req, res);
   }
 
   @Post('invites')
@@ -62,7 +60,7 @@ export class TenantApiController {
   @ApiBody({ type: TenantInviteCreateBodyDto })
   @UseGuards(inviteBody, requireAdminGuard)
   invites(@Req() req: Request, @Res() res: Response): void {
-    this.inviteController.create(req, res);
+    void this.inviteController.create(req, res);
   }
 
   @Post('contract-code')
@@ -72,7 +70,7 @@ export class TenantApiController {
   @ApiBody({ type: TenantContractCodeBodyDto })
   @UseGuards(contractBody)
   contractCode(@Req() req: Request, @Res() res: Response): void {
-    this.controller.setContractCode(req, res);
+    void this.controller.setContractCode(req, res);
   }
 
   @Put('config')
@@ -80,7 +78,7 @@ export class TenantApiController {
   @ApiBody({ type: TenantModulesConfigBodyDto })
   @UseGuards(modulesBody, requireAdminGuard)
   putConfig(@Req() req: Request, @Res() res: Response): void {
-    this.controller.updateConfig(req, res);
+    void this.controller.updateConfig(req, res);
   }
 
   @Put('branding')
@@ -88,7 +86,7 @@ export class TenantApiController {
   @ApiBody({ type: TenantBrandingBodyDto })
   @UseGuards(brandingBody, requireAdminGuard)
   branding(@Req() req: Request, @Res() res: Response): void {
-    this.controller.updateBranding(req, res);
+    void this.controller.updateBranding(req, res);
   }
 
   @Post('branding/logo')
@@ -105,6 +103,6 @@ export class TenantApiController {
   })
   @UseGuards(logoUploadGuard)
   uploadLogo(@Req() req: Request, @Res() res: Response): void {
-    this.controller.uploadLogo(req, res);
+    void this.controller.uploadLogo(req, res);
   }
 }

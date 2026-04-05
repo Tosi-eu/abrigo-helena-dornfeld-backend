@@ -56,14 +56,14 @@ export class ResidenteApiController {
   @ApiQuery({ name: 'limit', required: false })
   @UseGuards(resPaginate)
   findAll(@Req() req: Request, @Res() res: Response): void {
-    this.controller.findAll(req, res);
+    void this.controller.findAll(req, res);
   }
 
   @Get('count')
   @ApiOperation({ summary: 'Contagem de residentes' })
   @UseGuards(resModule)
   count(@Req() req: Request, @Res() res: Response): void {
-    this.controller.getCount(req, res);
+    void this.controller.getCount(req, res);
   }
 
   @Get(':casela')
@@ -71,7 +71,7 @@ export class ResidenteApiController {
   @ApiParam({ name: 'casela', type: Number })
   @UseGuards(resCasela)
   findByCasela(@Req() req: Request, @Res() res: Response): void {
-    this.controller.findByCasela(req, res);
+    void this.controller.findByCasela(req, res);
   }
 
   @Post()
@@ -79,7 +79,7 @@ export class ResidenteApiController {
   @ApiBody({ type: ResidentCreateBodyDto })
   @UseGuards(resCreateBody, resModule)
   create(@Req() req: Request, @Res() res: Response): void {
-    this.controller.create(req, res);
+    void this.controller.create(req, res);
   }
 
   @Put(':casela')
@@ -88,7 +88,7 @@ export class ResidenteApiController {
   @ApiBody({ type: ResidentUpdateBodyDto })
   @UseGuards(resUpdateBody, resCasela)
   update(@Req() req: Request, @Res() res: Response): void {
-    this.controller.update(req, res);
+    void this.controller.update(req, res);
   }
 
   @Delete(':casela')
@@ -96,6 +96,6 @@ export class ResidenteApiController {
   @ApiParam({ name: 'casela', type: Number })
   @UseGuards(resCasela)
   delete(@Req() req: Request, @Res() res: Response): void {
-    this.controller.delete(req, res);
+    void this.controller.delete(req, res);
   }
 }

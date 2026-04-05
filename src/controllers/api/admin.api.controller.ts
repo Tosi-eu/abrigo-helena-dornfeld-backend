@@ -63,7 +63,7 @@ export class AdminApiController {
   @ApiQuery({ name: 'page', required: false })
   @ApiQuery({ name: 'limit', required: false })
   users(@Req() req: Request, @Res() res: Response): void {
-    this.controller.listUsers(req, res);
+    void this.controller.listUsers(req, res);
   }
 
   @Post('users')
@@ -71,7 +71,7 @@ export class AdminApiController {
   @ApiBody({ type: AdminCreateUserBodyDto })
   @UseGuards(adminCreateUserBody)
   createUser(@Req() req: Request, @Res() res: Response): void {
-    this.controller.createUser(req, res);
+    void this.controller.createUser(req, res);
   }
 
   @Put('users/:id')
@@ -80,14 +80,14 @@ export class AdminApiController {
   @ApiBody({ type: AdminUpdateUserBodyDto })
   @UseGuards(adminUpdateUserBody)
   updateUser(@Req() req: Request, @Res() res: Response): void {
-    this.controller.updateUser(req, res);
+    void this.controller.updateUser(req, res);
   }
 
   @Delete('users/:id')
   @ApiOperation({ summary: '[Super-admin] Remover utilizador' })
   @ApiParam({ name: 'id', type: Number })
   deleteUser(@Req() req: Request, @Res() res: Response): void {
-    this.controller.deleteUser(req, res);
+    void this.controller.deleteUser(req, res);
   }
 
   @Get('login-log')
@@ -100,14 +100,14 @@ export class AdminApiController {
   @ApiQuery({ name: 'fromDate', required: false })
   @ApiQuery({ name: 'toDate', required: false })
   loginLog(@Req() req: Request, @Res() res: Response): void {
-    this.controller.getLoginLog(req, res);
+    void this.controller.getLoginLog(req, res);
   }
 
   @Get('insights')
   @ApiOperation({ summary: 'Indicadores / insights' })
   @ApiQuery({ name: 'days', required: false })
   insights(@Req() req: Request, @Res() res: Response): void {
-    this.controller.getInsights(req, res);
+    void this.controller.getInsights(req, res);
   }
 
   @Get('stock-history')
@@ -116,7 +116,7 @@ export class AdminApiController {
   @ApiQuery({ name: 'limit', required: false })
   @ApiQuery({ name: 'operationType', required: false })
   stockHistory(@Req() req: Request, @Res() res: Response): void {
-    this.controller.getStockHistory(req, res);
+    void this.controller.getStockHistory(req, res);
   }
 
   @Get('export')
@@ -129,52 +129,52 @@ export class AdminApiController {
   @ApiQuery({ name: 'mes', required: false })
   @ApiQuery({ name: 'casela', required: false })
   export(@Req() req: Request, @Res() res: Response): void {
-    this.controller.getExport(req, res);
+    void this.controller.getExport(req, res);
   }
 
   @Get('metrics')
   @ApiOperation({ summary: 'Métricas agregadas' })
   @ApiQuery({ name: 'type', required: false })
   metrics(@Req() req: Request, @Res() res: Response): void {
-    this.controller.getMetrics(req, res);
+    void this.controller.getMetrics(req, res);
   }
 
   @Get('metrics/active-users')
   @ApiOperation({ summary: 'Utilizadores ativos (mês corrente)' })
   activeUsers(@Req() req: Request, @Res() res: Response): void {
-    this.controller.getActiveUsersThisMonth(req, res);
+    void this.controller.getActiveUsersThisMonth(req, res);
   }
 
   @Get('metrics/movements')
   @ApiOperation({ summary: 'Movimentações no mês' })
   movements(@Req() req: Request, @Res() res: Response): void {
-    this.controller.getMovementsThisMonth(req, res);
+    void this.controller.getMovementsThisMonth(req, res);
   }
 
   @Get('health')
   @ApiOperation({ summary: 'Estado de saúde detalhado (admin)' })
   health(@Req() req: Request, @Res() res: Response): void {
-    this.controller.getHealth(req, res);
+    void this.controller.getHealth(req, res);
   }
 
   @Get('backup/status')
   @ApiOperation({ summary: '[Super-admin] Estado dos backups' })
   @UseGuards(superAdminOnly)
   backupStatus(@Req() req: Request, @Res() res: Response): void {
-    this.controller.getBackupStatus(req, res);
+    void this.controller.getBackupStatus(req, res);
   }
 
   @Post('backup/run')
   @ApiOperation({ summary: '[Super-admin] Disparar backup agora' })
   @UseGuards(superAdminOnly)
   backupRun(@Req() req: Request, @Res() res: Response): void {
-    this.controller.runBackupNow(req, res);
+    void this.controller.runBackupNow(req, res);
   }
 
   @Get('config')
   @ApiOperation({ summary: 'Configuração global do sistema' })
   config(@Req() req: Request, @Res() res: Response): void {
-    this.controller.getConfig(req, res);
+    void this.controller.getConfig(req, res);
   }
 
   @Put('config')
@@ -182,13 +182,13 @@ export class AdminApiController {
   @ApiBody(STRING_MAP_BODY)
   @UseGuards(adminConfigMap)
   putConfig(@Req() req: Request, @Res() res: Response): void {
-    this.controller.updateConfig(req, res);
+    void this.controller.updateConfig(req, res);
   }
 
   @Get('data-quality/summary')
   @ApiOperation({ summary: 'Resumo de qualidade de dados' })
   dataQualitySummary(@Req() req: Request, @Res() res: Response): void {
-    this.controller.getDataQualitySummary(req, res);
+    void this.controller.getDataQualitySummary(req, res);
   }
 
   @Get('data-quality/inconsistencies')
@@ -199,13 +199,13 @@ export class AdminApiController {
   @ApiQuery({ name: 'itemType', required: false })
   @ApiQuery({ name: 'itemId', required: false })
   inconsistencies(@Req() req: Request, @Res() res: Response): void {
-    this.controller.listInconsistencies(req, res);
+    void this.controller.listInconsistencies(req, res);
   }
 
   @Get('data-quality/medicine-duplicates')
   @ApiOperation({ summary: 'Medicamentos duplicados' })
   medicineDuplicates(@Req() req: Request, @Res() res: Response): void {
-    this.controller.listMedicineDuplicates(req, res);
+    void this.controller.listMedicineDuplicates(req, res);
   }
 
   @Post('data-quality/merge-medicines')
@@ -213,7 +213,7 @@ export class AdminApiController {
   @ApiBody({ type: AdminMergeMedicinesBodyDto })
   @UseGuards(adminMergeMeds)
   mergeMedicines(@Req() req: Request, @Res() res: Response): void {
-    this.controller.mergeMedicines(req, res);
+    void this.controller.mergeMedicines(req, res);
   }
 
   @Post('data-quality/normalize-medicine-units')
@@ -221,7 +221,7 @@ export class AdminApiController {
   @ApiBody({ type: AdminNormalizeUnitsBodyDto })
   @UseGuards(adminNormUnits)
   normalizeUnits(@Req() req: Request, @Res() res: Response): void {
-    this.controller.normalizeMedicineUnits(req, res);
+    void this.controller.normalizeMedicineUnits(req, res);
   }
 
   @Get('notifications')
@@ -229,7 +229,7 @@ export class AdminApiController {
   @ApiQuery({ name: 'page', required: false })
   @ApiQuery({ name: 'limit', required: false })
   notifications(@Req() req: Request, @Res() res: Response): void {
-    this.controller.getNotifications(req, res);
+    void this.controller.getNotifications(req, res);
   }
 
   @Patch('notifications/:id')
@@ -238,7 +238,7 @@ export class AdminApiController {
   @ApiBody({ type: AdminPatchNotificationBodyDto })
   @UseGuards(adminPatchNotif)
   patchNotification(@Req() req: Request, @Res() res: Response): void {
-    this.controller.patchNotification(req, res);
+    void this.controller.patchNotification(req, res);
   }
 
   @Post('restore-backup')
@@ -252,13 +252,17 @@ export class AdminApiController {
       type: 'object',
       required: ['file'],
       properties: {
-        file: { type: 'string', format: 'binary', description: 'Ficheiro de backup' },
+        file: {
+          type: 'string',
+          format: 'binary',
+          description: 'Ficheiro de backup',
+        },
       },
     },
   })
   @ApiResponse({ status: 200, description: 'Restauro iniciado ou concluído' })
   @UseGuards(superAdminUpload)
   restoreBackup(@Req() req: Request, @Res() res: Response): void {
-    this.controller.restoreBackup(req, res);
+    void this.controller.restoreBackup(req, res);
   }
 }

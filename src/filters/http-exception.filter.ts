@@ -5,7 +5,10 @@ import {
   HttpException,
 } from '@nestjs/common';
 import type { Response } from 'express';
-import { buildErrorJsonBody, getHttpErrorStatus } from '@helpers/error-response.helper';
+import {
+  buildErrorJsonBody,
+  getHttpErrorStatus,
+} from '@helpers/error-response.helper';
 import { logger } from '@helpers/logger.helper';
 
 @Catch()
@@ -13,7 +16,11 @@ export class HttpExceptionFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
     const res = ctx.getResponse<Response>();
-    const req = ctx.getRequest<{ method?: string; path?: string; url?: string }>();
+    const req = ctx.getRequest<{
+      method?: string;
+      path?: string;
+      url?: string;
+    }>();
 
     const status =
       exception instanceof HttpException

@@ -1,8 +1,5 @@
 import { Request, Response } from 'express';
-import {
-  MovementPeriod,
-  ReportService,
-} from '@services/relatorio.service';
+import { MovementPeriod, ReportService } from '@services/relatorio.service';
 import {
   sendErrorResponse,
   mapErrorToStatusAndCode,

@@ -21,7 +21,6 @@ function db(tx?: Prisma.TransactionClient) {
 }
 
 export class PrismaLoginRepository {
-
   async create(
     data: CreateUserData,
     options?: { transaction?: Prisma.TransactionClient },

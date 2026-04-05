@@ -40,9 +40,7 @@ export function isUniqueViolationError(error: unknown): boolean {
   }
   const message = getErrorMessage(error);
   const err = error as { name?: string; original?: { code?: string } };
-  return (
-    message.includes('duplicate') || err?.original?.code === '23505'
-  );
+  return message.includes('duplicate') || err?.original?.code === '23505';
 }
 
 export function mapPrismaToClientError(

@@ -70,7 +70,12 @@ import { GavetaApiController } from '@controllers/api/gaveta.api.controller';
 import { CategoriaGavetaApiController } from '@controllers/api/categoria-gaveta.api.controller';
 import { CategoriaArmarioApiController } from '@controllers/api/categoria-armario.api.controller';
 import { ArmarioApiController } from '@controllers/api/armario.api.controller';
-import { AdminPanelLimiterNest, RequireAdminNest, StandardProtectedMiddleware, TenantMiddlewareNest } from '@middlewares/middleware-stacks';
+import {
+  AdminPanelLimiterNest,
+  RequireAdminNest,
+  StandardProtectedMiddleware,
+  TenantMiddlewareNest,
+} from '@middlewares/middleware-stacks';
 
 const loginRepo = new PrismaLoginRepository();
 const loginLogRepo = new PrismaLoginLogRepository();
@@ -109,7 +114,11 @@ const adminController = new AdminController(
 );
 
 const stockRepo = new PrismaStockRepository();
-const stockService = new StockService(stockRepo, cacheService, notificationRepo);
+const stockService = new StockService(
+  stockRepo,
+  cacheService,
+  notificationRepo,
+);
 const dashboardService = new DashboardService(
   stockService,
   movementService,
@@ -200,7 +209,10 @@ const cabinetController = new CabinetController(cabinetService);
     { provide: TenantController, useValue: tenantController },
     { provide: TenantInviteController, useValue: tenantInviteController },
     { provide: ResidentController, useValue: residentController },
-    { provide: NotificationEventController, useValue: notificationEventController },
+    {
+      provide: NotificationEventController,
+      useValue: notificationEventController,
+    },
     { provide: MedicineController, useValue: medicineController },
     { provide: InsumoController, useValue: insumoController },
     { provide: DrawerController, useValue: drawerController },
@@ -216,25 +228,27 @@ export class ApiModule implements NestModule {
       method: RequestMethod.ALL,
     });
 
-    consumer.apply(StandardProtectedMiddleware).forRoutes(
-      TenantApiController,
-      AdminApiController,
-      DashboardApiController,
-      EstoqueApiController,
-      MovimentacaoApiController,
-      RelatorioApiController,
-      ResidenteApiController,
-      NotificacaoApiController,
-      MedicamentoApiController,
-      InsumoApiController,
-      GavetaApiController,
-      CategoriaGavetaApiController,
-      CategoriaArmarioApiController,
-      ArmarioApiController,
-    );
+    consumer
+      .apply(StandardProtectedMiddleware)
+      .forRoutes(
+        TenantApiController,
+        AdminApiController,
+        DashboardApiController,
+        EstoqueApiController,
+        MovimentacaoApiController,
+        RelatorioApiController,
+        ResidenteApiController,
+        NotificacaoApiController,
+        MedicamentoApiController,
+        InsumoApiController,
+        GavetaApiController,
+        CategoriaGavetaApiController,
+        CategoriaArmarioApiController,
+        ArmarioApiController,
+      );
 
-    consumer.apply(AdminPanelLimiterNest, RequireAdminNest).forRoutes(
-      AdminApiController,
-    );
+    consumer
+      .apply(AdminPanelLimiterNest, RequireAdminNest)
+      .forRoutes(AdminApiController);
   }
 }

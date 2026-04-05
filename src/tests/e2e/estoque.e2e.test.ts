@@ -2,10 +2,7 @@ import request from 'supertest';
 import { setupTestApp } from '@tests/helpers/database.helper';
 import { prisma } from '@repositories/prisma';
 import { App } from 'supertest/types';
-import {
-  seedDB,
-  SeedResult,
-} from '@repositories/seed/estoque.seed';
+import { seedDB, SeedResult } from '@repositories/seed/estoque.seed';
 import { ItemType, StockRawResponse } from '@helpers/utils';
 
 let app: App;

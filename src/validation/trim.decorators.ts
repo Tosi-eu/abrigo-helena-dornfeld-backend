@@ -25,7 +25,10 @@ export function TrimmedString(min = 1, maxLength?: number) {
   const trim = Transform(({ value }: { value: unknown }) =>
     typeof value === 'string' ? value.trim() : value,
   );
-  const bounds = [MinLength(min), ...(maxLength != null ? [MaxLength(maxLength)] : [])];
+  const bounds = [
+    MinLength(min),
+    ...(maxLength != null ? [MaxLength(maxLength)] : []),
+  ];
   return applyDecorators(trim, IsString(), IsNotEmpty(), ...bounds);
 }
 

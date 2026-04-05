@@ -126,12 +126,13 @@ export class LoginApiController {
   @ApiResponse({ status: 409, description: 'E-mail já em uso' })
   @UseGuards(registerGuard)
   registerAccount(@Req() req: Request, @Res() res: Response): void {
-    this.controller.createAccount(req, res);
+    void this.controller.createAccount(req, res);
   }
 
   @Post('register-user')
   @ApiOperation({
-    summary: 'Registar utilizador (tenant provisório + código de contrato opcional)',
+    summary:
+      'Registar utilizador (tenant provisório + código de contrato opcional)',
   })
   @ApiBody({ type: RegisterUserDto })
   @ApiResponse({ status: 201, description: 'Criado' })
@@ -139,7 +140,7 @@ export class LoginApiController {
   @ApiResponse({ status: 409, description: 'Conflito' })
   @UseGuards(registerGuard)
   registerUser(@Req() req: Request, @Res() res: Response): void {
-    this.controller.registerUser(req, res);
+    void this.controller.registerUser(req, res);
   }
 
   @Post('register-shelter')
@@ -151,7 +152,7 @@ export class LoginApiController {
   @ApiResponse({ status: 400, description: 'Validação' })
   @UseGuards(registerGuard)
   registerShelter(@Req() req: Request, @Res() res: Response): void {
-    this.controller.registerShelter(req, res);
+    void this.controller.registerShelter(req, res);
   }
 
   @Post('join-by-token')
@@ -161,7 +162,7 @@ export class LoginApiController {
   @ApiResponse({ status: 400, description: 'Token ou credenciais em falta' })
   @UseGuards(registerGuard)
   joinByToken(@Req() req: Request, @Res() res: Response): void {
-    this.controller.joinByToken(req, res);
+    void this.controller.joinByToken(req, res);
   }
 
   @Post()
@@ -172,12 +173,15 @@ export class LoginApiController {
   })
   @ApiBody({ type: CreateUserInTenantDto })
   @ApiResponse({ status: 201, description: 'Utilizador criado' })
-  @ApiResponse({ status: 400, description: 'Validação ou contrato obrigatório' })
+  @ApiResponse({
+    status: 400,
+    description: 'Validação ou contrato obrigatório',
+  })
   @ApiResponse({ status: 403, description: 'Código de contrato inválido' })
   @ApiResponse({ status: 409, description: 'Login já cadastrado' })
   @UseGuards(createLoginGuard)
   create(@Req() req: Request, @Res() res: Response): void {
-    this.controller.create(req, res);
+    void this.controller.create(req, res);
   }
 
   @Get('resolve-tenant')
@@ -187,12 +191,18 @@ export class LoginApiController {
   })
   @ApiQuery({ name: 'login', required: false, example: 'a@b.com' })
   @ApiQuery({ name: 'email', required: false, example: 'a@b.com' })
-  @ApiResponse({ status: 200, description: '{ slug } ou resposta de ambiguidade' })
+  @ApiResponse({
+    status: 200,
+    description: '{ slug } ou resposta de ambiguidade',
+  })
   @ApiResponse({ status: 404, description: 'Nenhum abrigo para o e-mail' })
-  @ApiResponse({ status: 409, description: 'E-mail associado a vários abrigos' })
+  @ApiResponse({
+    status: 409,
+    description: 'E-mail associado a vários abrigos',
+  })
   @UseGuards(loginLimitGuard)
   resolveTenant(@Req() req: Request, @Res() res: Response): void {
-    this.controller.resolveTenant(req, res);
+    void this.controller.resolveTenant(req, res);
   }
 
   @Get('tenants-for-email')
@@ -202,7 +212,7 @@ export class LoginApiController {
   @ApiResponse({ status: 200, description: '{ tenants: [...] }' })
   @UseGuards(loginLimitGuard)
   tenantsForEmail(@Req() req: Request, @Res() res: Response): void {
-    this.controller.tenantsForEmail(req, res);
+    void this.controller.tenantsForEmail(req, res);
   }
 
   @Post('authenticate')
@@ -216,7 +226,7 @@ export class LoginApiController {
   @ApiResponse({ status: 401, description: 'Credenciais inválidas' })
   @UseGuards(authenticateGuard)
   authenticate(@Req() req: Request, @Res() res: Response): void {
-    this.controller.authenticate(req, res);
+    void this.controller.authenticate(req, res);
   }
 
   @Post('reset-password')
@@ -227,7 +237,7 @@ export class LoginApiController {
   @ApiResponse({ status: 404, description: 'Login não encontrado' })
   @UseGuards(resetPasswordGuard)
   resetPassword(@Req() req: Request, @Res() res: Response): void {
-    this.controller.resetPassword(req, res);
+    void this.controller.resetPassword(req, res);
   }
 
   @Post('logout')
@@ -237,7 +247,7 @@ export class LoginApiController {
   @ApiResponse({ status: 200, description: 'Sessão terminada' })
   @UseGuards(sessionGuard)
   logout(@Req() req: Request, @Res() res: Response): void {
-    this.controller.logout(req, res);
+    void this.controller.logout(req, res);
   }
 
   @Get('display-config')
@@ -246,7 +256,7 @@ export class LoginApiController {
   @ApiCookieAuth('authToken')
   @UseGuards(sessionGuard)
   displayConfig(@Req() req: Request, @Res() res: Response): void {
-    this.controller.getDisplayConfig(req, res);
+    void this.controller.getDisplayConfig(req, res);
   }
 
   @Get('usuario-logado')
@@ -256,7 +266,7 @@ export class LoginApiController {
   @ApiResponse({ status: 200, description: 'Perfil do utilizador' })
   @UseGuards(sessionAuditGuard)
   usuarioLogado(@Req() req: Request, @Res() res: Response): void {
-    this.controller.getCurrentUser(req, res);
+    void this.controller.getCurrentUser(req, res);
   }
 
   @Put()
@@ -271,7 +281,7 @@ export class LoginApiController {
   @ApiResponse({ status: 401, description: 'Senha atual incorreta' })
   @UseGuards(profileGuard)
   update(@Req() req: Request, @Res() res: Response): void {
-    this.controller.update(req, res);
+    void this.controller.update(req, res);
   }
 
   @Delete()
@@ -282,6 +292,6 @@ export class LoginApiController {
   @ApiResponse({ status: 404, description: 'Utilizador não encontrado' })
   @UseGuards(profileGuard)
   delete(@Req() req: Request, @Res() res: Response): void {
-    this.controller.delete(req, res);
+    void this.controller.delete(req, res);
   }
 }

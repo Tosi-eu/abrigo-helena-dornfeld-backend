@@ -1,5 +1,8 @@
 import { NextFunction, Request, Response } from 'express';
-import { buildErrorJsonBody, getHttpErrorStatus } from '@helpers/error-response.helper';
+import {
+  buildErrorJsonBody,
+  getHttpErrorStatus,
+} from '@helpers/error-response.helper';
 import { logger } from '@helpers/logger.helper';
 
 export function errorHandler(

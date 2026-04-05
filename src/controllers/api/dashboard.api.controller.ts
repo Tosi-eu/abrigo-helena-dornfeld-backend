@@ -25,7 +25,7 @@ export class DashboardApiController {
   @ApiResponse({ status: 200, description: 'Agregados do dashboard' })
   @UseGuards(dashModule)
   summary(@Req() req: Request, @Res() res: Response): void {
-    this.controller.getSummary(req, res);
+    void this.controller.getSummary(req, res);
   }
 
   @Get('expiring-items')
@@ -36,6 +36,6 @@ export class DashboardApiController {
   @ApiResponse({ status: 200, description: 'Lista de itens' })
   @UseGuards(dashModule)
   expiringItems(@Req() req: Request, @Res() res: Response): void {
-    this.controller.getExpiringItems(req, res);
+    void this.controller.getExpiringItems(req, res);
   }
 }

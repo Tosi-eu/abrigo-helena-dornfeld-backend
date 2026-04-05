@@ -48,7 +48,7 @@ export class MedicamentoApiController {
   @ApiBody({ type: MedicineBodyDto })
   @UseGuards(medBody, medModule)
   create(@Req() req: Request, @Res() res: Response): void {
-    this.controller.create(req, res);
+    void this.controller.create(req, res);
   }
 
   @Get()
@@ -57,7 +57,7 @@ export class MedicamentoApiController {
   @ApiQuery({ name: 'limit', required: false })
   @UseGuards(medPaginate)
   getAll(@Req() req: Request, @Res() res: Response): void {
-    this.controller.getAll(req, res);
+    void this.controller.getAll(req, res);
   }
 
   @Put(':id')
@@ -66,7 +66,7 @@ export class MedicamentoApiController {
   @ApiBody({ type: MedicineBodyDto })
   @UseGuards(medBody, medId)
   update(@Req() req: Request, @Res() res: Response): void {
-    this.controller.update(req, res);
+    void this.controller.update(req, res);
   }
 
   @Delete(':id')
@@ -74,6 +74,6 @@ export class MedicamentoApiController {
   @ApiParam({ name: 'id', type: Number })
   @UseGuards(medId)
   delete(@Req() req: Request, @Res() res: Response): void {
-    this.controller.delete(req, res);
+    void this.controller.delete(req, res);
   }
 }

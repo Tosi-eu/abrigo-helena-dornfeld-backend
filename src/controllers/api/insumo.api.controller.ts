@@ -43,7 +43,7 @@ export class InsumoApiController {
   @ApiBody({ type: InputBodyDto })
   @UseGuards(insBody)
   create(@Req() req: Request, @Res() res: Response): void {
-    this.controller.create(req, res);
+    void this.controller.create(req, res);
   }
 
   @Get()
@@ -52,7 +52,7 @@ export class InsumoApiController {
   @ApiQuery({ name: 'limit', required: false })
   @UseGuards(insPaginate)
   list(@Req() req: Request, @Res() res: Response): void {
-    this.controller.list(req, res);
+    void this.controller.list(req, res);
   }
 
   @Put(':id')
@@ -61,7 +61,7 @@ export class InsumoApiController {
   @ApiBody({ type: InputBodyDto })
   @UseGuards(insBody, insId)
   update(@Req() req: Request, @Res() res: Response): void {
-    this.controller.update(req, res);
+    void this.controller.update(req, res);
   }
 
   @Delete(':id')
@@ -69,6 +69,6 @@ export class InsumoApiController {
   @ApiParam({ name: 'id', type: Number })
   @UseGuards(insId)
   delete(@Req() req: Request, @Res() res: Response): void {
-    this.controller.delete(req, res);
+    void this.controller.delete(req, res);
   }
 }

@@ -1,10 +1,7 @@
 import { App } from 'supertest/types';
 import request from 'supertest';
 import { setupTestApp } from '@tests/helpers/database.helper';
-import {
-  seedDB,
-  SeedResult,
-} from '@repositories/seed/estoque.seed';
+import { seedDB, SeedResult } from '@repositories/seed/estoque.seed';
 import { seedEntriesDB } from '@repositories/seed/movimentacao.seed';
 import { prisma } from '@repositories/prisma';
 

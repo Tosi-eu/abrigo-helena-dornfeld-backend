@@ -1,6 +1,9 @@
 import { Response } from 'express';
 import { sanitizeErrorMessage } from './sanitize.helper';
-import { mapPrismaToClientError, prismaErrorLogMeta } from './prisma-error.helper';
+import {
+  mapPrismaToClientError,
+  prismaErrorLogMeta,
+} from './prisma-error.helper';
 import { isAppError } from '@domain/error.types';
 import { logger } from './logger.helper';
 
@@ -22,9 +25,10 @@ export function buildErrorJsonBody(err: unknown): {
   };
 }
 
-export function mapErrorToStatusAndCode(
-  error: unknown,
-): { status: number; code?: string } {
+export function mapErrorToStatusAndCode(error: unknown): {
+  status: number;
+  code?: string;
+} {
   if (
     error instanceof Error &&
     error.message.startsWith('RELATORIO_EXCEDE_LIMITE')
@@ -57,7 +61,9 @@ export function sendErrorResponse(
   );
 
   if (prismaMapped) {
-    return res.status(prismaMapped.status).json({ error: prismaMapped.message });
+    return res
+      .status(prismaMapped.status)
+      .json({ error: prismaMapped.message });
   }
 
   let finalStatus = status;

@@ -128,9 +128,7 @@ export class PrismaNotificationEventRepository {
 
     const residenteIds = [
       ...new Set(
-        rows
-          .map(r => r.residente_id)
-          .filter((id): id is number => id != null),
+        rows.map(r => r.residente_id).filter((id): id is number => id != null),
       ),
     ];
     const medIds = [
@@ -156,7 +154,12 @@ export class PrismaNotificationEventRepository {
       loginIds.length
         ? db(transaction).login.findMany({
             where: { id: { in: loginIds } },
-            select: { id: true, first_name: true, last_name: true, login: true },
+            select: {
+              id: true,
+              first_name: true,
+              last_name: true,
+              login: true,
+            },
           })
         : [],
     ]);
@@ -166,7 +169,7 @@ export class PrismaNotificationEventRepository {
     const loginById = new Map(logins.map(l => [l.id, l]));
 
     let stockByKey = new Map<string, { dias_para_repor: number | null }>();
-    let movByKey = new Map<string, number>();
+    const movByKey = new Map<string, number>();
 
     if (tipo === NotificationEventType.REPOSICAO_ESTOQUE && rows.length > 0) {
       const keys = rows
@@ -176,9 +179,7 @@ export class PrismaNotificationEventRepository {
           ): r is typeof r & {
             medicamento_id: number;
             residente_id: number;
-          } =>
-            r.medicamento_id != null &&
-            r.residente_id != null,
+          } => r.medicamento_id != null && r.residente_id != null,
         )
         .map(r => ({
           medicamento_id: r.medicamento_id,
@@ -243,11 +244,11 @@ export class PrismaNotificationEventRepository {
     const items = rows.map(row => {
       const resNome =
         row.residente_id != null
-          ? resByCasela.get(row.residente_id) ?? undefined
+          ? (resByCasela.get(row.residente_id) ?? undefined)
           : undefined;
       const medNome =
         row.medicamento_id != null
-          ? medById.get(row.medicamento_id) ?? undefined
+          ? (medById.get(row.medicamento_id) ?? undefined)
           : undefined;
       const u = loginById.get(row.criado_por);
       const usuarioStr = u
@@ -329,9 +330,7 @@ export class PrismaNotificationEventRepository {
 
     const residenteIds = [
       ...new Set(
-        rows
-          .map(r => r.residente_id)
-          .filter((id): id is number => id != null),
+        rows.map(r => r.residente_id).filter((id): id is number => id != null),
       ),
     ];
     const medIds = [
@@ -350,12 +349,19 @@ export class PrismaNotificationEventRepository {
           })
         : [],
       medIds.length
-        ? db(transaction).medicamento.findMany({ where: { id: { in: medIds } } })
+        ? db(transaction).medicamento.findMany({
+            where: { id: { in: medIds } },
+          })
         : [],
       loginIds.length
         ? db(transaction).login.findMany({
             where: { id: { in: loginIds } },
-            select: { id: true, first_name: true, last_name: true, login: true },
+            select: {
+              id: true,
+              first_name: true,
+              last_name: true,
+              login: true,
+            },
           })
         : [],
     ]);
@@ -367,17 +373,15 @@ export class PrismaNotificationEventRepository {
     const items = rows.map(row => {
       const resNome =
         row.residente_id != null
-          ? resByCasela.get(row.residente_id) ?? undefined
+          ? (resByCasela.get(row.residente_id) ?? undefined)
           : undefined;
       const medNome =
         row.medicamento_id != null
-          ? medById.get(row.medicamento_id) ?? undefined
+          ? (medById.get(row.medicamento_id) ?? undefined)
           : undefined;
       const u = loginById.get(row.criado_por);
       const usuarioStr = u
-        ? `${u.first_name ?? ''} ${u.last_name ?? ''}`.trim() ||
-          u.login ||
-          ''
+        ? `${u.first_name ?? ''} ${u.last_name ?? ''}`.trim() || u.login || ''
         : 'Sistema';
 
       return {

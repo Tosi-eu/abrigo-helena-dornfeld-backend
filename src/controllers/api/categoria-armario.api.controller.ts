@@ -38,14 +38,14 @@ export class CategoriaArmarioApiController {
   @ApiBody({ type: CategoryNomeBodyDto })
   @UseGuards(catNomeBody, cabCatModule)
   create(@Req() req: Request, @Res() res: Response): void {
-    this.controller.create(req, res);
+    void this.controller.create(req, res);
   }
 
   @Get()
   @ApiOperation({ summary: 'Listar categorias' })
   @UseGuards(cabCatModule)
   getAll(@Req() req: Request, @Res() res: Response): void {
-    this.controller.getAll(req, res);
+    void this.controller.getAll(req, res);
   }
 
   @Get(':id')
@@ -53,7 +53,7 @@ export class CategoriaArmarioApiController {
   @ApiParam({ name: 'id', type: Number })
   @UseGuards(cabCatModule)
   getById(@Req() req: Request, @Res() res: Response): void {
-    this.controller.getById(req, res);
+    void this.controller.getById(req, res);
   }
 
   @Put(':id')
@@ -62,7 +62,7 @@ export class CategoriaArmarioApiController {
   @ApiBody({ type: CategoryNomeBodyDto })
   @UseGuards(catNomeBody, cabCatModule)
   update(@Req() req: Request, @Res() res: Response): void {
-    this.controller.update(req, res);
+    void this.controller.update(req, res);
   }
 
   @Delete(':id')
@@ -70,6 +70,6 @@ export class CategoriaArmarioApiController {
   @ApiParam({ name: 'id', type: Number })
   @UseGuards(cabCatModule)
   delete(@Req() req: Request, @Res() res: Response): void {
-    this.controller.delete(req, res);
+    void this.controller.delete(req, res);
   }
 }

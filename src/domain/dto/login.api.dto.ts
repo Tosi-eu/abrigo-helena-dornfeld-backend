@@ -13,7 +13,9 @@ export class LoginEmailPasswordDto {
   })
   login?: string;
 
-  @ApiProperty({ description: 'Senha em texto plano (HTTPS obrigatório em produção)' })
+  @ApiProperty({
+    description: 'Senha em texto plano (HTTPS obrigatório em produção)',
+  })
   password!: string;
 }
 
@@ -80,7 +82,9 @@ export class ResetPasswordDto {
 }
 
 export class UpdateProfileDto {
-  @ApiProperty({ description: 'Senha atual (obrigatória para qualquer alteração)' })
+  @ApiProperty({
+    description: 'Senha atual (obrigatória para qualquer alteração)',
+  })
   currentPassword!: string;
 
   @ApiPropertyOptional({ description: 'Novo e-mail/login' })

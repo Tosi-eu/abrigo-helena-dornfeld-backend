@@ -15,10 +15,7 @@ import {
   StockFilterType,
   StockQueryType,
 } from '@helpers/utils';
-import {
-  formatDateToPtBr,
-  getTodayAtNoonBrazil,
-} from '@helpers/date.helper';
+import { formatDateToPtBr, getTodayAtNoonBrazil } from '@helpers/date.helper';
 import {
   SECTOR_CONFIG,
   StockGroup,
@@ -442,6 +439,7 @@ export class PrismaStockRepository {
         : null;
 
       if (medIdsForName && medIdsForName.length === 0) {
+        // no-op
       } else {
         if (medIdsForName) {
           medicineWhere.medicamento_id = { in: medIdsForName };
@@ -468,7 +466,9 @@ export class PrismaStockRepository {
           }));
         const resKey = (t: number, c: number) => `${t}:${c}`;
         const uniqPairs = [
-          ...new Map(caselaPairs.map(p => [resKey(p.tenant_id, p.num_casela), p])).values(),
+          ...new Map(
+            caselaPairs.map(p => [resKey(p.tenant_id, p.num_casela), p]),
+          ).values(),
         ];
         const residents =
           uniqPairs.length === 0
@@ -846,7 +846,11 @@ export class PrismaStockRepository {
         carrinhoEmergenciaInsumos,
         carrinhoPsicotropicosInsumos,
       ] = await Promise.all([
-        this.sumStock('medicamento', { tipos: [OperationType.GERAL] }, transaction),
+        this.sumStock(
+          'medicamento',
+          { tipos: [OperationType.GERAL] },
+          transaction,
+        ),
         this.sumStock(
           'medicamento',
           { tipos: [OperationType.INDIVIDUAL] },
@@ -968,7 +972,10 @@ export class PrismaStockRepository {
     };
   }
 
-  async removeIndividualInput(estoqueId: number, transaction?: Prisma.TransactionClient) {
+  async removeIndividualInput(
+    estoqueId: number,
+    transaction?: Prisma.TransactionClient,
+  ) {
     const client = db(transaction);
     await client.estoqueInsumo.update({
       where: { id: estoqueId },
@@ -1102,8 +1109,7 @@ export class PrismaStockRepository {
         throw new Error('A quantidade não pode ser menor que 1');
       }
 
-      const nextCasela =
-        'casela_id' in data ? data.casela_id : stock.casela_id;
+      const nextCasela = 'casela_id' in data ? data.casela_id : stock.casela_id;
       const nextTipo = 'tipo' in data ? data.tipo : stock.tipo;
       if (nextCasela != null && nextTipo !== OperationType.INDIVIDUAL) {
         throw new Error('A casela só pode ser preenchida para tipo individual');
@@ -1259,7 +1265,10 @@ export class PrismaStockRepository {
     }
   }
 
-  async suspendIndividualInput(estoque_id: number, transaction?: Prisma.TransactionClient) {
+  async suspendIndividualInput(
+    estoque_id: number,
+    transaction?: Prisma.TransactionClient,
+  ) {
     const client = db(transaction);
     await client.estoqueInsumo.update({
       where: { id: estoque_id },
@@ -1278,7 +1287,10 @@ export class PrismaStockRepository {
     };
   }
 
-  async resumeIndividualInput(estoque_id: number, transaction?: Prisma.TransactionClient) {
+  async resumeIndividualInput(
+    estoque_id: number,
+    transaction?: Prisma.TransactionClient,
+  ) {
     const client = db(transaction);
     await client.estoqueInsumo.update({
       where: { id: estoque_id },
@@ -1371,11 +1383,13 @@ export class PrismaStockRepository {
         data: {
           quantidade: existing.quantidade + quantidade,
           observacao:
-            observacao != null ? observacao : existing.observacao ?? undefined,
+            observacao != null
+              ? observacao
+              : (existing.observacao ?? undefined),
           dias_para_repor:
             dias_para_repor != null
               ? dias_para_repor
-              : existing.dias_para_repor ?? undefined,
+              : (existing.dias_para_repor ?? undefined),
           ultima_reposicao: getTodayAtNoonBrazil(),
         },
       });
@@ -1502,11 +1516,13 @@ export class PrismaStockRepository {
         data: {
           quantidade: existing.quantidade + quantidade,
           observacao:
-            observacao != null ? observacao : existing.observacao ?? undefined,
+            observacao != null
+              ? observacao
+              : (existing.observacao ?? undefined),
           dias_para_repor:
             dias_para_repor != null
               ? dias_para_repor
-              : existing.dias_para_repor ?? undefined,
+              : (existing.dias_para_repor ?? undefined),
           ultima_reposicao: getTodayAtNoonBrazil(),
         },
       });
@@ -1605,18 +1621,24 @@ export class PrismaStockRepository {
     const insMap = new Map(insDetails.map(i => [i.id, i]));
 
     const allCaselaPairs = [
-      ...medRows.filter(s => s.casela_id != null).map(s => ({
-        tenant_id: s.tenant_id,
-        num_casela: s.casela_id as number,
-      })),
-      ...inpRows.filter(s => s.casela_id != null).map(s => ({
-        tenant_id: s.tenant_id,
-        num_casela: s.casela_id as number,
-      })),
+      ...medRows
+        .filter(s => s.casela_id != null)
+        .map(s => ({
+          tenant_id: s.tenant_id,
+          num_casela: s.casela_id as number,
+        })),
+      ...inpRows
+        .filter(s => s.casela_id != null)
+        .map(s => ({
+          tenant_id: s.tenant_id,
+          num_casela: s.casela_id as number,
+        })),
     ];
     const resKey = (t: number, c: number) => `${t}:${c}`;
     const uniqPairs = [
-      ...new Map(allCaselaPairs.map(p => [resKey(p.tenant_id, p.num_casela), p])).values(),
+      ...new Map(
+        allCaselaPairs.map(p => [resKey(p.tenant_id, p.num_casela), p]),
+      ).values(),
     ];
     const residents =
       uniqPairs.length === 0
@@ -1633,10 +1655,7 @@ export class PrismaStockRepository {
       residents.map(r => [resKey(r.tenant_id, r.num_casela), r]),
     );
 
-    const toItem = (
-      plain: EstoqueMedicamento,
-      tipo: 'medicamento',
-    ): ExpiringStockItem => {
+    const toItem = (plain: EstoqueMedicamento): ExpiringStockItem => {
       const medicine = medMap.get(plain.medicamento_id);
       const validade = plain.validade ? new Date(plain.validade) : null;
       const dias = validade
@@ -1664,10 +1683,7 @@ export class PrismaStockRepository {
       };
     };
 
-    const toItemInp = (
-      plain: EstoqueInsumo,
-      tipo: 'insumo',
-    ): ExpiringStockItem => {
+    const toItemInp = (plain: EstoqueInsumo): ExpiringStockItem => {
       const input = insMap.get(plain.insumo_id);
       const validade = plain.validade ? new Date(plain.validade) : null;
       const dias = validade
@@ -1694,8 +1710,8 @@ export class PrismaStockRepository {
     };
 
     const all = [
-      ...medRows.map(r => toItem(r, 'medicamento')),
-      ...inpRows.map(r => toItemInp(r, 'insumo')),
+      ...medRows.map(r => toItem(r)),
+      ...inpRows.map(r => toItemInp(r)),
     ].sort((a, b) => (a.dias_para_vencer ?? 0) - (b.dias_para_vencer ?? 0));
 
     const total = all.length;
@@ -1709,10 +1725,7 @@ export class PrismaStockRepository {
     };
   }
 
-  private async countRaw(
-    client: PrismaTx,
-    sql: Prisma.Sql,
-  ): Promise<number> {
+  private async countRaw(client: PrismaTx, sql: Prisma.Sql): Promise<number> {
     const rows = await client.$queryRaw<[{ count: bigint }]>(sql);
     return Number(rows[0]?.count ?? 0);
   }

@@ -35,9 +35,7 @@ function effectivePermissions(
 ) {
   if (role === 'admin') return { ...FULL_PERMISSIONS };
   const s =
-    stored &&
-    typeof stored === 'object' &&
-    !Array.isArray(stored)
+    stored && typeof stored === 'object' && !Array.isArray(stored)
       ? (stored as {
           read?: boolean;
           create?: boolean;
@@ -222,13 +220,15 @@ export class LoginService {
   > {
     const trimmed = login.trim();
     if (!trimmed) return { type: 'not_found' };
-    const list = await withRootTransaction(async (t: Prisma.TransactionClient) => {
-      await setRlsSessionGucs(t, {
+    const list = await withRootTransaction(
+      async (t: Prisma.TransactionClient) => {
+        await setRlsSessionGucs(t, {
           allow_email_resolution: 'true',
           resolution_login: trimmed,
         });
-      return this.repo.findTenantSummariesForLogin(trimmed, t);
-    });
+        return this.repo.findTenantSummariesForLogin(trimmed, t);
+      },
+    );
     if (list.length === 0) return { type: 'not_found' };
     if (list.length === 1) {
       const row = list[0];
@@ -245,9 +245,9 @@ export class LoginService {
     if (!trimmed) return [];
     return withRootTransaction(async (t: Prisma.TransactionClient) => {
       await setRlsSessionGucs(t, {
-          allow_email_resolution: 'true',
-          resolution_login: trimmed,
-        });
+        allow_email_resolution: 'true',
+        resolution_login: trimmed,
+      });
       return this.repo.findTenantSummariesForLogin(trimmed, t);
     });
   }
@@ -528,7 +528,9 @@ export class LoginService {
     }
   }
 
-  private async generateUniqueTenantSlug(t: Prisma.TransactionClient): Promise<string> {
+  private async generateUniqueTenantSlug(
+    t: Prisma.TransactionClient,
+  ): Promise<string> {
     for (let i = 0; i < 24; i++) {
       const slug = `u-${randomBytes(9).toString('hex')}`;
       const exists = await t.tenant.findFirst({

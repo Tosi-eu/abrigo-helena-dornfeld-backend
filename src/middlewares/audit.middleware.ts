@@ -156,14 +156,18 @@ function logAuditEvent(
         resource,
         status_code: statusCode,
         duration_ms: duration,
-        old_value: redactAuditBody(pathForAudit, oldValue) as object | undefined,
-        new_value: redactAuditBody(pathForAudit, newValue) as object | undefined,
+        old_value: redactAuditBody(pathForAudit, oldValue) as
+          | object
+          | undefined,
+        new_value: redactAuditBody(pathForAudit, newValue) as
+          | object
+          | undefined,
       },
     })
     .catch(err => {
-    logger.error('Audit log persist failed', {
-      path,
-      err: (err as Error).message,
+      logger.error('Audit log persist failed', {
+        path,
+        err: (err as Error).message,
+      });
     });
-  });
 }

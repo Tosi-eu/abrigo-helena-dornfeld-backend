@@ -92,9 +92,7 @@ export async function authMiddleware(
         const role = user.role as 'admin' | 'user';
         const permJson = user.permissions;
         const parsedPerm =
-          permJson &&
-          typeof permJson === 'object' &&
-          !Array.isArray(permJson)
+          permJson && typeof permJson === 'object' && !Array.isArray(permJson)
             ? (permJson as Record<string, unknown>)
             : null;
         const permissions: UserPermissions =
@@ -196,9 +194,7 @@ export async function optionalAuthMiddleware(
         const role = user.role as 'admin' | 'user';
         const permJson = user.permissions;
         const parsedPerm =
-          permJson &&
-          typeof permJson === 'object' &&
-          !Array.isArray(permJson)
+          permJson && typeof permJson === 'object' && !Array.isArray(permJson)
             ? (permJson as Record<string, unknown>)
             : null;
         const permissions: UserPermissions =

@@ -80,7 +80,7 @@ export class EstoqueApiController {
   })
   @UseGuards(stockEntradaMw, stockModule)
   entrada(@Req() req: Request, @Res() res: Response): void {
-    this.controller.stockIn(req, res);
+    void this.controller.stockIn(req, res);
   }
 
   @Post('saida')
@@ -89,7 +89,7 @@ export class EstoqueApiController {
   @ApiBody({ type: StockOutBodyDto })
   @UseGuards(stockOutBody, stockModule)
   saida(@Req() req: Request, @Res() res: Response): void {
-    this.controller.stockOut(req, res);
+    void this.controller.stockOut(req, res);
   }
 
   @Get()
@@ -98,28 +98,28 @@ export class EstoqueApiController {
   @ApiQuery({ name: 'limit', required: false })
   @UseGuards(UseExpressMwGuard(validatePagination, requireModule('stock')))
   list(@Req() req: Request, @Res() res: Response): void {
-    this.controller.list(req, res);
+    void this.controller.list(req, res);
   }
 
   @Get('filter-options')
   @ApiOperation({ summary: 'Opções para filtros da listagem' })
   @UseGuards(stockModule)
   filterOptions(@Req() req: Request, @Res() res: Response): void {
-    this.controller.getFilterOptions(req, res);
+    void this.controller.getFilterOptions(req, res);
   }
 
   @Get('proporcao')
   @ApiOperation({ summary: 'Proporção / totais por categoria' })
   @UseGuards(stockModule)
   proporcao(@Req() req: Request, @Res() res: Response): void {
-    this.controller.proportion(req, res);
+    void this.controller.proportion(req, res);
   }
 
   @Get('medicamento/dias-para-repor')
   @ApiOperation({ summary: 'Dias para repor (medicamentos por enfermagem)' })
   @UseGuards(stockModule)
   diasParaRepor(@Req() req: Request, @Res() res: Response): void {
-    this.controller.getDaysForReplacementForNursing(req, res);
+    void this.controller.getDaysForReplacementForNursing(req, res);
   }
 
   @Patch('medicamento/:estoque_id/remover-individual')
@@ -127,7 +127,7 @@ export class EstoqueApiController {
   @ApiParam({ name: 'estoque_id', type: Number })
   @UseGuards(stockModuleEstoque)
   medRemoverIndividual(@Req() req: Request, @Res() res: Response): void {
-    this.controller.removeIndividualMedicine(req, res);
+    void this.controller.removeIndividualMedicine(req, res);
   }
 
   @Patch('medicamento/:estoque_id/suspender')
@@ -135,7 +135,7 @@ export class EstoqueApiController {
   @ApiParam({ name: 'estoque_id', type: Number })
   @UseGuards(stockModuleEstoque)
   medSuspender(@Req() req: Request, @Res() res: Response): void {
-    this.controller.suspendIndividualMedicine(req, res);
+    void this.controller.suspendIndividualMedicine(req, res);
   }
 
   @Patch('medicamento/:estoque_id/retomar')
@@ -143,7 +143,7 @@ export class EstoqueApiController {
   @ApiParam({ name: 'estoque_id', type: Number })
   @UseGuards(stockModuleEstoque)
   medRetomar(@Req() req: Request, @Res() res: Response): void {
-    this.controller.resumeIndividualMedicine(req, res);
+    void this.controller.resumeIndividualMedicine(req, res);
   }
 
   @Patch('medicamento/:estoque_id/transferir-setor')
@@ -152,7 +152,7 @@ export class EstoqueApiController {
   @ApiBody({ type: TransferMedicineSectorBodyDto })
   @UseGuards(transferMedBody, stockModuleEstoque)
   medTransferirSetor(@Req() req: Request, @Res() res: Response): void {
-    this.controller.transferMedicineSector(req, res);
+    void this.controller.transferMedicineSector(req, res);
   }
 
   @Patch('insumo/:estoque_id/remover-individual')
@@ -160,7 +160,7 @@ export class EstoqueApiController {
   @ApiParam({ name: 'estoque_id', type: Number })
   @UseGuards(stockModuleEstoque)
   insumoRemoverIndividual(@Req() req: Request, @Res() res: Response): void {
-    this.controller.removeIndividualInput(req, res);
+    void this.controller.removeIndividualInput(req, res);
   }
 
   @Patch('insumo/:estoque_id/suspender')
@@ -168,7 +168,7 @@ export class EstoqueApiController {
   @ApiParam({ name: 'estoque_id', type: Number })
   @UseGuards(stockModuleEstoque)
   insumoSuspender(@Req() req: Request, @Res() res: Response): void {
-    this.controller.suspendIndividualInput(req, res);
+    void this.controller.suspendIndividualInput(req, res);
   }
 
   @Patch('insumo/:estoque_id/retomar')
@@ -176,7 +176,7 @@ export class EstoqueApiController {
   @ApiParam({ name: 'estoque_id', type: Number })
   @UseGuards(stockModuleEstoque)
   insumoRetomar(@Req() req: Request, @Res() res: Response): void {
-    this.controller.resumeIndividualInput(req, res);
+    void this.controller.resumeIndividualInput(req, res);
   }
 
   @Patch('insumo/:estoque_id/transferir-setor')
@@ -185,7 +185,7 @@ export class EstoqueApiController {
   @ApiBody({ type: TransferInputSectorBodyDto })
   @UseGuards(transferInsumoBody, stockModuleEstoque)
   insumoTransferirSetor(@Req() req: Request, @Res() res: Response): void {
-    this.controller.transferInputSector(req, res);
+    void this.controller.transferInputSector(req, res);
   }
 
   @Put(':estoque_id')
@@ -194,15 +194,18 @@ export class EstoqueApiController {
   @ApiBody({ type: UpdateStockItemBodyDto })
   @UseGuards(updateStockBody, stockModuleEstoque)
   update(@Req() req: Request, @Res() res: Response): void {
-    this.controller.updateStockItem(req, res);
+    void this.controller.updateStockItem(req, res);
   }
 
   @Delete(':tipo/:estoque_id')
   @ApiOperation({ summary: 'Eliminar linha de stock' })
-  @ApiParam({ name: 'tipo', description: 'medicamento | insumo (conforme API)' })
+  @ApiParam({
+    name: 'tipo',
+    description: 'medicamento | insumo (conforme API)',
+  })
   @ApiParam({ name: 'estoque_id', type: Number })
   @UseGuards(stockModuleEstoque)
   delete(@Req() req: Request, @Res() res: Response): void {
-    this.controller.deleteStockItem(req, res);
+    void this.controller.deleteStockItem(req, res);
   }
 }

@@ -1,6 +1,10 @@
 import type { RequestHandler } from 'express';
 
-export const adminStringMapBodyMiddleware: RequestHandler = (req, res, next) => {
+export const adminStringMapBodyMiddleware: RequestHandler = (
+  req,
+  res,
+  next,
+) => {
   const b = req.body;
   if (typeof b !== 'object' || b === null || Array.isArray(b)) {
     res.status(400).json({ error: 'Body must be a JSON object' });

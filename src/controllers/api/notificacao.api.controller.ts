@@ -36,7 +36,10 @@ const notPaginate = UseExpressMwGuard(
   validatePagination,
   requireModule('notifications'),
 );
-const notId = UseExpressMwGuard(validateIdParam, requireModule('notifications'));
+const notId = UseExpressMwGuard(
+  validateIdParam,
+  requireModule('notifications'),
+);
 const notCreateBody = UseValidatedBody(NotificationCreateBodyDto);
 const notPatchBody = UseValidatedBody(NotificationUpdateBodyDto);
 
@@ -52,7 +55,7 @@ export class NotificacaoApiController {
   @ApiBody({ type: NotificationCreateBodyDto })
   @UseGuards(notCreateBody, notModule)
   create(@Req() req: Request, @Res() res: Response): void {
-    this.controller.create(req, res);
+    void this.controller.create(req, res);
   }
 
   @Get()
@@ -61,7 +64,7 @@ export class NotificacaoApiController {
   @ApiQuery({ name: 'limit', required: false })
   @UseGuards(notPaginate)
   getAll(@Req() req: Request, @Res() res: Response): void {
-    this.controller.getAll(req, res);
+    void this.controller.getAll(req, res);
   }
 
   @Get(':id')
@@ -69,7 +72,7 @@ export class NotificacaoApiController {
   @ApiParam({ name: 'id', type: Number })
   @UseGuards(notId)
   getById(@Req() req: Request, @Res() res: Response): void {
-    this.controller.getById(req, res);
+    void this.controller.getById(req, res);
   }
 
   @Patch(':id')
@@ -78,7 +81,7 @@ export class NotificacaoApiController {
   @ApiBody({ type: NotificationUpdateBodyDto })
   @UseGuards(notPatchBody, notId)
   patch(@Req() req: Request, @Res() res: Response): void {
-    this.controller.update(req, res);
+    void this.controller.update(req, res);
   }
 
   @Delete(':id')
@@ -86,6 +89,6 @@ export class NotificacaoApiController {
   @ApiParam({ name: 'id', type: Number })
   @UseGuards(notId)
   delete(@Req() req: Request, @Res() res: Response): void {
-    this.controller.delete(req, res);
+    void this.controller.delete(req, res);
   }
 }

@@ -11,11 +11,7 @@ import {
 } from '@services/tenant-config.service';
 import { PrismaTenantConfigRepository } from '@repositories/tenant-config.repository';
 import { PrismaSystemConfigRepository } from '@repositories/system-config.repository';
-import {
-  getErrorMessage,
-  HttpError,
-  isHttpError,
-} from '@domain/error.types';
+import { getErrorMessage, HttpError, isHttpError } from '@domain/error.types';
 import { inferImageContentTypeFromBuffer } from '@helpers/image-mime.helper';
 import { PrismaTenantRepository } from '@repositories/tenant.repository';
 import { uiDisplayFromConfigRow } from '@helpers/ui-display.helper';

@@ -17,14 +17,8 @@ import {
   TransferReport,
 } from '@domain/relatorio.types';
 import { ResidentMonthlyUsage, MovementType } from '@helpers/utils';
-import {
-  formatDateToPtBr,
-  formatDateTimeToPtBr,
-} from '@helpers/date.helper';
-import {
-  formatMedicineName,
-  formatCurrency,
-} from '@helpers/format.helper';
+import { formatDateToPtBr, formatDateTimeToPtBr } from '@helpers/date.helper';
+import { formatMedicineName, formatCurrency } from '@helpers/format.helper';
 import { MovementsParams, MovementPeriod } from '@services/relatorio.service';
 
 function db(tx?: Prisma.TransactionClient) {
@@ -71,7 +65,9 @@ async function loadReportMovementMaps(
     ),
   ];
   const insIds = [
-    ...new Set(rows.map(r => r.insumo_id).filter((x): x is number => x != null)),
+    ...new Set(
+      rows.map(r => r.insumo_id).filter((x): x is number => x != null),
+    ),
   ];
   const armarioOr: Prisma.ArmarioWhereInput[] = [];
   const seenArm = new Set<string>();
@@ -142,7 +138,8 @@ function toMovementPlain(
   m: Movimentacao,
   maps: Awaited<ReturnType<typeof loadReportMovementMaps>>,
 ) {
-  const med = m.medicamento_id != null ? maps.medMap.get(m.medicamento_id) : undefined;
+  const med =
+    m.medicamento_id != null ? maps.medMap.get(m.medicamento_id) : undefined;
   const ins = m.insumo_id != null ? maps.insMap.get(m.insumo_id) : undefined;
   const arm =
     m.armario_id != null
@@ -163,9 +160,7 @@ function toMovementPlain(
           unidade_medida: med.unidade_medida,
         }
       : undefined,
-    InputModel: ins
-      ? { nome: ins.nome, descricao: ins.descricao }
-      : undefined,
+    InputModel: ins ? { nome: ins.nome, descricao: ins.descricao } : undefined,
     ResidentModel: res
       ? { num_casela: res.num_casela, nome: res.nome }
       : undefined,

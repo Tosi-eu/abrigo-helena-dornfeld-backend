@@ -25,10 +25,7 @@ import {
   type GenerateReportParams,
 } from '@services/relatorio.service';
 import { toCSV, reportResultToArrays } from '@helpers/csv.helper';
-import {
-  EventStatus,
-  NotificationEventType,
-} from '@domain/notificacao.types';
+import { EventStatus, NotificationEventType } from '@domain/notificacao.types';
 import { validateDisplayConfigPatch } from '@helpers/ui-display.helper';
 
 const DEFAULT_DAYS = 30;
@@ -583,27 +580,32 @@ export class AdminController {
   async getDataQualitySummary(_req: AuthRequest, res: Response) {
     try {
       const db = getDb();
-      const [negMedRows, negInpRows, missingLotMedRows, missingLotInpRows, orphanMovRows] =
-        await Promise.all([
-          db.$queryRaw<[{ count: bigint }]>(Prisma.sql`
+      const [
+        negMedRows,
+        negInpRows,
+        missingLotMedRows,
+        missingLotInpRows,
+        orphanMovRows,
+      ] = await Promise.all([
+        db.$queryRaw<[{ count: bigint }]>(Prisma.sql`
             SELECT COUNT(*)::bigint AS count FROM estoque_medicamento WHERE quantidade < 0
           `),
-          db.$queryRaw<[{ count: bigint }]>(Prisma.sql`
+        db.$queryRaw<[{ count: bigint }]>(Prisma.sql`
             SELECT COUNT(*)::bigint AS count FROM estoque_insumo WHERE quantidade < 0
           `),
-          db.$queryRaw<[{ count: bigint }]>(Prisma.sql`
+        db.$queryRaw<[{ count: bigint }]>(Prisma.sql`
             SELECT COUNT(*)::bigint AS count FROM estoque_medicamento
             WHERE (lote IS NULL OR btrim(lote) = '') AND quantidade > 0
           `),
-          db.$queryRaw<[{ count: bigint }]>(Prisma.sql`
+        db.$queryRaw<[{ count: bigint }]>(Prisma.sql`
             SELECT COUNT(*)::bigint AS count FROM estoque_insumo
             WHERE (lote IS NULL OR btrim(lote) = '') AND quantidade > 0
           `),
-          db.$queryRaw<[{ count: bigint }]>(Prisma.sql`
+        db.$queryRaw<[{ count: bigint }]>(Prisma.sql`
             SELECT COUNT(*)::bigint AS count FROM movimentacao
             WHERE medicamento_id IS NULL AND insumo_id IS NULL
           `),
-        ]);
+      ]);
       const negMedRow = negMedRows[0];
       const negInpRow = negInpRows[0];
       const missingLotMedRow = missingLotMedRows[0];
@@ -1069,7 +1071,7 @@ export class AdminController {
       } catch {
         // no-op
       }
-    };  
+    };
 
     const onDone = (code: number, stderr: string, stdout: string) => {
       cleanup();

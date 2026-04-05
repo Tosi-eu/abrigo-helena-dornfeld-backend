@@ -46,11 +46,14 @@ export async function seedDB(app: App): Promise<SeedResult> {
     throw new Error('Erro ao criar medicamento no seedDB');
   const medicineId = medRes.body.id;
 
-  const inputRes = await request(app).post('/api/v1/insumos').set(auth()).send({
-    nome: `Gaze Estéril ${stamp}`,
-    descricao: 'Gaze para curativos',
-    estoque_minimo: 50,
-  });
+  const inputRes = await request(app)
+    .post('/api/v1/insumos')
+    .set(auth())
+    .send({
+      nome: `Gaze Estéril ${stamp}`,
+      descricao: 'Gaze para curativos',
+      estoque_minimo: 50,
+    });
 
   if (inputRes.status !== 201)
     throw new Error('Erro ao criar insumo no seedDB');

@@ -55,7 +55,7 @@ export class GavetaApiController {
   @ApiBody({ type: DrawerCreateBodyDto })
   @UseGuards(drCreateBody, drModule)
   create(@Req() req: Request, @Res() res: Response): void {
-    this.controller.create(req, res);
+    void this.controller.create(req, res);
   }
 
   @Get()
@@ -64,14 +64,14 @@ export class GavetaApiController {
   @ApiQuery({ name: 'limit', required: false })
   @UseGuards(drPaginate)
   getAll(@Req() req: Request, @Res() res: Response): void {
-    this.controller.getAll(req, res);
+    void this.controller.getAll(req, res);
   }
 
   @Get('count')
   @ApiOperation({ summary: 'Contagem de gavetas' })
   @UseGuards(drModule)
   count(@Req() req: Request, @Res() res: Response): void {
-    this.controller.getCount(req, res);
+    void this.controller.getCount(req, res);
   }
 
   @Get(':numero')
@@ -79,7 +79,7 @@ export class GavetaApiController {
   @ApiParam({ name: 'numero', type: Number })
   @UseGuards(drNumero)
   getById(@Req() req: Request, @Res() res: Response): void {
-    this.controller.getById(req, res);
+    void this.controller.getById(req, res);
   }
 
   @Put(':numero')
@@ -88,7 +88,7 @@ export class GavetaApiController {
   @ApiBody({ type: DrawerUpdateBodyDto })
   @UseGuards(drUpdateBody, drNumero)
   update(@Req() req: Request, @Res() res: Response): void {
-    this.controller.update(req, res);
+    void this.controller.update(req, res);
   }
 
   @Delete(':numero')
@@ -96,6 +96,6 @@ export class GavetaApiController {
   @ApiParam({ name: 'numero', type: Number })
   @UseGuards(drNumero)
   delete(@Req() req: Request, @Res() res: Response): void {
-    this.controller.delete(req, res);
+    void this.controller.delete(req, res);
   }
 }

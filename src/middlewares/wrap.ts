@@ -2,7 +2,9 @@ import { Injectable, NestMiddleware, Type } from '@nestjs/common';
 import type { NextFunction, Request, Response } from 'express';
 import type { RequestHandler } from 'express';
 
-export function wrapExpressMiddleware(mw: RequestHandler): Type<NestMiddleware> {
+export function wrapExpressMiddleware(
+  mw: RequestHandler,
+): Type<NestMiddleware> {
   @Injectable()
   class ExpressMiddlewareWrapper implements NestMiddleware {
     use(req: Request, res: Response, next: NextFunction): void {

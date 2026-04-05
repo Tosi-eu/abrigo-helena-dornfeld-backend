@@ -15,11 +15,7 @@ import { PrismaMedicineRepository } from '@repositories/medicamento.repository';
 import { PrismaInputRepository } from '@repositories/insumo.repository';
 import { PrismaMovementRepository } from '@repositories/movimentacao.repository';
 import { redisRepository } from '@config/redis.client';
-import type {
-  EstoqueInsumo,
-  EstoqueMedicamento,
-  Prisma,
-} from '@prisma/client';
+import type { EstoqueInsumo, EstoqueMedicamento, Prisma } from '@prisma/client';
 import {
   NotificationDestinoType,
   NotificationEventType,
@@ -227,9 +223,7 @@ export class StockService {
         ? (stockItem as EstoqueMedicamento).medicamento_id
         : null;
     const insumoId =
-      tipo === ItemType.INSUMO
-        ? (stockItem as EstoqueInsumo).insumo_id
-        : null;
+      tipo === ItemType.INSUMO ? (stockItem as EstoqueInsumo).insumo_id : null;
     const lote = stockItem.lote ?? null;
     const tenantId = stockItem.tenant_id;
     if (tenantId == null) {
@@ -259,7 +253,10 @@ export class StockService {
     return result;
   }
 
-  async listStock(params: QueryPaginationParams, transaction?: Prisma.TransactionClient) {
+  async listStock(
+    params: QueryPaginationParams,
+    transaction?: Prisma.TransactionClient,
+  ) {
     const version = await this.getStockCacheVersion();
     const cacheKey = CacheKeyHelper.stockList(params, version);
 
@@ -285,7 +282,10 @@ export class StockService {
     );
   }
 
-  async getProportion(setor?: SectorType, transaction?: Prisma.TransactionClient) {
+  async getProportion(
+    setor?: SectorType,
+    transaction?: Prisma.TransactionClient,
+  ) {
     const version = await this.getStockCacheVersion();
     return this.cache.getOrSet(
       CacheKeyHelper.stockDashboard(setor ?? 'general', version),
@@ -303,7 +303,10 @@ export class StockService {
     );
   }
 
-  async getAlertCounts(transaction?: Prisma.TransactionClient, expiringDays?: number) {
+  async getAlertCounts(
+    transaction?: Prisma.TransactionClient,
+    expiringDays?: number,
+  ) {
     return this.repo.getAlertCounts(transaction, expiringDays ?? 45);
   }
 
@@ -753,7 +756,10 @@ export class StockService {
     return result;
   }
 
-  async suspendIndividualInput(estoque_id: number, transaction?: Prisma.TransactionClient) {
+  async suspendIndividualInput(
+    estoque_id: number,
+    transaction?: Prisma.TransactionClient,
+  ) {
     const stock = await this.repo.findInputStockById(estoque_id, transaction);
 
     if (!stock) {
@@ -778,7 +784,10 @@ export class StockService {
     return result;
   }
 
-  async resumeIndividualInput(estoque_id: number, transaction?: Prisma.TransactionClient) {
+  async resumeIndividualInput(
+    estoque_id: number,
+    transaction?: Prisma.TransactionClient,
+  ) {
     const stock = await this.repo.findInputStockById(estoque_id, transaction);
 
     if (!stock) {
@@ -803,7 +812,10 @@ export class StockService {
     return result;
   }
 
-  async removeIndividualMedicine(estoqueId: number, transaction?: Prisma.TransactionClient) {
+  async removeIndividualMedicine(
+    estoqueId: number,
+    transaction?: Prisma.TransactionClient,
+  ) {
     const stock = await this.repo.findMedicineStockById(estoqueId, transaction);
 
     if (!stock) {
@@ -824,7 +836,10 @@ export class StockService {
     return result;
   }
 
-  async removeIndividualInput(estoqueId: number, transaction?: Prisma.TransactionClient) {
+  async removeIndividualInput(
+    estoqueId: number,
+    transaction?: Prisma.TransactionClient,
+  ) {
     const stock = await this.repo.findInputStockById(estoqueId, transaction);
 
     if (!stock) {

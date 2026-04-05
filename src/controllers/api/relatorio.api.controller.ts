@@ -22,10 +22,7 @@ const reportLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-const reportGuard = UseExpressMwGuard(
-  reportLimiter,
-  requireModule('reports'),
-);
+const reportGuard = UseExpressMwGuard(reportLimiter, requireModule('reports'));
 
 @ApiTags('Relatórios')
 @ApiSecurity('bearer')
@@ -44,6 +41,6 @@ export class RelatorioApiController {
   @ApiQuery({ name: 'data_final', required: false })
   @UseGuards(reportGuard)
   generate(@Req() req: Request, @Res() res: Response): void {
-    this.controller.generate(req, res);
+    void this.controller.generate(req, res);
   }
 }

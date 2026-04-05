@@ -74,7 +74,10 @@ export class PrismaTenantInviteRepository {
     return rows[0] ?? null;
   }
 
-  async markUsed(id: number, transaction: Prisma.TransactionClient): Promise<void> {
+  async markUsed(
+    id: number,
+    transaction: Prisma.TransactionClient,
+  ): Promise<void> {
     await transaction.tenantInvite.update({
       where: { id },
       data: { used_at: new Date() },

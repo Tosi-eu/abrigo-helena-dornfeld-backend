@@ -104,7 +104,9 @@ export function configureHttpLayer(app: Application): void {
   const limiter = rateLimit({
     windowMs: Number(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
     max: Number(process.env.RATE_LIMIT_MAX) || 1000,
-    message: { error: 'Too many requests from this IP, please try again later.' },
+    message: {
+      error: 'Too many requests from this IP, please try again later.',
+    },
     standardHeaders: true,
     legacyHeaders: false,
     skip: req => req.method === 'OPTIONS',
