@@ -12,17 +12,30 @@ function ensureDatabaseUrl(): void {
     const encPass = encodeURIComponent(String(c.pass ?? ''));
     const rawPort = Number(process.env.DB_PORT);
     const port = Number.isFinite(rawPort) && rawPort > 0 ? rawPort : 5432;
-    process.env.DATABASE_URL = `postgresql://${encUser}:${encPass}@${host}:${port}/${encodeURIComponent(name)}?schema=public`;
+    const url = `postgresql://${encUser}:${encPass}@${host}:${port}/${encodeURIComponent(name)}?schema=public`;
+    process.env.DATABASE_URL = url;
+    process.env.STOKIO_DATABASE_URL = url;
     return;
   }
-  if (process.env.DATABASE_URL?.trim()) return;
+  if (process.env.DATABASE_URL?.trim()) {
+    if (!process.env.STOKIO_DATABASE_URL?.trim()) {
+      process.env.STOKIO_DATABASE_URL = process.env.DATABASE_URL;
+    }
+    return;
+  }
+  if (process.env.STOKIO_DATABASE_URL?.trim()) {
+    process.env.DATABASE_URL = process.env.STOKIO_DATABASE_URL;
+    return;
+  }
   const encUser = encodeURIComponent(String(c.user ?? ''));
   const encPass = encodeURIComponent(String(c.pass ?? ''));
   const h = c.host ?? 'localhost';
   const rawPort2 = Number(process.env.DB_PORT);
   const port2 = Number.isFinite(rawPort2) && rawPort2 > 0 ? rawPort2 : 5432;
   const dbName = c.name ?? '';
-  process.env.DATABASE_URL = `postgresql://${encUser}:${encPass}@${h}:${port2}/${dbName}?schema=public`;
+  const url2 = `postgresql://${encUser}:${encPass}@${h}:${port2}/${dbName}?schema=public`;
+  process.env.DATABASE_URL = url2;
+  process.env.STOKIO_DATABASE_URL = url2;
 }
 
 ensureDatabaseUrl();
