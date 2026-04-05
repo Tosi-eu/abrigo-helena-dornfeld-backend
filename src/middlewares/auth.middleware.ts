@@ -230,7 +230,7 @@ export async function optionalAuthMiddleware(
       isSuperAdmin: cached.isSuperAdmin,
     };
   } catch {
-    // ignore invalid token; proceed without req.user
+    // no-op
   }
   next();
 }

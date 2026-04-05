@@ -24,7 +24,6 @@ export function configureHttpLayer(app: Application): void {
     crossOriginResourcePolicy: { policy: 'cross-origin' },
   });
 
-  // Swagger UI precisa de scripts inline; sem isto o Helmet CSP bloqueia a página
   app.use((req, res, next) => {
     if (isSwaggerUiPath(req.path)) {
       return next();

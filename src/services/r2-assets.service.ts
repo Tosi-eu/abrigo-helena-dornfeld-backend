@@ -186,7 +186,7 @@ export async function deleteTenantLogoObjectsExceptKey(params: {
     try {
       await client.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
     } catch {
-      /* ignora */
+      // no-op
     }
   }
 }

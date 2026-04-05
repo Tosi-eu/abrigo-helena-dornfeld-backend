@@ -1,4 +1,4 @@
-import type { ClassConstructor } from 'class-transformer/types/interfaces';
+import type { ClassConstructor } from 'class-transformer';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 import type { RequestHandler } from 'express';
@@ -9,10 +9,6 @@ export type BodyValidationOptions = {
   forbidNonWhitelisted?: boolean;
 };
 
-/**
- * Express middleware: replaces `req.body` with a class-transformer instance
- * after class-validator checks (trim transforms run first).
- */
 export function bodyValidationMiddleware<T extends object>(
   dto: ClassConstructor<T>,
   options?: BodyValidationOptions,

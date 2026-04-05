@@ -60,7 +60,6 @@ export class TenantInviteController {
       )}&email=${encodeURIComponent(email)}`;
 
       if (!isEmailConfigured()) {
-        // Fallback: return token so o admin pode copiar caso SMTP não esteja configurado.
         return res.status(201).json({
           token: plainToken,
           link,

@@ -442,7 +442,6 @@ export class PrismaStockRepository {
         : null;
 
       if (medIdsForName && medIdsForName.length === 0) {
-        // no medicines match name — skip loading stocks
       } else {
         if (medIdsForName) {
           medicineWhere.medicamento_id = { in: medIdsForName };
@@ -575,7 +574,7 @@ export class PrismaStockRepository {
         : null;
 
       if (insIdsForName && insIdsForName.length === 0) {
-        // skip
+        // no-op
       } else {
         if (insIdsForName) {
           inputWhere.insumo_id = { in: insIdsForName };

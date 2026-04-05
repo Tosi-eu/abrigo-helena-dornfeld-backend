@@ -2,6 +2,8 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Patch,
   Post,
   Put,
@@ -62,6 +64,7 @@ export class EstoqueApiController {
   constructor(private readonly controller: StockController) {}
 
   @Post('entrada')
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Entrada de stock (medicamento ou insumo)',
     description:
@@ -81,6 +84,7 @@ export class EstoqueApiController {
   }
 
   @Post('saida')
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Saída de stock' })
   @ApiBody({ type: StockOutBodyDto })
   @UseGuards(stockOutBody, stockModule)

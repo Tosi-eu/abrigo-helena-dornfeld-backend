@@ -17,10 +17,6 @@ describe('Security hardening (E2E)', () => {
       .put('/api/v1/tenant/config')
       .set('Authorization', `Bearer ${token}`)
       .send({ modules: { enabled: [] } });
-    // In seed environments the first user may be admin; we accept:
-    // - 200 for admin with valid merge,
-    // - 400 when admin sends enabled: [] (schema min 1),
-    // - 403 for non-admin.
     expect([200, 400, 403]).toContain(res.status);
   });
 

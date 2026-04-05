@@ -31,7 +31,6 @@ export function prismaErrorLogMeta(err: unknown): LogContext {
   return base;
 }
 
-/** Unique constraint / duplicate key (Prisma P2002 + PG 23505). */
 export function isUniqueViolationError(error: unknown): boolean {
   if (
     error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -57,7 +56,7 @@ export function mapPrismaToClientError(
       return {
         status: 400,
         message:
-          'Não foi possível concluir o cadastro: referência inválida (verifique o abrigo).',
+          'Não foi possível concluir o cadastro: referência inválida (verifique o tenant).',
       };
     }
   }

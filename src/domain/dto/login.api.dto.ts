@@ -1,6 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-/** Campos comuns de e-mail + senha. */
 export class LoginEmailPasswordDto {
   @ApiPropertyOptional({
     description: 'E-mail de login (alternativa ao campo `login`)',
@@ -28,7 +27,7 @@ export class RegisterAccountDto extends LoginEmailPasswordDto {
 
 export class RegisterUserDto extends RegisterAccountDto {
   @ApiPropertyOptional({
-    description: 'Código de contrato (quando o abrigo exige)',
+    description: 'Código de contrato (quando o tenant exige)',
     example: 'ABC123',
   })
   contract_code?: string;

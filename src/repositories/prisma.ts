@@ -7,7 +7,6 @@ function ensureDatabaseUrl(): void {
   const host = c.host?.trim();
   const user = c.user?.trim();
   const name = c.name?.trim();
-  // Variáveis DB_* (ex.: DB_HOST=postgres no Docker) devem prevalecer sobre DATABASE_URL do .env com localhost
   if (host && user && name) {
     const encUser = encodeURIComponent(user);
     const encPass = encodeURIComponent(String(c.pass ?? ''));
@@ -40,7 +39,6 @@ export function getDb(): PrismaClient | Prisma.TransactionClient {
   return txStorage.getStore() ?? prisma;
 }
 
-/** Executa o callback com o client de transação atual no ALS (middleware RLS). */
 export function runWithTransactionClient<T>(
   tx: Prisma.TransactionClient,
   fn: () => T,

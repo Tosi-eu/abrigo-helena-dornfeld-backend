@@ -9,7 +9,6 @@ const imageMime = new Set([
   'image/gif',
 ]);
 
-/** Tenant logo → R2 (`POST /tenant/branding/logo`). Max 2MB, images only. */
 export const tenantLogoUpload = multer({
   storage: memory,
   limits: { fileSize: 2 * 1024 * 1024 },
@@ -26,7 +25,6 @@ export const tenantLogoUpload = multer({
   },
 });
 
-/** Super-admin DB restore (`POST /admin/restore-backup`). Max 200MB. */
 export const adminBackupUpload = multer({
   storage: memory,
   limits: { fileSize: 200 * 1024 * 1024 },

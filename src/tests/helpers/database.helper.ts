@@ -20,10 +20,6 @@ async function setupTestData() {
   await seedE2EDefaultTenant();
 }
 
-/**
- * App de teste alinhada ao `bootstrap.ts`: `configureHttpBeforeInit` → `init` → `registerExpressErrorHandlerLast`.
- * `setupTestData` já faz `prisma.$connect()` + seed.
- */
 export async function createApp(): Promise<Application> {
   await setupTestData();
   const moduleRef = await Test.createTestingModule({

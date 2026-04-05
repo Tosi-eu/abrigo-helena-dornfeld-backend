@@ -16,11 +16,15 @@ export async function seedDB(app: App): Promise<SeedResult> {
   const token = await getAuthTokenForE2EApp(app);
   const auth = () => ({ Authorization: `Bearer ${token}` });
 
+  const stamp = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  const cabinetNum = 600_000 + Math.floor(Math.random() * 200_000);
+  const residentCaselaSeed = 500_000 + Math.floor(Math.random() * 200_000);
+
   const catRes = await request(app)
     .post('/api/v1/categoria-armario')
     .set(auth())
     .send({
-      nome: 'Categoria de Teste',
+      nome: `Categoria de Teste ${stamp}`,
     });
 
   if (catRes.status !== 201)
@@ -31,11 +35,11 @@ export async function seedDB(app: App): Promise<SeedResult> {
     .post('/api/v1/medicamentos')
     .set(auth())
     .send({
-      nome: 'Dipirona',
+      nome: `Dipirona E2E ${stamp}`,
       dosagem: '500',
       unidade_medida: 'mg',
       estoque_minimo: 10,
-      principio_ativo: 'Dipirona',
+      principio_ativo: `Dipirona PA ${stamp}`,
     });
 
   if (medRes.status !== 201)
@@ -43,7 +47,7 @@ export async function seedDB(app: App): Promise<SeedResult> {
   const medicineId = medRes.body.id;
 
   const inputRes = await request(app).post('/api/v1/insumos').set(auth()).send({
-    nome: 'Gaze Estéril',
+    nome: `Gaze Estéril ${stamp}`,
     descricao: 'Gaze para curativos',
     estoque_minimo: 50,
   });
@@ -53,7 +57,7 @@ export async function seedDB(app: App): Promise<SeedResult> {
   const inputId = inputRes.body.id;
 
   const cabRes = await request(app).post('/api/v1/armarios').set(auth()).send({
-    numero: 1,
+    numero: cabinetNum,
     categoria_id: categoryId,
   });
 
@@ -64,8 +68,8 @@ export async function seedDB(app: App): Promise<SeedResult> {
     .post('/api/v1/residentes')
     .set(auth())
     .send({
-      casela: 101,
-      nome: 'Fulano Teste',
+      casela: residentCaselaSeed,
+      nome: `Fulano Teste ${stamp}`,
     });
 
   if (resRes.status !== 201)

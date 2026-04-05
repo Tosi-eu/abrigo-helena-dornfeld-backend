@@ -6,9 +6,6 @@ type ExpressMw = (
   next: NextFunction,
 ) => void | Promise<void>;
 
-/**
- * Executa um middleware estilo Express dentro de um Guard Nest (req/res são os do adapter).
- */
 export async function runExpressMiddleware(
   mw: ExpressMw,
   req: Request,

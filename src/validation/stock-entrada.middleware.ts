@@ -6,9 +6,6 @@ import { bodyValidationMiddleware } from './body-validation.middleware';
 const medMw = bodyValidationMiddleware(MedicineStockInBodyDto);
 const insMw = bodyValidationMiddleware(InputStockInBodyDto);
 
-/**
- * `POST /estoque/entrada`: body must match medicine stock-in **or** input stock-in.
- */
 export const stockEntradaBodyMiddleware: RequestHandler = (req, res, next) => {
   const b = req.body ?? {};
   const hasMed = b.medicamento_id != null && b.medicamento_id !== '';

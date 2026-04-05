@@ -7,7 +7,6 @@ import type {
 
 export type { Login, LoginCreateWithTenant, LoggedUser, UserPermissions };
 
-/** Payload de criação de usuário na aplicação (estende Login do SDK). */
 export type CreateUserData = Login & {
   role?: 'admin' | 'user';
   tenant_id?: number;

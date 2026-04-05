@@ -2,9 +2,6 @@ import { Injectable, NestMiddleware, Type } from '@nestjs/common';
 import type { NextFunction, Request, Response } from 'express';
 import type { RequestHandler } from 'express';
 
-/**
- * Wraps a single Express-style middleware as NestMiddleware.
- */
 export function wrapExpressMiddleware(mw: RequestHandler): Type<NestMiddleware> {
   @Injectable()
   class ExpressMiddlewareWrapper implements NestMiddleware {
@@ -15,9 +12,6 @@ export function wrapExpressMiddleware(mw: RequestHandler): Type<NestMiddleware> 
   return ExpressMiddlewareWrapper;
 }
 
-/**
- * Chains Express middlewares in order (each must call next() to continue).
- */
 export function chainExpressMiddleware(
   ...middlewares: RequestHandler[]
 ): Type<NestMiddleware> {

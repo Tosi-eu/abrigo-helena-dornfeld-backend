@@ -213,9 +213,6 @@ export class LoginService {
     };
   }
 
-  /**
-   * Descobre o abrigo a partir do e-mail/login, quando há correspondência única.
-   */
   async resolveTenantByLogin(
     login: string,
   ): Promise<
@@ -241,7 +238,6 @@ export class LoginService {
     return { type: 'ambiguous', tenants: list };
   }
 
-  /** Lista todos os abrigos com conta para o e-mail (mesma query que resolve-tenant). */
   async listTenantSummariesForLogin(
     login: string,
   ): Promise<{ slug: string; label: string }[]> {
@@ -443,7 +439,6 @@ export class LoginService {
     password: string;
     first_name?: string;
     last_name?: string;
-    /** Se preenchido, associa o tenant provisório ao portfólio de contrato. */
     contract_code?: string;
   }): Promise<{
     tenantId: number;
@@ -788,8 +783,6 @@ export class LoginService {
     if (!plain) {
       throw new HttpError('Token de convite obrigatório', 400);
     }
-    // Erro comum: colar o token_digest (sha256 hex) em vez do token original.
-    // O digest é o que fica salvo na base; o token original só aparece na resposta/URL do convite.
     if (/^[a-f0-9]{64}$/i.test(plain)) {
       throw new HttpError(
         'Token inválido. Você colou o token_digest da base. Use o token original do link/convite (não o digest).',

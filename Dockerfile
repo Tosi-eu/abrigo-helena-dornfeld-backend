@@ -12,6 +12,9 @@ RUN npm install --legacy-peer-deps --ignore-scripts
 
 COPY . .
 
+# prisma generate só valida o formato da URL; não precisa de Postgres acessível no build
+ENV DATABASE_URL="postgresql://build:build@127.0.0.1:5432/build?schema=public"
+
 RUN npx prisma generate && npm run build
 
 EXPOSE 3001

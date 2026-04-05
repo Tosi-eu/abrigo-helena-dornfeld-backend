@@ -492,12 +492,12 @@ export class AdminController {
       try {
         if (existsSync(tmpSql)) unlinkSync(tmpSql);
       } catch {
-        /* ignore */
+        // no-op
       }
       try {
         if (existsSync(tmpGz)) unlinkSync(tmpGz);
       } catch {
-        /* ignore */
+        // no-op
       }
     };
 
@@ -1067,9 +1067,9 @@ export class AdminController {
       try {
         if (existsSync(tmpPath)) unlinkSync(tmpPath);
       } catch {
-        /* ignore */
+        // no-op
       }
-    };
+    };  
 
     const onDone = (code: number, stderr: string, stdout: string) => {
       cleanup();

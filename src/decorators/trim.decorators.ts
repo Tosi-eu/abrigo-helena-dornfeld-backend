@@ -21,7 +21,6 @@ export function OptionalTrimmedString(maxLength?: number) {
   return applyDecorators(trim, IsOptional(), IsString(), ...len);
 }
 
-/** Required string, trimmed, non-empty after trim. */
 export function TrimmedString(min = 1, maxLength?: number) {
   const trim = Transform(({ value }: { value: unknown }) =>
     typeof value === 'string' ? value.trim() : value,
@@ -30,7 +29,6 @@ export function TrimmedString(min = 1, maxLength?: number) {
   return applyDecorators(trim, IsString(), IsNotEmpty(), ...bounds);
 }
 
-/** Email: trim + lowercase before `@IsEmail()`. */
 export function EmailNormalized() {
   return applyDecorators(
     Transform(({ value }: { value: unknown }) =>

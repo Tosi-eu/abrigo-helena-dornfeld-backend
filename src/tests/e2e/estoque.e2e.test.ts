@@ -43,7 +43,9 @@ describe('Input Stock E2E - CRUD', () => {
 
   it('deve listar insumos no estoque', async () => {
     const res = await request(app)
-      .get('/api/v1/estoque')
+      .get(
+        `/api/v1/estoque?type=insumo&page=1&limit=100&cabinet=${encodeURIComponent(String(seed.cabinetId))}`,
+      )
       .set('Authorization', `Bearer ${seed.token}`);
 
     expect(res.status).toBe(200);
@@ -51,7 +53,8 @@ describe('Input Stock E2E - CRUD', () => {
 
     const found = res.body.data.find(
       (item: StockRawResponse) =>
-        item.item_id === seed.inputId && item.tipo_item === 'insumo',
+        Number(item.item_id) === Number(seed.inputId) &&
+        item.tipo_item === 'insumo',
     );
 
     expect(found).toBeDefined();

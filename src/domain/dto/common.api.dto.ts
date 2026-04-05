@@ -1,6 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-/** Query padrão de listagens (`validatePagination`). */
 export class PaginationQueryDto {
   @ApiPropertyOptional({ example: 1, minimum: 1, description: 'Página (≥1)' })
   page?: number;
@@ -14,13 +13,11 @@ export class PaginationQueryDto {
   limit?: number;
 }
 
-/** Resposta de erro genérica `{ error: string }`. */
 export class ApiErrorDto {
   @ApiProperty({ example: 'Mensagem de erro' })
   error!: string;
 }
 
-/** Corpo JSON livre (recursos com muitos campos opcionais). */
 export const JSON_BODY = {
   schema: {
     type: 'object',
@@ -30,7 +27,6 @@ export const JSON_BODY = {
   },
 } as const;
 
-/** `Record<string, string>` (ex.: config admin). */
 export const STRING_MAP_BODY = {
   schema: {
     type: 'object',
@@ -39,7 +35,6 @@ export const STRING_MAP_BODY = {
   },
 } as const;
 
-/** Endpoints that do not read a JSON body. */
 export const NO_JSON_BODY = {
   schema: {
     type: 'object',

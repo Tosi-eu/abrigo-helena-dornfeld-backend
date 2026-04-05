@@ -444,7 +444,7 @@ export class LoginController {
           user_agent: req.get('User-Agent') ?? null,
         });
       } catch {
-        // ignore log errors
+        // no-op
       }
     }
 
@@ -462,7 +462,6 @@ export class LoginController {
       return res.status(401).json({ error: 'Usuário não autenticado' });
     }
     const userId = session.id;
-    // Only allow whitelisted fields from the client (browser) to prevent privilege escalation
     const body = req.body ?? {};
     const currentPassword = body.currentPassword;
     const login = body.login;

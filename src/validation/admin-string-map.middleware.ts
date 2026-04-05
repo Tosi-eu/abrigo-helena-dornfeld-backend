@@ -1,6 +1,5 @@
 import type { RequestHandler } from 'express';
 
-/** `PUT /admin/config`: arbitrary string keys → string values. */
 export const adminStringMapBodyMiddleware: RequestHandler = (req, res, next) => {
   const b = req.body;
   if (typeof b !== 'object' || b === null || Array.isArray(b)) {

@@ -39,17 +39,12 @@ function redactAuditBody(
   const obj = safeJsonObject(body);
   if (!obj) return null;
 
-  // Default: do not persist full response/request bodies (PHI/PII risk).
-  // Allowlist minimal, non-sensitive metadata only.
   const base: Record<string, unknown> = {};
 
-  // Keep common identifiers if present.
   for (const k of ['id', 'tenantId', 'tenant_id', 'casela', 'casela_id']) {
     if (k in obj) base[k] = obj[k];
   }
 
-  // Keep a small, explicit subset for tenant branding/config to aid ops,
-  // but avoid names/logos/medical text fields.
   if (/^\/tenant\/(?:config|branding)/.test(pathForAudit)) {
     if ('modulesConfigured' in obj)
       base.modulesConfigured = obj.modulesConfigured;
@@ -58,7 +53,6 @@ function redactAuditBody(
     if ('ok' in obj) base.ok = obj.ok;
   }
 
-  // Always include a marker so analysts know body was redacted.
   base._redacted = true;
   return base;
 }

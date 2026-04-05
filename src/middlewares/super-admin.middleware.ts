@@ -48,8 +48,6 @@ export function requireSuperAdminOrApiKey(
   const expected = process.env.X_API_KEY?.trim();
 
   if (expected) {
-    // Never allow API-key based super-admin access from browsers.
-    // (Reduces accidental exposure via XSS/CSRF-like cross-site flows.)
     if (req.headers.origin) {
       return res.status(403).json({
         error: 'API key não é permitida via browser (Origin presente).',

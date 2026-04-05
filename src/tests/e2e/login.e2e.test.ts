@@ -16,7 +16,14 @@ describe('Login E2E - CRUD', () => {
     app = await setupTestApp();
     await getDb().login.deleteMany({
       where: {
-        login: { in: [E2E_SEED_USER.login, E2E_RESOLVER_SEED_USER.login] },
+        login: {
+          in: [
+            E2E_SEED_USER.login,
+            E2E_RESOLVER_SEED_USER.login,
+            'joao',
+            'joao2',
+          ],
+        },
       },
     });
   });

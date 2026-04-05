@@ -323,8 +323,6 @@ export class TenantController {
 
       const tenantAfter = mapTenantRowToProfile(updated);
 
-      // Promoção automática: ao concluir a identidade pela primeira vez num tenant provisório,
-      // o utilizador criador deixa de ser "viewer" e vira admin com permissões completas.
       const noIdentityBefore = !hasIdentity(before);
       const hasIdentityAfter = hasIdentity(updated);
       const isProvisional = String(updated?.slug ?? '').startsWith('u-');

@@ -31,7 +31,6 @@ export function validatePagination(
   next();
 }
 
-/** Use após `validatePagination` — evita non-null assertion em `req.validated`. */
 export function getValidatedPagination(
   req: ValidatedRequest,
   res: Response,

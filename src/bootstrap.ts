@@ -20,9 +20,6 @@ export async function bootstrap(): Promise<INestApplication> {
   });
 
   configureHttpBeforeInit(app);
-
-  // Antes de init(): o router Nest monta em /api/v1 e consome todos os GET sob esse prefixo;
-  // se o Swagger registar depois, /api/v1/docs nunca chega à UI (404).
   setupSwagger(app);
 
   await app.init();

@@ -8,6 +8,7 @@ describe('Cabinet E2E - CRUD básico', () => {
   let createdNumber: number;
   let categoryId: number;
   let authToken: string;
+  const cabinetNumero = 800_000 + Math.floor(Math.random() * 99_000);
 
   beforeAll(async () => {
     app = await setupTestApp();
@@ -25,10 +26,10 @@ describe('Cabinet E2E - CRUD básico', () => {
     const res = await request(app)
       .post('/api/v1/armarios')
       .set('Authorization', `Bearer ${authToken}`)
-      .send({ numero: 1, categoria_id: categoryId });
+      .send({ numero: cabinetNumero, categoria_id: categoryId });
 
     expect(res.status).toBe(201);
-    expect(res.body.numero).toBe(1);
+    expect(res.body.numero).toBe(cabinetNumero);
 
     createdNumber = res.body.numero;
   });

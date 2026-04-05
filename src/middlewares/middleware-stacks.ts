@@ -15,13 +15,8 @@ import { rlsContextMiddleware } from '@middlewares/rls.middleware';
 import { bindRequestToRlsTransaction } from '@middlewares/request-rls-transaction.middleware';
 import { auditLog } from '@middlewares/audit.middleware';
 
-/** Primeiro middleware global (todas as rotas). */
 export const TenantMiddlewareNest = wrapExpressMiddleware(tenantMiddleware);
 
-/**
- * Stack do index.routes para rotas autenticadas (exceto login/app públicos).
- * auth → enforce → tenant log → block writes → rls → bind tx → audit
- */
 export const StandardProtectedMiddleware = chainExpressMiddleware(
   authMiddleware,
   enforceTenantMiddleware,
@@ -32,9 +27,6 @@ export const StandardProtectedMiddleware = chainExpressMiddleware(
   auditLog,
 );
 
-/**
- * Rotas autenticadas dentro de login.routes (sem tenantRequestContextLog antes do RLS).
- */
 export const LoginSessionMiddleware = chainExpressMiddleware(
   authMiddleware,
   enforceTenantMiddleware,
@@ -59,7 +51,6 @@ export const LoginResetPasswordMiddleware = chainExpressMiddleware(
   bindRequestToRlsTransaction,
 );
 
-/** Handlers para guards em login.api.controller (logout, display-config). */
 export const loginSessionHandlers: RequestHandler[] = [
   authMiddleware,
   enforceTenantMiddleware,
@@ -67,7 +58,6 @@ export const loginSessionHandlers: RequestHandler[] = [
   bindRequestToRlsTransaction,
 ];
 
-/** block + audit após sessão (usuario-logado, profile). */
 export const loginSessionBlockAuditHandlers: RequestHandler[] = [
   ...loginSessionHandlers,
   blockNonAdminWrites,

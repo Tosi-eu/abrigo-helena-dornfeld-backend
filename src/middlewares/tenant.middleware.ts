@@ -47,7 +47,7 @@ export async function tenantMiddleware(
 
     req.requestedTenantSlug = slug || null;
   } catch {
-    // ignore; keep request without tenant
+    // no-op
   }
   next();
 }

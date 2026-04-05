@@ -2,6 +2,8 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Post,
   Put,
   Req,
@@ -204,6 +206,7 @@ export class LoginApiController {
   }
 
   @Post('authenticate')
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Autenticar no tenant atual (obter JWT / sessão)' })
   @ApiBody({ type: AuthenticateDto })
   @ApiResponse({
@@ -217,6 +220,7 @@ export class LoginApiController {
   }
 
   @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Redefinir senha (admin do tenant)' })
   @ApiBody({ type: ResetPasswordDto })
   @ApiResponse({ status: 200, description: 'Utilizador atualizado' })

@@ -28,7 +28,6 @@ import {
   TrimmedString,
 } from '@decorators/trim.decorators';
 
-/** Supplies (insumo) — create / update body */
 export class InputBodyDto {
   @TrimmedString(1, 255)
   @ApiProperty({ example: 'Luvas descartáveis' })
@@ -51,7 +50,6 @@ export class InputBodyDto {
   preco?: number | null;
 }
 
-/** Medicines — create / update body */
 export class MedicineBodyDto {
   @TrimmedString(1, 255)
   @ApiProperty({ example: 'Paracetamol' })
@@ -82,7 +80,6 @@ export class MedicineBodyDto {
   preco?: number | null;
 }
 
-/** Drawer create */
 export class DrawerCreateBodyDto {
   @IsInt()
   @IsPositive()
@@ -95,7 +92,6 @@ export class DrawerCreateBodyDto {
   categoria_id!: number;
 }
 
-/** Drawer update (category only) */
 export class DrawerUpdateBodyDto {
   @IsInt()
   @IsPositive()
@@ -103,7 +99,6 @@ export class DrawerUpdateBodyDto {
   categoria_id!: number;
 }
 
-/** Cabinet create */
 export class CabinetCreateBodyDto {
   @IsInt()
   @IsPositive()
@@ -116,7 +111,6 @@ export class CabinetCreateBodyDto {
   categoria_id!: number;
 }
 
-/** Cabinet update (category only) */
 export class CabinetUpdateBodyDto {
   @IsInt()
   @IsPositive()
@@ -124,14 +118,12 @@ export class CabinetUpdateBodyDto {
   categoria_id!: number;
 }
 
-/** Category name (drawer / cabinet) */
 export class CategoryNomeBodyDto {
   @TrimmedString(1, 255)
   @ApiProperty({ example: 'Psicotrópicos' })
   nome!: string;
 }
 
-/** Resident create */
 export class ResidentCreateBodyDto {
   @IsInt()
   @IsPositive()
@@ -143,14 +135,12 @@ export class ResidentCreateBodyDto {
   nome!: string;
 }
 
-/** Resident update (casela in path) */
 export class ResidentUpdateBodyDto {
   @TrimmedString(1, 255)
   @ApiProperty({ example: 'Maria Silva' })
   nome!: string;
 }
 
-/** Movement create (`tenant_id` is injected server-side) */
 export class MovementCreateBodyDto {
   @IsIn(['entrada', 'saida', 'transferencia'])
   @ApiProperty({ example: 'entrada', description: 'entrada | saida | transferencia' })
@@ -212,7 +202,6 @@ export class MovementCreateBodyDto {
   validade?: string | Date;
 }
 
-/** Notification create (`tenant_id` injected) */
 export class NotificationCreateBodyDto {
   @IsInt()
   @IsPositive()
@@ -249,7 +238,6 @@ export class NotificationCreateBodyDto {
   tipo_evento!: string;
 }
 
-/** Notification update */
 export class NotificationUpdateBodyDto {
   @IsOptional()
   @IsIn(['pending', 'sent', 'cancelled'])
@@ -272,7 +260,6 @@ export class NotificationUpdateBodyDto {
   destino?: string;
 }
 
-/** Medicine stock-in (branch when `medicamento_id` is sent) */
 export class MedicineStockInBodyDto {
   @IsInt()
   @IsPositive()
@@ -331,7 +318,6 @@ export class MedicineStockInBodyDto {
   observacao?: string | null;
 }
 
-/** Input stock-in (branch when `insumo_id` is sent) */
 export class InputStockInBodyDto {
   @IsInt()
   @IsPositive()
@@ -386,7 +372,6 @@ export class InputStockInBodyDto {
   observacao?: string | null;
 }
 
-/** Stock-out */
 export class StockOutBodyDto {
   @IsInt()
   @IsPositive()
@@ -403,7 +388,6 @@ export class StockOutBodyDto {
   quantidade!: number;
 }
 
-/** Transfer medicine between sectors */
 export class TransferMedicineSectorBodyDto {
   @IsIn(['farmacia', 'enfermagem'])
   @ApiProperty({ enum: ['farmacia', 'enfermagem'] })
@@ -436,7 +420,6 @@ export class TransferMedicineSectorBodyDto {
   dias_para_repor?: number | null;
 }
 
-/** Transfer input between sectors */
 export class TransferInputSectorBodyDto {
   @IsIn(['farmacia', 'enfermagem'])
   @ApiProperty({ enum: ['farmacia', 'enfermagem'] })
@@ -470,7 +453,6 @@ export class TransferInputSectorBodyDto {
   dias_para_repor?: number | null;
 }
 
-/** Update stock line */
 export class UpdateStockItemBodyDto {
   @IsIn(['medicamento', 'insumo'])
   @ApiProperty({ enum: ['medicamento', 'insumo'] })
@@ -557,7 +539,6 @@ export class AdminPermissionsDto {
   delete?: boolean;
 }
 
-/** Tenant invite */
 export class TenantInviteCreateBodyDto {
   @EmailNormalized()
   @ApiProperty({
@@ -589,7 +570,6 @@ export class TenantInviteCreateBodyDto {
   permissions?: AdminPermissionsDto;
 }
 
-/** Set contract code */
 export class TenantContractCodeBodyDto {
   @OptionalTrimmedString(255)
   @ApiPropertyOptional({ example: 'ABC123' })
@@ -604,7 +584,6 @@ export class TenantContractCodeBodyDto {
   _contractCodePresent?: never;
 }
 
-/** Tenant modules config (PUT /tenant/config) */
 export class TenantModulesConfigBodyDto {
   @IsObject()
   @ApiProperty({
@@ -614,7 +593,6 @@ export class TenantModulesConfigBodyDto {
   modules!: Record<string, unknown>;
 }
 
-/** Tenant branding JSON */
 export class TenantBrandingBodyDto {
   @OptionalTrimmedString(160)
   @ApiPropertyOptional({ maxLength: 160 })
@@ -627,7 +605,6 @@ export class TenantBrandingBodyDto {
   logoUrl?: string;
 }
 
-/** Admin create user */
 export class AdminCreateUserBodyDto {
   @TrimmedString(1, 255)
   @ApiProperty()
@@ -659,7 +636,6 @@ export class AdminCreateUserBodyDto {
   permissions?: AdminPermissionsDto;
 }
 
-/** Admin update user */
 export class AdminUpdateUserBodyDto {
   @OptionalTrimmedString(45)
   @ApiPropertyOptional()
@@ -692,7 +668,6 @@ export class AdminUpdateUserBodyDto {
   permissions?: AdminPermissionsDto;
 }
 
-/** Merge duplicate medicines */
 export class AdminMergeMedicinesBodyDto {
   @IsInt()
   @IsPositive()
@@ -706,7 +681,6 @@ export class AdminMergeMedicinesBodyDto {
   mergeIds!: number[];
 }
 
-/** Normalize medicine units */
 export class AdminNormalizeUnitsBodyDto {
   @IsOptional()
   @IsBoolean()
@@ -716,7 +690,6 @@ export class AdminNormalizeUnitsBodyDto {
   dryRun?: boolean;
 }
 
-/** Admin patch notification */
 export class AdminPatchNotificationBodyDto {
   @IsOptional()
   @IsBoolean()

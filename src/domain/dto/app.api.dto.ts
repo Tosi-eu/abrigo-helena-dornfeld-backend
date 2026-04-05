@@ -43,7 +43,6 @@ export class AdminUpdateTenantDto {
   contract_code?: string;
 }
 
-/** Body de `PUT admin/tenants/by-slug/:slug/contract-code` */
 export class SetContractCodeBySlugDto {
   @ApiPropertyOptional({ description: 'Código de contrato em texto plano' })
   contract_code?: string;
