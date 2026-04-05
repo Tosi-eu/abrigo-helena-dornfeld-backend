@@ -1,7 +1,7 @@
 import request from 'supertest';
-import { setupTestApp } from '../../infrastructure/helpers/database.helper';
-import { E2E_TENANT_SLUG } from '../../infrastructure/helpers/e2e-tenant-seed.helper';
-import { getAuthToken } from '../helpers/auth.helper';
+import { setupTestApp } from '@tests/helpers/database.helper';
+import { E2E_TENANT_SLUG } from '@helpers/e2e-tenant-seed.helper';
+import { getAuthToken } from '@tests/helpers/auth.helper';
 import { App } from 'supertest/types';
 
 describe('Tenant E2E — API pública e contexto', () => {

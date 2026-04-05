@@ -1,7 +1,7 @@
 import request from 'supertest';
-import { setupTestApp } from '../../infrastructure/helpers/database.helper';
+import { setupTestApp } from '@tests/helpers/database.helper';
 import { App } from 'supertest/types';
-import { getAuthToken, E2E_TENANT_SLUG } from '../helpers/auth.helper';
+import { getAuthToken, E2E_TENANT_SLUG } from '@tests/helpers/auth.helper';
 
 describe('Security hardening (E2E)', () => {
   let app: App;

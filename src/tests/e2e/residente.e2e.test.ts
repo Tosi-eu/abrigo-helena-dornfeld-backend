@@ -1,6 +1,6 @@
 import { App } from 'supertest/types';
-import { setupTestApp } from '../../infrastructure/helpers/database.helper';
-import { getAuthToken } from '../helpers/auth.helper';
+import { setupTestApp } from '@tests/helpers/database.helper';
+import { getAuthToken } from '@tests/helpers/auth.helper';
 import request from 'supertest';
 
 describe('Resident E2E - CRUD básico', () => {

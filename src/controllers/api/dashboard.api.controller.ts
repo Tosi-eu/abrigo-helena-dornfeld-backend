@@ -1,0 +1,41 @@
+import { Controller, Get, Req, Res, UseGuards } from '@nestjs/common';
+import {
+  ApiCookieAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiSecurity,
+  ApiTags,
+} from '@nestjs/swagger';
+import type { Request, Response } from 'express';
+import { DashboardController } from '@controllers/dashboard.controller';
+import { UseExpressMwGuard } from '@guards/express-middleware.guard';
+import { requireModule } from '@middlewares/module.middleware';
+
+const dashModule = UseExpressMwGuard(requireModule('dashboard'));
+
+@ApiTags('Dashboard')
+@ApiSecurity('bearer')
+@ApiCookieAuth('authToken')
+@Controller('dashboard')
+export class DashboardApiController {
+  constructor(private readonly controller: DashboardController) {}
+
+  @Get('summary')
+  @ApiOperation({ summary: 'Resumo do painel (KPIs)' })
+  @ApiResponse({ status: 200, description: 'Agregados do dashboard' })
+  @UseGuards(dashModule)
+  summary(@Req() req: Request, @Res() res: Response): void {
+    this.controller.getSummary(req, res);
+  }
+
+  @Get('expiring-items')
+  @ApiOperation({
+    summary: 'Itens a expirar (medicamentos / stock)',
+    description: 'Query opcional conforme implementação no controller legacy.',
+  })
+  @ApiResponse({ status: 200, description: 'Lista de itens' })
+  @UseGuards(dashModule)
+  expiringItems(@Req() req: Request, @Res() res: Response): void {
+    this.controller.getExpiringItems(req, res);
+  }
+}

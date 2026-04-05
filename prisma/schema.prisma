@@ -1,0 +1,294 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model SequelizeMeta {
+  name String @id @db.VarChar(255)
+}
+
+model Tenant {
+  id                    Int       @id @default(autoincrement())
+  slug                  String    @unique @db.VarChar(60)
+  name                  String    @db.VarChar(120)
+  brand_name            String?   @db.VarChar(160)
+  logo_url              String?
+  contract_code_hash    String?   @db.VarChar(255)
+  contract_portfolio_id Int?
+  created_at            DateTime  @default(now())
+  updated_at            DateTime  @updatedAt
+
+  @@map("tenant")
+}
+
+model TenantConfig {
+  id           Int      @id @default(autoincrement())
+  tenant_id    Int      @unique
+  modules_json Json
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  @@map("tenant_config")
+}
+
+model Login {
+  id              Int      @id @default(autoincrement())
+  first_name      String?  @db.VarChar(45)
+  last_name       String?  @db.VarChar(45)
+  login           String   @db.VarChar(255)
+  password        String   @db.VarChar(255)
+  refreshToken    String?  @map("refresh_token")
+  tenant_id       Int
+  role            String   @default("user") @db.VarChar(20)
+  permissions     Json?
+  is_super_admin  Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("login")
+  @@index([refreshToken], map: "idx_login_refresh_token")
+}
+
+model CategoriaArmario {
+  id        Int      @id @default(autoincrement())
+  nome      String   @db.VarChar(255)
+  tenant_id Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("categoria_armario")
+}
+
+model CategoriaGaveta {
+  id        Int      @id @default(autoincrement())
+  nome      String   @db.VarChar(255)
+  tenant_id Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("categoria_gaveta")
+}
+
+model Armario {
+  id           BigInt   @id @default(autoincrement())
+  num_armario  Int
+  categoria_id Int
+  tenant_id    Int      @default(1)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([tenant_id, num_armario], map: "uq_armario_tenant_num_armario")
+  @@map("armario")
+}
+
+model Gaveta {
+  id           BigInt   @id @default(autoincrement())
+  num_gaveta   Int
+  categoria_id Int
+  tenant_id    Int      @default(1)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([tenant_id, num_gaveta], map: "uq_gaveta_tenant_num_gaveta")
+  @@map("gaveta")
+}
+
+model Residente {
+  id         BigInt @id @default(autoincrement())
+  num_casela Int
+  nome       String @db.VarChar(255)
+  tenant_id  Int    @default(1)
+
+  @@unique([tenant_id, num_casela], map: "uq_residente_tenant_num_casela")
+  @@map("residente")
+}
+
+model Insumo {
+  id             Int      @id @default(autoincrement())
+  nome           String   @db.VarChar(255)
+  descricao      String?  @db.VarChar(255)
+  estoque_minimo Int?
+  preco          Decimal? @db.Decimal(10, 2)
+  tenant_id      Int      @default(1)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([tenant_id, nome], map: "uniq_insumo_tenant_nome")
+  @@map("insumo")
+}
+
+model Medicamento {
+  id               Int      @id @default(autoincrement())
+  nome             String
+  dosagem          String
+  unidade_medida   String
+  principio_ativo  String
+  estoque_minimo   Int?
+  preco            Decimal? @db.Decimal(10, 2)
+  tenant_id        Int      @default(1)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([tenant_id, nome, principio_ativo, dosagem, unidade_medida], map: "uniq_medicamento_tenant_nome_principio_dosagem")
+  @@map("medicamento")
+}
+
+model Movimentacao {
+  id             Int      @id @default(autoincrement())
+  tenant_id      Int      @default(1)
+  tipo           String
+  data           DateTime
+  login_id       Int
+  insumo_id      Int?
+  medicamento_id Int?
+  armario_id     Int?
+  gaveta_id      Int?
+  quantidade     Int
+  casela_id      Int?
+  setor          String
+  destino        String?
+  lote           String?
+  observacao     String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("movimentacao")
+}
+
+model EstoqueMedicamento {
+  id                Int       @id @default(autoincrement())
+  tenant_id         Int       @default(1)
+  medicamento_id    Int
+  casela_id         Int?
+  armario_id        Int?
+  gaveta_id         Int?
+  validade          DateTime  @db.Date
+  quantidade        Int
+  origem            String
+  tipo              String
+  status            String
+  lote              String?
+  setor             String
+  suspended_at      DateTime?
+  observacao        String?
+  dias_para_repor   Int?
+  ultima_reposicao  DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("estoque_medicamento")
+}
+
+model EstoqueInsumo {
+  id               Int       @id @default(autoincrement())
+  tenant_id        Int       @default(1)
+  insumo_id        Int
+  casela_id        Int?
+  armario_id       Int?
+  gaveta_id        Int?
+  quantidade       Int
+  validade         DateTime
+  tipo             String
+  setor            String
+  destino          String?
+  lote             String?
+  observacao       String?
+  status           String
+  suspended_at     DateTime?
+  dias_para_repor  Int?
+  ultima_reposicao DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@map("estoque_insumo")
+}
+
+model Notificacao {
+  id               Int       @id @default(autoincrement())
+  tenant_id        Int       @default(1)
+  tipo_evento      String
+  medicamento_id   Int?
+  residente_id     Int?
+  destino          String
+  data_prevista    DateTime? @db.Date
+  criado_por       Int
+  status           String
+  visto            Boolean   @default(false)
+  quantidade       Int?
+  dias_para_repor  Int?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@map("notificacao")
+}
+
+model AuditLog {
+  id              Int      @id @default(autoincrement())
+  user_id         Int?
+  tenant_id       Int?
+  method          String   @db.VarChar(10)
+  path            String   @db.VarChar(500)
+  operation_type  String   @db.VarChar(20)
+  resource        String?  @db.VarChar(100)
+  status_code     Int
+  duration_ms     Int?
+  old_value       Json?
+  new_value       Json?
+  created_at      DateTime @default(now())
+
+  @@map("audit_log")
+}
+
+model LoginLog {
+  id         Int      @id @default(autoincrement())
+  user_id    Int?
+  tenant_id  Int?
+  login      String   @db.VarChar(255)
+  success    Boolean  @default(true)
+  ip         String?  @db.VarChar(45)
+  user_agent String?
+  created_at DateTime @default(now())
+
+  @@map("login_log")
+}
+
+model SystemConfig {
+  id         Int      @id @default(autoincrement())
+  key        String   @unique @db.VarChar(100)
+  value      String?
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("system_config")
+}
+
+model ContractPortfolio {
+  id                 Int      @id @default(autoincrement())
+  contract_code_hash String   @db.VarChar(255)
+  created_at         DateTime @default(now())
+  updated_at         DateTime @updatedAt
+
+  @@map("contract_portfolio")
+}
+
+model TenantInvite {
+  id                  Int       @id @default(autoincrement())
+  tenant_id           Int
+  token_digest        String    @unique @db.VarChar(64)
+  expires_at          DateTime
+  email               String?   @db.VarChar(255)
+  role                String?   @db.VarChar(20)
+  permissions_json    Json?
+  created_by_user_id  Int?
+  used_at             DateTime?
+  revoked_at          DateTime?
+  created_at          DateTime @default(now())
+  updated_at          DateTime @updatedAt
+
+  @@map("tenant_invite")
+}

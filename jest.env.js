@@ -1,6 +1,6 @@
 /**
  * Variáveis e regras do ambiente de teste.
- * Carregado por jest.config.ts e jest.setup.ts — o jest.config.ts comanda o pipeline de testes.
+ * Carregado por jest.config.cjs e jest.setup.ts.
  */
 
 const TEST_DB_NAME_DEFAULT = 'estoque_test';

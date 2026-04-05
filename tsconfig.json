@@ -5,18 +5,33 @@
     "outDir": "dist",
     "rootDir": "src",
     "strict": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "useDefineForClassFields": false,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "baseUrl": ".",
     "paths": {
-      "@porto-sdk/sdk": ["./node_modules/@porto-sdk/sdk/dist/index.d.ts"]
+      "@porto-sdk/sdk": ["./node_modules/@porto-sdk/sdk/dist/index.d.ts"],
+      "@controllers/*": ["src/controllers/*"],
+      "@services/*": ["src/services/*"],
+      "@repositories/*": ["src/repositories/*"],
+      "@helpers/*": ["src/helpers/*"],
+      "@domain/*": ["src/domain/*"],
+      "@config/*": ["src/config/*"],
+      "@middlewares/*": ["src/middlewares/*"],
+      "@modules/*": ["src/modules/*"],
+      "@decorators/*": ["src/decorators/*"],
+      "@guards/*": ["src/guards/*"],
+      "@filters/*": ["src/filters/*"],
+      "@validation/*": ["src/validation/*"],
+      "@tests/*": ["src/tests/*"]
     }
   },
   "include": [
-    "src",
-    "src/infrastructure"
+    "src"
   ],
   "exclude": [
     "node_modules",

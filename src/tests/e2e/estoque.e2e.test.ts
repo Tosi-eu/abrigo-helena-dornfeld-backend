@@ -1,12 +1,12 @@
 import request from 'supertest';
-import { setupTestApp } from '../../infrastructure/helpers/database.helper';
-import { sequelize } from '../../infrastructure/database/sequelize';
+import { setupTestApp } from '@tests/helpers/database.helper';
+import { prisma } from '@repositories/prisma';
 import { App } from 'supertest/types';
 import {
   seedDB,
   SeedResult,
-} from '../../infrastructure/database/seed/estoque.seed';
-import { ItemType, StockRawResponse } from '../../core/utils/utils';
+} from '@repositories/seed/estoque.seed';
+import { ItemType, StockRawResponse } from '@helpers/utils';
 
 let app: App;
 let seed: SeedResult;
@@ -17,7 +17,7 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await sequelize.close();
+  await prisma.$disconnect();
 });
 
 describe('Input Stock E2E - CRUD', () => {
