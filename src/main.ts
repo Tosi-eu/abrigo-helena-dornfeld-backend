@@ -3,6 +3,10 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+import { assertBackendEnv } from './config/env.validation';
+
+assertBackendEnv();
+
 import { logger } from '@helpers/logger.helper';
 import { bootstrap } from './bootstrap';
 
