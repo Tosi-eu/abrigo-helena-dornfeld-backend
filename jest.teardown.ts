@@ -1,17 +1,15 @@
 export default async function globalTeardown() {
   try {
-    const { closeRedisClient } = await import(
-      './src/infrastructure/database/redis/client.redis'
-    );
+    const { closeRedisClient } = await import('./src/config/redis.client');
     await closeRedisClient();
   } catch {
-    /* Redis pode não estar carregado */
+      // no-op
   }
 
   try {
-    const { sequelize } = await import('./src/infrastructure/database/sequelize');
-    await sequelize.close();
+    const { prisma } = await import('./src/repositories/prisma');
+    await prisma.$disconnect();
   } catch {
-    /* Unit tests may not load Sequelize */
+    // no-op
   }
 }

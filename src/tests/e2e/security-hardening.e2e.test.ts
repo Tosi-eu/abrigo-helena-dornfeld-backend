@@ -1,7 +1,7 @@
 import request from 'supertest';
-import { setupTestApp } from '../../infrastructure/helpers/database.helper';
+import { setupTestApp } from '@tests/helpers/database.helper';
 import { App } from 'supertest/types';
-import { getAuthToken, E2E_TENANT_SLUG } from '../helpers/auth.helper';
+import { getAuthToken, E2E_TENANT_SLUG } from '@tests/helpers/auth.helper';
 
 describe('Security hardening (E2E)', () => {
   let app: App;
@@ -17,10 +17,6 @@ describe('Security hardening (E2E)', () => {
       .put('/api/v1/tenant/config')
       .set('Authorization', `Bearer ${token}`)
       .send({ modules: { enabled: [] } });
-    // In seed environments the first user may be admin; we accept:
-    // - 200 for admin with valid merge,
-    // - 400 when admin sends enabled: [] (schema min 1),
-    // - 403 for non-admin.
     expect([200, 400, 403]).toContain(res.status);
   });
 

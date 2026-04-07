@@ -1,14 +1,14 @@
 import {
   TenantConfigService,
   DEFAULT_TENANT_MODULES,
-} from '../../core/services/tenant-config.service';
-import type { TenantModulesConfig } from '../../core/types/tenant.types';
-import type { TenantConfigRepository } from '../../infrastructure/database/repositories/tenant-config.repository';
+} from '@services/tenant-config.service';
+import type { TenantModulesConfig } from '@domain/tenant.types';
+import type { PrismaTenantConfigRepository } from '@repositories/tenant-config.repository';
 
 describe('TenantConfigService (unit)', () => {
   let mockRepo: jest.Mocked<
     Pick<
-      TenantConfigRepository,
+      PrismaTenantConfigRepository,
       'getByTenantId' | 'setByTenantId' | 'listAllTenantIds'
     >
   >;
@@ -20,7 +20,7 @@ describe('TenantConfigService (unit)', () => {
       setByTenantId: jest.fn(),
       listAllTenantIds: jest.fn(),
     };
-    service = new TenantConfigService(mockRepo as TenantConfigRepository);
+    service = new TenantConfigService(mockRepo as PrismaTenantConfigRepository);
   });
 
   describe('get', () => {

@@ -1,0 +1,268 @@
+import {
+  Controller,
+  Delete,
+  Get,
+  Patch,
+  Post,
+  Put,
+  Req,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiResponse,
+  ApiSecurity,
+  ApiTags,
+} from '@nestjs/swagger';
+import type { Request, Response } from 'express';
+import { adminBackupUpload } from '@config/upload/multer-r2.config';
+import { AdminController } from '@controllers/admin.controller';
+import { UseExpressMwGuard } from '@guards/express-middleware.guard';
+import { requireSuperAdmin } from '@middlewares/super-admin.middleware';
+import { STRING_MAP_BODY } from '@domain/dto/common.api.dto';
+import {
+  AdminCreateUserBodyDto,
+  AdminMergeMedicinesBodyDto,
+  AdminNormalizeUnitsBodyDto,
+  AdminPatchNotificationBodyDto,
+  AdminUpdateUserBodyDto,
+} from '@domain/dto/entities.api.dto';
+import { adminStringMapBodyMiddleware } from '@validation/admin-string-map.middleware';
+import {
+  UseExpressMiddleware,
+  UseValidatedBody,
+} from '@validation/use-validated-body.guard';
+
+const superAdminUpload = UseExpressMwGuard(
+  requireSuperAdmin,
+  adminBackupUpload.single('file'),
+);
+const superAdminOnly = UseExpressMwGuard(requireSuperAdmin);
+const adminCreateUserBody = UseValidatedBody(AdminCreateUserBodyDto);
+const adminUpdateUserBody = UseValidatedBody(AdminUpdateUserBodyDto);
+const adminConfigMap = UseExpressMiddleware(adminStringMapBodyMiddleware);
+const adminMergeMeds = UseValidatedBody(AdminMergeMedicinesBodyDto);
+const adminNormUnits = UseValidatedBody(AdminNormalizeUnitsBodyDto);
+const adminPatchNotif = UseValidatedBody(AdminPatchNotificationBodyDto);
+
+@ApiTags('Administração')
+@ApiBearerAuth()
+@ApiSecurity('bearer')
+@Controller('admin')
+export class AdminApiController {
+  constructor(private readonly controller: AdminController) {}
+
+  @Get('users')
+  @ApiOperation({ summary: '[Super-admin] Listar utilizadores' })
+  @ApiQuery({ name: 'page', required: false })
+  @ApiQuery({ name: 'limit', required: false })
+  users(@Req() req: Request, @Res() res: Response): void {
+    void this.controller.listUsers(req, res);
+  }
+
+  @Post('users')
+  @ApiOperation({ summary: '[Super-admin] Criar utilizador' })
+  @ApiBody({ type: AdminCreateUserBodyDto })
+  @UseGuards(adminCreateUserBody)
+  createUser(@Req() req: Request, @Res() res: Response): void {
+    void this.controller.createUser(req, res);
+  }
+
+  @Put('users/:id')
+  @ApiOperation({ summary: '[Super-admin] Atualizar utilizador' })
+  @ApiParam({ name: 'id', type: Number })
+  @ApiBody({ type: AdminUpdateUserBodyDto })
+  @UseGuards(adminUpdateUserBody)
+  updateUser(@Req() req: Request, @Res() res: Response): void {
+    void this.controller.updateUser(req, res);
+  }
+
+  @Delete('users/:id')
+  @ApiOperation({ summary: '[Super-admin] Remover utilizador' })
+  @ApiParam({ name: 'id', type: Number })
+  deleteUser(@Req() req: Request, @Res() res: Response): void {
+    void this.controller.deleteUser(req, res);
+  }
+
+  @Get('login-log')
+  @ApiOperation({ summary: 'Log de tentativas de login (filtros via query)' })
+  @ApiQuery({ name: 'page', required: false })
+  @ApiQuery({ name: 'limit', required: false })
+  @ApiQuery({ name: 'userId', required: false })
+  @ApiQuery({ name: 'login', required: false })
+  @ApiQuery({ name: 'success', required: false })
+  @ApiQuery({ name: 'fromDate', required: false })
+  @ApiQuery({ name: 'toDate', required: false })
+  loginLog(@Req() req: Request, @Res() res: Response): void {
+    void this.controller.getLoginLog(req, res);
+  }
+
+  @Get('insights')
+  @ApiOperation({ summary: 'Indicadores / insights' })
+  @ApiQuery({ name: 'days', required: false })
+  insights(@Req() req: Request, @Res() res: Response): void {
+    void this.controller.getInsights(req, res);
+  }
+
+  @Get('stock-history')
+  @ApiOperation({ summary: 'Histórico de stock' })
+  @ApiQuery({ name: 'page', required: false })
+  @ApiQuery({ name: 'limit', required: false })
+  @ApiQuery({ name: 'operationType', required: false })
+  stockHistory(@Req() req: Request, @Res() res: Response): void {
+    void this.controller.getStockHistory(req, res);
+  }
+
+  @Get('export')
+  @ApiOperation({ summary: 'Exportação de dados (CSV/relatório)' })
+  @ApiQuery({ name: 'type', required: false })
+  @ApiQuery({ name: 'periodo', required: false })
+  @ApiQuery({ name: 'data', required: false })
+  @ApiQuery({ name: 'data_inicial', required: false })
+  @ApiQuery({ name: 'data_final', required: false })
+  @ApiQuery({ name: 'mes', required: false })
+  @ApiQuery({ name: 'casela', required: false })
+  export(@Req() req: Request, @Res() res: Response): void {
+    void this.controller.getExport(req, res);
+  }
+
+  @Get('metrics')
+  @ApiOperation({ summary: 'Métricas agregadas' })
+  @ApiQuery({ name: 'type', required: false })
+  metrics(@Req() req: Request, @Res() res: Response): void {
+    void this.controller.getMetrics(req, res);
+  }
+
+  @Get('metrics/active-users')
+  @ApiOperation({ summary: 'Utilizadores ativos (mês corrente)' })
+  activeUsers(@Req() req: Request, @Res() res: Response): void {
+    void this.controller.getActiveUsersThisMonth(req, res);
+  }
+
+  @Get('metrics/movements')
+  @ApiOperation({ summary: 'Movimentações no mês' })
+  movements(@Req() req: Request, @Res() res: Response): void {
+    void this.controller.getMovementsThisMonth(req, res);
+  }
+
+  @Get('health')
+  @ApiOperation({ summary: 'Estado de saúde detalhado (admin)' })
+  health(@Req() req: Request, @Res() res: Response): void {
+    void this.controller.getHealth(req, res);
+  }
+
+  @Get('backup/status')
+  @ApiOperation({ summary: '[Super-admin] Estado dos backups' })
+  @UseGuards(superAdminOnly)
+  backupStatus(@Req() req: Request, @Res() res: Response): void {
+    void this.controller.getBackupStatus(req, res);
+  }
+
+  @Post('backup/run')
+  @ApiOperation({ summary: '[Super-admin] Disparar backup agora' })
+  @UseGuards(superAdminOnly)
+  backupRun(@Req() req: Request, @Res() res: Response): void {
+    void this.controller.runBackupNow(req, res);
+  }
+
+  @Get('config')
+  @ApiOperation({ summary: 'Configuração global do sistema' })
+  config(@Req() req: Request, @Res() res: Response): void {
+    void this.controller.getConfig(req, res);
+  }
+
+  @Put('config')
+  @ApiOperation({ summary: 'Atualizar configuração global' })
+  @ApiBody(STRING_MAP_BODY)
+  @UseGuards(adminConfigMap)
+  putConfig(@Req() req: Request, @Res() res: Response): void {
+    void this.controller.updateConfig(req, res);
+  }
+
+  @Get('data-quality/summary')
+  @ApiOperation({ summary: 'Resumo de qualidade de dados' })
+  dataQualitySummary(@Req() req: Request, @Res() res: Response): void {
+    void this.controller.getDataQualitySummary(req, res);
+  }
+
+  @Get('data-quality/inconsistencies')
+  @ApiOperation({ summary: 'Listar inconsistências' })
+  @ApiQuery({ name: 'page', required: false })
+  @ApiQuery({ name: 'limit', required: false })
+  @ApiQuery({ name: 'lote', required: false })
+  @ApiQuery({ name: 'itemType', required: false })
+  @ApiQuery({ name: 'itemId', required: false })
+  inconsistencies(@Req() req: Request, @Res() res: Response): void {
+    void this.controller.listInconsistencies(req, res);
+  }
+
+  @Get('data-quality/medicine-duplicates')
+  @ApiOperation({ summary: 'Medicamentos duplicados' })
+  medicineDuplicates(@Req() req: Request, @Res() res: Response): void {
+    void this.controller.listMedicineDuplicates(req, res);
+  }
+
+  @Post('data-quality/merge-medicines')
+  @ApiOperation({ summary: 'Fundir medicamentos duplicados' })
+  @ApiBody({ type: AdminMergeMedicinesBodyDto })
+  @UseGuards(adminMergeMeds)
+  mergeMedicines(@Req() req: Request, @Res() res: Response): void {
+    void this.controller.mergeMedicines(req, res);
+  }
+
+  @Post('data-quality/normalize-medicine-units')
+  @ApiOperation({ summary: 'Normalizar unidades de medicamentos' })
+  @ApiBody({ type: AdminNormalizeUnitsBodyDto })
+  @UseGuards(adminNormUnits)
+  normalizeUnits(@Req() req: Request, @Res() res: Response): void {
+    void this.controller.normalizeMedicineUnits(req, res);
+  }
+
+  @Get('notifications')
+  @ApiOperation({ summary: 'Eventos de notificação (sistema)' })
+  @ApiQuery({ name: 'page', required: false })
+  @ApiQuery({ name: 'limit', required: false })
+  notifications(@Req() req: Request, @Res() res: Response): void {
+    void this.controller.getNotifications(req, res);
+  }
+
+  @Patch('notifications/:id')
+  @ApiOperation({ summary: 'Atualizar estado de notificação' })
+  @ApiParam({ name: 'id', type: Number })
+  @ApiBody({ type: AdminPatchNotificationBodyDto })
+  @UseGuards(adminPatchNotif)
+  patchNotification(@Req() req: Request, @Res() res: Response): void {
+    void this.controller.patchNotification(req, res);
+  }
+
+  @Post('restore-backup')
+  @ApiOperation({
+    summary: '[Super-admin] Restaurar backup',
+    description: 'Envio multipart com campo `file` (até 200MB).',
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['file'],
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+          description: 'Ficheiro de backup',
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 200, description: 'Restauro iniciado ou concluído' })
+  @UseGuards(superAdminUpload)
+  restoreBackup(@Req() req: Request, @Res() res: Response): void {
+    void this.controller.restoreBackup(req, res);
+  }
+}

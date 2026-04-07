@@ -1,6 +1,6 @@
 import request from 'supertest';
-import { setupTestApp } from '../../infrastructure/helpers/database.helper';
-import { E2E_TENANT_SLUG } from '../../infrastructure/helpers/e2e-tenant-seed.helper';
+import { setupTestApp } from '@tests/helpers/database.helper';
+import { E2E_TENANT_SLUG } from '@helpers/e2e-tenant-seed.helper';
 import { App } from 'supertest/types';
 
 const apiKey = () => process.env.X_API_KEY ?? '';

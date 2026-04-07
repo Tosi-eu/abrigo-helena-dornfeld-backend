@@ -1,4 +1,4 @@
-import { parseTenantSubdomainFromHost } from '../../middleware/tenant.middleware';
+import { parseTenantSubdomainFromHost } from '@middlewares/tenant.middleware';
 
 describe('parseTenantSubdomainFromHost', () => {
   it('retorna null para string vazia', () => {

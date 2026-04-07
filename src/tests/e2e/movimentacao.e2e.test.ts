@@ -1,12 +1,9 @@
 import { App } from 'supertest/types';
 import request from 'supertest';
-import { setupTestApp } from '../../infrastructure/helpers/database.helper';
-import {
-  seedDB,
-  SeedResult,
-} from '../../infrastructure/database/seed/estoque.seed';
-import { seedEntriesDB } from '../../infrastructure/database/seed/movimentacao.seed';
-import { sequelize } from '../../infrastructure/database/sequelize';
+import { setupTestApp } from '@tests/helpers/database.helper';
+import { seedDB, SeedResult } from '@repositories/seed/estoque.seed';
+import { seedEntriesDB } from '@repositories/seed/movimentacao.seed';
+import { prisma } from '@repositories/prisma';
 
 describe('E2E Movimentação', () => {
   let app: App;
@@ -19,7 +16,7 @@ describe('E2E Movimentação', () => {
   });
 
   afterAll(async () => {
-    await sequelize.close();
+    await prisma.$disconnect();
   });
 
   it('deve criar movimentação de medicamento', async () => {

@@ -1,9 +1,9 @@
-import { LoginService } from '../../core/services/login.service';
-import type { LoginRepository } from '../../infrastructure/database/repositories/login.repository';
+import { LoginService } from '@services/login.service';
+import type { PrismaLoginRepository } from '@repositories/login.repository';
 import bcrypt from 'bcrypt';
 
 describe('LoginService (unit)', () => {
-  let mockRepo: jest.Mocked<LoginRepository>;
+  let mockRepo: jest.Mocked<PrismaLoginRepository>;
   let service: LoginService;
 
   beforeEach(() => {
@@ -152,8 +152,11 @@ describe('LoginService (unit)', () => {
       const result = await service.authenticate('user1', 'senha1234', 1);
 
       expect(result).not.toBeNull();
-      expect(result!.token).toBeDefined();
-      expect(result!.user).toEqual({
+      if (!result) {
+        throw new Error('expected authenticate result');
+      }
+      expect(result.token).toBeDefined();
+      expect(result.user).toEqual({
         id: 1,
         login: 'user1',
         role: 'user',
@@ -162,7 +165,7 @@ describe('LoginService (unit)', () => {
       });
       expect(mockRepo.update).toHaveBeenCalledWith(
         1,
-        expect.objectContaining({ refresh_token: result!.token }),
+        expect.objectContaining({ refreshToken: result.token }),
       );
     });
   });

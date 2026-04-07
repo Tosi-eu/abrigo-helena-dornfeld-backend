@@ -1,6 +1,5 @@
-/**
- * Pipeline de testes: variáveis e regras em jest.env.js (comandadas pelo jest.config.ts).
- */
+import 'reflect-metadata';
+
 const { requireTestEnv, testEnvVars } = require('./jest.env.js');
 
 requireTestEnv();

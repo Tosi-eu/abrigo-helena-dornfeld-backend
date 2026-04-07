@@ -1,0 +1,44 @@
+import type { CabinetPersist } from '@porto-sdk/sdk';
+import type { PrismaCabinetRepository } from '@repositories/armario.repository';
+
+export class CabinetService {
+  constructor(private readonly repo: PrismaCabinetRepository) {}
+
+  async createCabinet(
+    tenantId: number,
+    data: CabinetPersist,
+  ): Promise<CabinetPersist> {
+    if (!data.numero || data.numero <= 0) {
+      throw new Error('Número do armário inválido');
+    }
+    if (!data.categoria_id || data.categoria_id <= 0) {
+      throw new Error('Categoria inválida');
+    }
+
+    return this.repo.createCabinet(data, tenantId);
+  }
+
+  async findAll(page: number, limit: number) {
+    return this.repo.findAllCabinets(page, limit);
+  }
+
+  async findCabinetByNumber(numero: number) {
+    return this.repo.findByCabinetNumber(numero);
+  }
+
+  async updateCabinet(numero: number, categoria_id: number) {
+    if (!categoria_id || categoria_id <= 0) {
+      throw new Error('Categoria inválida');
+    }
+
+    return this.repo.update(numero, categoria_id);
+  }
+
+  async removeCabinet(numero: number): Promise<boolean> {
+    return this.repo.delete(numero);
+  }
+
+  async count(): Promise<number> {
+    return this.repo.count();
+  }
+}

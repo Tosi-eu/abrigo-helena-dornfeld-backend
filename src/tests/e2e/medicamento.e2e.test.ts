@@ -1,6 +1,6 @@
 import request from 'supertest';
-import { setupTestApp } from '../../infrastructure/helpers/database.helper';
-import { getAuthToken } from '../helpers/auth.helper';
+import { setupTestApp } from '@tests/helpers/database.helper';
+import { getAuthToken } from '@tests/helpers/auth.helper';
 import { App } from 'supertest/types';
 
 describe('Medicines E2E - CRUD básico', () => {

@@ -1,12 +1,9 @@
 import request from 'supertest';
-import { setupTestApp } from '../../infrastructure/helpers/database.helper';
-import { sequelize } from '../../infrastructure/database/sequelize';
+import { setupTestApp } from '@tests/helpers/database.helper';
+import { prisma } from '@repositories/prisma';
 import { App } from 'supertest/types';
-import {
-  seedDB,
-  SeedResult,
-} from '../../infrastructure/database/seed/estoque.seed';
-import { ItemType, StockRawResponse } from '../../core/utils/utils';
+import { seedDB, SeedResult } from '@repositories/seed/estoque.seed';
+import { ItemType, StockRawResponse } from '@helpers/utils';
 
 let app: App;
 let seed: SeedResult;
@@ -17,7 +14,7 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await sequelize.close();
+  await prisma.$disconnect();
 });
 
 describe('Input Stock E2E - CRUD', () => {
@@ -43,7 +40,9 @@ describe('Input Stock E2E - CRUD', () => {
 
   it('deve listar insumos no estoque', async () => {
     const res = await request(app)
-      .get('/api/v1/estoque')
+      .get(
+        `/api/v1/estoque?type=insumo&page=1&limit=100&cabinet=${encodeURIComponent(String(seed.cabinetId))}`,
+      )
       .set('Authorization', `Bearer ${seed.token}`);
 
     expect(res.status).toBe(200);
@@ -51,7 +50,8 @@ describe('Input Stock E2E - CRUD', () => {
 
     const found = res.body.data.find(
       (item: StockRawResponse) =>
-        item.item_id === seed.inputId && item.tipo_item === 'insumo',
+        Number(item.item_id) === Number(seed.inputId) &&
+        item.tipo_item === 'insumo',
     );
 
     expect(found).toBeDefined();
