@@ -52,7 +52,14 @@ if [ "${SKIP_PRISMA_SCHEMA_SYNC:-0}" != "1" ]; then
   if find prisma/migrations -type f -name migration.sql 2>/dev/null | grep -q .; then
     npx prisma migrate deploy
   else
-    npx prisma db push --skip-generate
+    # Bases legadas: constraint UNIQUE em login com nome login_login_key (Postgres) —
+    # Prisma tenta DROP INDEX e falha; ver prisma/compat-before-db-push.sql
+    if [ "${PRISMA_COMPAT_LEGACY_LOGIN_UNIQUE:-1}" = "1" ]; then
+      echo "[docker-entrypoint] compat Prisma/Postgres (login_login_key) antes de db push"
+      npx prisma db execute --file prisma/compat-before-db-push.sql --schema prisma/schema.prisma
+    fi
+    # Unique constraints / alinhamento ao schema: Prisma exige confirmação explícita.
+    npx prisma db push --skip-generate --accept-data-loss
   fi
 fi
 
