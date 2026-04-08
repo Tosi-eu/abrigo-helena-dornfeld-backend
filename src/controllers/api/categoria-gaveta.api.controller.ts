@@ -18,6 +18,7 @@ import {
 } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
 import { DrawerCategoryController } from '@controllers/categoria-gaveta.controller';
+import { TenantId } from '@decorators/tenant-id.decorator';
 import { UseExpressMwGuard } from '@middlewares/express.middleware';
 import { requireModule } from '@middlewares/module.middleware';
 import { CategoryNomeBodyDto } from '@domain/dto/entities.api.dto';
@@ -37,23 +38,35 @@ export class CategoriaGavetaApiController {
   @ApiOperation({ summary: 'Criar categoria de gaveta' })
   @ApiBody({ type: CategoryNomeBodyDto })
   @UseGuards(drCatModule)
-  create(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.create(req, res);
+  create(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.create(req, res, tenantId);
   }
 
   @Get()
   @ApiOperation({ summary: 'Listar categorias' })
   @UseGuards(drCatModule)
-  getAll(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.getAll(req, res);
+  getAll(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.getAll(req, res, tenantId);
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Categoria por id' })
   @ApiParam({ name: 'id', type: Number })
   @UseGuards(drCatModule)
-  getById(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.getById(req, res);
+  getById(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.getById(req, res, tenantId);
   }
 
   @Put(':id')
@@ -61,15 +74,23 @@ export class CategoriaGavetaApiController {
   @ApiParam({ name: 'id', type: Number })
   @ApiBody({ type: CategoryNomeBodyDto })
   @UseGuards(catNomeBody, drCatModule)
-  update(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.update(req, res);
+  update(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.update(req, res, tenantId);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Remover categoria' })
   @ApiParam({ name: 'id', type: Number })
   @UseGuards(drCatModule)
-  delete(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.delete(req, res);
+  delete(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.delete(req, res, tenantId);
   }
 }

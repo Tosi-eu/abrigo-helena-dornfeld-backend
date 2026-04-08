@@ -59,6 +59,7 @@ export class PrismaNotificationEventRepository {
 
   async listWithFilters(
     {
+      tenantId,
       page = 1,
       limit = 5,
       tipo,
@@ -67,6 +68,7 @@ export class PrismaNotificationEventRepository {
       residente_nome,
       visto,
     }: {
+      tenantId: number;
       page?: number;
       limit?: number;
       tipo: NotificationEventType;
@@ -81,6 +83,7 @@ export class PrismaNotificationEventRepository {
     const offset = (page - 1) * limit;
 
     const where: Prisma.NotificacaoWhereInput = {
+      tenant_id: tenantId,
       tipo_evento: tipo,
       status,
     };
@@ -99,6 +102,7 @@ export class PrismaNotificationEventRepository {
     if (residente_nome?.trim()) {
       const res = await db(transaction).residente.findMany({
         where: {
+          tenant_id: tenantId,
           nome: { contains: residente_nome.trim(), mode: 'insensitive' },
         },
         select: { num_casela: true },
@@ -143,17 +147,17 @@ export class PrismaNotificationEventRepository {
     const [residentes, medicamentos, logins] = await Promise.all([
       residenteIds.length
         ? db(transaction).residente.findMany({
-            where: { num_casela: { in: residenteIds } },
+            where: { tenant_id: tenantId, num_casela: { in: residenteIds } },
           })
         : [],
       medIds.length
         ? db(transaction).medicamento.findMany({
-            where: { id: { in: medIds } },
+            where: { tenant_id: tenantId, id: { in: medIds } },
           })
         : [],
       loginIds.length
         ? db(transaction).login.findMany({
-            where: { id: { in: loginIds } },
+            where: { tenant_id: tenantId, id: { in: loginIds } },
             select: {
               id: true,
               first_name: true,
@@ -409,8 +413,14 @@ export class PrismaNotificationEventRepository {
     };
   }
 
-  async findById(id: number, transaction?: Prisma.TransactionClient) {
-    return db(transaction).notificacao.findUnique({ where: { id } });
+  async findById(
+    tenantId: number,
+    id: number,
+    transaction?: Prisma.TransactionClient,
+  ) {
+    return db(transaction).notificacao.findFirst({
+      where: { tenant_id: tenantId, id },
+    });
   }
 
   async bootstrapReplacementNotifications(
@@ -477,12 +487,13 @@ export class PrismaNotificationEventRepository {
   }
 
   async update(
+    tenantId: number,
     id: number,
     updates: NotificationUpdateData,
     transaction?: Prisma.TransactionClient,
   ) {
-    const event = await db(transaction).notificacao.findUnique({
-      where: { id },
+    const event = await db(transaction).notificacao.findFirst({
+      where: { tenant_id: tenantId, id },
     });
     if (!event) return null;
 
@@ -504,18 +515,18 @@ export class PrismaNotificationEventRepository {
       updateData.status = statusMap[key] ?? updates.status;
     }
 
-    return db(transaction).notificacao.update({
-      where: { id },
+    const res = await db(transaction).notificacao.updateMany({
+      where: { tenant_id: tenantId, id },
       data: updateData,
     });
+    if (res.count === 0) return null;
+    return this.findById(tenantId, id, transaction);
   }
 
-  async delete(id: number, transaction?: Prisma.TransactionClient) {
-    try {
-      await db(transaction).notificacao.delete({ where: { id } });
-      return true;
-    } catch {
-      return false;
-    }
+  async delete(tenantId: number, id: number, transaction?: Prisma.TransactionClient) {
+    const res = await db(transaction).notificacao.deleteMany({
+      where: { tenant_id: tenantId, id },
+    });
+    return res.count > 0;
   }
 }

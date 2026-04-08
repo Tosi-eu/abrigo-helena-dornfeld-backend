@@ -10,10 +10,8 @@ import {
 export class NotificationEventController {
   constructor(private readonly service: NotificationEventService) {}
 
-  async create(req: TenantRequest, res: Response) {
+  async create(req: TenantRequest, res: Response, tenantId: number) {
     try {
-      const tenantId = requireTenantId(req, res);
-      if (tenantId === null) return;
       const created = await this.service.create({
         ...req.body,
         tenant_id: tenantId,
@@ -24,7 +22,7 @@ export class NotificationEventController {
     }
   }
 
-  async getAll(req: TenantRequest, res: Response) {
+  async getAll(req: TenantRequest, res: Response, tenantId: number) {
     try {
       const {
         page = 1,
@@ -38,7 +36,7 @@ export class NotificationEventController {
 
       if (!type) throw new Error('Tipo deve ser informado');
 
-      const result = await this.service.list({
+      const result = await this.service.list(tenantId, {
         page: Number(page),
         limit: Number(limit),
         tipo: type as NotificationEventType,
@@ -54,9 +52,9 @@ export class NotificationEventController {
     }
   }
 
-  async getById(req: TenantRequest, res: Response) {
+  async getById(req: TenantRequest, res: Response, tenantId: number) {
     const id = Number(req.params.id);
-    const event = await this.service.get(id);
+    const event = await this.service.get(tenantId, id);
 
     if (!event) {
       return res.status(404).json({ error: 'Notificação não encontrada' });
@@ -65,10 +63,10 @@ export class NotificationEventController {
     return res.json(event);
   }
 
-  async update(req: TenantRequest, res: Response) {
+  async update(req: TenantRequest, res: Response, tenantId: number) {
     try {
       const id = Number(req.params.id);
-      const updated = await this.service.update(id, req.body);
+      const updated = await this.service.update(tenantId, id, req.body);
 
       if (!updated) {
         return res.status(404).json({ error: 'Notificação não encontrada' });
@@ -85,10 +83,10 @@ export class NotificationEventController {
     }
   }
 
-  async delete(req: TenantRequest, res: Response) {
+  async delete(req: TenantRequest, res: Response, tenantId: number) {
     try {
       const id = Number(req.params.id);
-      const deleted = await this.service.delete(id);
+      const deleted = await this.service.delete(tenantId, id);
 
       if (!deleted) {
         return res.status(404).json({ error: 'Notificação não encontrada' });

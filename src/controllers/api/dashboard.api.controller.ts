@@ -8,6 +8,7 @@ import {
 } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
 import { DashboardController } from '@controllers/dashboard.controller';
+import { TenantId } from '@decorators/tenant-id.decorator';
 import { UseExpressMwGuard } from '@middlewares/express.middleware';
 import { requireModule } from '@middlewares/module.middleware';
 
@@ -24,8 +25,12 @@ export class DashboardApiController {
   @ApiOperation({ summary: 'Resumo do painel (KPIs)' })
   @ApiResponse({ status: 200, description: 'Agregados do dashboard' })
   @UseGuards(dashModule)
-  summary(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.getSummary(req, res);
+  summary(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.getSummary(req, res, tenantId);
   }
 
   @Get('expiring-items')

@@ -19,6 +19,7 @@ import {
 } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
 import { MedicineController } from '@controllers/medicamento.controller';
+import { TenantId } from '@decorators/tenant-id.decorator';
 import { UseExpressMwGuard } from '@middlewares/express.middleware';
 import { requireModule } from '@middlewares/module.middleware';
 import {
@@ -47,8 +48,12 @@ export class MedicamentoApiController {
   @ApiOperation({ summary: 'Criar medicamento' })
   @ApiBody({ type: MedicineBodyDto })
   @UseGuards(medBody, medModule)
-  create(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.create(req, res);
+  create(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.create(req, res, tenantId);
   }
 
   @Get()
@@ -56,8 +61,12 @@ export class MedicamentoApiController {
   @ApiQuery({ name: 'page', required: false })
   @ApiQuery({ name: 'limit', required: false })
   @UseGuards(medPaginate)
-  getAll(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.getAll(req, res);
+  getAll(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.getAll(req, res, tenantId);
   }
 
   @Put(':id')
@@ -65,15 +74,23 @@ export class MedicamentoApiController {
   @ApiParam({ name: 'id', type: Number })
   @ApiBody({ type: MedicineBodyDto })
   @UseGuards(medBody, medId)
-  update(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.update(req, res);
+  update(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.update(req, res, tenantId);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Remover medicamento' })
   @ApiParam({ name: 'id', type: Number })
   @UseGuards(medId)
-  delete(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.delete(req, res);
+  delete(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.delete(req, res, tenantId);
   }
 }

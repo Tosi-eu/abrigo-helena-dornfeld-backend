@@ -19,6 +19,7 @@ import {
 } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
 import { DrawerController } from '@controllers/gaveta.controller';
+import { TenantId } from '@decorators/tenant-id.decorator';
 import { UseExpressMwGuard } from '@middlewares/express.middleware';
 import { requireModule } from '@middlewares/module.middleware';
 import {
@@ -54,8 +55,12 @@ export class GavetaApiController {
   @ApiOperation({ summary: 'Criar gaveta' })
   @ApiBody({ type: DrawerCreateBodyDto })
   @UseGuards(drCreateBody, drModule)
-  create(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.create(req, res);
+  create(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.create(req, res, tenantId);
   }
 
   @Get()
@@ -63,23 +68,35 @@ export class GavetaApiController {
   @ApiQuery({ name: 'page', required: false })
   @ApiQuery({ name: 'limit', required: false })
   @UseGuards(drPaginate)
-  getAll(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.getAll(req, res);
+  getAll(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.getAll(req, res, tenantId);
   }
 
   @Get('count')
   @ApiOperation({ summary: 'Contagem de gavetas' })
   @UseGuards(drModule)
-  count(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.getCount(req, res);
+  count(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.getCount(req, res, tenantId);
   }
 
   @Get(':numero')
   @ApiOperation({ summary: 'Gaveta por número' })
   @ApiParam({ name: 'numero', type: Number })
   @UseGuards(drNumero)
-  getById(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.getById(req, res);
+  getById(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.getById(req, res, tenantId);
   }
 
   @Put(':numero')
@@ -87,15 +104,23 @@ export class GavetaApiController {
   @ApiParam({ name: 'numero', type: Number })
   @ApiBody({ type: DrawerUpdateBodyDto })
   @UseGuards(drUpdateBody, drNumero)
-  update(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.update(req, res);
+  update(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.update(req, res, tenantId);
   }
 
   @Delete(':numero')
   @ApiOperation({ summary: 'Remover gaveta' })
   @ApiParam({ name: 'numero', type: Number })
   @UseGuards(drNumero)
-  delete(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.delete(req, res);
+  delete(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.delete(req, res, tenantId);
   }
 }

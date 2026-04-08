@@ -11,11 +11,12 @@ import { isEmailConfigured, sendEmail } from '@helpers/email.helper';
 const inviteRepo = new PrismaTenantInviteRepository();
 
 export class TenantInviteController {
-  async create(req: AuthRequest & TenantRequest, res: Response) {
+  async create(
+    req: AuthRequest & TenantRequest,
+    res: Response,
+    tenantId: number,
+  ) {
     try {
-      const tenantId = requireTenantId(req, res);
-      if (tenantId === null) return;
-
       const actor = req.user;
       if (actor == null || actor.id == null) {
         return res.status(401).json({ error: 'Usuário não autenticado' });

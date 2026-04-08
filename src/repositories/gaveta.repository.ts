@@ -20,16 +20,17 @@ export class PrismaDrawerRepository {
     };
   }
 
-  async findAllDrawers(page: number, limit: number) {
+  async findAllDrawers(tenantId: number, page: number, limit: number) {
     const offset = (page - 1) * limit;
 
     const [rows, count] = await Promise.all([
       getDb().gaveta.findMany({
+        where: { tenant_id: tenantId },
         orderBy: { num_gaveta: 'asc' },
         take: limit,
         skip: offset,
       }),
-      getDb().gaveta.count(),
+      getDb().gaveta.count({ where: { tenant_id: tenantId } }),
     ]);
 
     const catIds = [...new Set(rows.map(r => r.categoria_id))];
@@ -48,6 +49,21 @@ export class PrismaDrawerRepository {
       categoria: catNome.get(i.categoria_id) ?? null,
     }));
 
+    // Ordenação consistente: primeiro por nome da categoria, depois por número.
+    data.sort((a, b) => {
+      const an = (a.categoria ?? '').trim();
+      const bn = (b.categoria ?? '').trim();
+      if (an && bn) {
+        const byName = an.localeCompare(bn, 'pt-BR', { sensitivity: 'base' });
+        if (byName !== 0) return byName;
+      } else if (an && !bn) {
+        return -1;
+      } else if (!an && bn) {
+        return 1;
+      }
+      return Number(a.numero) - Number(b.numero);
+    });
+
     return {
       data,
       total: count,
@@ -57,9 +73,12 @@ export class PrismaDrawerRepository {
     };
   }
 
-  async findByDrawerNumber(number: number): Promise<DrawerPersist | null> {
+  async findByDrawerNumber(
+    tenantId: number,
+    number: number,
+  ): Promise<DrawerPersist | null> {
     const item = await getDb().gaveta.findFirst({
-      where: { num_gaveta: number },
+      where: { tenant_id: tenantId, num_gaveta: number },
     });
     if (!item) return null;
 
@@ -70,39 +89,30 @@ export class PrismaDrawerRepository {
   }
 
   async update(
+    tenantId: number,
     number: number,
     categoria_id: number,
   ): Promise<DrawerPersist | null> {
-    const item = await getDb().gaveta.findFirst({
-      where: { num_gaveta: number },
-    });
-    if (!item) return null;
-
-    const updated = await getDb().gaveta.update({
-      where: { id: item.id },
+    const res = await getDb().gaveta.updateMany({
+      where: { tenant_id: tenantId, num_gaveta: number },
       data: { categoria_id },
     });
+    if (res.count === 0) return null;
 
     return {
-      numero: updated.num_gaveta,
-      categoria_id: updated.categoria_id,
+      numero: number,
+      categoria_id,
     };
   }
 
-  async delete(number: number): Promise<boolean> {
-    const item = await getDb().gaveta.findFirst({
-      where: { num_gaveta: number },
+  async delete(tenantId: number, number: number): Promise<boolean> {
+    const res = await getDb().gaveta.deleteMany({
+      where: { tenant_id: tenantId, num_gaveta: number },
     });
-    if (!item) return false;
-    try {
-      await getDb().gaveta.delete({ where: { id: item.id } });
-      return true;
-    } catch {
-      return false;
-    }
+    return res.count > 0;
   }
 
-  async count(): Promise<number> {
-    return getDb().gaveta.count();
+  async count(tenantId: number): Promise<number> {
+    return getDb().gaveta.count({ where: { tenant_id: tenantId } });
   }
 }

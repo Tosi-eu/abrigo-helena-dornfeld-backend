@@ -2,7 +2,7 @@ import { Response, NextFunction } from 'express';
 import { AuthRequest } from './auth.middleware';
 import type { TenantRequest } from './tenant.middleware';
 import { logger } from '@helpers/logger.helper';
-import { getDb } from '@repositories/prisma';
+import { prisma } from '@repositories/prisma';
 import { getOldValueForAudit } from './audit-old-value.helper';
 
 const SENSITIVE_METHODS = ['POST', 'PUT', 'DELETE', 'PATCH'];
@@ -145,8 +145,10 @@ function logAuditEvent(
 
   logger.logSecurity('Audit log', { ...logEntry, operation: 'audit' });
 
-  getDb()
-    .auditLog.create({
+  // Audit log deve ser persistido fora da transação de request (RLS/ALS),
+  // senão o callback pode disparar após o commit e o tx estar fechado.
+  prisma.auditLog
+    .create({
       data: {
         user_id: userId,
         tenant_id: tenantId,

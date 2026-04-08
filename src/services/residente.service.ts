@@ -4,12 +4,12 @@ import type { Resident } from '@porto-sdk/sdk';
 export class ResidentService {
   constructor(private readonly repo: PrismaResidentRepository) {}
 
-  async findAll(page: number = 1, limit: number = 20) {
-    return this.repo.findAll(page, limit);
+  async findAll(tenantId: number, page: number = 1, limit: number = 20) {
+    return this.repo.findAll(tenantId, page, limit);
   }
 
-  async findByCasela(casela: number) {
-    const resident = await this.repo.findByCasela(casela);
+  async findByCasela(tenantId: number, casela: number) {
+    const resident = await this.repo.findByCasela(tenantId, casela);
     if (!resident) throw new Error('Residente não encontrado');
     return resident;
   }
@@ -27,7 +27,7 @@ export class ResidentService {
       throw new Error('Nome inválido');
     }
 
-    const exists = await this.repo.findByCasela(data.casela);
+    const exists = await this.repo.findByCasela(tenantId, data.casela);
     if (exists)
       throw new Error(`Já existe um residente com a casela ${data.casela}`);
 
@@ -47,7 +47,7 @@ export class ResidentService {
       throw new Error('Nome inválido');
     }
 
-    const exists = await this.repo.findByCasela(data.casela);
+    const exists = await this.repo.findByCasela(tenantId, data.casela);
     if (!exists) throw new Error('Residente não encontrado');
 
     return this.repo.updateResidentById({
@@ -58,13 +58,23 @@ export class ResidentService {
   }
 
   async deleteResident(casela: number): Promise<boolean> {
-    const exists = await this.repo.findByCasela(casela);
+    // Mantido por compatibilidade com chamadas antigas; preferir deleteResidentForTenant.
+    const exists = await this.repo.findByCasela(1, casela);
     if (!exists) return false;
 
-    return this.repo.deleteResidentById(casela);
+    return this.repo.deleteResidentById(1, casela);
   }
 
-  async count(): Promise<number> {
-    return this.repo.count();
+  async deleteResidentForTenant(
+    tenantId: number,
+    casela: number,
+  ): Promise<boolean> {
+    const exists = await this.repo.findByCasela(tenantId, casela);
+    if (!exists) return false;
+    return this.repo.deleteResidentById(tenantId, casela);
+  }
+
+  async count(tenantId: number): Promise<number> {
+    return this.repo.count(tenantId);
   }
 }

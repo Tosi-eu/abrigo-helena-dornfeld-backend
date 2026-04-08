@@ -7,16 +7,17 @@ export class PrismaCabinetCategoryRepository {
     });
   }
 
-  async list(page: number = 1, limit: number = 10) {
+  async list(tenantId: number, page: number = 1, limit: number = 10) {
     const offset = (page - 1) * limit;
 
     const [rows, count] = await Promise.all([
       getDb().categoriaArmario.findMany({
+        where: { tenant_id: tenantId },
         skip: offset,
         take: limit,
         orderBy: { nome: 'asc' },
       }),
-      getDb().categoriaArmario.count(),
+      getDb().categoriaArmario.count({ where: { tenant_id: tenantId } }),
     ]);
 
     return {
@@ -31,8 +32,8 @@ export class PrismaCabinetCategoryRepository {
     };
   }
 
-  async findById(id: number) {
-    return getDb().categoriaArmario.findUnique({ where: { id } });
+  async findById(tenantId: number, id: number) {
+    return getDb().categoriaArmario.findFirst({ where: { id, tenant_id: tenantId } });
   }
 
   async findByName(nome: string, tenantId: number) {
@@ -41,23 +42,19 @@ export class PrismaCabinetCategoryRepository {
     });
   }
 
-  async update(id: number, nome: string) {
-    try {
-      return await getDb().categoriaArmario.update({
-        where: { id },
-        data: { nome },
-      });
-    } catch {
-      return null;
-    }
+  async update(tenantId: number, id: number, nome: string) {
+    const res = await getDb().categoriaArmario.updateMany({
+      where: { tenant_id: tenantId, id },
+      data: { nome },
+    });
+    if (res.count === 0) return null;
+    return this.findById(tenantId, id);
   }
 
-  async delete(id: number) {
-    try {
-      await getDb().categoriaArmario.delete({ where: { id } });
-      return true;
-    } catch {
-      return false;
-    }
+  async delete(tenantId: number, id: number) {
+    const res = await getDb().categoriaArmario.deleteMany({
+      where: { tenant_id: tenantId, id },
+    });
+    return res.count > 0;
   }
 }

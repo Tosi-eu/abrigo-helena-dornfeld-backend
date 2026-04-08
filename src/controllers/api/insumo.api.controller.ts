@@ -19,6 +19,7 @@ import {
 } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
 import { InsumoController } from '@controllers/insumo.controller';
+import { TenantId } from '@decorators/tenant-id.decorator';
 import { UseExpressMwGuard } from '@middlewares/express.middleware';
 import {
   validateIdParam,
@@ -42,8 +43,12 @@ export class InsumoApiController {
   @ApiOperation({ summary: 'Criar insumo' })
   @ApiBody({ type: InputBodyDto })
   @UseGuards(insBody)
-  create(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.create(req, res);
+  create(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.create(req, res, tenantId);
   }
 
   @Get()
@@ -51,8 +56,12 @@ export class InsumoApiController {
   @ApiQuery({ name: 'page', required: false })
   @ApiQuery({ name: 'limit', required: false })
   @UseGuards(insPaginate)
-  list(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.list(req, res);
+  list(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.list(req, res, tenantId);
   }
 
   @Put(':id')
@@ -60,15 +69,23 @@ export class InsumoApiController {
   @ApiParam({ name: 'id', type: Number })
   @ApiBody({ type: InputBodyDto })
   @UseGuards(insBody, insId)
-  update(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.update(req, res);
+  update(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.update(req, res, tenantId);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Remover insumo' })
   @ApiParam({ name: 'id', type: Number })
   @UseGuards(insId)
-  delete(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.delete(req, res);
+  delete(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.delete(req, res, tenantId);
   }
 }

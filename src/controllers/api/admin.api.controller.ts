@@ -23,6 +23,7 @@ import {
 import type { Request, Response } from 'express';
 import { adminBackupUpload } from '@config/upload/multer-r2.config';
 import { AdminController } from '@controllers/admin.controller';
+import { TenantId } from '@decorators/tenant-id.decorator';
 import { UseExpressMwGuard } from '@middlewares/express.middleware';
 import { requireSuperAdmin } from '@middlewares/super-admin.middleware';
 import { STRING_MAP_BODY } from '@domain/dto/common.api.dto';
@@ -62,16 +63,24 @@ export class AdminApiController {
   @ApiOperation({ summary: '[Admin] Listar utilizadores do abrigo atual' })
   @ApiQuery({ name: 'page', required: false })
   @ApiQuery({ name: 'limit', required: false })
-  users(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.listUsers(req, res);
+  users(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.listUsers(req, res, tenantId);
   }
 
   @Post('users')
   @ApiOperation({ summary: '[Admin] Criar utilizador (no abrigo atual)' })
   @ApiBody({ type: AdminCreateUserBodyDto })
   @UseGuards(adminCreateUserBody)
-  createUser(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.createUser(req, res);
+  createUser(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.createUser(req, res, tenantId);
   }
 
   @Put('users/:id')
@@ -79,15 +88,23 @@ export class AdminApiController {
   @ApiParam({ name: 'id', type: Number })
   @ApiBody({ type: AdminUpdateUserBodyDto })
   @UseGuards(adminUpdateUserBody)
-  updateUser(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.updateUser(req, res);
+  updateUser(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.updateUser(req, res, tenantId);
   }
 
   @Delete('users/:id')
   @ApiOperation({ summary: '[Admin] Remover utilizador (no abrigo atual)' })
   @ApiParam({ name: 'id', type: Number })
-  deleteUser(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.deleteUser(req, res);
+  deleteUser(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.deleteUser(req, res, tenantId);
   }
 
   @Get('login-log')
@@ -237,8 +254,12 @@ export class AdminApiController {
   @ApiParam({ name: 'id', type: Number })
   @ApiBody({ type: AdminPatchNotificationBodyDto })
   @UseGuards(adminPatchNotif)
-  patchNotification(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.patchNotification(req, res);
+  patchNotification(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.patchNotification(req, res, tenantId);
   }
 
   @Post('restore-backup')

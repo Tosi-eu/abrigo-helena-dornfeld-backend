@@ -11,11 +11,12 @@ export class DashboardService {
     private readonly cache?: CacheService,
   ) {}
 
-  async getSummary(expiringDays?: number) {
-    return this.getSummaryInternal(undefined, expiringDays);
+  async getSummary(tenantId: number, expiringDays?: number) {
+    return this.getSummaryInternal(tenantId, undefined, expiringDays);
   }
 
   private async getSummaryInternal(
+    tenantId: number,
     transaction?: Prisma.TransactionClient,
     expiringDays?: number,
   ) {
@@ -33,30 +34,35 @@ export class DashboardService {
     ] = await Promise.all([
       this.stockService.getAlertCounts(transaction, expiringDays ?? 45),
       this.movementService.findMedicineMovements({
+        tenantId,
         days: 7,
         page: 1,
         limit: 5,
       }),
       this.movementService.listInputMovements({
+        tenantId,
         days: 7,
         page: 1,
         limit: 5,
       }),
       this.movementService.getMedicineRanking({
+        tenantId,
         type: 'more',
         page: 1,
         limit: 10,
       }),
       this.movementService.getMedicineRanking({
+        tenantId,
         type: 'less',
         page: 1,
         limit: 10,
       }),
-      this.movementService.getNonMovementedMedicines(10),
-      this.stockService.getProportion(SectorType.ENFERMAGEM, transaction),
-      this.stockService.getProportion(SectorType.FARMACIA, transaction),
+      this.movementService.getNonMovementedMedicines(tenantId, 10),
+      this.stockService.getProportion(tenantId, SectorType.ENFERMAGEM, transaction),
+      this.stockService.getProportion(tenantId, SectorType.FARMACIA, transaction),
       this.stockService.listStock(
         {
+          tenantId,
           filter: '',
           type: 'armarios',
           page: 1,
@@ -66,6 +72,7 @@ export class DashboardService {
       ),
       this.stockService.listStock(
         {
+          tenantId,
           filter: '',
           type: 'gavetas',
           page: 1,

@@ -19,10 +19,12 @@ export interface PaginationParams {
 export class MedicineController {
   constructor(private readonly service: MedicineService) {}
 
-  async create(req: ValidatedRequest & TenantRequest, res: Response) {
+  async create(
+    req: ValidatedRequest & TenantRequest,
+    res: Response,
+    tenantId: number,
+  ) {
     try {
-      const tenantId = requireTenantId(req, res);
-      if (tenantId === null) return;
       const data = await this.service.createMedicine(tenantId, req.body);
       res.status(201).json(data);
     } catch (error: unknown) {
@@ -30,13 +32,13 @@ export class MedicineController {
     }
   }
 
-  async getAll(req: ValidatedRequest, res: Response) {
+  async getAll(req: ValidatedRequest, res: Response, tenantId: number) {
     const pag = getValidatedPagination(req, res);
     if (pag == null) return;
     const { page, limit } = pag;
     const name = req.query.name as string | undefined;
 
-    const list = await this.service.findAll({ page, limit, name });
+    const list = await this.service.findAll(tenantId, { page, limit, name });
 
     if (handleETagResponse(req, res, list)) {
       return;
@@ -45,11 +47,13 @@ export class MedicineController {
     res.json(list);
   }
 
-  async update(req: ValidatedRequest & TenantRequest, res: Response) {
+  async update(
+    req: ValidatedRequest & TenantRequest,
+    res: Response,
+    tenantId: number,
+  ) {
     const id = Number(req.params.id);
     try {
-      const tenantId = requireTenantId(req, res);
-      if (tenantId === null) return;
       const updated = await this.service.updateMedicine(tenantId, id, req.body);
       if (!updated) return res.status(404).json({ error: 'Não encontrado' });
       res.json(updated);
@@ -63,10 +67,9 @@ export class MedicineController {
     }
   }
 
-  async delete(req: ValidatedRequest, res: Response) {
+  async delete(req: ValidatedRequest, res: Response, tenantId: number) {
     const id = Number(req.params.id);
-
-    const ok = await this.service.deleteMedicine(id);
+    const ok = await this.service.deleteMedicine(tenantId, id);
 
     if (!ok) {
       return res.status(404).json({ error: 'Não encontrado' });

@@ -19,6 +19,7 @@ import { getDb } from '@repositories/prisma';
 import type { Prisma } from '@prisma/client';
 import { invalidateAuthCacheForRequest } from '@helpers/auth-token-cache.helper';
 import { migrateProvisionalLoginToCanonicalTenant } from '@services/tenant-contract-migration.service';
+import { PrismaLoginRepository } from '@repositories/login.repository';
 import { PrismaContractPortfolioRepository } from '@repositories/contract-portfolio.repository';
 import {
   assertLogoUrlBelongsToOurR2,
@@ -33,6 +34,7 @@ const service = new TenantConfigService(configRepo);
 const tenantRepo = new PrismaTenantRepository();
 const systemConfigRepo = new PrismaSystemConfigRepository();
 const contractPortfolioRepo = new PrismaContractPortfolioRepository();
+const loginRepo = new PrismaLoginRepository();
 
 const FULL_PERMISSIONS = {
   read: true,
@@ -112,10 +114,12 @@ function mapTenantRowToProfile(row: TenantRowForProfile): TenantProfile | null {
 }
 
 export class TenantController {
-  async getConfig(req: AuthRequest & TenantRequest, res: Response) {
+  async getConfig(
+    req: AuthRequest & TenantRequest,
+    res: Response,
+    tenantId: number,
+  ) {
     try {
-      const tenantId = requireTenantId(req, res);
-      if (tenantId === null) return;
       let cfgRow = await configRepo.getByTenantId(tenantId);
       if (!cfgRow) {
         await service.set(tenantId, DEFAULT_TENANT_MODULES);
@@ -146,10 +150,12 @@ export class TenantController {
     }
   }
 
-  async updateConfig(req: AuthRequest & TenantRequest, res: Response) {
+  async updateConfig(
+    req: AuthRequest & TenantRequest,
+    res: Response,
+    tenantId: number,
+  ) {
     try {
-      const tenantId = requireTenantId(req, res);
-      if (tenantId === null) return;
       if (!assertCanUpdateModules(req)) {
         return res.status(403).json({
           error:
@@ -172,6 +178,7 @@ export class TenantController {
   async uploadLogo(
     req: AuthRequest & TenantRequest & { file?: Express.Multer.File },
     res: Response,
+    tenantId: number,
   ) {
     try {
       if (!isR2AssetsConfigured()) {
@@ -180,8 +187,6 @@ export class TenantController {
             'Armazenamento de logos (R2) não configurado. Use as mesmas credenciais da conta; defina R2_ASSETS_BUCKET_NAME (ex.: porto-assets) e R2_PUBLIC_BASE_URL.',
         });
       }
-      const tenantId = requireTenantId(req, res);
-      if (tenantId === null) return;
       if (!(await assertCanUpdateBranding(req, tenantId))) {
         return res.status(403).json({
           error:
@@ -261,10 +266,12 @@ export class TenantController {
     }
   }
 
-  async updateBranding(req: AuthRequest & TenantRequest, res: Response) {
+  async updateBranding(
+    req: AuthRequest & TenantRequest,
+    res: Response,
+    tenantId: number,
+  ) {
     try {
-      const tenantId = requireTenantId(req, res);
-      if (tenantId === null) return;
       const before = await tenantRepo.findById(tenantId);
       if (!(await assertCanUpdateBranding(req, tenantId))) {
         return res.status(403).json({
@@ -330,12 +337,10 @@ export class TenantController {
         req.user?.id != null &&
         req.user?.role === 'user'
       ) {
-        await getDb().login.updateMany({
-          where: { id: req.user.id, tenant_id: tenantId },
-          data: {
-            role: 'admin',
-            permissions: { ...FULL_PERMISSIONS } as Prisma.InputJsonValue,
-          },
+        await loginRepo.update(req.user.id, {
+          tenant_id: tenantId,
+          role: 'admin',
+          permissions: { ...FULL_PERMISSIONS } as Prisma.InputJsonValue,
         });
         await invalidateAuthCacheForRequest(req);
       }
@@ -352,10 +357,12 @@ export class TenantController {
     }
   }
 
-  async setContractCode(req: AuthRequest & TenantRequest, res: Response) {
+  async setContractCode(
+    req: AuthRequest & TenantRequest,
+    res: Response,
+    tenantId: number,
+  ) {
     try {
-      const tenantId = requireTenantId(req, res);
-      if (tenantId === null) return;
       if (req.user?.role !== 'admin' && !req.user?.isSuperAdmin) {
         return res.status(403).json({
           error: 'Apenas administradores podem definir o código de contrato.',
@@ -441,10 +448,12 @@ export class TenantController {
    * Utilizador autenticado em tenant provisório (`u-*`): valida o código contra
    * portfolios existentes e migra o login para o abrigo definitivo (primeiro admin).
    */
-  async claimContractCode(req: AuthRequest & TenantRequest, res: Response) {
+  async claimContractCode(
+    req: AuthRequest & TenantRequest,
+    res: Response,
+    tenantId: number,
+  ) {
     try {
-      const tenantId = requireTenantId(req, res);
-      if (tenantId === null) return;
       if (req.user?.id == null) {
         return res.status(401).json({ error: 'Sessão inválida' });
       }

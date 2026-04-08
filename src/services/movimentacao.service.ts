@@ -86,13 +86,18 @@ export class MovementService {
     );
   }
 
-  async getNonMovementedMedicines(limit = 10): Promise<NonMovementedItem[]> {
-    const cacheKey = CacheKeyHelper.nonMovementedMedicines(limit);
+  async getNonMovementedMedicines(
+    tenantId: number,
+    limit = 10,
+  ): Promise<NonMovementedItem[]> {
+    const cacheKey = CacheKeyHelper.nonMovementedMedicines(
+      Number(tenantId) * 100000 + limit,
+    );
 
     return this.cache.getOrSet(
       cacheKey,
       async () => {
-        const data = await this.repo.getNonMovementedMedicines(limit);
+        const data = await this.repo.getNonMovementedMedicines(tenantId, limit);
 
         return data.map(item => ({
           item_id: item.item_id,
@@ -107,6 +112,7 @@ export class MovementService {
   }
 
   async getPharmacyToNursingTransfers(params: {
+    tenantId: number;
     startDate?: string;
     endDate?: string;
     page: number;
@@ -116,6 +122,7 @@ export class MovementService {
     const endDate = params.endDate ? new Date(params.endDate) : undefined;
 
     return this.repo.listPharmacyToNursingTransfers({
+      tenantId: params.tenantId,
       startDate,
       endDate,
       page: params.page,
@@ -124,12 +131,14 @@ export class MovementService {
   }
 
   async getConsumptionByPeriod(
+    tenantId: number,
     startDate: Date,
     endDate: Date,
     groupBy: 'month' | 'quarter',
     transaction?: Prisma.TransactionClient,
   ) {
     return this.repo.getConsumptionByPeriod(
+      tenantId,
       startDate,
       endDate,
       groupBy,
@@ -138,11 +147,12 @@ export class MovementService {
   }
 
   async getConsumptionByItem(
+    tenantId: number,
     startDate: Date,
     endDate: Date,
     transaction?: Prisma.TransactionClient,
   ) {
-    return this.repo.getConsumptionByItem(startDate, endDate, transaction);
+    return this.repo.getConsumptionByItem(tenantId, startDate, endDate, transaction);
   }
 
   async getHistoryByItemId(

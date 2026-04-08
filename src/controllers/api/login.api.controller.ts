@@ -23,6 +23,7 @@ import type { Request, Response } from 'express';
 import type { RequestHandler } from 'express';
 import rateLimit from 'express-rate-limit';
 import { LoginController } from '@controllers/login.controller';
+import { TenantId } from '@decorators/tenant-id.decorator';
 import { UseExpressMwGuard } from '@middlewares/express.middleware';
 import { authMiddleware } from '@middlewares/auth.middleware';
 import {
@@ -180,8 +181,12 @@ export class LoginApiController {
   @ApiResponse({ status: 403, description: 'Código de contrato inválido' })
   @ApiResponse({ status: 409, description: 'Login já cadastrado' })
   @UseGuards(createLoginGuard)
-  create(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.create(req, res);
+  create(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.create(req, res, tenantId);
   }
 
   @Get('resolve-tenant')
@@ -225,8 +230,12 @@ export class LoginApiController {
   })
   @ApiResponse({ status: 401, description: 'Credenciais inválidas' })
   @UseGuards(authenticateGuard)
-  authenticate(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.authenticate(req, res);
+  authenticate(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.authenticate(req, res, tenantId);
   }
 
   @Post('reset-password')

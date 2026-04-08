@@ -9,6 +9,7 @@ import {
 } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
 import { MovementController } from '@controllers/movimentacao.controller';
+import { TenantId } from '@decorators/tenant-id.decorator';
 import { UseExpressMwGuard } from '@middlewares/express.middleware';
 import { requireModule } from '@middlewares/module.middleware';
 import { validatePagination } from '@middlewares/validation.middleware';
@@ -32,8 +33,12 @@ export class MovimentacaoApiController {
   @Get('produtos-parados')
   @ApiOperation({ summary: 'Medicamentos sem movimento' })
   @UseGuards(movModule)
-  produtosParados(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.nonMovementMedications(req, res);
+  produtosParados(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.nonMovementMedications(req, res, tenantId);
   }
 
   @Get('medicamentos')
@@ -41,8 +46,12 @@ export class MovimentacaoApiController {
   @ApiQuery({ name: 'page', required: false })
   @ApiQuery({ name: 'limit', required: false })
   @UseGuards(movPaginate)
-  medicamentos(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.getMedicines(req, res);
+  medicamentos(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.getMedicines(req, res, tenantId);
   }
 
   @Get('insumos')
@@ -50,16 +59,24 @@ export class MovimentacaoApiController {
   @ApiQuery({ name: 'page', required: false })
   @ApiQuery({ name: 'limit', required: false })
   @UseGuards(movPaginate)
-  insumos(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.getInputs(req, res);
+  insumos(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.getInputs(req, res, tenantId);
   }
 
   @Post()
   @ApiOperation({ summary: 'Registar movimentação manual' })
   @ApiBody({ type: MovementCreateBodyDto })
   @UseGuards(movCreateBody, movModule)
-  create(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.create(req, res);
+  create(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.create(req, res, tenantId);
   }
 
   @Get('medicamentos/ranking')
@@ -67,8 +84,12 @@ export class MovimentacaoApiController {
   @ApiQuery({ name: 'page', required: false })
   @ApiQuery({ name: 'limit', required: false })
   @UseGuards(movPaginate)
-  medicamentosRanking(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.getMedicineRanking(req, res);
+  medicamentosRanking(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.getMedicineRanking(req, res, tenantId);
   }
 
   @Get('transferencias/farmacia-enfermaria')
@@ -76,21 +97,33 @@ export class MovimentacaoApiController {
   @ApiQuery({ name: 'page', required: false })
   @ApiQuery({ name: 'limit', required: false })
   @UseGuards(movPaginate)
-  transferencias(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.getPharmacyToNursingTransfers(req, res);
+  transferencias(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.getPharmacyToNursingTransfers(req, res, tenantId);
   }
 
   @Get('consumo')
   @ApiOperation({ summary: 'Consumo agregado' })
   @UseGuards(movModule)
-  consumo(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.getConsumption(req, res);
+  consumo(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.getConsumption(req, res, tenantId);
   }
 
   @Get('consumo-por-item')
   @ApiOperation({ summary: 'Consumo por item' })
   @UseGuards(movModule)
-  consumoPorItem(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.getConsumptionByItem(req, res);
+  consumoPorItem(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.getConsumptionByItem(req, res, tenantId);
   }
 }

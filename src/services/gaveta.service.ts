@@ -19,27 +19,27 @@ export class DrawerService {
     return this.repo.createDrawer(data, tenantId);
   }
 
-  async findAll(page: number, limit: number) {
-    return this.repo.findAllDrawers(page, limit);
+  async findAll(tenantId: number, page: number, limit: number) {
+    return this.repo.findAllDrawers(tenantId, page, limit);
   }
 
-  async findDrawerByNumber(numero: number) {
-    return this.repo.findByDrawerNumber(numero);
+  async findDrawerByNumber(tenantId: number, numero: number) {
+    return this.repo.findByDrawerNumber(tenantId, numero);
   }
 
-  async updateDrawer(numero: number, categoria_id: number) {
+  async updateDrawer(tenantId: number, numero: number, categoria_id: number) {
     if (!categoria_id || categoria_id <= 0) {
       throw new Error('Categoria inválida');
     }
 
-    return this.repo.update(numero, categoria_id);
+    return this.repo.update(tenantId, numero, categoria_id);
   }
 
-  async removeDrawer(numero: number): Promise<boolean> {
-    return this.repo.delete(numero);
+  async removeDrawer(tenantId: number, numero: number): Promise<boolean> {
+    return this.repo.delete(tenantId, numero);
   }
 
-  async count(): Promise<number> {
-    return this.repo.count();
+  async count(tenantId: number): Promise<number> {
+    return this.repo.count(tenantId);
   }
 }

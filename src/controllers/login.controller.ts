@@ -253,7 +253,7 @@ export class LoginController {
     }
   }
 
-  async create(req: AuthRequest & TenantRequest, res: Response) {
+  async create(req: AuthRequest & TenantRequest, res: Response, tenantId: number) {
     const body = req.body ?? {};
     const loginRaw = body.login ?? body.email;
     const password = body.password;
@@ -269,8 +269,6 @@ export class LoginController {
       return res.status(400).json({ error: 'E-mail e senha obrigatórios' });
 
     try {
-      const tenantId = requireTenantId(req, res);
-      if (tenantId === null) return;
       const hash =
         await tenantRepoForRegister.getContractCodeHashByTenantId(tenantId);
       const verdict = await verifyContractCode(
@@ -417,7 +415,11 @@ export class LoginController {
     }
   }
 
-  async authenticate(req: AuthRequest & TenantRequest, res: Response) {
+  async authenticate(
+    req: AuthRequest & TenantRequest,
+    res: Response,
+    tenantId: number,
+  ) {
     const body = req.body ?? {};
     const loginRaw = body.login ?? body.email;
     const password = body.password;
@@ -429,8 +431,6 @@ export class LoginController {
     if (!login || !password)
       return res.status(400).json({ error: 'E-mail e senha obrigatórios' });
 
-    const tenantId = requireTenantId(req, res);
-    if (tenantId === null) return;
     const result = await this.service.authenticate(login, password, tenantId);
 
     if (this.loginLogRepo) {

@@ -76,6 +76,12 @@ export async function enforceTenantMiddleware(
     if (userTenantId != null) {
       const t = await repo.findById(Number(userTenantId));
       if (t) {
+        // Defesa extra: impede que um utilizador "finja" outro tenant via header/subdomínio.
+        // Mesmo que antes a gente ignorasse silenciosamente, é melhor bloquear explicitamente.
+        if (!isSuper && requested !== '' && requested !== t.slug) {
+          _res.status(403).json({ error: 'Tenant inválido para esta sessão' });
+          return;
+        }
         authReq.tenant = { id: t.id, slug: t.slug, name: t.name };
         return next();
       }

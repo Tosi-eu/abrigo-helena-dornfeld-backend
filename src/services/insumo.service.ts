@@ -11,7 +11,7 @@ export class InputService {
     private readonly tenantConfigService?: TenantConfigService,
   ) {}
 
-  private triggerPriceSearchInBackground(input: Input) {
+  private triggerPriceSearchInBackground(tenantId: number, input: Input) {
     setImmediate(async () => {
       try {
         const search = this.priceSearchService;
@@ -22,9 +22,13 @@ export class InputService {
         const priceResult = await search.searchPrice(input.nome, 'input');
 
         if (priceResult?.averagePrice) {
-          await this.repo.updateInputById(inputId, {
+          await this.repo.updateInputById(
+            tenantId,
+            inputId,
+            {
             preco: priceResult.averagePrice,
-          });
+            },
+          );
         }
       } catch (error) {
         logger.error(
@@ -50,7 +54,7 @@ export class InputService {
       created.id &&
       (await this.isAutomaticPriceSearchEnabled(tenantId))
     ) {
-      this.triggerPriceSearchInBackground(created);
+      this.triggerPriceSearchInBackground(tenantId, created);
     }
 
     return created;
@@ -64,16 +68,16 @@ export class InputService {
     return cfg.automatic_price_search !== false;
   }
 
-  listPaginated(page: number = 1, limit: number = 10, name?: string) {
-    return this.repo.listAllInputs(page, limit, name);
+  listPaginated(tenantId: number, page: number = 1, limit: number = 10, name?: string) {
+    return this.repo.listAllInputs(tenantId, page, limit, name);
   }
 
-  updateInput(id: number, data: Omit<Input, 'id'>) {
+  updateInput(tenantId: number, id: number, data: Omit<Input, 'id'>) {
     if (!data.nome) throw new Error('Nome é obrigatório');
-    return this.repo.updateInputById(id, data);
+    return this.repo.updateInputById(tenantId, id, data);
   }
 
-  deleteInput(id: number) {
-    return this.repo.deleteInputById(id);
+  deleteInput(tenantId: number, id: number) {
+    return this.repo.deleteInputById(tenantId, id);
   }
 }

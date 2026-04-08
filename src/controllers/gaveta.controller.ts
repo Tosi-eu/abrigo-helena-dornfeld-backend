@@ -9,10 +9,8 @@ import {
 export class DrawerController {
   constructor(private readonly service: DrawerService) {}
 
-  async create(req: Request & TenantRequest, res: Response) {
+  async create(req: Request & TenantRequest, res: Response, tenantId: number) {
     try {
-      const tenantId = requireTenantId(req, res);
-      if (tenantId === null) return;
       const created = await this.service.createDrawer(tenantId, req.body);
       return res.status(201).json(created);
     } catch (error: unknown) {
@@ -20,17 +18,17 @@ export class DrawerController {
     }
   }
 
-  async getAll(req: Request, res: Response) {
+  async getAll(req: Request, res: Response, tenantId: number) {
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 50;
 
-    const result = await this.service.findAll(page, limit);
+    const result = await this.service.findAll(tenantId, page, limit);
     return res.json(result);
   }
 
-  async getCount(_req: Request, res: Response) {
+  async getCount(_req: Request, res: Response, tenantId: number) {
     try {
-      const total = await this.service.count();
+      const total = await this.service.count(tenantId);
       return res.json({ count: total });
     } catch (error: unknown) {
       return sendErrorResponse(
@@ -42,9 +40,9 @@ export class DrawerController {
     }
   }
 
-  async getById(req: Request, res: Response) {
+  async getById(req: Request, res: Response, tenantId: number) {
     const number = Number(req.params.numero);
-    const drawer = await this.service.findDrawerByNumber(number);
+    const drawer = await this.service.findDrawerByNumber(tenantId, number);
 
     if (!drawer) {
       return res.status(404).json({ error: 'Gaveta não encontrada' });
@@ -53,12 +51,16 @@ export class DrawerController {
     return res.json(drawer);
   }
 
-  async update(req: Request, res: Response) {
+  async update(req: Request, res: Response, tenantId: number) {
     try {
       const number = Number(req.params.numero);
       const { categoria_id } = req.body;
 
-      const updated = await this.service.updateDrawer(number, categoria_id);
+      const updated = await this.service.updateDrawer(
+        tenantId,
+        number,
+        categoria_id,
+      );
 
       if (!updated) {
         return res.status(404).json({ error: 'Gaveta não encontrada' });
@@ -70,11 +72,11 @@ export class DrawerController {
     }
   }
 
-  async delete(req: Request, res: Response) {
+  async delete(req: Request, res: Response, tenantId: number) {
     const number = Number(req.params.numero);
 
     try {
-      const deleted = await this.service.removeDrawer(number);
+      const deleted = await this.service.removeDrawer(tenantId, number);
 
       if (!deleted) {
         return res.status(404).json({ error: 'Gaveta não encontrada' });

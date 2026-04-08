@@ -19,6 +19,7 @@ import {
 } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
 import { ResidentController } from '@controllers/residente.controller';
+import { TenantId } from '@decorators/tenant-id.decorator';
 import { UseExpressMwGuard } from '@middlewares/express.middleware';
 import { requireModule } from '@middlewares/module.middleware';
 import {
@@ -55,31 +56,47 @@ export class ResidenteApiController {
   @ApiQuery({ name: 'page', required: false })
   @ApiQuery({ name: 'limit', required: false })
   @UseGuards(resPaginate)
-  findAll(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.findAll(req, res);
+  findAll(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.findAll(req, res, tenantId);
   }
 
   @Get('count')
   @ApiOperation({ summary: 'Contagem de residentes' })
   @UseGuards(resModule)
-  count(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.getCount(req, res);
+  count(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.getCount(req, res, tenantId);
   }
 
   @Get(':casela')
   @ApiOperation({ summary: 'Residente por número de casela' })
   @ApiParam({ name: 'casela', type: Number })
   @UseGuards(resCasela)
-  findByCasela(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.findByCasela(req, res);
+  findByCasela(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.findByCasela(req, res, tenantId);
   }
 
   @Post()
   @ApiOperation({ summary: 'Criar residente' })
   @ApiBody({ type: ResidentCreateBodyDto })
   @UseGuards(resCreateBody, resModule)
-  create(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.create(req, res);
+  create(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.create(req, res, tenantId);
   }
 
   @Put(':casela')
@@ -87,15 +104,23 @@ export class ResidenteApiController {
   @ApiParam({ name: 'casela', type: Number })
   @ApiBody({ type: ResidentUpdateBodyDto })
   @UseGuards(resUpdateBody, resCasela)
-  update(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.update(req, res);
+  update(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.update(req, res, tenantId);
   }
 
   @Delete(':casela')
   @ApiOperation({ summary: 'Remover residente' })
   @ApiParam({ name: 'casela', type: Number })
   @UseGuards(resCasela)
-  delete(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.delete(req, res);
+  delete(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.delete(req, res, tenantId);
   }
 }

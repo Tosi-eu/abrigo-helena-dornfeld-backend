@@ -23,6 +23,7 @@ export class PrismaInputRepository {
   }
 
   async listAllInputs(
+    tenantId: number,
     page: number = 1,
     limit: number = 10,
     name?: string,
@@ -36,6 +37,7 @@ export class PrismaInputRepository {
     const offset = (page - 1) * limit;
 
     const where: Prisma.InsumoWhereInput = {};
+    where.tenant_id = tenantId;
     const trimmed = name?.trim();
     if (trimmed) {
       where.nome = { contains: trimmed, mode: 'insensitive' };
@@ -66,8 +68,10 @@ export class PrismaInputRepository {
     };
   }
 
-  async findInputById(id: number): Promise<Input | null> {
-    const insumo = await getDb().insumo.findUnique({ where: { id } });
+  async findInputById(tenantId: number, id: number): Promise<Input | null> {
+    const insumo = await getDb().insumo.findFirst({
+      where: { id, tenant_id: tenantId },
+    });
     if (!insumo) return null;
 
     return {
@@ -80,29 +84,25 @@ export class PrismaInputRepository {
   }
 
   async updateInputById(
+    tenantId: number,
     id: number,
     data: Partial<Omit<Input, 'id'>>,
   ): Promise<Input | null> {
-    try {
-      await getDb().insumo.update({
-        where: { id },
-        data: {
-          ...data,
-          preco: data.preco ?? undefined,
-        },
-      });
-    } catch {
-      return null;
-    }
-    return this.findInputById(id);
+    const res = await getDb().insumo.updateMany({
+      where: { id, tenant_id: tenantId },
+      data: {
+        ...data,
+        preco: data.preco ?? undefined,
+      },
+    });
+    if (res.count === 0) return null;
+    return this.findInputById(tenantId, id);
   }
 
-  async deleteInputById(id: number): Promise<boolean> {
-    try {
-      await getDb().insumo.delete({ where: { id } });
-      return true;
-    } catch {
-      return false;
-    }
+  async deleteInputById(tenantId: number, id: number): Promise<boolean> {
+    const res = await getDb().insumo.deleteMany({
+      where: { id, tenant_id: tenantId },
+    });
+    return res.count > 0;
   }
 }

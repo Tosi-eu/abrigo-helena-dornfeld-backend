@@ -14,12 +14,12 @@ import { getErrorMessage } from '@domain/error.types';
 export class ResidentController {
   constructor(private readonly service: ResidentService) {}
 
-  async findAll(req: ValidatedRequest, res: Response) {
+  async findAll(req: ValidatedRequest, res: Response, tenantId: number) {
     const pag = getValidatedPagination(req, res);
     if (pag == null) return;
     const { page, limit } = pag;
 
-    const result = await this.service.findAll(page, limit);
+    const result = await this.service.findAll(tenantId, page, limit);
 
     res.json({
       data: result.data,
@@ -29,9 +29,9 @@ export class ResidentController {
     });
   }
 
-  async getCount(_req: ValidatedRequest, res: Response) {
+  async getCount(_req: ValidatedRequest, res: Response, tenantId: number) {
     try {
-      const total = await this.service.count();
+      const total = await this.service.count(tenantId);
       return res.json({ count: total });
     } catch (error: unknown) {
       return sendErrorResponse(
@@ -43,21 +43,23 @@ export class ResidentController {
     }
   }
 
-  async findByCasela(req: ValidatedRequest, res: Response) {
+  async findByCasela(req: ValidatedRequest, res: Response, tenantId: number) {
     const casela = Number(req.params.casela);
 
     try {
-      const residente = await this.service.findByCasela(casela);
+      const residente = await this.service.findByCasela(tenantId, casela);
       res.json(residente);
     } catch (error: unknown) {
       return sendErrorResponse(res, 404, error, 'Residente não encontrado');
     }
   }
 
-  async create(req: ValidatedRequest & TenantRequest, res: Response) {
+  async create(
+    req: ValidatedRequest & TenantRequest,
+    res: Response,
+    tenantId: number,
+  ) {
     try {
-      const tenantId = requireTenantId(req, res);
-      if (tenantId === null) return;
       const novo = await this.service.createResident(tenantId, req.body);
       res.status(201).json(novo);
     } catch (error: unknown) {
@@ -67,10 +69,12 @@ export class ResidentController {
     }
   }
 
-  async update(req: ValidatedRequest & TenantRequest, res: Response) {
+  async update(
+    req: ValidatedRequest & TenantRequest,
+    res: Response,
+    tenantId: number,
+  ) {
     const casela = Number(req.params.casela);
-    const tenantId = requireTenantId(req, res);
-    if (tenantId === null) return;
     try {
       const updated = await this.service.updateResident(tenantId, {
         casela,
@@ -89,11 +93,11 @@ export class ResidentController {
     }
   }
 
-  async delete(req: ValidatedRequest, res: Response) {
+  async delete(req: ValidatedRequest, res: Response, tenantId: number) {
     const casela = Number(req.params.casela);
 
     try {
-      const deleted = await this.service.deleteResident(casela);
+      const deleted = await this.service.deleteResidentForTenant(tenantId, casela);
 
       if (!deleted) {
         return res.status(404).json({ error: 'Residente não encontrado' });

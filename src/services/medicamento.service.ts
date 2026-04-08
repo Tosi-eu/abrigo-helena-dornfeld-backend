@@ -15,6 +15,7 @@ export class MedicineService {
   ) {}
 
   private triggerPriceSearchInBackground(
+    tenantId: number,
     medicine: Medicine,
     normalizedDosage: string,
   ) {
@@ -33,7 +34,7 @@ export class MedicineService {
         );
 
         if (priceResult?.averagePrice) {
-          await this.repo.updateMedicineById(medicineId, {
+          await this.repo.updateMedicineById(tenantId, medicineId, {
             preco: priceResult.averagePrice,
           });
         }
@@ -96,6 +97,7 @@ export class MedicineService {
 
     if (!existing) {
       const allMatches = await this.repo.findAllMedicines({
+        tenantId,
         page: 1,
         limit: 100,
         name: data.nome.trim(),
@@ -130,7 +132,7 @@ export class MedicineService {
       created.id &&
       (await this.isAutomaticPriceSearchEnabled(tenantId))
     ) {
-      this.triggerPriceSearchInBackground(created, normalizedDosage);
+      this.triggerPriceSearchInBackground(tenantId, created, normalizedDosage);
     }
 
     return created;
@@ -144,7 +146,9 @@ export class MedicineService {
     return cfg.automatic_price_search !== false;
   }
 
-  async findAll({
+  async findAll(
+    tenantId: number,
+    {
     page = 1,
     limit = 10,
     name,
@@ -152,12 +156,13 @@ export class MedicineService {
     page?: number;
     limit?: number;
     name?: string;
-  }) {
-    return this.repo.findAllMedicines({ page, limit, name });
+  },
+  ) {
+    return this.repo.findAllMedicines({ tenantId, page, limit, name });
   }
 
-  async findById(id: number) {
-    return this.repo.findMedicineById(id);
+  async findById(tenantId: number, id: number) {
+    return this.repo.findMedicineById(tenantId, id);
   }
 
   async updateMedicine(
@@ -207,6 +212,7 @@ export class MedicineService {
 
     if (!existing) {
       const allMatches = await this.repo.findAllMedicines({
+        tenantId,
         page: 1,
         limit: 100,
         name: data.nome.trim(),
@@ -231,10 +237,10 @@ export class MedicineService {
       );
     }
 
-    return this.repo.updateMedicineById(id, data);
+    return this.repo.updateMedicineById(tenantId, id, data);
   }
 
-  async deleteMedicine(id: number) {
-    return this.repo.deleteMedicineById(id);
+  async deleteMedicine(tenantId: number, id: number) {
+    return this.repo.deleteMedicineById(tenantId, id);
   }
 }

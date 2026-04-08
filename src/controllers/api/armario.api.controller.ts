@@ -19,6 +19,7 @@ import {
 } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
 import { CabinetController } from '@controllers/armario.controller';
+import { TenantId } from '@decorators/tenant-id.decorator';
 import { UseExpressMwGuard } from '@middlewares/express.middleware';
 import { requireModule } from '@middlewares/module.middleware';
 import {
@@ -54,8 +55,12 @@ export class ArmarioApiController {
   @ApiOperation({ summary: 'Criar armário' })
   @ApiBody({ type: CabinetCreateBodyDto })
   @UseGuards(cabCreateBody, cabModule)
-  create(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.create(req, res);
+  create(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.create(req, res, tenantId);
   }
 
   @Get()
@@ -63,15 +68,23 @@ export class ArmarioApiController {
   @ApiQuery({ name: 'page', required: false })
   @ApiQuery({ name: 'limit', required: false })
   @UseGuards(cabPaginate)
-  getAll(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.getAll(req, res);
+  getAll(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.getAll(req, res, tenantId);
   }
 
   @Get('count')
   @ApiOperation({ summary: 'Contagem de armários' })
   @UseGuards(cabModule)
-  count(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.getCount(req, res);
+  count(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.getCount(req, res, tenantId);
   }
 
   @Put(':numero')
@@ -79,15 +92,23 @@ export class ArmarioApiController {
   @ApiParam({ name: 'numero', type: Number })
   @ApiBody({ type: CabinetUpdateBodyDto })
   @UseGuards(cabUpdateBody, cabNumero)
-  update(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.update(req, res);
+  update(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.update(req, res, tenantId);
   }
 
   @Delete(':numero')
   @ApiOperation({ summary: 'Remover armário' })
   @ApiParam({ name: 'numero', type: Number })
   @UseGuards(cabNumero)
-  delete(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.delete(req, res);
+  delete(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.delete(req, res, tenantId);
   }
 }

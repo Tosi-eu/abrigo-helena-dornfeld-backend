@@ -70,6 +70,7 @@ export interface ResidentMonthlyUsage {
 }
 
 export interface QueryPaginationParams {
+  tenantId: number;
   filter: string;
   type: string;
   page?: number;

@@ -19,6 +19,7 @@ import type { Request, Response } from 'express';
 import { tenantLogoUpload } from '@config/upload/multer-r2.config';
 import { TenantController } from '@controllers/tenant.controller';
 import { TenantInviteController } from '@controllers/tenant-invite.controller';
+import { TenantId } from '@decorators/tenant-id.decorator';
 import { UseExpressMwGuard } from '@middlewares/express.middleware';
 import { requireAdmin } from '@middlewares/admin.middleware';
 import {
@@ -51,16 +52,24 @@ export class TenantApiController {
 
   @Get('config')
   @ApiOperation({ summary: 'Configuração do tenant atual (módulos, etc.)' })
-  config(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.getConfig(req, res);
+  config(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.getConfig(req, res, tenantId);
   }
 
   @Post('invites')
   @ApiOperation({ summary: '[Admin] Criar convite para utilizador' })
   @ApiBody({ type: TenantInviteCreateBodyDto })
   @UseGuards(inviteBody, requireAdminGuard)
-  invites(@Req() req: Request, @Res() res: Response): void {
-    void this.inviteController.create(req, res);
+  invites(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.inviteController.create(req, res, tenantId);
   }
 
   @Post('contract-code/claim')
@@ -70,8 +79,12 @@ export class TenantApiController {
   })
   @ApiBody({ type: TenantContractCodeBodyDto })
   @UseGuards(contractBody)
-  claimContractCode(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.claimContractCode(req, res);
+  claimContractCode(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.claimContractCode(req, res, tenantId);
   }
 
   @Post('contract-code')
@@ -80,24 +93,36 @@ export class TenantApiController {
   })
   @ApiBody({ type: TenantContractCodeBodyDto })
   @UseGuards(contractBody)
-  contractCode(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.setContractCode(req, res);
+  contractCode(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.setContractCode(req, res, tenantId);
   }
 
   @Put('config')
   @ApiOperation({ summary: '[Admin] Atualizar configuração do tenant' })
   @ApiBody({ type: TenantModulesConfigBodyDto })
   @UseGuards(modulesBody, requireAdminGuard)
-  putConfig(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.updateConfig(req, res);
+  putConfig(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.updateConfig(req, res, tenantId);
   }
 
   @Put('branding')
   @ApiOperation({ summary: '[Admin] Atualizar branding (JSON)' })
   @ApiBody({ type: TenantBrandingBodyDto })
   @UseGuards(brandingBody, requireAdminGuard)
-  branding(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.updateBranding(req, res);
+  branding(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.updateBranding(req, res, tenantId);
   }
 
   @Post('branding/logo')
@@ -113,7 +138,11 @@ export class TenantApiController {
     },
   })
   @UseGuards(logoUploadGuard)
-  uploadLogo(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.uploadLogo(req, res);
+  uploadLogo(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.uploadLogo(req, res, tenantId);
   }
 }

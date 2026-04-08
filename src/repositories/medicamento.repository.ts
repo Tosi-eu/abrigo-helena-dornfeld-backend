@@ -36,10 +36,12 @@ export class PrismaMedicineRepository {
   }
 
   async findAllMedicines({
+    tenantId,
     page,
     limit,
     name,
   }: {
+    tenantId: number;
     page: number;
     limit: number;
     name?: string;
@@ -47,6 +49,7 @@ export class PrismaMedicineRepository {
     const offset = (page - 1) * limit;
 
     const where: Prisma.MedicamentoWhereInput = {};
+    where.tenant_id = tenantId;
     const trimmed = name?.trim();
     if (trimmed) {
       where.nome = { contains: trimmed, mode: 'insensitive' };
@@ -79,8 +82,13 @@ export class PrismaMedicineRepository {
     };
   }
 
-  async findMedicineById(id: number): Promise<Medicine | null> {
-    const row = await getDb().medicamento.findUnique({ where: { id } });
+  async findMedicineById(
+    tenantId: number,
+    id: number,
+  ): Promise<Medicine | null> {
+    const row = await getDb().medicamento.findFirst({
+      where: { id, tenant_id: tenantId },
+    });
     return row
       ? {
           id: row.id,
@@ -126,29 +134,25 @@ export class PrismaMedicineRepository {
   }
 
   async updateMedicineById(
+    tenantId: number,
     id: number,
     data: Partial<Omit<Medicine, 'id'>>,
   ): Promise<Medicine | null> {
-    try {
-      await getDb().medicamento.update({
-        where: { id },
-        data: {
-          ...data,
-          preco: data.preco ?? undefined,
-        },
-      });
-    } catch {
-      return null;
-    }
-    return this.findMedicineById(id);
+    const res = await getDb().medicamento.updateMany({
+      where: { id, tenant_id: tenantId },
+      data: {
+        ...data,
+        preco: data.preco ?? undefined,
+      },
+    });
+    if (res.count === 0) return null;
+    return this.findMedicineById(tenantId, id);
   }
 
-  async deleteMedicineById(id: number): Promise<boolean> {
-    try {
-      await getDb().medicamento.delete({ where: { id } });
-      return true;
-    } catch {
-      return false;
-    }
+  async deleteMedicineById(tenantId: number, id: number): Promise<boolean> {
+    const res = await getDb().medicamento.deleteMany({
+      where: { id, tenant_id: tenantId },
+    });
+    return res.count > 0;
   }
 }

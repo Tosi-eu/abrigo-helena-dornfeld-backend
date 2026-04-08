@@ -19,6 +19,7 @@ import {
 } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
 import { NotificationEventController } from '@controllers/notificacao.controller';
+import { TenantId } from '@decorators/tenant-id.decorator';
 import { UseExpressMwGuard } from '@middlewares/express.middleware';
 import { requireModule } from '@middlewares/module.middleware';
 import {
@@ -54,8 +55,12 @@ export class NotificacaoApiController {
   @ApiOperation({ summary: 'Criar evento de notificação' })
   @ApiBody({ type: NotificationCreateBodyDto })
   @UseGuards(notCreateBody, notModule)
-  create(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.create(req, res);
+  create(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.create(req, res, tenantId);
   }
 
   @Get()
@@ -63,16 +68,24 @@ export class NotificacaoApiController {
   @ApiQuery({ name: 'page', required: false })
   @ApiQuery({ name: 'limit', required: false })
   @UseGuards(notPaginate)
-  getAll(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.getAll(req, res);
+  getAll(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.getAll(req, res, tenantId);
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Obter notificação por id' })
   @ApiParam({ name: 'id', type: Number })
   @UseGuards(notId)
-  getById(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.getById(req, res);
+  getById(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.getById(req, res, tenantId);
   }
 
   @Patch(':id')
@@ -80,15 +93,23 @@ export class NotificacaoApiController {
   @ApiParam({ name: 'id', type: Number })
   @ApiBody({ type: NotificationUpdateBodyDto })
   @UseGuards(notPatchBody, notId)
-  patch(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.update(req, res);
+  patch(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.update(req, res, tenantId);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Eliminar notificação' })
   @ApiParam({ name: 'id', type: Number })
   @UseGuards(notId)
-  delete(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.delete(req, res);
+  delete(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.delete(req, res, tenantId);
   }
 }

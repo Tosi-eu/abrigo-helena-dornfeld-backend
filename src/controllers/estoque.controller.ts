@@ -5,10 +5,7 @@ import { handleETagResponse } from '@helpers/etag.helper';
 import { ItemType, SectorType } from '@helpers/utils';
 import { ValidatedRequest } from '@middlewares/validation.middleware';
 import type { AuthRequest } from '@middlewares/auth.middleware';
-import {
-  type TenantRequest,
-  requireTenantId,
-} from '@middlewares/tenant.middleware';
+import { type TenantRequest, requireTenantId } from '@middlewares/tenant.middleware';
 import { toSectorType } from '@helpers/stock.helper';
 
 export class StockController {
@@ -17,10 +14,9 @@ export class StockController {
   async stockIn(
     req: AuthRequest & ValidatedRequest & TenantRequest,
     res: Response,
+    tenantId: number,
   ) {
     try {
-      const tenantId = requireTenantId(req, res);
-      if (tenantId === null) return;
       const { medicamento_id, insumo_id } = req.body;
       const login_id = req.user?.id;
 
@@ -50,7 +46,7 @@ export class StockController {
     }
   }
 
-  async stockOut(req: AuthRequest & ValidatedRequest, res: Response) {
+  async stockOut(req: AuthRequest & ValidatedRequest, res: Response, tenantId: number) {
     try {
       const login_id = req.user?.id;
 
@@ -58,14 +54,14 @@ export class StockController {
         return res.status(401).json({ error: 'Usuário não autenticado' });
       }
 
-      const result = await this.service.stockOut(req.body, login_id);
+      const result = await this.service.stockOut(req.body, login_id, tenantId);
       return res.json(result);
     } catch (error: unknown) {
       return sendErrorResponse(res, 400, error, 'Erro ao registrar saída');
     }
   }
 
-  async list(req: AuthRequest, res: Response) {
+  async list(req: AuthRequest, res: Response, tenantId: number) {
     try {
       const {
         filter,
@@ -82,6 +78,7 @@ export class StockController {
       } = req.query;
 
       const data = await this.service.listStock({
+        tenantId,
         filter: String(filter || ''),
         type: String(type || ''),
         page: Number(page) || 1,
@@ -105,9 +102,9 @@ export class StockController {
     }
   }
 
-  async getFilterOptions(req: AuthRequest, res: Response) {
+  async getFilterOptions(req: AuthRequest, res: Response, tenantId: number) {
     try {
-      const data = await this.service.getFilterOptions();
+      const data = await this.service.getFilterOptions(tenantId);
       return res.json(data);
     } catch (error: unknown) {
       return sendErrorResponse(
@@ -119,7 +116,11 @@ export class StockController {
     }
   }
 
-  async getDaysForReplacementForNursing(req: AuthRequest, res: Response) {
+  async getDaysForReplacementForNursing(
+    req: AuthRequest,
+    res: Response,
+    tenantId: number,
+  ) {
     try {
       const medicamento_id = req.query.medicamento_id;
       const casela_id = req.query.casela_id;
@@ -137,6 +138,7 @@ export class StockController {
 
       const dias_para_repor =
         await this.service.getDaysForReplacementForNursing(
+          tenantId,
           Number(medicamento_id),
           Number(casela_id),
         );
@@ -152,7 +154,7 @@ export class StockController {
     }
   }
 
-  async proportion(req: AuthRequest, res: Response) {
+  async proportion(req: AuthRequest, res: Response, tenantId: number) {
     try {
       const sectorType = toSectorType(req.query.setor as string | undefined);
 
@@ -162,7 +164,10 @@ export class StockController {
         });
       }
 
-      const data = await this.service.getProportion(sectorType as SectorType);
+      const data = await this.service.getProportion(
+        tenantId,
+        sectorType as SectorType,
+      );
 
       const totalGeral = Object.values(data).reduce(
         (acc, v) => acc + Number(v || 0),

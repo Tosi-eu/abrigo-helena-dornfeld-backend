@@ -49,6 +49,7 @@ export class PrismaStockRepository {
 
       const existing = await client.estoqueMedicamento.findFirst({
         where: {
+          tenant_id: tenantId,
           medicamento_id: data.medicamento_id,
           armario_id: data.armario_id ?? null,
           gaveta_id: data.gaveta_id ?? null,
@@ -110,6 +111,7 @@ export class PrismaStockRepository {
 
     const existing = await client.estoqueInsumo.findFirst({
       where: {
+        tenant_id: tenantId,
         insumo_id: data.insumo_id,
         armario_id: data.armario_id ?? null,
         gaveta_id: data.gaveta_id ?? null,
@@ -215,11 +217,12 @@ export class PrismaStockRepository {
     transaction?: Prisma.TransactionClient,
   ) {
     const client = db(transaction);
-    const { filter, type, page = 1, limit = 20 } = params;
+    const { tenantId, filter, type, page = 1, limit = 20 } = params;
     const offset = (page - 1) * limit;
 
     if (type === 'armarios') {
       const cabinets = await client.armario.findMany({
+        where: { tenant_id: tenantId },
         orderBy: { num_armario: 'asc' },
         select: { num_armario: true },
       });
@@ -238,12 +241,12 @@ export class PrismaStockRepository {
       const [medicineTotals, inputTotals] = await Promise.all([
         client.estoqueMedicamento.groupBy({
           by: ['armario_id'],
-          where: { armario_id: { in: cabinetIds } },
+          where: { tenant_id: tenantId, armario_id: { in: cabinetIds } },
           _sum: { quantidade: true },
         }),
         client.estoqueInsumo.groupBy({
           by: ['armario_id'],
-          where: { armario_id: { in: cabinetIds } },
+          where: { tenant_id: tenantId, armario_id: { in: cabinetIds } },
           _sum: { quantidade: true },
         }),
       ]);
@@ -284,6 +287,7 @@ export class PrismaStockRepository {
 
     if (type === StockQueryType.GAVETAS) {
       const drawers = await client.gaveta.findMany({
+        where: { tenant_id: tenantId },
         orderBy: { num_gaveta: 'asc' },
         select: { num_gaveta: true },
       });
@@ -302,12 +306,12 @@ export class PrismaStockRepository {
       const [medicineTotals, inputTotals] = await Promise.all([
         client.estoqueMedicamento.groupBy({
           by: ['gaveta_id'],
-          where: { gaveta_id: { in: drawerIds } },
+          where: { tenant_id: tenantId, gaveta_id: { in: drawerIds } },
           _sum: { quantidade: true },
         }),
         client.estoqueInsumo.groupBy({
           by: ['gaveta_id'],
-          where: { gaveta_id: { in: drawerIds } },
+          where: { tenant_id: tenantId, gaveta_id: { in: drawerIds } },
           _sum: { quantidade: true },
         }),
       ]);
@@ -351,7 +355,7 @@ export class PrismaStockRepository {
     in45Days.setDate(in45Days.getDate() + 45);
 
     const buildMedicineWhere = (): Prisma.EstoqueMedicamentoWhereInput => {
-      const base: Prisma.EstoqueMedicamentoWhereInput = {};
+      const base: Prisma.EstoqueMedicamentoWhereInput = { tenant_id: tenantId };
       switch (filter) {
         case 'belowMin':
           base.quantidade = { gte: 0 };
@@ -371,7 +375,7 @@ export class PrismaStockRepository {
     };
 
     const buildInputWhere = (): Prisma.EstoqueInsumoWhereInput => {
-      const base: Prisma.EstoqueInsumoWhereInput = {};
+      const base: Prisma.EstoqueInsumoWhereInput = { tenant_id: tenantId };
       switch (filter) {
         case 'belowMin':
           base.quantidade = { gte: 0 };
@@ -432,7 +436,7 @@ export class PrismaStockRepository {
       const medIdsForName = medicamentoFilter
         ? (
             await client.medicamento.findMany({
-              where: medicamentoFilter,
+              where: { tenant_id: tenantId, ...medicamentoFilter },
               select: { id: true },
             })
           ).map(m => m.id)
@@ -454,7 +458,7 @@ export class PrismaStockRepository {
 
         const medIds = [...new Set(medicineStocks.map(s => s.medicamento_id))];
         const medicines = await client.medicamento.findMany({
-          where: { id: { in: medIds } },
+          where: { tenant_id: tenantId, id: { in: medIds } },
         });
         const medMap = new Map(medicines.map(m => [m.id, m]));
 
@@ -567,7 +571,7 @@ export class PrismaStockRepository {
       const insIdsForName = insumoFilter
         ? (
             await client.insumo.findMany({
-              where: insumoFilter,
+              where: { tenant_id: tenantId, ...insumoFilter },
               select: { id: true },
             })
           ).map(i => i.id)
@@ -589,7 +593,7 @@ export class PrismaStockRepository {
 
         const insIds = [...new Set(inputStocks.map(s => s.insumo_id))];
         const insumos = await client.insumo.findMany({
-          where: { id: { in: insIds } },
+          where: { tenant_id: tenantId, id: { in: insIds } },
         });
         const insMap = new Map(insumos.map(i => [i.id, i]));
 
@@ -720,32 +724,33 @@ export class PrismaStockRepository {
     };
   }
 
-  async getFilterOptions(transaction?: Prisma.TransactionClient) {
+  async getFilterOptions(tenantId: number, transaction?: Prisma.TransactionClient) {
     const client = db(transaction);
     const [medCabinets, inpCabinets, medCaselas, inpCaselas, medLots, inpLots] =
       await Promise.all([
         client.estoqueMedicamento.findMany({
-          where: { armario_id: { not: null } },
+          where: { tenant_id: tenantId, armario_id: { not: null } },
           distinct: ['armario_id'],
           select: { armario_id: true },
         }),
         client.estoqueInsumo.findMany({
-          where: { armario_id: { not: null } },
+          where: { tenant_id: tenantId, armario_id: { not: null } },
           distinct: ['armario_id'],
           select: { armario_id: true },
         }),
         client.estoqueMedicamento.findMany({
-          where: { casela_id: { not: null } },
+          where: { tenant_id: tenantId, casela_id: { not: null } },
           distinct: ['casela_id'],
           select: { casela_id: true },
         }),
         client.estoqueInsumo.findMany({
-          where: { casela_id: { not: null } },
+          where: { tenant_id: tenantId, casela_id: { not: null } },
           distinct: ['casela_id'],
           select: { casela_id: true },
         }),
         client.estoqueMedicamento.findMany({
           where: {
+            tenant_id: tenantId,
             lote: { not: null },
             NOT: { lote: '' },
           },
@@ -754,6 +759,7 @@ export class PrismaStockRepository {
         }),
         client.estoqueInsumo.findMany({
           where: {
+            tenant_id: tenantId,
             lote: { not: null },
             NOT: { lote: '' },
           },
@@ -791,6 +797,7 @@ export class PrismaStockRepository {
   private async sumStock(
     model: 'medicamento' | 'insumo',
     options: {
+      tenantId: number;
       setor?: SectorType;
       tipos?: OperationType[];
     },
@@ -798,10 +805,12 @@ export class PrismaStockRepository {
   ): Promise<number> {
     const client = db(tx);
     const whereMed: Prisma.EstoqueMedicamentoWhereInput = {
+      tenant_id: options.tenantId,
       ...(options.setor && { setor: options.setor }),
       ...(options.tipos && { tipo: { in: options.tipos } }),
     };
     const whereInp: Prisma.EstoqueInsumoWhereInput = {
+      tenant_id: options.tenantId,
       ...(options.setor && { setor: options.setor }),
       ...(options.tipos && { tipo: { in: options.tipos } }),
     };
@@ -821,6 +830,7 @@ export class PrismaStockRepository {
   }
 
   async getStockProportionBySector(
+    tenantId: number,
     setor?: SectorType,
     transaction?: Prisma.TransactionClient,
   ): Promise<Record<StockGroup, number>> {
@@ -848,38 +858,42 @@ export class PrismaStockRepository {
       ] = await Promise.all([
         this.sumStock(
           'medicamento',
-          { tipos: [OperationType.GERAL] },
+          { tenantId, tipos: [OperationType.GERAL] },
           transaction,
         ),
         this.sumStock(
           'medicamento',
-          { tipos: [OperationType.INDIVIDUAL] },
+          { tenantId, tipos: [OperationType.INDIVIDUAL] },
           transaction,
         ),
-        this.sumStock('insumo', { tipos: [OperationType.GERAL] }, transaction),
         this.sumStock(
           'insumo',
-          { tipos: [OperationType.INDIVIDUAL] },
+          { tenantId, tipos: [OperationType.GERAL] },
+          transaction,
+        ),
+        this.sumStock(
+          'insumo',
+          { tenantId, tipos: [OperationType.INDIVIDUAL] },
           transaction,
         ),
         this.sumStock(
           'medicamento',
-          { tipos: [OperationType.CARRINHO_EMERGENCIA] },
+          { tenantId, tipos: [OperationType.CARRINHO_EMERGENCIA] },
           transaction,
         ),
         this.sumStock(
           'medicamento',
-          { tipos: [OperationType.CARRINHO_PSICOTROPICOS] },
+          { tenantId, tipos: [OperationType.CARRINHO_PSICOTROPICOS] },
           transaction,
         ),
         this.sumStock(
           'insumo',
-          { tipos: [OperationType.CARRINHO_EMERGENCIA] },
+          { tenantId, tipos: [OperationType.CARRINHO_EMERGENCIA] },
           transaction,
         ),
         this.sumStock(
           'insumo',
-          { tipos: [OperationType.CARRINHO_PSICOTROPICOS] },
+          { tenantId, tipos: [OperationType.CARRINHO_PSICOTROPICOS] },
           transaction,
         ),
       ]);
@@ -902,6 +916,7 @@ export class PrismaStockRepository {
       baseResult[group as StockGroup] = await this.sumStock(
         'medicamento',
         {
+          tenantId,
           setor,
           tipos,
         },
@@ -913,6 +928,7 @@ export class PrismaStockRepository {
       baseResult[group as StockGroup] = await this.sumStock(
         'insumo',
         {
+          tenantId,
           setor,
           tipos,
         },
@@ -926,17 +942,24 @@ export class PrismaStockRepository {
   async findMedicineStockById(
     id: number,
     transaction?: Prisma.TransactionClient,
+    tenantId?: number,
   ): Promise<EstoqueMedicamento | null> {
-    return db(transaction).estoqueMedicamento.findUnique({ where: { id } });
+    return tenantId != null
+      ? db(transaction).estoqueMedicamento.findFirst({
+          where: { id, tenant_id: tenantId },
+        })
+      : db(transaction).estoqueMedicamento.findUnique({ where: { id } });
   }
 
   async getDaysForReplacementForNursing(
+    tenantId: number,
     medicamento_id: number,
     casela_id: number,
     transaction?: Prisma.TransactionClient,
   ): Promise<number | null> {
     const row = await db(transaction).estoqueMedicamento.findFirst({
       where: {
+        tenant_id: tenantId,
         medicamento_id,
         casela_id,
         setor: 'enfermagem',
@@ -1042,8 +1065,13 @@ export class PrismaStockRepository {
   async findInputStockById(
     id: number,
     transaction?: Prisma.TransactionClient,
+    tenantId?: number,
   ): Promise<EstoqueInsumo | null> {
-    return db(transaction).estoqueInsumo.findUnique({ where: { id } });
+    return tenantId != null
+      ? db(transaction).estoqueInsumo.findFirst({
+          where: { id, tenant_id: tenantId },
+        })
+      : db(transaction).estoqueInsumo.findUnique({ where: { id } });
   }
 
   async updateStockItem(

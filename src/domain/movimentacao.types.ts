@@ -1,4 +1,5 @@
 export interface MovementQueryParams {
+  tenantId: number;
   days?: number;
   type?: string;
   page: number;
@@ -6,6 +7,7 @@ export interface MovementQueryParams {
 }
 
 export interface MovementRankingParams {
+  tenantId: number;
   type: string;
   page: number;
   limit: number;

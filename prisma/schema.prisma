@@ -13,15 +13,15 @@ model SequelizeMeta {
 }
 
 model Tenant {
-  id                    Int       @id @default(autoincrement())
-  slug                  String    @unique @db.VarChar(60)
-  name                  String    @db.VarChar(120)
-  brand_name            String?   @db.VarChar(160)
+  id                    Int      @id @default(autoincrement())
+  slug                  String   @unique @db.VarChar(60)
+  name                  String   @db.VarChar(120)
+  brand_name            String?  @db.VarChar(160)
   logo_url              String?
-  contract_code_hash    String?   @db.VarChar(255)
+  contract_code_hash    String?  @db.VarChar(255)
   contract_portfolio_id Int?
-  created_at            DateTime  @default(now())
-  updated_at            DateTime  @updatedAt
+  created_at            DateTime @default(now())
+  updated_at            DateTime @updatedAt
 
   @@index([contract_portfolio_id])
   @@map("tenant")
@@ -52,27 +52,31 @@ model Login {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  @@map("login")
   @@index([refreshToken], map: "idx_login_refresh_token")
+  @@index([tenant_id], map: "idx_login_tenant_id")
+  @@index([tenant_id, role], map: "idx_login_tenant_role")
+  @@map("login")
 }
 
 model CategoriaArmario {
   id        Int      @id @default(autoincrement())
   nome      String   @db.VarChar(255)
-  tenant_id Int      @default(1)
+  tenant_id Int
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([tenant_id], map: "idx_categoria_armario_tenant_id")
   @@map("categoria_armario")
 }
 
 model CategoriaGaveta {
   id        Int      @id @default(autoincrement())
   nome      String   @db.VarChar(255)
-  tenant_id Int      @default(1)
+  tenant_id Int
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([tenant_id], map: "idx_categoria_gaveta_tenant_id")
   @@map("categoria_gaveta")
 }
 
@@ -80,11 +84,13 @@ model Armario {
   id           BigInt   @id @default(autoincrement())
   num_armario  Int
   categoria_id Int
-  tenant_id    Int      @default(1)
+  tenant_id    Int
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   @@unique([tenant_id, num_armario], map: "uq_armario_tenant_num_armario")
+  @@index([tenant_id], map: "idx_armario_tenant_id")
+  @@index([tenant_id, categoria_id], map: "idx_armario_tenant_categoria_id")
   @@map("armario")
 }
 
@@ -92,11 +98,13 @@ model Gaveta {
   id           BigInt   @id @default(autoincrement())
   num_gaveta   Int
   categoria_id Int
-  tenant_id    Int      @default(1)
+  tenant_id    Int
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   @@unique([tenant_id, num_gaveta], map: "uq_gaveta_tenant_num_gaveta")
+  @@index([tenant_id], map: "idx_gaveta_tenant_id")
+  @@index([tenant_id, categoria_id], map: "idx_gaveta_tenant_categoria_id")
   @@map("gaveta")
 }
 
@@ -104,9 +112,10 @@ model Residente {
   id         BigInt @id @default(autoincrement())
   num_casela Int
   nome       String @db.VarChar(255)
-  tenant_id  Int    @default(1)
+  tenant_id  Int
 
   @@unique([tenant_id, num_casela], map: "uq_residente_tenant_num_casela")
+  @@index([tenant_id], map: "idx_residente_tenant_id")
   @@map("residente")
 }
 
@@ -116,33 +125,35 @@ model Insumo {
   descricao      String?  @db.VarChar(255)
   estoque_minimo Int?
   preco          Decimal? @db.Decimal(10, 2)
-  tenant_id      Int      @default(1)
+  tenant_id      Int
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
   @@unique([tenant_id, nome], map: "uniq_insumo_tenant_nome")
+  @@index([tenant_id], map: "idx_insumo_tenant_id")
   @@map("insumo")
 }
 
 model Medicamento {
-  id               Int      @id @default(autoincrement())
-  nome             String
-  dosagem          String
-  unidade_medida   String
-  principio_ativo  String
-  estoque_minimo   Int?
-  preco            Decimal? @db.Decimal(10, 2)
-  tenant_id        Int      @default(1)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id              Int      @id @default(autoincrement())
+  nome            String
+  dosagem         String
+  unidade_medida  String
+  principio_ativo String
+  estoque_minimo  Int?
+  preco           Decimal? @db.Decimal(10, 2)
+  tenant_id       Int
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   @@unique([tenant_id, nome, principio_ativo, dosagem, unidade_medida], map: "uniq_medicamento_tenant_nome_principio_dosagem")
+  @@index([tenant_id], map: "idx_medicamento_tenant_id")
   @@map("medicamento")
 }
 
 model Movimentacao {
   id             Int      @id @default(autoincrement())
-  tenant_id      Int      @default(1)
+  tenant_id      Int
   tipo           String
   data           DateTime
   login_id       Int
@@ -159,36 +170,46 @@ model Movimentacao {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
+  @@index([tenant_id], map: "idx_movimentacao_tenant_id")
+  @@index([tenant_id, data], map: "idx_movimentacao_tenant_data")
+  @@index([tenant_id, medicamento_id], map: "idx_movimentacao_tenant_medicamento_id")
+  @@index([tenant_id, insumo_id], map: "idx_movimentacao_tenant_insumo_id")
+  @@index([tenant_id, login_id], map: "idx_movimentacao_tenant_login_id")
   @@map("movimentacao")
 }
 
 model EstoqueMedicamento {
-  id                Int       @id @default(autoincrement())
-  tenant_id         Int       @default(1)
-  medicamento_id    Int
-  casela_id         Int?
-  armario_id        Int?
-  gaveta_id         Int?
-  validade          DateTime  @db.Date
-  quantidade        Int
-  origem            String
-  tipo              String
-  status            String
-  lote              String?
-  setor             String
-  suspended_at      DateTime?
-  observacao        String?
-  dias_para_repor   Int?
-  ultima_reposicao  DateTime?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id               Int       @id @default(autoincrement())
+  tenant_id        Int
+  medicamento_id   Int
+  casela_id        Int?
+  armario_id       Int?
+  gaveta_id        Int?
+  validade         DateTime  @db.Date
+  quantidade       Int
+  origem           String
+  tipo             String
+  status           String
+  lote             String?
+  setor            String
+  suspended_at     DateTime?
+  observacao       String?
+  dias_para_repor  Int?
+  ultima_reposicao DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
+  @@index([tenant_id], map: "idx_estoque_medicamento_tenant_id")
+  @@index([tenant_id, medicamento_id], map: "idx_estoque_medicamento_tenant_medicamento_id")
+  @@index([tenant_id, casela_id], map: "idx_estoque_medicamento_tenant_casela_id")
+  @@index([tenant_id, setor], map: "idx_estoque_medicamento_tenant_setor")
+  @@index([tenant_id, validade], map: "idx_estoque_medicamento_tenant_validade")
   @@map("estoque_medicamento")
 }
 
 model EstoqueInsumo {
   id               Int       @id @default(autoincrement())
-  tenant_id        Int       @default(1)
+  tenant_id        Int
   insumo_id        Int
   casela_id        Int?
   armario_id       Int?
@@ -204,45 +225,56 @@ model EstoqueInsumo {
   suspended_at     DateTime?
   dias_para_repor  Int?
   ultima_reposicao DateTime?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
+  @@index([tenant_id], map: "idx_estoque_insumo_tenant_id")
+  @@index([tenant_id, insumo_id], map: "idx_estoque_insumo_tenant_insumo_id")
+  @@index([tenant_id, casela_id], map: "idx_estoque_insumo_tenant_casela_id")
+  @@index([tenant_id, setor], map: "idx_estoque_insumo_tenant_setor")
+  @@index([tenant_id, validade], map: "idx_estoque_insumo_tenant_validade")
   @@map("estoque_insumo")
 }
 
 model Notificacao {
-  id               Int       @id @default(autoincrement())
-  tenant_id        Int       @default(1)
-  tipo_evento      String
-  medicamento_id   Int?
-  residente_id     Int?
-  destino          String
-  data_prevista    DateTime? @db.Date
-  criado_por       Int
-  status           String
-  visto            Boolean   @default(false)
-  quantidade       Int?
-  dias_para_repor  Int?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id              Int       @id @default(autoincrement())
+  tenant_id       Int
+  tipo_evento     String
+  medicamento_id  Int?
+  residente_id    Int?
+  destino         String
+  data_prevista   DateTime? @db.Date
+  criado_por      Int
+  status          String
+  visto           Boolean   @default(false)
+  quantidade      Int?
+  dias_para_repor Int?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
+  @@index([tenant_id], map: "idx_notificacao_tenant_id")
+  @@index([tenant_id, visto], map: "idx_notificacao_tenant_visto")
+  @@index([tenant_id, status], map: "idx_notificacao_tenant_status")
+  @@index([tenant_id, data_prevista], map: "idx_notificacao_tenant_data_prevista")
   @@map("notificacao")
 }
 
 model AuditLog {
-  id              Int      @id @default(autoincrement())
-  user_id         Int?
-  tenant_id       Int?
-  method          String   @db.VarChar(10)
-  path            String   @db.VarChar(500)
-  operation_type  String   @db.VarChar(20)
-  resource        String?  @db.VarChar(100)
-  status_code     Int
-  duration_ms     Int?
-  old_value       Json?
-  new_value       Json?
-  created_at      DateTime @default(now())
+  id             Int      @id @default(autoincrement())
+  user_id        Int?
+  tenant_id      Int?
+  method         String   @db.VarChar(10)
+  path           String   @db.VarChar(500)
+  operation_type String   @db.VarChar(20)
+  resource       String?  @db.VarChar(100)
+  status_code    Int
+  duration_ms    Int?
+  old_value      Json?
+  new_value      Json?
+  created_at     DateTime @default(now())
 
+  @@index([tenant_id], map: "idx_audit_log_tenant_id")
+  @@index([created_at], map: "idx_audit_log_created_at")
   @@map("audit_log")
 }
 
@@ -256,6 +288,8 @@ model LoginLog {
   user_agent String?
   created_at DateTime @default(now())
 
+  @@index([tenant_id], map: "idx_login_log_tenant_id")
+  @@index([created_at], map: "idx_login_log_created_at")
   @@map("login_log")
 }
 
@@ -279,18 +313,21 @@ model ContractPortfolio {
 }
 
 model TenantInvite {
-  id                  Int       @id @default(autoincrement())
-  tenant_id           Int
-  token_digest        String    @unique @db.VarChar(64)
-  expires_at          DateTime
-  email               String?   @db.VarChar(255)
-  role                String?   @db.VarChar(20)
-  permissions_json    Json?
-  created_by_user_id  Int?
-  used_at             DateTime?
-  revoked_at          DateTime?
-  created_at          DateTime @default(now())
-  updated_at          DateTime @updatedAt
+  id                 Int       @id @default(autoincrement())
+  tenant_id          Int
+  token_digest       String    @unique @db.VarChar(64)
+  expires_at         DateTime
+  email              String?   @db.VarChar(255)
+  role               String?   @db.VarChar(20)
+  permissions_json   Json?
+  created_by_user_id Int?
+  used_at            DateTime?
+  revoked_at         DateTime?
+  created_at         DateTime  @default(now())
+  updated_at         DateTime  @updatedAt
 
+  @@index([tenant_id], map: "idx_tenant_invite_tenant_id")
+  @@index([expires_at], map: "idx_tenant_invite_expires_at")
+  @@index([tenant_id, email], map: "idx_tenant_invite_tenant_email")
   @@map("tenant_invite")
 }

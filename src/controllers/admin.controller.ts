@@ -18,7 +18,7 @@ import {
   requireTenantId,
 } from '@middlewares/tenant.middleware';
 import { getErrorMessage } from '@domain/error.types';
-import { getDb, withRootTransaction } from '@repositories/prisma';
+import { withRootTransaction } from '@repositories/prisma';
 import { getRedisClient } from '@config/redis.client';
 import {
   MovementPeriod,
@@ -27,6 +27,7 @@ import {
 import { toCSV, reportResultToArrays } from '@helpers/csv.helper';
 import { EventStatus, NotificationEventType } from '@domain/notificacao.types';
 import { validateDisplayConfigPatch } from '@helpers/ui-display.helper';
+import { getDb } from '@repositories/prisma';
 
 const DEFAULT_DAYS = 30;
 const MAX_DAYS = 365;
@@ -46,7 +47,6 @@ export class AdminController {
     tenantId: number,
     actorUserId: number,
   ): Promise<boolean> {
-    // “Guarda-chuva” explícito no login.
     const row = await getDb().login.findFirst({
       where: { id: actorUserId, tenant_id: tenantId },
       select: { is_tenant_owner: true },
@@ -54,10 +54,12 @@ export class AdminController {
     return Boolean(row?.is_tenant_owner);
   }
 
-  async listUsers(req: AuthRequest & TenantRequest, res: Response) {
+  async listUsers(
+    req: AuthRequest & TenantRequest,
+    res: Response,
+    tenantId: number,
+  ) {
     try {
-      const tenantId = requireTenantId(req, res);
-      if (tenantId === null) return;
       const page = Math.max(1, Number(req.query.page) || 1);
       const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 25));
       const result = await this.loginService.listUsersPaginated(
@@ -73,7 +75,11 @@ export class AdminController {
     }
   }
 
-  async createUser(req: AuthRequest & TenantRequest, res: Response) {
+  async createUser(
+    req: AuthRequest & TenantRequest,
+    res: Response,
+    tenantId: number,
+  ) {
     const body = req.body ?? {};
     const login = body.login;
     const password = body.password;
@@ -86,8 +92,6 @@ export class AdminController {
       return res.status(400).json({ error: 'Login e senha são obrigatórios' });
     }
 
-    const tenantId = requireTenantId(req, res);
-    if (tenantId === null) return;
     const actor = req.user;
     if (!actor?.id) {
       return res.status(401).json({ error: 'Usuário não autenticado' });
@@ -160,7 +164,7 @@ export class AdminController {
     }
   }
 
-  async updateUser(req: AuthRequest, res: Response) {
+  async updateUser(req: AuthRequest, res: Response, tenantId: number) {
     const userId = Number(req.params.id);
     const body = req.body ?? {};
 
@@ -212,8 +216,6 @@ export class AdminController {
       if (!actor?.id) {
         return res.status(401).json({ error: 'Usuário não autenticado' });
       }
-      const tenantId = requireTenantId(req as AuthRequest & TenantRequest, res);
-      if (tenantId === null) return;
 
       const target = await getDb().login.findFirst({
         where: { id: userId, tenant_id: tenantId },
@@ -260,7 +262,7 @@ export class AdminController {
     }
   }
 
-  async deleteUser(req: AuthRequest, res: Response) {
+  async deleteUser(req: AuthRequest, res: Response, tenantId: number) {
     const userId = Number(req.params.id);
     const actor = req.user;
     if (actor == null || actor.id == null) {
@@ -271,9 +273,6 @@ export class AdminController {
     if (Number.isNaN(userId) || userId < 1) {
       return res.status(400).json({ error: 'ID inválido' });
     }
-
-    const tenantId = requireTenantId(req as AuthRequest & TenantRequest, res);
-    if (tenantId === null) return;
 
     const target = await getDb().login.findFirst({
       where: { id: userId, tenant_id: tenantId },
@@ -1060,7 +1059,7 @@ export class AdminController {
     }
   }
 
-  async patchNotification(req: AuthRequest, res: Response) {
+  async patchNotification(req: AuthRequest, res: Response, tenantId: number) {
     if (!this.notificationService) {
       return res.status(501).json({ error: 'Notificações não disponíveis' });
     }
@@ -1081,7 +1080,7 @@ export class AdminController {
       return res.status(400).json({ error: 'Envie visto e/ou status' });
     }
     try {
-      const updated = await this.notificationService.update(id, updates);
+      const updated = await this.notificationService.update(tenantId, id, updates);
       if (!updated)
         return res.status(404).json({ error: 'Notificação não encontrada' });
       return res.json(updated);

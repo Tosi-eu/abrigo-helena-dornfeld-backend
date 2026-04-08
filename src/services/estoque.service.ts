@@ -191,6 +191,7 @@ export class StockService {
       quantidade: number;
     },
     login_id: number,
+    tenantId: number,
     transaction?: Prisma.TransactionClient,
   ) {
     const { estoqueId, tipo, quantidade } = data;
@@ -202,9 +203,13 @@ export class StockService {
 
     let stockItem: EstoqueMedicamento | EstoqueInsumo | null = null;
     if (tipo === ItemType.MEDICAMENTO) {
-      stockItem = await this.repo.findMedicineStockById(estoqueId, transaction);
+      stockItem = await this.repo.findMedicineStockById(
+        estoqueId,
+        transaction,
+        tenantId,
+      );
     } else {
-      stockItem = await this.repo.findInputStockById(estoqueId, transaction);
+      stockItem = await this.repo.findInputStockById(estoqueId, transaction, tenantId);
     }
 
     if (!stockItem) {
@@ -225,11 +230,6 @@ export class StockService {
     const insumoId =
       tipo === ItemType.INSUMO ? (stockItem as EstoqueInsumo).insumo_id : null;
     const lote = stockItem.lote ?? null;
-    const tenantId = stockItem.tenant_id;
-    if (tenantId == null) {
-      throw new Error('Tenant não identificado no registro de estoque');
-    }
-
     await this.movementRepo.create(
       {
         tenant_id: tenantId,
@@ -283,22 +283,23 @@ export class StockService {
   }
 
   async getProportion(
+    tenantId: number,
     setor?: SectorType,
     transaction?: Prisma.TransactionClient,
   ) {
     const version = await this.getStockCacheVersion();
     return this.cache.getOrSet(
-      CacheKeyHelper.stockDashboard(setor ?? 'general', version),
-      () => this.repo.getStockProportionBySector(setor, transaction),
+      CacheKeyHelper.stockDashboard(`${tenantId}:${setor ?? 'general'}`, version),
+      () => this.repo.getStockProportionBySector(tenantId, setor, transaction),
       60,
     );
   }
 
-  async getFilterOptions(transaction?: Prisma.TransactionClient) {
+  async getFilterOptions(tenantId: number, transaction?: Prisma.TransactionClient) {
     const version = await this.getStockCacheVersion();
     return this.cache.getOrSet(
-      CacheKeyHelper.stockFilterOptions(version),
-      () => this.repo.getFilterOptions(transaction),
+      CacheKeyHelper.stockFilterOptions(version) + `:${tenantId}`,
+      () => this.repo.getFilterOptions(tenantId, transaction),
       120,
     );
   }
@@ -505,11 +506,13 @@ export class StockService {
   }
 
   async getDaysForReplacementForNursing(
+    tenantId: number,
     medicamento_id: number,
     casela_id: number,
     transaction?: Prisma.TransactionClient,
   ): Promise<number | null> {
     return this.repo.getDaysForReplacementForNursing(
+      tenantId,
       medicamento_id,
       casela_id,
       transaction,

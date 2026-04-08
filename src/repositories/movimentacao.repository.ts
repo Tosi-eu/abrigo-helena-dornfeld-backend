@@ -309,12 +309,14 @@ export class PrismaMovementRepository {
   }
 
   async listMedicineMovements({
+    tenantId,
     days,
     type,
     page,
     limit,
   }: MovementQueryParams) {
     const where: Prisma.MovimentacaoWhereInput = {
+      tenant_id: tenantId,
       medicamento_id: { not: null },
     };
 
@@ -356,17 +358,20 @@ export class PrismaMovementRepository {
   }
 
   async listPharmacyToNursingTransfers({
+    tenantId,
     startDate,
     endDate,
     page,
     limit,
   }: {
+    tenantId: number;
     startDate?: Date;
     endDate?: Date;
     page: number;
     limit: number;
   }) {
     const where: Prisma.MovimentacaoWhereInput = {
+      tenant_id: tenantId,
       medicamento_id: { not: null },
       setor: 'farmacia',
       tipo: OperationType.INDIVIDUAL,
@@ -453,8 +458,15 @@ export class PrismaMovementRepository {
     };
   }
 
-  async listInputMovements({ days, type, page, limit }: MovementQueryParams) {
+  async listInputMovements({
+    tenantId,
+    days,
+    type,
+    page,
+    limit,
+  }: MovementQueryParams) {
     const where: Prisma.MovimentacaoWhereInput = {
+      tenant_id: tenantId,
       insumo_id: { not: null },
     };
 
@@ -498,10 +510,12 @@ export class PrismaMovementRepository {
   }
 
   async getMedicineRanking({
+    tenantId,
     type,
     page,
     limit,
   }: {
+    tenantId: number;
     type?: string;
     page: number;
     limit: number;
@@ -534,7 +548,7 @@ export class PrismaMovementRepository {
         med.principio_ativo AS med_principio_ativo
       FROM movimentacao m
       LEFT JOIN medicamento med ON med.id = m.medicamento_id
-      WHERE m.medicamento_id IS NOT NULL
+      WHERE m.tenant_id = ${tenantId} AND m.medicamento_id IS NOT NULL
       GROUP BY m.medicamento_id, med.id, med.nome, med.principio_ativo
       ORDER BY total_movimentado ${Prisma.raw(orderDirection)}
       LIMIT ${limit} OFFSET ${offset}
@@ -543,7 +557,7 @@ export class PrismaMovementRepository {
     const totalRows = await db().$queryRaw<[{ c: bigint }]>(Prisma.sql`
       SELECT COUNT(DISTINCT medicamento_id)::bigint AS c
       FROM movimentacao
-      WHERE medicamento_id IS NOT NULL
+      WHERE tenant_id = ${tenantId} AND medicamento_id IS NOT NULL
     `);
     const totalCount = Number(totalRows[0].c);
 
@@ -577,7 +591,7 @@ export class PrismaMovementRepository {
     };
   }
 
-  async getNonMovementedMedicines(limit = 10) {
+  async getNonMovementedMedicines(tenantId: number, limit = 10) {
     type NonMovementedRawRow = {
       id: number;
       nome: string;
@@ -595,8 +609,9 @@ export class PrismaMovementRepository {
         DATE_PART('day', NOW() - MAX(mov.data)) AS dias_parados
       FROM medicamento m
       INNER JOIN estoque_medicamento em
-        ON em.medicamento_id = m.id AND em.quantidade > 0
-      LEFT JOIN movimentacao mov ON mov.medicamento_id = m.id
+        ON em.medicamento_id = m.id AND em.tenant_id = ${tenantId} AND em.quantidade > 0
+      LEFT JOIN movimentacao mov ON mov.medicamento_id = m.id AND mov.tenant_id = ${tenantId}
+      WHERE m.tenant_id = ${tenantId}
       GROUP BY m.id, m.nome, m.principio_ativo
       ORDER BY dias_parados DESC NULLS LAST
       LIMIT ${limit}
@@ -610,8 +625,9 @@ export class PrismaMovementRepository {
         MAX(mov.data) AS ultima_movimentacao,
         DATE_PART('day', NOW() - MAX(mov.data)) AS dias_parados
       FROM insumo i
-      INNER JOIN estoque_insumo ei ON ei.insumo_id = i.id AND ei.quantidade > 0
-      LEFT JOIN movimentacao mov ON mov.insumo_id = i.id
+      INNER JOIN estoque_insumo ei ON ei.insumo_id = i.id AND ei.tenant_id = ${tenantId} AND ei.quantidade > 0
+      LEFT JOIN movimentacao mov ON mov.insumo_id = i.id AND mov.tenant_id = ${tenantId}
+      WHERE i.tenant_id = ${tenantId}
       GROUP BY i.id, i.nome, i.descricao
       ORDER BY dias_parados DESC NULLS LAST
       LIMIT ${limit}
@@ -644,6 +660,7 @@ export class PrismaMovementRepository {
   }
 
   async getConsumptionByPeriod(
+    tenantId: number,
     startDate: Date,
     endDate: Date,
     groupBy: 'month' | 'quarter',
@@ -665,7 +682,7 @@ export class PrismaMovementRepository {
         COALESCE(SUM(CASE WHEN tipo = 'entrada' THEN quantidade ELSE 0 END), 0)::integer AS entrada,
         COALESCE(SUM(CASE WHEN tipo = 'saida' THEN quantidade ELSE 0 END), 0)::integer AS saida
       FROM movimentacao
-      WHERE "data" >= ${startDate} AND "data" <= ${endOfDay}
+      WHERE tenant_id = ${tenantId} AND "data" >= ${startDate} AND "data" <= ${endOfDay}
       GROUP BY date_trunc(${Prisma.raw(`'${trunc}'`)}, "data")
       ORDER BY period ASC
     `);
@@ -678,6 +695,7 @@ export class PrismaMovementRepository {
   }
 
   async getConsumptionByItem(
+    tenantId: number,
     startDate: Date,
     endDate: Date,
     transaction?: Prisma.TransactionClient,
@@ -712,7 +730,7 @@ export class PrismaMovementRepository {
           COALESCE(SUM(CASE WHEN mov.tipo = 'saida' THEN mov.quantidade ELSE 0 END), 0)::integer AS saida
         FROM movimentacao mov
         JOIN medicamento m ON mov.medicamento_id = m.id
-        WHERE mov.data >= ${startDate} AND mov.data <= ${endOfDay} AND mov.medicamento_id IS NOT NULL
+        WHERE mov.tenant_id = ${tenantId} AND mov.data >= ${startDate} AND mov.data <= ${endOfDay} AND mov.medicamento_id IS NOT NULL
         GROUP BY m.id, m.nome
         UNION ALL
         SELECT
@@ -723,7 +741,7 @@ export class PrismaMovementRepository {
           COALESCE(SUM(CASE WHEN mov.tipo = 'saida' THEN mov.quantidade ELSE 0 END), 0)::integer
         FROM movimentacao mov
         JOIN insumo i ON mov.insumo_id = i.id
-        WHERE mov.data >= ${startDate} AND mov.data <= ${endOfDay} AND mov.insumo_id IS NOT NULL
+        WHERE mov.tenant_id = ${tenantId} AND mov.data >= ${startDate} AND mov.data <= ${endOfDay} AND mov.insumo_id IS NOT NULL
         GROUP BY i.id, i.nome
       ) AS u
       ORDER BY tipo_item, nome

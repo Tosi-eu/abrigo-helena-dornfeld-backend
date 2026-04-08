@@ -20,7 +20,6 @@ async function main() {
       'estoque_insumo',
       'movimentacao',
       'notificacao',
-      'system_config',
       'audit_log',
       'login',
       'login_log',
@@ -31,6 +30,7 @@ async function main() {
         `SELECT column_name FROM information_schema.columns WHERE table_name = $1 AND column_name = 'tenant_id'`,
         [t],
       );
+      // Tabelas "globais" (sem scoping por tenant) não exigem tenant_id.
       if (t === 'tenant' || t === 'tenant_config') continue;
       if (!rows || rows.length === 0) {
         throw new Error(`missing tenant_id column on ${t}`);

@@ -9,10 +9,8 @@ import {
 export class DrawerCategoryController {
   constructor(private readonly service: DrawerCategoryService) {}
 
-  async create(req: Request & TenantRequest, res: Response) {
+  async create(req: Request & TenantRequest, res: Response, tenantId: number) {
     try {
-      const tenantId = requireTenantId(req, res);
-      if (tenantId === null) return;
       const { nome } = req.body;
       const created = await this.service.create(nome, tenantId);
       return res.status(201).json(created);
@@ -21,17 +19,17 @@ export class DrawerCategoryController {
     }
   }
 
-  async getAll(req: Request, res: Response) {
+  async getAll(req: Request, res: Response, tenantId: number) {
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 10;
 
-    const result = await this.service.list(page, limit);
+    const result = await this.service.list(tenantId, page, limit);
     return res.json(result);
   }
 
-  async getById(req: Request, res: Response) {
+  async getById(req: Request, res: Response, tenantId: number) {
     const id = Number(req.params.id);
-    const category = await this.service.get(id);
+    const category = await this.service.get(tenantId, id);
 
     if (!category) {
       return res.status(404).json({ error: 'Categoria não encontrada' });
@@ -40,12 +38,12 @@ export class DrawerCategoryController {
     return res.json(category);
   }
 
-  async update(req: Request, res: Response) {
+  async update(req: Request, res: Response, tenantId: number) {
     try {
       const id = Number(req.params.id);
       const { nome } = req.body;
 
-      const updated = await this.service.update(id, nome);
+      const updated = await this.service.update(tenantId, id, nome);
 
       if (!updated) {
         return res.status(404).json({ error: 'Categoria não encontrada' });
@@ -57,10 +55,10 @@ export class DrawerCategoryController {
     }
   }
 
-  async delete(req: Request, res: Response) {
+  async delete(req: Request, res: Response, tenantId: number) {
     try {
       const id = Number(req.params.id);
-      const deleted = await this.service.delete(id);
+      const deleted = await this.service.delete(tenantId, id);
 
       if (!deleted) {
         return res.status(404).json({ error: 'Categoria não encontrada' });

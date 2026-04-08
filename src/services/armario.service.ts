@@ -18,27 +18,27 @@ export class CabinetService {
     return this.repo.createCabinet(data, tenantId);
   }
 
-  async findAll(page: number, limit: number) {
-    return this.repo.findAllCabinets(page, limit);
+  async findAll(tenantId: number, page: number, limit: number) {
+    return this.repo.findAllCabinets(tenantId, page, limit);
   }
 
-  async findCabinetByNumber(numero: number) {
-    return this.repo.findByCabinetNumber(numero);
+  async findCabinetByNumber(tenantId: number, numero: number) {
+    return this.repo.findByCabinetNumber(tenantId, numero);
   }
 
-  async updateCabinet(numero: number, categoria_id: number) {
+  async updateCabinet(tenantId: number, numero: number, categoria_id: number) {
     if (!categoria_id || categoria_id <= 0) {
       throw new Error('Categoria inválida');
     }
 
-    return this.repo.update(numero, categoria_id);
+    return this.repo.update(tenantId, numero, categoria_id);
   }
 
-  async removeCabinet(numero: number): Promise<boolean> {
-    return this.repo.delete(numero);
+  async removeCabinet(tenantId: number, numero: number): Promise<boolean> {
+    return this.repo.delete(tenantId, numero);
   }
 
-  async count(): Promise<number> {
-    return this.repo.count();
+  async count(tenantId: number): Promise<number> {
+    return this.repo.count(tenantId);
   }
 }

@@ -24,6 +24,7 @@ import {
 } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
 import { StockController } from '@controllers/estoque.controller';
+import { TenantId } from '@decorators/tenant-id.decorator';
 import { UseExpressMwGuard } from '@middlewares/express.middleware';
 import { requireModule } from '@middlewares/module.middleware';
 import {
@@ -79,8 +80,12 @@ export class EstoqueApiController {
     },
   })
   @UseGuards(stockEntradaMw, stockModule)
-  entrada(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.stockIn(req, res);
+  entrada(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.stockIn(req, res, tenantId);
   }
 
   @Post('saida')
@@ -88,8 +93,12 @@ export class EstoqueApiController {
   @ApiOperation({ summary: 'Saída de stock' })
   @ApiBody({ type: StockOutBodyDto })
   @UseGuards(stockOutBody, stockModule)
-  saida(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.stockOut(req, res);
+  saida(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.stockOut(req, res, tenantId);
   }
 
   @Get()
@@ -97,29 +106,45 @@ export class EstoqueApiController {
   @ApiQuery({ name: 'page', required: false })
   @ApiQuery({ name: 'limit', required: false })
   @UseGuards(UseExpressMwGuard(validatePagination, requireModule('stock')))
-  list(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.list(req, res);
+  list(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.list(req, res, tenantId);
   }
 
   @Get('filter-options')
   @ApiOperation({ summary: 'Opções para filtros da listagem' })
   @UseGuards(stockModule)
-  filterOptions(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.getFilterOptions(req, res);
+  filterOptions(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.getFilterOptions(req, res, tenantId);
   }
 
   @Get('proporcao')
   @ApiOperation({ summary: 'Proporção / totais por categoria' })
   @UseGuards(stockModule)
-  proporcao(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.proportion(req, res);
+  proporcao(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.proportion(req, res, tenantId);
   }
 
   @Get('medicamento/dias-para-repor')
   @ApiOperation({ summary: 'Dias para repor (medicamentos por enfermagem)' })
   @UseGuards(stockModule)
-  diasParaRepor(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.getDaysForReplacementForNursing(req, res);
+  diasParaRepor(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.getDaysForReplacementForNursing(req, res, tenantId);
   }
 
   @Patch('medicamento/:estoque_id/remover-individual')

@@ -7,12 +7,12 @@ import type { Request } from 'express';
 export class DashboardController {
   constructor(private readonly service: DashboardService) {}
 
-  async getSummary(req: Request, res: Response) {
+  async getSummary(req: Request, res: Response, tenantId: number) {
     try {
       const expiringDays = req.query.expiringDays
         ? Number(req.query.expiringDays)
         : undefined;
-      const data = await this.service.getSummary(expiringDays);
+      const data = await this.service.getSummary(tenantId, expiringDays);
 
       if (handleETagResponse(req, res, data)) {
         return;

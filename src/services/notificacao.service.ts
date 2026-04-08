@@ -30,11 +30,12 @@ export class NotificationEventService {
     return this.repo.create(data, transaction);
   }
 
-  async get(id: number, transaction?: Prisma.TransactionClient) {
-    return this.repo.findById(id, transaction);
+  async get(tenantId: number, id: number, transaction?: Prisma.TransactionClient) {
+    return this.repo.findById(tenantId, id, transaction);
   }
 
   async list(
+    tenantId: number,
     filters: {
       page: number;
       limit: number;
@@ -46,7 +47,7 @@ export class NotificationEventService {
     },
     transaction?: Prisma.TransactionClient,
   ) {
-    return this.repo.listWithFilters(filters, transaction);
+    return this.repo.listWithFilters({ tenantId, ...filters }, transaction);
   }
 
   async listForAdmin(
@@ -63,15 +64,16 @@ export class NotificationEventService {
   }
 
   async update(
+    tenantId: number,
     id: number,
     updates: NotificationUpdateData,
     transaction?: Prisma.TransactionClient,
   ) {
-    return this.repo.update(id, updates, transaction);
+    return this.repo.update(tenantId, id, updates, transaction);
   }
 
-  async delete(id: number, transaction?: Prisma.TransactionClient) {
-    return this.repo.delete(id, transaction);
+  async delete(tenantId: number, id: number, transaction?: Prisma.TransactionClient) {
+    return this.repo.delete(tenantId, id, transaction);
   }
 
   async bootstrapReplacementNotifications() {
