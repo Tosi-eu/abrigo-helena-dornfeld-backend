@@ -19,7 +19,7 @@ import {
 } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
 import { NotificationEventController } from '@controllers/notificacao.controller';
-import { UseExpressMwGuard } from '@guards/express-middleware.guard';
+import { UseExpressMwGuard } from '@middlewares/express.middleware';
 import { requireModule } from '@middlewares/module.middleware';
 import {
   validateIdParam,

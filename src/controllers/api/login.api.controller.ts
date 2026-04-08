@@ -23,7 +23,7 @@ import type { Request, Response } from 'express';
 import type { RequestHandler } from 'express';
 import rateLimit from 'express-rate-limit';
 import { LoginController } from '@controllers/login.controller';
-import { UseExpressMwGuard } from '@guards/express-middleware.guard';
+import { UseExpressMwGuard } from '@middlewares/express.middleware';
 import { authMiddleware } from '@middlewares/auth.middleware';
 import {
   enforceTenantMiddleware,

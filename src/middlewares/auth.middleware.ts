@@ -21,6 +21,7 @@ export interface AuthRequest extends Request {
     role?: 'admin' | 'user';
     permissions?: UserPermissions;
     tenantId?: number;
+    isTenantOwner?: boolean;
     isSuperAdmin?: boolean;
   };
 }
@@ -57,6 +58,7 @@ export async function authMiddleware(
       role: 'admin' | 'user';
       permissions: UserPermissions;
       tenantId: number;
+      isTenantOwner: boolean;
       isSuperAdmin: boolean;
     };
 
@@ -78,6 +80,7 @@ export async function authMiddleware(
             role: true,
             permissions: true,
             tenant_id: true,
+            is_tenant_owner: true,
             is_super_admin: true,
           },
         });
@@ -107,6 +110,7 @@ export async function authMiddleware(
           role,
           permissions,
           tenantId,
+          isTenantOwner: Boolean((user as any).is_tenant_owner),
           isSuperAdmin: Boolean(user.is_super_admin),
         } satisfies AuthCacheEntry;
       },
@@ -121,6 +125,7 @@ export async function authMiddleware(
       role: cached.role,
       permissions: cached.permissions,
       tenantId: cached.tenantId,
+      isTenantOwner: cached.isTenantOwner,
       isSuperAdmin: cached.isSuperAdmin,
     };
 
@@ -159,6 +164,7 @@ export async function optionalAuthMiddleware(
       role: 'admin' | 'user';
       permissions: UserPermissions;
       tenantId: number;
+      isTenantOwner: boolean;
       isSuperAdmin: boolean;
     };
 
@@ -180,6 +186,7 @@ export async function optionalAuthMiddleware(
             role: true,
             permissions: true,
             tenant_id: true,
+            is_tenant_owner: true,
             is_super_admin: true,
           },
         });
@@ -209,6 +216,7 @@ export async function optionalAuthMiddleware(
           role,
           permissions,
           tenantId,
+          isTenantOwner: Boolean((user as any).is_tenant_owner),
           isSuperAdmin: Boolean(user.is_super_admin),
         } satisfies AuthCacheEntry;
       },
@@ -223,6 +231,7 @@ export async function optionalAuthMiddleware(
       role: cached.role,
       permissions: cached.permissions,
       tenantId: cached.tenantId,
+      isTenantOwner: cached.isTenantOwner,
       isSuperAdmin: cached.isSuperAdmin,
     };
   } catch {

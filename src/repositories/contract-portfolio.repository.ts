@@ -6,6 +6,35 @@ import { setRlsSessionGucs } from './rls.context';
 import { withRootTransaction } from '@repositories/prisma';
 
 export class PrismaContractPortfolioRepository {
+  /**
+   * Apenas procura um portfolio cujo hash corresponda ao texto — não cria registos.
+   * Usado na verificação pública do código (ex.: onboarding em tenant `u-*`).
+   */
+  async findMatchingPortfolioByPlainText(
+    plain: string,
+  ): Promise<{ id: number; hash: string } | null> {
+    const trimmed = String(plain).trim();
+    if (!trimmed) return null;
+
+    return withRootTransaction(async tx => {
+      await setRlsSessionGucs(tx, { is_super_admin: 'true' });
+
+      const rows = await tx.contractPortfolio.findMany({
+        select: { id: true, contract_code_hash: true },
+      });
+
+      for (const row of rows) {
+        const h = row.contract_code_hash;
+        if (!h) continue;
+        const verdict = await verifyContractCode(h, trimmed);
+        if (verdict === 'ok') {
+          return { id: row.id, hash: h };
+        }
+      }
+      return null;
+    });
+  }
+
   async resolveOrCreateByPlainText(
     plain: string,
   ): Promise<{ id: number; hash: string }> {

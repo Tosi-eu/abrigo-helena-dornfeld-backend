@@ -80,14 +80,38 @@ export class PrismaTenantRepository {
   ) {
     const row = await db(tx).tenant.findFirst({
       where: { slug: String(slug).trim() },
-      select: { id: true, slug: true, contract_code_hash: true },
+      select: {
+        id: true,
+        slug: true,
+        contract_code_hash: true,
+        contract_portfolio_id: true,
+      },
     });
     if (!row) return null;
     return {
       id: row.id,
       slug: row.slug,
       contract_code_hash: row.contract_code_hash ?? null,
+      contract_portfolio_id: row.contract_portfolio_id ?? null,
     };
+  }
+
+  /** Tenant definitivo (não viewer, não `u-*`) que partilha o mesmo portfolio de contrato. */
+  async findCanonicalTenantByPortfolioId(
+    portfolioId: number,
+    excludeTenantId: number,
+    tx?: Prisma.TransactionClient,
+  ) {
+    return db(tx).tenant.findFirst({
+      where: {
+        contract_portfolio_id: portfolioId,
+        id: { not: excludeTenantId },
+        slug: { not: 'viewer' },
+        NOT: { slug: { startsWith: 'u-' } },
+      },
+      orderBy: { id: 'asc' },
+      select: { id: true, slug: true },
+    });
   }
 
   async findIdBySlug(slug: string): Promise<number | null> {

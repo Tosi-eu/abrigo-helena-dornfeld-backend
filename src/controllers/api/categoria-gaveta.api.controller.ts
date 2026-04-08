@@ -18,7 +18,7 @@ import {
 } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
 import { DrawerCategoryController } from '@controllers/categoria-gaveta.controller';
-import { UseExpressMwGuard } from '@guards/express-middleware.guard';
+import { UseExpressMwGuard } from '@middlewares/express.middleware';
 import { requireModule } from '@middlewares/module.middleware';
 import { CategoryNomeBodyDto } from '@domain/dto/entities.api.dto';
 import { UseValidatedBody } from '@validation/use-validated-body.guard';

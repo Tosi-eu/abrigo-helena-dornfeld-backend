@@ -19,7 +19,7 @@ import type { Request, Response } from 'express';
 import { tenantLogoUpload } from '@config/upload/multer-r2.config';
 import { TenantController } from '@controllers/tenant.controller';
 import { TenantInviteController } from '@controllers/tenant-invite.controller';
-import { UseExpressMwGuard } from '@guards/express-middleware.guard';
+import { UseExpressMwGuard } from '@middlewares/express.middleware';
 import { requireAdmin } from '@middlewares/admin.middleware';
 import {
   TenantBrandingBodyDto,
@@ -61,6 +61,17 @@ export class TenantApiController {
   @UseGuards(inviteBody, requireAdminGuard)
   invites(@Req() req: Request, @Res() res: Response): void {
     void this.inviteController.create(req, res);
+  }
+
+  @Post('contract-code/claim')
+  @ApiOperation({
+    summary:
+      'Abrigo provisório (u-*): validar código existente e associar a conta ao abrigo definitivo',
+  })
+  @ApiBody({ type: TenantContractCodeBodyDto })
+  @UseGuards(contractBody)
+  claimContractCode(@Req() req: Request, @Res() res: Response): void {
+    void this.controller.claimContractCode(req, res);
   }
 
   @Post('contract-code')

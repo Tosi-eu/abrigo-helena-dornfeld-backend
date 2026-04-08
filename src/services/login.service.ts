@@ -325,8 +325,8 @@ export class LoginService {
     }));
   }
 
-  async listUsersPaginated(page = 1, limit = 25) {
-    const result = await this.repo.listPaginated(page, limit);
+  async listUsersPaginated(page = 1, limit = 25, tenantId?: number | null) {
+    const result = await this.repo.listPaginated(page, limit, tenantId);
     return {
       data: result.data.map(u => ({
         id: u.id,
@@ -507,6 +507,7 @@ export class LoginService {
             tenant_id: tenant.id,
             role: 'user',
             permissions: { ...DEFAULT_PERMISSIONS } as Prisma.InputJsonValue,
+            is_tenant_owner: true,
             is_super_admin: false,
           },
         });
@@ -745,6 +746,7 @@ export class LoginService {
             last_name: ln,
             tenant_id: tenant.id,
             role: 'admin',
+            is_tenant_owner: true,
             is_super_admin: false,
           },
           { transaction: t },

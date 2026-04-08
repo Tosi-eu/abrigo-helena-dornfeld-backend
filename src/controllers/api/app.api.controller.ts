@@ -22,7 +22,7 @@ import type { Request, Response } from 'express';
 import rateLimit from 'express-rate-limit';
 import { AppController } from '@controllers/app.controller';
 import { AdminTenantsController } from '@controllers/admin-tenants.controller';
-import { UseExpressMwGuard } from '@guards/express-middleware.guard';
+import { UseExpressMwGuard } from '@middlewares/express.middleware';
 import { optionalAuthMiddleware } from '@middlewares/auth.middleware';
 import { requireSuperAdminOrApiKey } from '@middlewares/super-admin.middleware';
 import { bindSuperAdminRlsTransaction } from '@middlewares/request-rls-transaction.middleware';

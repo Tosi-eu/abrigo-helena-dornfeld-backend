@@ -23,7 +23,7 @@ import {
 import type { Request, Response } from 'express';
 import { adminBackupUpload } from '@config/upload/multer-r2.config';
 import { AdminController } from '@controllers/admin.controller';
-import { UseExpressMwGuard } from '@guards/express-middleware.guard';
+import { UseExpressMwGuard } from '@middlewares/express.middleware';
 import { requireSuperAdmin } from '@middlewares/super-admin.middleware';
 import { STRING_MAP_BODY } from '@domain/dto/common.api.dto';
 import {
@@ -59,7 +59,7 @@ export class AdminApiController {
   constructor(private readonly controller: AdminController) {}
 
   @Get('users')
-  @ApiOperation({ summary: '[Super-admin] Listar utilizadores' })
+  @ApiOperation({ summary: '[Admin] Listar utilizadores do abrigo atual' })
   @ApiQuery({ name: 'page', required: false })
   @ApiQuery({ name: 'limit', required: false })
   users(@Req() req: Request, @Res() res: Response): void {
@@ -67,7 +67,7 @@ export class AdminApiController {
   }
 
   @Post('users')
-  @ApiOperation({ summary: '[Super-admin] Criar utilizador' })
+  @ApiOperation({ summary: '[Admin] Criar utilizador (no abrigo atual)' })
   @ApiBody({ type: AdminCreateUserBodyDto })
   @UseGuards(adminCreateUserBody)
   createUser(@Req() req: Request, @Res() res: Response): void {
@@ -75,7 +75,7 @@ export class AdminApiController {
   }
 
   @Put('users/:id')
-  @ApiOperation({ summary: '[Super-admin] Atualizar utilizador' })
+  @ApiOperation({ summary: '[Admin] Atualizar utilizador (no abrigo atual)' })
   @ApiParam({ name: 'id', type: Number })
   @ApiBody({ type: AdminUpdateUserBodyDto })
   @UseGuards(adminUpdateUserBody)
@@ -84,7 +84,7 @@ export class AdminApiController {
   }
 
   @Delete('users/:id')
-  @ApiOperation({ summary: '[Super-admin] Remover utilizador' })
+  @ApiOperation({ summary: '[Admin] Remover utilizador (no abrigo atual)' })
   @ApiParam({ name: 'id', type: Number })
   deleteUser(@Req() req: Request, @Res() res: Response): void {
     void this.controller.deleteUser(req, res);

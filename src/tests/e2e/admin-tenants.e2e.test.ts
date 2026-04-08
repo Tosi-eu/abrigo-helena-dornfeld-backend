@@ -111,4 +111,39 @@ describe('Admin tenants + verify-contract-code (E2E)', () => {
     expect(r1.body.contract_portfolio_id).toBeDefined();
     expect(r1.body.contract_portfolio_id).toBe(r2.body.contract_portfolio_id);
   });
+
+  it('POST verify-contract-code — tenant provisório u-* valida contra portfolio + abrigo definitivo', async () => {
+    const code = `PROV-CHK-${Date.now()}`;
+    const canon = `canon-${Date.now()}`;
+    const prov = `u-prov-${Date.now()}`;
+    const cr = await request(app)
+      .post('/api/v1/admin/tenants')
+      .set('X-API-Key', apiKey())
+      .send({ slug: canon, name: 'Abrigo definitivo', contract_code: code });
+    expect(cr.status).toBe(201);
+    const pr = await request(app)
+      .post('/api/v1/admin/tenants')
+      .set('X-API-Key', apiKey())
+      .send({ slug: prov, name: 'Temp' });
+    expect(pr.status).toBe(201);
+
+    const ok = await request(app)
+      .post(`/api/v1/tenants/${prov}/verify-contract-code`)
+      .send({ contract_code: code });
+    expect(ok.status).toBe(200);
+    expect(ok.body).toMatchObject({
+      valid: true,
+      contractCodeRequired: true,
+      canonicalSlug: canon,
+    });
+
+    const bad = await request(app)
+      .post(`/api/v1/tenants/${prov}/verify-contract-code`)
+      .send({ contract_code: 'codigo-inexistente-xyz' });
+    expect(bad.status).toBe(200);
+    expect(bad.body).toMatchObject({
+      valid: false,
+      reason: 'mismatch',
+    });
+  });
 });

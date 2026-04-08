@@ -8,7 +8,7 @@ import {
 } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
 import { DashboardController } from '@controllers/dashboard.controller';
-import { UseExpressMwGuard } from '@guards/express-middleware.guard';
+import { UseExpressMwGuard } from '@middlewares/express.middleware';
 import { requireModule } from '@middlewares/module.middleware';
 
 const dashModule = UseExpressMwGuard(requireModule('dashboard'));

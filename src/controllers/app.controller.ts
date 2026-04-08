@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import { Request, Response } from 'express';
 import { withRlsContext } from '@repositories/rls.context';
 import { PrismaTenantRepository } from '@repositories/tenant.repository';
+import { PrismaContractPortfolioRepository } from '@repositories/contract-portfolio.repository';
 import { verifyContractCode as matchContractCode } from '@helpers/contract-code.helper';
 import {
   assertLogoUrlBelongsToOurR2,
@@ -12,6 +13,8 @@ import {
 } from '@services/r2-assets.service';
 
 const TENANT_LOGO_PROXY_MAX_BYTES = 6 * 1024 * 1024;
+
+const contractPortfolioRepo = new PrismaContractPortfolioRepository();
 
 function weakTenantLogoEtag(
   slug: string,
@@ -219,6 +222,8 @@ export class AppController {
           : body.contractCode != null
             ? String(body.contractCode)
             : '';
+      const plainTrim = plain.trim();
+      const isProvisional = slug.startsWith('u-');
 
       const tenant = await withRlsContext(
         {
@@ -234,32 +239,113 @@ export class AppController {
         return res.status(404).json({ error: 'Abrigo não encontrado' });
       }
 
-      const required = Boolean(tenant.contract_code_hash);
-      if (!required) {
-        return res.status(200).json({
-          valid: true,
-          contractCodeRequired: false,
-        });
-      }
+      const tenantHasContractBinding =
+        Boolean(tenant.contract_code_hash) ||
+        tenant.contract_portfolio_id != null;
 
-      const verdict = await matchContractCode(tenant.contract_code_hash, plain);
-      if (verdict === 'required') {
+      if (!plainTrim) {
+        if (isProvisional) {
+          return res.status(200).json({
+            valid: false,
+            contractCodeRequired: true,
+            reason: 'missing',
+          });
+        }
+        if (!tenantHasContractBinding) {
+          return res.status(200).json({
+            valid: true,
+            contractCodeRequired: false,
+          });
+        }
         return res.status(200).json({
           valid: false,
           contractCodeRequired: true,
           reason: 'missing',
         });
       }
-      if (verdict === 'invalid') {
+
+      const matchedPortfolio =
+        await contractPortfolioRepo.findMatchingPortfolioByPlainText(plainTrim);
+      if (!matchedPortfolio) {
         return res.status(200).json({
           valid: false,
           contractCodeRequired: true,
           reason: 'mismatch',
         });
       }
+
+      if (isProvisional) {
+        const canonical = await withRlsContext(
+          {
+            allow_public_directory: 'true',
+            is_super_admin: 'true',
+          },
+          async trx => {
+            const repo = new PrismaTenantRepository();
+            return repo.findCanonicalTenantByPortfolioId(
+              matchedPortfolio.id,
+              tenant.id,
+              trx,
+            );
+          },
+        );
+        if (!canonical) {
+          return res.status(200).json({
+            valid: false,
+            contractCodeRequired: true,
+            reason: 'no_canonical_tenant',
+          });
+        }
+        return res.status(200).json({
+          valid: true,
+          contractCodeRequired: true,
+          canonicalSlug: canonical.slug,
+        });
+      }
+
+      if (tenant.contract_code_hash) {
+        const verdict = await matchContractCode(
+          tenant.contract_code_hash,
+          plainTrim,
+        );
+        if (verdict === 'required') {
+          return res.status(200).json({
+            valid: false,
+            contractCodeRequired: true,
+            reason: 'missing',
+          });
+        }
+        if (verdict === 'invalid') {
+          return res.status(200).json({
+            valid: false,
+            contractCodeRequired: true,
+            reason: 'mismatch',
+          });
+        }
+        return res.status(200).json({
+          valid: true,
+          contractCodeRequired: true,
+        });
+      }
+
+      if (tenant.contract_portfolio_id != null) {
+        if (tenant.contract_portfolio_id === matchedPortfolio.id) {
+          return res.status(200).json({
+            valid: true,
+            contractCodeRequired: true,
+          });
+        }
+        return res.status(200).json({
+          valid: false,
+          contractCodeRequired: true,
+          reason: 'mismatch',
+        });
+      }
+
       return res.status(200).json({
-        valid: true,
+        valid: false,
         contractCodeRequired: true,
+        reason: 'mismatch',
       });
     } catch {
       return res.status(500).json({ error: 'Erro ao verificar código' });

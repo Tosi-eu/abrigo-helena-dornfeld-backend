@@ -15,9 +15,10 @@ import { getErrorMessage, HttpError, isHttpError } from '@domain/error.types';
 import { inferImageContentTypeFromBuffer } from '@helpers/image-mime.helper';
 import { PrismaTenantRepository } from '@repositories/tenant.repository';
 import { uiDisplayFromConfigRow } from '@helpers/ui-display.helper';
-import { getDb, withRootTransaction } from '@repositories/prisma';
+import { getDb } from '@repositories/prisma';
 import type { Prisma } from '@prisma/client';
 import { invalidateAuthCacheForRequest } from '@helpers/auth-token-cache.helper';
+import { migrateProvisionalLoginToCanonicalTenant } from '@services/tenant-contract-migration.service';
 import { PrismaContractPortfolioRepository } from '@repositories/contract-portfolio.repository';
 import {
   assertLogoUrlBelongsToOurR2,
@@ -379,18 +380,10 @@ export class TenantController {
       const provisionalSlug = String(tenant.slug ?? '');
       const isProvisional = provisionalSlug.startsWith('u-');
 
-      const canonical = await getDb().tenant.findFirst({
-        where: {
-          contract_portfolio_id: resolved.id,
-          id: { not: tenantId },
-          AND: [
-            { slug: { not: 'viewer' } },
-            { NOT: { slug: { startsWith: 'u-' } } },
-          ],
-        },
-        orderBy: { id: 'asc' },
-        select: { id: true, slug: true },
-      });
+      const canonical = await tenantRepo.findCanonicalTenantByPortfolioId(
+        resolved.id,
+        tenantId,
+      );
 
       if (canonical && isProvisional && req.user?.id != null) {
         const sessionUser = req.user;
@@ -398,69 +391,10 @@ export class TenantController {
           return res.status(401).json({ error: 'Sessão inválida' });
         }
         try {
-          await withRootTransaction(async t => {
-            const conflict = await t.login.findFirst({
-              where: {
-                tenant_id: canonical.id,
-                login: String(sessionUser.login).trim(),
-              },
-            });
-            if (conflict && conflict.id !== sessionUser.id) {
-              throw new HttpError(
-                'Já existe utilizador com este e-mail neste abrigo. Use outro e-mail ou peça ao administrador.',
-                409,
-              );
-            }
-
-            const canonRow = await t.tenant.findUnique({
-              where: { id: canonical.id },
-              select: { id: true, brand_name: true, logo_url: true },
-            });
-            const provRow = await t.tenant.findUnique({
-              where: { id: tenantId },
-              select: { id: true, brand_name: true, logo_url: true },
-            });
-            if (!canonRow || !provRow) {
-              throw new HttpError('Tenant não encontrado', 404);
-            }
-
-            if (!hasIdentity(canonRow) && hasIdentity(provRow)) {
-              await t.tenant.update({
-                where: { id: canonical.id },
-                data: {
-                  brand_name: provRow.brand_name ?? null,
-                  logo_url: provRow.logo_url ?? null,
-                },
-              });
-            }
-
-            await t.login.update({
-              where: { id: sessionUser.id },
-              data: {
-                tenant_id: canonical.id,
-                role: 'admin',
-                permissions: { ...FULL_PERMISSIONS } as Prisma.InputJsonValue,
-              },
-            });
-
-            await t.tenantInvite.deleteMany({
-              where: { tenant_id: tenantId },
-            });
-            await t.$executeRaw`
-              DELETE FROM login_log
-              WHERE user_id IN (SELECT id FROM login WHERE tenant_id = ${tenantId})
-            `;
-            await t.tenantConfig.deleteMany({
-              where: { tenant_id: tenantId },
-            });
-            try {
-              await t.tenant.delete({ where: { id: tenantId } });
-            } catch {
-              throw new HttpError(
-                'Não foi possível remover o abrigo temporário',
-                500,
-              );
-            }
+          await migrateProvisionalLoginToCanonicalTenant({
+            sessionUser,
+            provisionalTenantId: tenantId,
+            canonicalTenantId: canonical.id,
           });
         } catch (err: unknown) {
           if (isHttpError(err)) throw err;
@@ -499,6 +433,100 @@ export class TenantController {
       }
       return res.status(400).json({
         error: getErrorMessage(error) || 'Erro ao definir código de contrato',
+      });
+    }
+  }
+
+  /**
+   * Utilizador autenticado em tenant provisório (`u-*`): valida o código contra
+   * portfolios existentes e migra o login para o abrigo definitivo (primeiro admin).
+   */
+  async claimContractCode(req: AuthRequest & TenantRequest, res: Response) {
+    try {
+      const tenantId = requireTenantId(req, res);
+      if (tenantId === null) return;
+      if (req.user?.id == null) {
+        return res.status(401).json({ error: 'Sessão inválida' });
+      }
+
+      const tenant = await tenantRepo.findById(tenantId);
+      if (!tenant)
+        return res.status(404).json({ error: 'Tenant não encontrado' });
+      const provisionalSlug = String(tenant.slug ?? '');
+      if (!provisionalSlug.startsWith('u-')) {
+        return res.status(400).json({
+          error:
+            'Este endpoint só se aplica a abrigos temporários (identificador u-…).',
+        });
+      }
+      if (String(provisionalSlug) === 'viewer') {
+        return res.status(400).json({ error: 'Tenant inválido para contrato' });
+      }
+
+      const codeRaw = req.body?.contract_code ?? req.body?.contractCode;
+      const code = codeRaw != null ? String(codeRaw).trim() : '';
+      if (!code) {
+        return res.status(400).json({ error: 'Informe contract_code (texto)' });
+      }
+
+      const matched =
+        await contractPortfolioRepo.findMatchingPortfolioByPlainText(code);
+      if (!matched) {
+        return res.status(404).json({
+          error: 'Código de contrato não encontrado ou inválido.',
+        });
+      }
+
+      const canonical = await tenantRepo.findCanonicalTenantByPortfolioId(
+        matched.id,
+        tenantId,
+      );
+      if (!canonical) {
+        return res.status(404).json({
+          error:
+            'O código existe, mas ainda não há um abrigo definitivo associado. Aguarde o cadastro pela equipa Stokio.',
+        });
+      }
+
+      const sessionUser = req.user;
+      try {
+        await migrateProvisionalLoginToCanonicalTenant({
+          sessionUser,
+          provisionalTenantId: tenantId,
+          canonicalTenantId: canonical.id,
+        });
+      } catch (err: unknown) {
+        if (isHttpError(err)) throw err;
+        const msg = getErrorMessage(err);
+        if (
+          msg.includes('foreign key') ||
+          msg.includes('violates foreign key constraint')
+        ) {
+          throw new HttpError(
+            'O abrigo temporário ainda tem dados associados e não pôde ser removido. Contate o suporte.',
+            409,
+          );
+        }
+        throw err;
+      }
+
+      await invalidateAuthCacheForRequest(req);
+      await invalidateTenantLogoResolveCacheForSlug(provisionalSlug);
+      const afterCanon = await tenantRepo.findById(canonical.id);
+      return res.status(200).json({
+        ok: true,
+        migrated: true,
+        tenantId: canonical.id,
+        tenantSlug: afterCanon?.slug ?? canonical.slug,
+      });
+    } catch (error: unknown) {
+      if (isHttpError(error)) {
+        return res.status(error.statusCode).json({ error: error.message });
+      }
+      return res.status(400).json({
+        error:
+          getErrorMessage(error) ||
+          'Erro ao associar o código de contrato ao abrigo definitivo',
       });
     }
   }

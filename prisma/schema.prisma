@@ -23,6 +23,7 @@ model Tenant {
   created_at            DateTime  @default(now())
   updated_at            DateTime  @updatedAt
 
+  @@index([contract_portfolio_id])
   @@map("tenant")
 }
 
@@ -46,6 +47,7 @@ model Login {
   tenant_id       Int
   role            String   @default("user") @db.VarChar(20)
   permissions     Json?
+  is_tenant_owner Boolean  @default(false)
   is_super_admin  Boolean  @default(false)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt

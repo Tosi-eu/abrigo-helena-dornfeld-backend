@@ -108,6 +108,7 @@ export class PrismaLoginRepository {
         last_name: true,
         role: true,
         tenant_id: true,
+        is_tenant_owner: true,
         is_super_admin: true,
       },
     });
@@ -129,6 +130,7 @@ export class PrismaLoginRepository {
         last_name: true,
         role: true,
         tenant_id: true,
+        is_tenant_owner: true,
         is_super_admin: true,
         permissions: true,
       },
@@ -148,6 +150,7 @@ export class PrismaLoginRepository {
         role: true,
         permissions: true,
         tenant_id: true,
+        is_tenant_owner: true,
         is_super_admin: true,
       },
     });
@@ -163,19 +166,28 @@ export class PrismaLoginRepository {
         role: true,
         permissions: true,
         tenant_id: true,
+        is_tenant_owner: true,
         is_super_admin: true,
       },
       orderBy: { id: 'asc' },
     });
   }
 
-  async listPaginated(page: number, limit: number) {
+  async listPaginated(page: number, limit: number, tenantId?: number | null) {
     const safePage = Math.max(1, Number(page) || 1);
     const safeLimit = Math.min(100, Math.max(1, Number(limit) || 25));
     const offset = (safePage - 1) * safeLimit;
 
+    const where =
+      tenantId != null
+        ? {
+            tenant_id: Number(tenantId),
+          }
+        : undefined;
+
     const [data, total] = await Promise.all([
       getDb().login.findMany({
+        where,
         select: {
           id: true,
           login: true,
@@ -184,13 +196,14 @@ export class PrismaLoginRepository {
           role: true,
           permissions: true,
           tenant_id: true,
+          is_tenant_owner: true,
           is_super_admin: true,
         },
         orderBy: { id: 'asc' },
         take: safeLimit,
         skip: offset,
       }),
-      getDb().login.count(),
+      getDb().login.count({ where }),
     ]);
 
     return {
@@ -234,6 +247,7 @@ export class PrismaLoginRepository {
         role: true,
         permissions: true,
         tenant_id: true,
+        is_tenant_owner: true,
         is_super_admin: true,
       },
     });

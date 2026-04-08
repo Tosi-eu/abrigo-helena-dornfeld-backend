@@ -42,11 +42,29 @@ export class AdminController {
     private readonly notificationService?: NotificationEventService,
   ) {}
 
-  async listUsers(req: AuthRequest, res: Response) {
+  private async isTenantOwner(
+    tenantId: number,
+    actorUserId: number,
+  ): Promise<boolean> {
+    // “Guarda-chuva” explícito no login.
+    const row = await getDb().login.findFirst({
+      where: { id: actorUserId, tenant_id: tenantId },
+      select: { is_tenant_owner: true },
+    });
+    return Boolean(row?.is_tenant_owner);
+  }
+
+  async listUsers(req: AuthRequest & TenantRequest, res: Response) {
     try {
+      const tenantId = requireTenantId(req, res);
+      if (tenantId === null) return;
       const page = Math.max(1, Number(req.query.page) || 1);
       const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 25));
-      const result = await this.loginService.listUsersPaginated(page, limit);
+      const result = await this.loginService.listUsersPaginated(
+        page,
+        limit,
+        tenantId,
+      );
       return res.json(result);
     } catch (error: unknown) {
       return res.status(500).json({
@@ -70,6 +88,20 @@ export class AdminController {
 
     const tenantId = requireTenantId(req, res);
     if (tenantId === null) return;
+    const actor = req.user;
+    if (!actor?.id) {
+      return res.status(401).json({ error: 'Usuário não autenticado' });
+    }
+
+    if (role === 'admin') {
+      const owner = await this.isTenantOwner(tenantId, actor.id);
+      if (!owner) {
+        return res.status(403).json({
+          error:
+            'Apenas o administrador principal do abrigo pode criar outros administradores.',
+        });
+      }
+    }
 
     const data: {
       login: string;
@@ -176,6 +208,42 @@ export class AdminController {
     }
 
     try {
+      const actor = req.user;
+      if (!actor?.id) {
+        return res.status(401).json({ error: 'Usuário não autenticado' });
+      }
+      const tenantId = requireTenantId(req as AuthRequest & TenantRequest, res);
+      if (tenantId === null) return;
+
+      const target = await getDb().login.findFirst({
+        where: { id: userId, tenant_id: tenantId },
+        select: { id: true, role: true },
+      });
+      if (!target) {
+        return res.status(404).json({ error: 'Usuário não encontrado' });
+      }
+
+      const isOwner = await this.isTenantOwner(tenantId, actor.id);
+      const triesToChangeAdminSurface =
+        data.role !== undefined ||
+        data.permissions !== undefined ||
+        data.password !== undefined;
+
+      if (target.role === 'admin' && !isOwner && triesToChangeAdminSurface) {
+        return res.status(403).json({
+          error:
+            'Você não pode alterar permissões, papel ou senha de um administrador.',
+        });
+      }
+
+      // Se está promovendo alguém a admin, só o owner pode.
+      if (data.role === 'admin' && !isOwner) {
+        return res.status(403).json({
+          error:
+            'Apenas o administrador principal do abrigo pode promover alguém a administrador.',
+        });
+      }
+
       const updated = await this.loginService.updateUserByAdmin(userId, data);
       if (!updated) {
         return res.status(404).json({ error: 'Usuário não encontrado' });
@@ -202,6 +270,26 @@ export class AdminController {
 
     if (Number.isNaN(userId) || userId < 1) {
       return res.status(400).json({ error: 'ID inválido' });
+    }
+
+    const tenantId = requireTenantId(req as AuthRequest & TenantRequest, res);
+    if (tenantId === null) return;
+
+    const target = await getDb().login.findFirst({
+      where: { id: userId, tenant_id: tenantId },
+      select: { id: true, role: true },
+    });
+    if (!target) {
+      return res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+
+    if (target.role === 'admin') {
+      const isOwner = await this.isTenantOwner(tenantId, adminId);
+      if (!isOwner) {
+        return res.status(403).json({
+          error: 'Apenas o administrador principal do abrigo pode remover admins.',
+        });
+      }
     }
 
     const ok = await this.loginService.deleteUserByAdmin(userId, adminId);
