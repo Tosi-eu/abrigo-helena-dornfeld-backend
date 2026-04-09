@@ -3,9 +3,7 @@ import { MovementService } from '@services/movimentacao.service';
 import { ValidatedRequest } from '@middlewares/validation.middleware';
 import { sendErrorResponse } from '@helpers/error-response.helper';
 import { handleETagResponse } from '@helpers/etag.helper';
-import {
-  type TenantRequest,
-} from '@middlewares/tenant.middleware';
+import { type TenantRequest } from '@middlewares/tenant.middleware';
 
 export class MovementController {
   constructor(private readonly service: MovementService) {}

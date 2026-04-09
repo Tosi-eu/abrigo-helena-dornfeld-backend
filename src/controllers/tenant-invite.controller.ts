@@ -1,8 +1,6 @@
 import type { Response } from 'express';
 import type { AuthRequest } from '@middlewares/auth.middleware';
-import {
-  type TenantRequest,
-} from '@middlewares/tenant.middleware';
+import { type TenantRequest } from '@middlewares/tenant.middleware';
 import { PrismaTenantInviteRepository } from '@repositories/tenant-invite.repository';
 import { getErrorMessage } from '@domain/error.types';
 import { isEmailConfigured, sendEmail } from '@helpers/email.helper';

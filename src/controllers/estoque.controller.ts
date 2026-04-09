@@ -5,9 +5,7 @@ import { handleETagResponse } from '@helpers/etag.helper';
 import { ItemType, SectorType } from '@helpers/utils';
 import { ValidatedRequest } from '@middlewares/validation.middleware';
 import type { AuthRequest } from '@middlewares/auth.middleware';
-import {
-  type TenantRequest,
-} from '@middlewares/tenant.middleware';
+import { type TenantRequest } from '@middlewares/tenant.middleware';
 import { toSectorType } from '@helpers/stock.helper';
 
 export class StockController {

@@ -1,9 +1,7 @@
 import { Request, Response } from 'express';
 import { DrawerService } from '@services/gaveta.service';
 import { sendErrorResponse } from '@helpers/error-response.helper';
-import {
-  type TenantRequest,
-} from '@middlewares/tenant.middleware';
+import { type TenantRequest } from '@middlewares/tenant.middleware';
 
 export class DrawerController {
   constructor(private readonly service: DrawerService) {}

@@ -13,9 +13,7 @@ import type { PrismaAuditRepository } from '@repositories/audit.repository';
 import type { PrismaLoginLogRepository } from '@repositories/login-log.repository';
 import type { PrismaSystemConfigRepository } from '@repositories/system-config.repository';
 import { AuthRequest } from '@middlewares/auth.middleware';
-import {
-  type TenantRequest
-} from '@middlewares/tenant.middleware';
+import { type TenantRequest } from '@middlewares/tenant.middleware';
 import { getErrorMessage } from '@domain/error.types';
 import { withRootTransaction } from '@repositories/prisma';
 import { getRedisClient } from '@config/redis.client';

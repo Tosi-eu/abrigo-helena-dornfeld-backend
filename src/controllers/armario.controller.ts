@@ -1,8 +1,6 @@
 import { CabinetService } from '@services/armario.service';
 import { Request, Response } from 'express';
-import {
-  type TenantRequest,
-} from '@middlewares/tenant.middleware';
+import { type TenantRequest } from '@middlewares/tenant.middleware';
 import { sendErrorResponse } from '@helpers/error-response.helper';
 
 export class CabinetController {

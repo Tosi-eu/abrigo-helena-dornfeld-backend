@@ -1,9 +1,7 @@
 import { type Request, type Response } from 'express';
 import { LoginService } from '@services/login.service';
 import { AuthRequest } from '@middlewares/auth.middleware';
-import {
-  type TenantRequest,
-} from '@middlewares/tenant.middleware';
+import { type TenantRequest } from '@middlewares/tenant.middleware';
 import { getErrorMessage, isHttpError } from '@domain/error.types';
 import type { PrismaLoginLogRepository } from '@repositories/login-log.repository';
 import type { PrismaSystemConfigRepository } from '@repositories/system-config.repository';

@@ -4,9 +4,7 @@ import {
   getValidatedPagination,
   ValidatedRequest,
 } from '@middlewares/validation.middleware';
-import {
-  type TenantRequest,
-} from '@middlewares/tenant.middleware';
+import { type TenantRequest } from '@middlewares/tenant.middleware';
 import { sendErrorResponse } from '@helpers/error-response.helper';
 import { handleETagResponse } from '@helpers/etag.helper';
 

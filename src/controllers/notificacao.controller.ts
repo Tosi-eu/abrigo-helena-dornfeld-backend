@@ -2,9 +2,7 @@ import { Response } from 'express';
 import { NotificationEventService } from '@services/notificacao.service';
 import { sendErrorResponse } from '@helpers/error-response.helper';
 import { EventStatus, NotificationEventType } from '@domain/notificacao.types';
-import {
-  type TenantRequest,
-} from '@middlewares/tenant.middleware';
+import { type TenantRequest } from '@middlewares/tenant.middleware';
 
 export class NotificationEventController {
   constructor(private readonly service: NotificationEventService) {}
