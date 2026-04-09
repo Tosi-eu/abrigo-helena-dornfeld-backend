@@ -3,7 +3,6 @@ import type { Response } from 'express';
 import type { AuthRequest } from '@middlewares/auth.middleware';
 import {
   type TenantRequest,
-  requireTenantId,
 } from '@middlewares/tenant.middleware';
 import {
   DEFAULT_TENANT_MODULES,
@@ -15,7 +14,7 @@ import { getErrorMessage, HttpError, isHttpError } from '@domain/error.types';
 import { inferImageContentTypeFromBuffer } from '@helpers/image-mime.helper';
 import { PrismaTenantRepository } from '@repositories/tenant.repository';
 import { uiDisplayFromConfigRow } from '@helpers/ui-display.helper';
-import { getDb } from '@repositories/prisma';
+import { getDb, withRootTransaction } from '@repositories/prisma';
 import type { Prisma } from '@prisma/client';
 import { invalidateAuthCacheForRequest } from '@helpers/auth-token-cache.helper';
 import { migrateProvisionalLoginToCanonicalTenant } from '@services/tenant-contract-migration.service';
@@ -433,6 +432,19 @@ export class TenantController {
         contract_code_hash: resolved.hash,
         contract_portfolio_id: resolved.id,
       });
+      // Marca como "usado" quando o código é vinculado a um abrigo definitivo.
+      // Isso impede reutilização do mesmo contrato para outro abrigo (por padrão).
+      await withRootTransaction(async t => {
+        // Usa SQL direto para não depender de `prisma generate` para os novos campos
+        // (used_by_tenant_id/used_at/disabled_at) no client durante deploy.
+        await t.$executeRaw`
+          UPDATE contract_portfolio
+          SET used_by_tenant_id = ${tenantId}, used_at = NOW()
+          WHERE id = ${resolved.id}
+            AND disabled_at IS NULL
+            AND used_by_tenant_id IS NULL
+        `;
+      });
       return res.status(200).json({ ok: true, migrated: false });
     } catch (error: unknown) {
       if (isHttpError(error)) {
@@ -443,11 +455,6 @@ export class TenantController {
       });
     }
   }
-
-  /**
-   * Utilizador autenticado em tenant provisório (`u-*`): valida o código contra
-   * portfolios existentes e migra o login para o abrigo definitivo (primeiro admin).
-   */
   async claimContractCode(
     req: AuthRequest & TenantRequest,
     res: Response,

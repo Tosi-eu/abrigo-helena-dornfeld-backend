@@ -304,11 +304,16 @@ model SystemConfig {
 }
 
 model ContractPortfolio {
-  id                 Int      @id @default(autoincrement())
-  contract_code_hash String   @db.VarChar(255)
-  created_at         DateTime @default(now())
-  updated_at         DateTime @updatedAt
+  id                 Int       @id @default(autoincrement())
+  contract_code_hash String    @db.VarChar(255)
+  used_by_tenant_id  Int?
+  used_at            DateTime?
+  disabled_at        DateTime?
+  created_at         DateTime  @default(now())
+  updated_at         DateTime  @updatedAt
 
+  @@index([used_by_tenant_id], map: "idx_contract_portfolio_used_by_tenant_id")
+  @@index([used_at], map: "idx_contract_portfolio_used_at")
   @@map("contract_portfolio")
 }
 

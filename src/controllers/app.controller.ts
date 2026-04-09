@@ -351,4 +351,26 @@ export class AppController {
       return res.status(500).json({ error: 'Erro ao verificar código' });
     }
   }
+
+  async verifyContractCodeForSignup(req: Request, res: Response) {
+    try {
+      const body = req.body ?? {};
+      const plain =
+        body.contract_code != null
+          ? String(body.contract_code)
+          : body.contractCode != null
+            ? String(body.contractCode)
+            : '';
+      const plainTrim = plain.trim();
+      if (!plainTrim) {
+        return res.status(200).json({ valid: false });
+      }
+      const ok = await contractPortfolioRepo.isUsableContractCodeForSignup(
+        plainTrim,
+      );
+      return res.status(200).json({ valid: ok });
+    } catch {
+      return res.status(200).json({ valid: false });
+    }
+  }
 }

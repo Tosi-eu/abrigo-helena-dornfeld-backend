@@ -151,6 +151,18 @@ export class AppApiController {
     void this.appController.verifyTenantContractCode(req, res);
   }
 
+  @Post('contract-code/verify')
+  @ApiOperation({
+    summary:
+      'Verificar código de contrato (cadastro público): não revela se já foi usado',
+  })
+  @ApiBody({ type: VerifyContractCodeDto })
+  @ApiResponse({ status: 200, description: '{ valid: boolean }' })
+  @UseGuards(verifyContractGuard)
+  verifyContractCodeForSignup(@Req() req: Request, @Res() res: Response): void {
+    void this.appController.verifyContractCodeForSignup(req, res);
+  }
+
   @Get('tenants')
   @ApiOperation({ summary: 'Listar abrigos públicos (directório)' })
   @ApiQuery({ name: 'q', required: false, description: 'Pesquisa' })

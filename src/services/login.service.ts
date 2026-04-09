@@ -461,20 +461,34 @@ export class LoginService {
     }
 
     const cc = String(attrs.contract_code ?? '').trim();
-    let resolved: { id: number; hash: string } | null = null;
-    if (cc) {
-      const portfolioRepo = new PrismaContractPortfolioRepository();
-      resolved = await portfolioRepo.resolveOrCreateByPlainText(cc);
-    }
 
     const hashed = await bcrypt.hash(attrs.password, 10);
     const tenantName = `Abrigo de ${fn}`.slice(0, 120);
 
     try {
       return await withRootTransaction(async (t: Prisma.TransactionClient) => {
+        const portfolioRepo = new PrismaContractPortfolioRepository();
         await setRlsSessionGucs(t, {
           allow_tenant_self_registration: 'true',
+          is_super_admin: 'true',
         });
+
+        let resolved: { id: number; hash: string } | null = null;
+        if (cc) {
+          const ok = await portfolioRepo.isUsableContractCodeForSignup(cc, t);
+          if (!ok) {
+            // Mensagem genérica para não virar oracle de enumeração.
+            throw new HttpError('Código de contrato inválido', 403);
+          }
+          const matched = await portfolioRepo.findMatchingPortfolioByPlainText(
+            cc,
+            t,
+          );
+          if (!matched) {
+            throw new HttpError('Código de contrato inválido', 403);
+          }
+          resolved = { id: matched.id, hash: matched.hash };
+        }
         const slug = await this.generateUniqueTenantSlug(t);
         const tenant = await t.tenant.create({
           data: {
@@ -488,6 +502,18 @@ export class LoginService {
               : {}),
           },
         });
+
+        if (resolved) {
+          const marked = await portfolioRepo.markUsed({
+            portfolioId: resolved.id,
+            tenantId: tenant.id,
+            tx: t,
+          });
+          if (!marked) {
+            throw new HttpError('Código de contrato inválido', 403);
+          }
+        }
+
         await setRlsSessionGucs(t, {
           tenant_id: String(tenant.id),
           allow_tenant_self_registration: 'false',
@@ -690,15 +716,27 @@ export class LoginService {
       throw new HttpError('Sobrenome deve ter pelo menos 2 caracteres', 400);
     }
 
-    const portfolioRepo = new PrismaContractPortfolioRepository();
-    const resolved = await portfolioRepo.resolveOrCreateByPlainText(cc);
     const hashed = await bcrypt.hash(attrs.password, 10);
 
     try {
       return await withRootTransaction(async (t: Prisma.TransactionClient) => {
+        const portfolioRepo = new PrismaContractPortfolioRepository();
         await setRlsSessionGucs(t, {
           allow_tenant_self_registration: 'true',
+          is_super_admin: 'true',
         });
+
+        // Para criação de abrigo com admin, exige código existente e utilizável.
+        const ok = await portfolioRepo.isUsableContractCodeForSignup(cc, t);
+        if (!ok) {
+          throw new HttpError('Código de contrato inválido', 403);
+        }
+        const matched = await portfolioRepo.findMatchingPortfolioByPlainText(cc, t);
+        if (!matched) {
+          throw new HttpError('Código de contrato inválido', 403);
+        }
+        const resolved = { id: matched.id, hash: matched.hash };
+
         const taken = await t.tenant.findFirst({
           where: { slug },
           select: { id: true },
@@ -718,6 +756,16 @@ export class LoginService {
             contract_portfolio_id: resolved.id,
           },
         });
+
+        const marked = await portfolioRepo.markUsed({
+          portfolioId: resolved.id,
+          tenantId: tenant.id,
+          tx: t,
+        });
+        if (!marked) {
+          throw new HttpError('Código de contrato inválido', 403);
+        }
+
         await setRlsSessionGucs(t, {
           tenant_id: String(tenant.id),
           allow_tenant_self_registration: 'false',
