@@ -30,7 +30,11 @@ export class NotificationEventService {
     return this.repo.create(data, transaction);
   }
 
-  async get(tenantId: number, id: number, transaction?: Prisma.TransactionClient) {
+  async get(
+    tenantId: number,
+    id: number,
+    transaction?: Prisma.TransactionClient,
+  ) {
     return this.repo.findById(tenantId, id, transaction);
   }
 
@@ -72,7 +76,11 @@ export class NotificationEventService {
     return this.repo.update(tenantId, id, updates, transaction);
   }
 
-  async delete(tenantId: number, id: number, transaction?: Prisma.TransactionClient) {
+  async delete(
+    tenantId: number,
+    id: number,
+    transaction?: Prisma.TransactionClient,
+  ) {
     return this.repo.delete(tenantId, id, transaction);
   }
 

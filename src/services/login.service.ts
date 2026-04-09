@@ -731,7 +731,10 @@ export class LoginService {
         if (!ok) {
           throw new HttpError('Código de contrato inválido', 403);
         }
-        const matched = await portfolioRepo.findMatchingPortfolioByPlainText(cc, t);
+        const matched = await portfolioRepo.findMatchingPortfolioByPlainText(
+          cc,
+          t,
+        );
         if (!matched) {
           throw new HttpError('Código de contrato inválido', 403);
         }

@@ -5,7 +5,9 @@ import { handleETagResponse } from '@helpers/etag.helper';
 import { ItemType, SectorType } from '@helpers/utils';
 import { ValidatedRequest } from '@middlewares/validation.middleware';
 import type { AuthRequest } from '@middlewares/auth.middleware';
-import { type TenantRequest, requireTenantId } from '@middlewares/tenant.middleware';
+import {
+  type TenantRequest,
+} from '@middlewares/tenant.middleware';
 import { toSectorType } from '@helpers/stock.helper';
 
 export class StockController {
@@ -46,7 +48,11 @@ export class StockController {
     }
   }
 
-  async stockOut(req: AuthRequest & ValidatedRequest, res: Response, tenantId: number) {
+  async stockOut(
+    req: AuthRequest & ValidatedRequest,
+    res: Response,
+    tenantId: number,
+  ) {
     try {
       const login_id = req.user?.id;
 

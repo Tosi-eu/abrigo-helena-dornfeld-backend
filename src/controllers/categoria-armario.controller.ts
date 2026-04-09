@@ -2,8 +2,7 @@ import { Request, Response } from 'express';
 import { CabinetCategoryService } from '@services/categoria-armario.service';
 import { sendErrorResponse } from '@helpers/error-response.helper';
 import {
-  type TenantRequest,
-  requireTenantId,
+  type TenantRequest
 } from '@middlewares/tenant.middleware';
 
 export class CabinetCategoryController {

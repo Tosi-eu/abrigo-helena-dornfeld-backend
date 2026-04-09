@@ -58,8 +58,16 @@ export class DashboardService {
         limit: 10,
       }),
       this.movementService.getNonMovementedMedicines(tenantId, 10),
-      this.stockService.getProportion(tenantId, SectorType.ENFERMAGEM, transaction),
-      this.stockService.getProportion(tenantId, SectorType.FARMACIA, transaction),
+      this.stockService.getProportion(
+        tenantId,
+        SectorType.ENFERMAGEM,
+        transaction,
+      ),
+      this.stockService.getProportion(
+        tenantId,
+        SectorType.FARMACIA,
+        transaction,
+      ),
       this.stockService.listStock(
         {
           tenantId,

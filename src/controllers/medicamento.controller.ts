@@ -6,7 +6,6 @@ import {
 } from '@middlewares/validation.middleware';
 import {
   type TenantRequest,
-  requireTenantId,
 } from '@middlewares/tenant.middleware';
 import { sendErrorResponse } from '@helpers/error-response.helper';
 import { handleETagResponse } from '@helpers/etag.helper';

@@ -2,7 +2,6 @@ import { CabinetService } from '@services/armario.service';
 import { Request, Response } from 'express';
 import {
   type TenantRequest,
-  requireTenantId,
 } from '@middlewares/tenant.middleware';
 import { sendErrorResponse } from '@helpers/error-response.helper';
 
@@ -57,7 +56,11 @@ export class CabinetController {
       const number = Number(req.params.numero);
       const category = req.body.categoria_id;
 
-      const updated = await this.service.updateCabinet(tenantId, number, category);
+      const updated = await this.service.updateCabinet(
+        tenantId,
+        number,
+        category,
+      );
 
       if (!updated) {
         return res.status(404).json({ error: 'Armário não encontrado' });

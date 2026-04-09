@@ -365,9 +365,8 @@ export class AppController {
       if (!plainTrim) {
         return res.status(200).json({ valid: false });
       }
-      const ok = await contractPortfolioRepo.isUsableContractCodeForSignup(
-        plainTrim,
-      );
+      const ok =
+        await contractPortfolioRepo.isUsableContractCodeForSignup(plainTrim);
       return res.status(200).json({ valid: ok });
     } catch {
       return res.status(200).json({ valid: false });

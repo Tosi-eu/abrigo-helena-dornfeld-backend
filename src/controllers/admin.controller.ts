@@ -14,8 +14,7 @@ import type { PrismaLoginLogRepository } from '@repositories/login-log.repositor
 import type { PrismaSystemConfigRepository } from '@repositories/system-config.repository';
 import { AuthRequest } from '@middlewares/auth.middleware';
 import {
-  type TenantRequest,
-  requireTenantId,
+  type TenantRequest
 } from '@middlewares/tenant.middleware';
 import { getErrorMessage } from '@domain/error.types';
 import { withRootTransaction } from '@repositories/prisma';
@@ -286,7 +285,8 @@ export class AdminController {
       const isOwner = await this.isTenantOwner(tenantId, adminId);
       if (!isOwner) {
         return res.status(403).json({
-          error: 'Apenas o administrador principal do abrigo pode remover admins.',
+          error:
+            'Apenas o administrador principal do abrigo pode remover admins.',
         });
       }
     }
@@ -1080,7 +1080,11 @@ export class AdminController {
       return res.status(400).json({ error: 'Envie visto e/ou status' });
     }
     try {
-      const updated = await this.notificationService.update(tenantId, id, updates);
+      const updated = await this.notificationService.update(
+        tenantId,
+        id,
+        updates,
+      );
       if (!updated)
         return res.status(404).json({ error: 'Notificação não encontrada' });
       return res.json(updated);

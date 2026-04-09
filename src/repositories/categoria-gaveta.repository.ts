@@ -33,7 +33,9 @@ export class PrismaDrawerCategoryRepository {
   }
 
   async findById(tenantId: number, id: number) {
-    return getDb().categoriaGaveta.findFirst({ where: { id, tenant_id: tenantId } });
+    return getDb().categoriaGaveta.findFirst({
+      where: { id, tenant_id: tenantId },
+    });
   }
 
   async findByName(nome: string, tenantId: number) {

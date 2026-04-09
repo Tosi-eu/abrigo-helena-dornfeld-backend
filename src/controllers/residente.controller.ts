@@ -6,7 +6,6 @@ import {
 } from '@middlewares/validation.middleware';
 import {
   type TenantRequest,
-  requireTenantId,
 } from '@middlewares/tenant.middleware';
 import { sendErrorResponse } from '@helpers/error-response.helper';
 import { getErrorMessage } from '@domain/error.types';
@@ -97,7 +96,10 @@ export class ResidentController {
     const casela = Number(req.params.casela);
 
     try {
-      const deleted = await this.service.deleteResidentForTenant(tenantId, casela);
+      const deleted = await this.service.deleteResidentForTenant(
+        tenantId,
+        casela,
+      );
 
       if (!deleted) {
         return res.status(404).json({ error: 'Residente não encontrado' });

@@ -149,14 +149,14 @@ export class MedicineService {
   async findAll(
     tenantId: number,
     {
-    page = 1,
-    limit = 10,
-    name,
-  }: {
-    page?: number;
-    limit?: number;
-    name?: string;
-  },
+      page = 1,
+      limit = 10,
+      name,
+    }: {
+      page?: number;
+      limit?: number;
+      name?: string;
+    },
   ) {
     return this.repo.findAllMedicines({ tenantId, page, limit, name });
   }

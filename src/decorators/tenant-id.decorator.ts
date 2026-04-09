@@ -20,4 +20,3 @@ export const TenantId = createParamDecorator(
     return id;
   },
 );
-

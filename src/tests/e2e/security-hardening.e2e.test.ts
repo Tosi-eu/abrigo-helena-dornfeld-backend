@@ -57,13 +57,13 @@ describe('Security hardening (E2E)', () => {
     expect([401, 403]).toContain(res.status);
   });
 
-  it('Tenant context: requests use JWT tenant even if X-Tenant differs', async () => {
+  it('Tenant context: should reject when X-Tenant differs from JWT tenant', async () => {
     const res = await request(app)
       .get('/api/v1/tenant/config')
       .set('Authorization', `Bearer ${token}`)
       .set('X-Tenant', 'some-other-tenant');
-    expect(res.status).toBe(200);
-    expect(res.body.tenantId).toBeDefined();
+    expect(res.status).toBe(403);
+    expect(String(res.body?.error ?? '')).toContain('Tenant');
   });
 
   it('Public: /tenants/:slug/branding works without auth', async () => {

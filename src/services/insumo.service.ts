@@ -22,13 +22,9 @@ export class InputService {
         const priceResult = await search.searchPrice(input.nome, 'input');
 
         if (priceResult?.averagePrice) {
-          await this.repo.updateInputById(
-            tenantId,
-            inputId,
-            {
+          await this.repo.updateInputById(tenantId, inputId, {
             preco: priceResult.averagePrice,
-            },
-          );
+          });
         }
       } catch (error) {
         logger.error(
@@ -68,7 +64,12 @@ export class InputService {
     return cfg.automatic_price_search !== false;
   }
 
-  listPaginated(tenantId: number, page: number = 1, limit: number = 10, name?: string) {
+  listPaginated(
+    tenantId: number,
+    page: number = 1,
+    limit: number = 10,
+    name?: string,
+  ) {
     return this.repo.listAllInputs(tenantId, page, limit, name);
   }
 

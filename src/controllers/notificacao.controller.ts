@@ -4,7 +4,6 @@ import { sendErrorResponse } from '@helpers/error-response.helper';
 import { EventStatus, NotificationEventType } from '@domain/notificacao.types';
 import {
   type TenantRequest,
-  requireTenantId,
 } from '@middlewares/tenant.middleware';
 
 export class NotificationEventController {

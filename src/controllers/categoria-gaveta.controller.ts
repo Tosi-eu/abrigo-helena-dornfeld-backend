@@ -3,7 +3,6 @@ import { DrawerCategoryService } from '@services/categoria-gaveta.service';
 import { sendErrorResponse } from '@helpers/error-response.helper';
 import {
   type TenantRequest,
-  requireTenantId,
 } from '@middlewares/tenant.middleware';
 
 export class DrawerCategoryController {

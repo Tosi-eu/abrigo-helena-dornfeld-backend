@@ -33,7 +33,9 @@ export class PrismaCabinetCategoryRepository {
   }
 
   async findById(tenantId: number, id: number) {
-    return getDb().categoriaArmario.findFirst({ where: { id, tenant_id: tenantId } });
+    return getDb().categoriaArmario.findFirst({
+      where: { id, tenant_id: tenantId },
+    });
   }
 
   async findByName(nome: string, tenantId: number) {

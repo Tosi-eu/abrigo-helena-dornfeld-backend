@@ -30,10 +30,12 @@ export class PrismaContractPortfolioRepository {
   async findMatchingPortfolioByPlainText(
     plain: string,
     tx?: Prisma.TransactionClient,
-  ): Promise<
-    | { id: number; hash: string; usedByTenantId: number | null; disabledAt: Date | null }
-    | null
-  > {
+  ): Promise<{
+    id: number;
+    hash: string;
+    usedByTenantId: number | null;
+    disabledAt: Date | null;
+  } | null> {
     const trimmed = String(plain).trim();
     if (!trimmed) return null;
 
@@ -58,7 +60,9 @@ export class PrismaContractPortfolioRepository {
             id: row.id,
             hash: h,
             usedByTenantId:
-              row.used_by_tenant_id != null ? Number(row.used_by_tenant_id) : null,
+              row.used_by_tenant_id != null
+                ? Number(row.used_by_tenant_id)
+                : null,
             disabledAt: row.disabled_at ?? null,
           };
         }

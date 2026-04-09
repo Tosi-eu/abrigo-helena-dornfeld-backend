@@ -209,7 +209,11 @@ export class StockService {
         tenantId,
       );
     } else {
-      stockItem = await this.repo.findInputStockById(estoqueId, transaction, tenantId);
+      stockItem = await this.repo.findInputStockById(
+        estoqueId,
+        transaction,
+        tenantId,
+      );
     }
 
     if (!stockItem) {
@@ -289,13 +293,19 @@ export class StockService {
   ) {
     const version = await this.getStockCacheVersion();
     return this.cache.getOrSet(
-      CacheKeyHelper.stockDashboard(`${tenantId}:${setor ?? 'general'}`, version),
+      CacheKeyHelper.stockDashboard(
+        `${tenantId}:${setor ?? 'general'}`,
+        version,
+      ),
       () => this.repo.getStockProportionBySector(tenantId, setor, transaction),
       60,
     );
   }
 
-  async getFilterOptions(tenantId: number, transaction?: Prisma.TransactionClient) {
+  async getFilterOptions(
+    tenantId: number,
+    transaction?: Prisma.TransactionClient,
+  ) {
     const version = await this.getStockCacheVersion();
     return this.cache.getOrSet(
       CacheKeyHelper.stockFilterOptions(version) + `:${tenantId}`,

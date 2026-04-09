@@ -724,7 +724,10 @@ export class PrismaStockRepository {
     };
   }
 
-  async getFilterOptions(tenantId: number, transaction?: Prisma.TransactionClient) {
+  async getFilterOptions(
+    tenantId: number,
+    transaction?: Prisma.TransactionClient,
+  ) {
     const client = db(transaction);
     const [medCabinets, inpCabinets, medCaselas, inpCaselas, medLots, inpLots] =
       await Promise.all([

@@ -3,7 +3,6 @@ import { LoginService } from '@services/login.service';
 import { AuthRequest } from '@middlewares/auth.middleware';
 import {
   type TenantRequest,
-  requireTenantId,
 } from '@middlewares/tenant.middleware';
 import { getErrorMessage, isHttpError } from '@domain/error.types';
 import type { PrismaLoginLogRepository } from '@repositories/login-log.repository';
@@ -253,7 +252,11 @@ export class LoginController {
     }
   }
 
-  async create(req: AuthRequest & TenantRequest, res: Response, tenantId: number) {
+  async create(
+    req: AuthRequest & TenantRequest,
+    res: Response,
+    tenantId: number,
+  ) {
     const body = req.body ?? {};
     const loginRaw = body.login ?? body.email;
     const password = body.password;

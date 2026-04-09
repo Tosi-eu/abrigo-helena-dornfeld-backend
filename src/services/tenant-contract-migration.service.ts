@@ -17,7 +17,7 @@ function hasIdentity(
 ): boolean {
   return Boolean(
     String(tenant?.brand_name ?? '').trim() ||
-      String(tenant?.logo_url ?? '').trim(),
+    String(tenant?.logo_url ?? '').trim(),
   );
 }
 
@@ -100,10 +100,7 @@ export async function migrateProvisionalLoginToCanonicalTenant(params: {
     try {
       await t.tenant.delete({ where: { id: provisionalTenantId } });
     } catch {
-      throw new HttpError(
-        'Não foi possível remover o abrigo temporário',
-        500,
-      );
+      throw new HttpError('Não foi possível remover o abrigo temporário', 500);
     }
   });
 }

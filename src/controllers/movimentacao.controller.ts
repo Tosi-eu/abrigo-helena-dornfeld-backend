@@ -5,7 +5,6 @@ import { sendErrorResponse } from '@helpers/error-response.helper';
 import { handleETagResponse } from '@helpers/etag.helper';
 import {
   type TenantRequest,
-  requireTenantId,
 } from '@middlewares/tenant.middleware';
 
 export class MovementController {
@@ -108,7 +107,10 @@ export class MovementController {
   ) {
     try {
       const limit = Math.min(100, Number(req.query.limit) || 10);
-      const result = await this.service.getNonMovementedMedicines(tenantId, limit);
+      const result = await this.service.getNonMovementedMedicines(
+        tenantId,
+        limit,
+      );
 
       if (handleETagResponse(req, res, result)) {
         return;

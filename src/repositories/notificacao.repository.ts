@@ -523,7 +523,11 @@ export class PrismaNotificationEventRepository {
     return this.findById(tenantId, id, transaction);
   }
 
-  async delete(tenantId: number, id: number, transaction?: Prisma.TransactionClient) {
+  async delete(
+    tenantId: number,
+    id: number,
+    transaction?: Prisma.TransactionClient,
+  ) {
     const res = await db(transaction).notificacao.deleteMany({
       where: { tenant_id: tenantId, id },
     });

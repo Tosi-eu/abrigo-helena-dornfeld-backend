@@ -152,7 +152,12 @@ export class MovementService {
     endDate: Date,
     transaction?: Prisma.TransactionClient,
   ) {
-    return this.repo.getConsumptionByItem(tenantId, startDate, endDate, transaction);
+    return this.repo.getConsumptionByItem(
+      tenantId,
+      startDate,
+      endDate,
+      transaction,
+    );
   }
 
   async getHistoryByItemId(

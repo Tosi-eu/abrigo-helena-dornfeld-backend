@@ -1,9 +1,7 @@
 import type { TenantConfigResponse, TenantProfile } from '@porto-sdk/sdk';
 import type { Response } from 'express';
 import type { AuthRequest } from '@middlewares/auth.middleware';
-import {
-  type TenantRequest,
-} from '@middlewares/tenant.middleware';
+import { type TenantRequest } from '@middlewares/tenant.middleware';
 import {
   DEFAULT_TENANT_MODULES,
   TenantConfigService,
@@ -14,7 +12,7 @@ import { getErrorMessage, HttpError, isHttpError } from '@domain/error.types';
 import { inferImageContentTypeFromBuffer } from '@helpers/image-mime.helper';
 import { PrismaTenantRepository } from '@repositories/tenant.repository';
 import { uiDisplayFromConfigRow } from '@helpers/ui-display.helper';
-import { getDb, withRootTransaction } from '@repositories/prisma';
+import { withRootTransaction } from '@repositories/prisma';
 import type { Prisma } from '@prisma/client';
 import { invalidateAuthCacheForRequest } from '@helpers/auth-token-cache.helper';
 import { migrateProvisionalLoginToCanonicalTenant } from '@services/tenant-contract-migration.service';

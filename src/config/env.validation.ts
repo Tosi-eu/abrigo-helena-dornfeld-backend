@@ -50,7 +50,7 @@ const backendEnvSchemaTest = z.object({
 export type BackendEnv = z.infer<typeof backendEnvSchemaProduction>;
 
 function formatZodEnvError(err: z.ZodError): string {
-  const lines = err.errors.map((e) => {
+  const lines = err.errors.map(e => {
     const key = e.path.length ? e.path.join('.') : 'env';
     return `  - ${key}: ${e.message}`;
   });
