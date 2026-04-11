@@ -3,14 +3,39 @@ const { requireTestEnv } = require('./jest.env.js');
 
 requireTestEnv();
 
+/** Aligns with tsconfig (decorators + emitDecoratorMetadata) for NestJS DI in tests */
+const swcJestOptions = {
+  jsc: {
+    parser: {
+      syntax: 'typescript',
+      tsx: true,
+      decorators: true,
+      dynamicImport: true,
+    },
+    transform: {
+      legacyDecorator: true,
+      decoratorMetadata: true,
+    },
+    target: 'es2020',
+    keepClassNames: true,
+  },
+  module: {
+    type: 'commonjs',
+  },
+  sourceMaps: 'inline',
+};
+
 module.exports = {
-  preset: 'ts-jest',
   testEnvironment: 'node',
   setupFiles: ['<rootDir>/jest.setup.ts'],
 
   testMatch: ['**/tests/**/*.test.ts', '**/tests/**/*.spec.ts'],
 
   testPathIgnorePatterns: ['/node_modules/'],
+
+  transform: {
+    '^.+\\.(t|j)sx?$': ['@swc/jest', swcJestOptions],
+  },
 
   collectCoverageFrom: [
     'src/**/*.ts',
@@ -25,7 +50,7 @@ module.exports = {
 
   globalTeardown: '<rootDir>/jest.teardown.ts',
 
-  moduleFileExtensions: ['ts', 'js', 'json'],
+  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
 
   moduleNameMapper: {
     '^@controllers/(.*)$': '<rootDir>/src/controllers/$1',
