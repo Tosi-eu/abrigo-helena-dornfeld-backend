@@ -1,4 +1,9 @@
 import type { MovementRecord } from '@porto-sdk/sdk';
+
+/** Campos persistidos além do contrato publicado do SDK. */
+export type MovementCreateInput = MovementRecord & {
+  sector_id?: number | null;
+};
 import { Prisma } from '@prisma/client';
 import type { Movimentacao } from '@prisma/client';
 import { formatDateToPtBr } from '@helpers/date.helper';
@@ -281,12 +286,16 @@ export class PrismaMovementRepository {
     };
   }
 
-  async create(data: MovementRecord, transaction?: Prisma.TransactionClient) {
-    const r = data as MovementRecord & {
+  async create(
+    data: MovementCreateInput,
+    transaction?: Prisma.TransactionClient,
+  ) {
+    const r = data as MovementCreateInput & {
       destino?: string | null;
       lote?: string | null;
       observacao?: string | null;
     };
+    const sectorIdMov = r.sector_id;
     return db(transaction).movimentacao.create({
       data: {
         tenant_id: Number(r.tenant_id) || 1,
@@ -300,6 +309,7 @@ export class PrismaMovementRepository {
         quantidade: Number(r.quantidade),
         casela_id: r.casela_id != null ? Number(r.casela_id) : null,
         setor: String(r.setor),
+        sector_id: sectorIdMov != null ? Number(sectorIdMov) : null,
         destino: r.destino != null ? String(r.destino) : null,
         lote: r.lote != null ? String(r.lote) : null,
         observacao: r.observacao != null ? String(r.observacao) : null,

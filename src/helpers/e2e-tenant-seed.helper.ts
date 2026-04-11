@@ -3,6 +3,7 @@ import { getDb } from '@repositories/prisma';
 import { PrismaTenantConfigRepository } from '@repositories/tenant-config.repository';
 import { PrismaLoginRepository } from '@repositories/login.repository';
 import { DEFAULT_TENANT_MODULES } from '@services/tenant-config.service';
+import { PrismaSetorRepository } from '@repositories/setor.repository';
 
 export const E2E_TENANT_SLUG = 'e2e';
 
@@ -17,6 +18,7 @@ export const E2E_RESOLVER_SEED_USER = {
 } as const;
 
 const tenantConfigRepo = new PrismaTenantConfigRepository();
+const setorRepo = new PrismaSetorRepository();
 const loginRepo = new PrismaLoginRepository();
 
 const seedLogins: readonly {
@@ -52,6 +54,7 @@ export async function seedE2EDefaultTenant(): Promise<void> {
     where: { slug: E2E_TENANT_SLUG },
   });
   if (!tenant) throw new Error('E2E tenant seed failed');
+  await setorRepo.ensureDefaultSetores(tenant.id);
   await tenantConfigRepo.setByTenantId(tenant.id, DEFAULT_TENANT_MODULES);
 
   for (const u of seedLogins) {

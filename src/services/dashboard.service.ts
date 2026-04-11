@@ -1,14 +1,17 @@
 import { StockService } from './estoque.service';
 import { MovementService } from './movimentacao.service';
-import { SectorType } from '@helpers/utils';
+import { TenantConfigService } from './tenant-config.service';
 import type { Prisma } from '@prisma/client';
 import type { CacheService } from './redis.service';
+import { PrismaSetorRepository } from '@repositories/setor.repository';
 
 export class DashboardService {
   constructor(
     private readonly stockService: StockService,
     private readonly movementService: MovementService,
-    private readonly cache?: CacheService,
+    private readonly cache: CacheService | undefined,
+    private readonly tenantConfigService: TenantConfigService,
+    private readonly setorRepo: PrismaSetorRepository,
   ) {}
 
   async getSummary(tenantId: number, expiringDays?: number) {
@@ -20,6 +23,32 @@ export class DashboardService {
     transaction?: Prisma.TransactionClient,
     expiringDays?: number,
   ) {
+    const modules = await this.tenantConfigService.get(tenantId);
+
+    const sectorProportionResults = await Promise.all(
+      modules.enabled_sectors.map(async key => {
+        const row = await this.setorRepo.findByTenantAndKey(
+          tenantId,
+          key,
+          transaction,
+        );
+        if (!row) {
+          return { key, row: null, raw: null as Record<string, number> | null };
+        }
+        const raw = await this.stockService.getProportionBySectorId(
+          tenantId,
+          row.id,
+          transaction,
+        );
+        return { key: row.key, row, raw };
+      }),
+    );
+
+    const nursingRaw =
+      sectorProportionResults.find(s => s.key === 'enfermagem')?.raw ?? null;
+    const pharmacyRaw =
+      sectorProportionResults.find(s => s.key === 'farmacia')?.raw ?? null;
+
     const [
       alerts,
       medMovements,
@@ -27,8 +56,6 @@ export class DashboardService {
       rankingMore,
       rankingLess,
       nonMovement,
-      nursingData,
-      pharmacyData,
       cabinetList,
       drawerList,
     ] = await Promise.all([
@@ -58,16 +85,6 @@ export class DashboardService {
         limit: 10,
       }),
       this.movementService.getNonMovementedMedicines(tenantId, 10),
-      this.stockService.getProportion(
-        tenantId,
-        SectorType.ENFERMAGEM,
-        transaction,
-      ),
-      this.stockService.getProportion(
-        tenantId,
-        SectorType.FARMACIA,
-        transaction,
-      ),
       this.stockService.listStock(
         {
           tenantId,
@@ -168,12 +185,24 @@ export class DashboardService {
       medicineRankingMore: rankingMore,
       medicineRankingLess: rankingLess,
       nonMovementProducts: nonMovement || [],
-      nursingProportion: toProportionResponse(
-        nursingData as Record<string, number>,
-      ),
-      pharmacyProportion: toProportionResponse(
-        pharmacyData as Record<string, number>,
-      ),
+      nursingProportion: nursingRaw
+        ? toProportionResponse(nursingRaw as Record<string, number>)
+        : null,
+      pharmacyProportion: pharmacyRaw
+        ? toProportionResponse(pharmacyRaw as Record<string, number>)
+        : null,
+      sectorProportions: sectorProportionResults
+        .filter(s => s.row != null && s.raw != null)
+        .map(s => {
+          const row = s.row!;
+          const raw = s.raw as Record<string, number>;
+          return {
+            key: row.key,
+            nome: row.nome,
+            proportion_profile: row.proportion_profile,
+            ...toProportionResponse(raw),
+          };
+        }),
       cabinetStockData: cabinetList,
       drawerStockData: drawerList,
     };

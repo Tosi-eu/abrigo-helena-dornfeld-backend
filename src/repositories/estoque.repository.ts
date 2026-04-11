@@ -72,6 +72,7 @@ export class PrismaStockRepository {
         };
       }
 
+      const sectorId = (data as { sector_id?: number | null }).sector_id;
       const created = await client.estoqueMedicamento.create({
         data: {
           tenant_id: tenantId,
@@ -84,6 +85,7 @@ export class PrismaStockRepository {
           origem: data.origem,
           tipo: data.tipo,
           setor: data.setor,
+          sector_id: sectorId ?? null,
           lote: data.lote ?? null,
           observacao: data.observacao ?? null,
           status: StockItemStatus.ATIVO,
@@ -137,6 +139,7 @@ export class PrismaStockRepository {
       };
     }
 
+    const sectorIdInp = (data as { sector_id?: number | null }).sector_id;
     const created = await client.estoqueInsumo.create({
       data: {
         tenant_id: tenantId,
@@ -148,6 +151,7 @@ export class PrismaStockRepository {
         validade,
         tipo: data.tipo,
         setor: data.setor,
+        sector_id: sectorIdInp ?? null,
         lote: data.lote ?? null,
         status: (data.status ?? StockItemStatus.ATIVO) as string,
         suspended_at: data.suspended_at ?? null,
@@ -802,19 +806,32 @@ export class PrismaStockRepository {
     options: {
       tenantId: number;
       setor?: SectorType;
+      sectorId?: number;
       tipos?: OperationType[];
     },
     tx?: Prisma.TransactionClient,
   ): Promise<number> {
     const client = db(tx);
+    const sectorMed: Prisma.EstoqueMedicamentoWhereInput =
+      options.sectorId != null
+        ? { sector_id: options.sectorId }
+        : options.setor
+          ? { setor: options.setor }
+          : {};
+    const sectorInp: Prisma.EstoqueInsumoWhereInput =
+      options.sectorId != null
+        ? { sector_id: options.sectorId }
+        : options.setor
+          ? { setor: options.setor }
+          : {};
     const whereMed: Prisma.EstoqueMedicamentoWhereInput = {
       tenant_id: options.tenantId,
-      ...(options.setor && { setor: options.setor }),
+      ...sectorMed,
       ...(options.tipos && { tipo: { in: options.tipos } }),
     };
     const whereInp: Prisma.EstoqueInsumoWhereInput = {
       tenant_id: options.tenantId,
-      ...(options.setor && { setor: options.setor }),
+      ...sectorInp,
       ...(options.tipos && { tipo: { in: options.tipos } }),
     };
 
@@ -939,6 +956,58 @@ export class PrismaStockRepository {
       );
     }
 
+    return baseResult;
+  }
+
+  /** Proporção por linha de `setor` (FK) — usa `proportion_profile` da tabela setor. */
+  async getStockProportionBySectorId(
+    tenantId: number,
+    sectorId: number,
+    transaction?: Prisma.TransactionClient,
+  ): Promise<Record<StockGroup, number>> {
+    const row = await db(transaction).setor.findFirst({
+      where: { id: sectorId, tenant_id: tenantId, active: true },
+    });
+    if (!row) {
+      throw new Error('Setor não encontrado para este abrigo');
+    }
+    const profile =
+      row.proportion_profile === 'enfermagem'
+        ? SectorType.ENFERMAGEM
+        : SectorType.FARMACIA;
+    const baseResult: Record<StockGroup, number> = {
+      medicamentos_geral: 0,
+      medicamentos_individual: 0,
+      insumos_geral: 0,
+      insumos_individual: 0,
+      carrinho_emergencia_medicamentos: 0,
+      carrinho_psicotropicos_medicamentos: 0,
+      carrinho_emergencia_insumos: 0,
+      carrinho_psicotropicos_insumos: 0,
+    };
+    const config = SECTOR_CONFIG[profile];
+    for (const [group, tipos] of Object.entries(config.medicines)) {
+      baseResult[group as StockGroup] = await this.sumStock(
+        'medicamento',
+        {
+          tenantId,
+          sectorId,
+          tipos,
+        },
+        transaction,
+      );
+    }
+    for (const [group, tipos] of Object.entries(config.inputs)) {
+      baseResult[group as StockGroup] = await this.sumStock(
+        'insumo',
+        {
+          tenantId,
+          sectorId,
+          tipos,
+        },
+        transaction,
+      );
+    }
     return baseResult;
   }
 

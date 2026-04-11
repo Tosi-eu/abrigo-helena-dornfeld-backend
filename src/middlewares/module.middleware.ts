@@ -3,9 +3,13 @@ import type { AuthRequest } from './auth.middleware';
 import { type TenantRequest, requireTenantId } from './tenant.middleware';
 import { TenantConfigService } from '@services/tenant-config.service';
 import { PrismaTenantConfigRepository } from '@repositories/tenant-config.repository';
+import { PrismaSetorRepository } from '@repositories/setor.repository';
 import type { ModuleKey } from '@domain/tenant.types';
 
-const service = new TenantConfigService(new PrismaTenantConfigRepository());
+const service = new TenantConfigService(
+  new PrismaTenantConfigRepository(),
+  new PrismaSetorRepository(),
+);
 
 export function requireModule(moduleKey: ModuleKey) {
   return async (

@@ -16,6 +16,7 @@ import { PrismaNotificationEventRepository } from '@repositories/notificacao.rep
 import { PrismaMovementRepository } from '@repositories/movimentacao.repository';
 import { PrismaAuditRepository } from '@repositories/audit.repository';
 import { PrismaTenantConfigRepository } from '@repositories/tenant-config.repository';
+import { PrismaSetorRepository } from '@repositories/setor.repository';
 import { TenantConfigService } from '@services/tenant-config.service';
 import { ReportService } from '@services/relatorio.service';
 import { NotificationEventService } from '@services/notificacao.service';
@@ -70,6 +71,8 @@ import { GavetaApiController } from '@controllers/api/gaveta.api.controller';
 import { CategoriaGavetaApiController } from '@controllers/api/categoria-gaveta.api.controller';
 import { CategoriaArmarioApiController } from '@controllers/api/categoria-armario.api.controller';
 import { ArmarioApiController } from '@controllers/api/armario.api.controller';
+import { SetorApiController } from '@controllers/api/setor.api.controller';
+import { SetorController } from '@controllers/setor.controller';
 import {
   AdminPanelLimiterNest,
   RequireAdminNest,
@@ -91,8 +94,10 @@ const appController = new AppController();
 const adminTenantsController = new AdminTenantsController();
 
 const reportRepo = new PrismaReportRepository();
+const setorRepo = new PrismaSetorRepository();
 const tenantConfigService = new TenantConfigService(
   new PrismaTenantConfigRepository(),
+  setorRepo,
 );
 const notificationRepo = new PrismaNotificationEventRepository();
 const reportService = new ReportService(reportRepo, cacheService);
@@ -123,8 +128,11 @@ const dashboardService = new DashboardService(
   stockService,
   movementService,
   cacheService,
+  tenantConfigService,
+  setorRepo,
 );
 const dashboardController = new DashboardController(dashboardService);
+const setorController = new SetorController();
 
 const stockController = new StockController(stockService);
 const movementController = new MovementController(movementService);
@@ -196,6 +204,7 @@ const cabinetController = new CabinetController(cabinetService);
     CategoriaGavetaApiController,
     CategoriaArmarioApiController,
     ArmarioApiController,
+    SetorApiController,
   ],
   providers: [
     { provide: LoginController, useValue: loginController },
@@ -219,6 +228,7 @@ const cabinetController = new CabinetController(cabinetService);
     { provide: DrawerCategoryController, useValue: drawerCategoryController },
     { provide: CabinetCategoryController, useValue: cabinetCategoryController },
     { provide: CabinetController, useValue: cabinetController },
+    { provide: SetorController, useValue: setorController },
   ],
 })
 export class ApiModule implements NestModule {
@@ -245,6 +255,7 @@ export class ApiModule implements NestModule {
         CategoriaGavetaApiController,
         CategoriaArmarioApiController,
         ArmarioApiController,
+        SetorApiController,
       );
 
     consumer

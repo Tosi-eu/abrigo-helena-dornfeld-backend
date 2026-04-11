@@ -2,6 +2,7 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { PrismaNotificationEventRepository } from '@repositories/notificacao.repository';
 import { PrismaTenantConfigRepository } from '@repositories/tenant-config.repository';
+import { PrismaSetorRepository } from '@repositories/setor.repository';
 import { TenantConfigService } from '@services/tenant-config.service';
 import { NotificationEventService } from '@services/notificacao.service';
 
@@ -14,6 +15,7 @@ export class NotificationBootstrapCron implements OnModuleInit {
     const repo = new PrismaNotificationEventRepository();
     const tenantConfigService = new TenantConfigService(
       new PrismaTenantConfigRepository(),
+      new PrismaSetorRepository(),
     );
     this.service = new NotificationEventService(repo, tenantConfigService);
   }

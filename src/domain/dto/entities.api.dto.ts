@@ -579,6 +579,28 @@ export class TenantInviteCreateBodyDto {
   permissions?: AdminPermissionsDto;
 }
 
+export class SetorCreateBodyDto {
+  @TrimmedString(1, 64)
+  @Matches(/^[a-zA-Z0-9_]+$/, {
+    message: 'key: use apenas letras, números e sublinhado',
+  })
+  @ApiProperty({ example: 'psicologia' })
+  key!: string;
+
+  @TrimmedString(1, 120)
+  @ApiProperty({ example: 'Psicologia' })
+  nome!: string;
+
+  @IsOptional()
+  @IsIn(['farmacia', 'enfermagem'])
+  @ApiPropertyOptional({
+    enum: ['farmacia', 'enfermagem'],
+    description:
+      'Perfil para agrupamento nos gráficos de proporção (buckets farmácia vs enfermagem)',
+  })
+  proportionProfile?: 'farmacia' | 'enfermagem';
+}
+
 export class TenantContractCodeBodyDto {
   @OptionalTrimmedString(255)
   @ApiPropertyOptional({ example: 'ABC123' })

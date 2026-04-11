@@ -4,6 +4,7 @@ import {
 } from '@services/tenant-config.service';
 import type { TenantModulesConfig } from '@domain/tenant.types';
 import type { PrismaTenantConfigRepository } from '@repositories/tenant-config.repository';
+import type { PrismaSetorRepository } from '@repositories/setor.repository';
 
 describe('TenantConfigService (unit)', () => {
   let mockRepo: jest.Mocked<
@@ -11,6 +12,9 @@ describe('TenantConfigService (unit)', () => {
       PrismaTenantConfigRepository,
       'getByTenantId' | 'setByTenantId' | 'listAllTenantIds'
     >
+  >;
+  let mockSetorRepo: jest.Mocked<
+    Pick<PrismaSetorRepository, 'ensureDefaultSetores' | 'keysExistForTenant'>
   >;
   let service: TenantConfigService;
 
@@ -20,7 +24,14 @@ describe('TenantConfigService (unit)', () => {
       setByTenantId: jest.fn(),
       listAllTenantIds: jest.fn(),
     };
-    service = new TenantConfigService(mockRepo as PrismaTenantConfigRepository);
+    mockSetorRepo = {
+      ensureDefaultSetores: jest.fn().mockResolvedValue(undefined),
+      keysExistForTenant: jest.fn().mockResolvedValue(true),
+    };
+    service = new TenantConfigService(
+      mockRepo as PrismaTenantConfigRepository,
+      mockSetorRepo as unknown as PrismaSetorRepository,
+    );
   });
 
   describe('get', () => {
@@ -51,7 +62,7 @@ describe('TenantConfigService (unit)', () => {
       });
     });
 
-    it('retorna config parseada quando válida (com defaults de automação)', async () => {
+    it('retorna config parseada quando válida (com defaults de automação e setores)', async () => {
       const cfg = { enabled: ['dashboard', 'medicines'] as const };
       mockRepo.getByTenantId.mockResolvedValue({
         tenant_id: 2,
@@ -61,6 +72,20 @@ describe('TenantConfigService (unit)', () => {
         enabled: ['dashboard', 'medicines'],
         automatic_price_search: true,
         automatic_reposicao_notifications: true,
+        enabled_sectors: ['farmacia', 'enfermagem'],
+      });
+    });
+
+    it('respeita enabled_sectors armazenado', async () => {
+      mockRepo.getByTenantId.mockResolvedValue({
+        tenant_id: 2,
+        modules_json: {
+          enabled: ['dashboard', 'stock'],
+          enabled_sectors: ['farmacia'],
+        },
+      } as any);
+      await expect(service.get(2)).resolves.toMatchObject({
+        enabled_sectors: ['farmacia'],
       });
     });
   });
@@ -74,7 +99,7 @@ describe('TenantConfigService (unit)', () => {
       expect(mockRepo.setByTenantId).not.toHaveBeenCalled();
     });
 
-    it('persiste e devolve config válida com flags de automação', async () => {
+    it('persiste e devolve config válida com flags e setores', async () => {
       mockRepo.getByTenantId.mockResolvedValue(null);
       mockRepo.setByTenantId.mockResolvedValue(undefined as any);
       const payload = { enabled: ['dashboard', 'profile'] as const };
@@ -82,15 +107,31 @@ describe('TenantConfigService (unit)', () => {
         enabled: ['dashboard', 'profile'],
         automatic_price_search: true,
         automatic_reposicao_notifications: true,
+        enabled_sectors: ['farmacia', 'enfermagem'],
       });
+      expect(mockSetorRepo.ensureDefaultSetores).toHaveBeenCalledWith(3);
+      expect(mockSetorRepo.keysExistForTenant).toHaveBeenCalled();
       expect(mockRepo.setByTenantId).toHaveBeenCalledWith(
         3,
         expect.objectContaining({
           enabled: ['dashboard', 'profile'],
           automatic_price_search: true,
           automatic_reposicao_notifications: true,
+          enabled_sectors: ['farmacia', 'enfermagem'],
         }),
       );
+    });
+
+    it('rejeita enabled_sectors quando o catálogo não contém as chaves', async () => {
+      mockRepo.getByTenantId.mockResolvedValue(null);
+      mockSetorRepo.keysExistForTenant.mockResolvedValue(false);
+      await expect(
+        service.set(4, {
+          enabled: ['dashboard', 'profile'],
+          enabled_sectors: ['psicologia'],
+        }),
+      ).rejects.toThrow(/catálogo/);
+      expect(mockRepo.setByTenantId).not.toHaveBeenCalled();
     });
   });
 
@@ -100,6 +141,7 @@ describe('TenantConfigService (unit)', () => {
         enabled: ['stock', 'medicines'],
         automatic_price_search: true,
         automatic_reposicao_notifications: true,
+        enabled_sectors: ['farmacia', 'enfermagem'],
       };
       expect(service.isEnabled(cfg, 'stock')).toBe(true);
       expect(service.isEnabled(cfg, 'reports')).toBe(false);

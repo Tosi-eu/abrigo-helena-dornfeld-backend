@@ -11,6 +11,7 @@ import {
 } from '@helpers/utils';
 import { CacheService } from './redis.service';
 import type { PrismaNotificationEventRepository } from '@repositories/notificacao.repository';
+import { PrismaSetorRepository } from '@repositories/setor.repository';
 import { PrismaMedicineRepository } from '@repositories/medicamento.repository';
 import { PrismaInputRepository } from '@repositories/insumo.repository';
 import { PrismaMovementRepository } from '@repositories/movimentacao.repository';
@@ -25,6 +26,7 @@ export class StockService {
   private medicineRepo: PrismaMedicineRepository;
   private inputRepo: PrismaInputRepository;
   private movementRepo: PrismaMovementRepository;
+  private readonly setorRepo = new PrismaSetorRepository();
   private readonly stockCacheVersionKey = CacheKeyHelper.stockCacheVersionKey();
 
   constructor(
@@ -96,8 +98,24 @@ export class StockService {
       throw new Error('Usuário não autenticado');
     }
 
+    const setorRow = await this.setorRepo.findByTenantAndKey(
+      tenantId,
+      String(normalized.setor).trim().toLowerCase(),
+      transaction,
+    );
+    if (!setorRow) {
+      throw new Error(
+        'Setor inválido. Defina os setores do abrigo (catálogo) ou use um existente.',
+      );
+    }
+    const normalizedWithSector = {
+      ...normalized,
+      setor: setorRow.key,
+      sector_id: setorRow.id,
+    };
+
     const result = await this.repo.createMedicineStockIn(
-      normalized,
+      normalizedWithSector,
       tenantId,
       transaction,
     );
@@ -107,15 +125,16 @@ export class StockService {
         tenant_id: tenantId,
         tipo: MovementType.ENTRADA,
         login_id,
-        medicamento_id: normalized.medicamento_id,
+        medicamento_id: normalizedWithSector.medicamento_id,
         insumo_id: null,
-        quantidade: normalized.quantidade,
-        casela_id: normalized.casela_id ?? null,
-        validade: normalized.validade ?? new Date(),
-        setor: normalized.setor,
-        armario_id: normalized.armario_id ?? undefined,
-        gaveta_id: normalized.gaveta_id ?? undefined,
-        lote: normalized.lote ?? null,
+        quantidade: normalizedWithSector.quantidade,
+        casela_id: normalizedWithSector.casela_id ?? null,
+        validade: normalizedWithSector.validade ?? new Date(),
+        setor: normalizedWithSector.setor,
+        sector_id: setorRow.id,
+        armario_id: normalizedWithSector.armario_id ?? undefined,
+        gaveta_id: normalizedWithSector.gaveta_id ?? undefined,
+        lote: normalizedWithSector.lote ?? null,
       },
       transaction,
     );
@@ -155,8 +174,24 @@ export class StockService {
             : new Date(),
     };
 
+    const setorRowInp = await this.setorRepo.findByTenantAndKey(
+      tenantId,
+      String(normalized.setor).trim().toLowerCase(),
+      transaction,
+    );
+    if (!setorRowInp) {
+      throw new Error(
+        'Setor inválido. Defina os setores do abrigo (catálogo) ou use um existente.',
+      );
+    }
+    const normalizedInpWithSector = {
+      ...normalized,
+      setor: setorRowInp.key,
+      sector_id: setorRowInp.id,
+    };
+
     const result = await this.repo.createInputStockIn(
-      normalized,
+      normalizedInpWithSector,
       tenantId,
       transaction,
     );
@@ -167,14 +202,15 @@ export class StockService {
         tipo: MovementType.ENTRADA,
         login_id,
         medicamento_id: null,
-        insumo_id: normalized.insumo_id,
-        quantidade: normalized.quantidade,
-        casela_id: normalized.casela_id ?? null,
-        validade: normalized.validade ?? new Date(),
-        setor: normalized.setor,
-        armario_id: normalized.armario_id ?? undefined,
-        gaveta_id: normalized.gaveta_id ?? undefined,
-        lote: normalized.lote ?? null,
+        insumo_id: normalizedInpWithSector.insumo_id,
+        quantidade: normalizedInpWithSector.quantidade,
+        casela_id: normalizedInpWithSector.casela_id ?? null,
+        validade: normalizedInpWithSector.validade ?? new Date(),
+        setor: normalizedInpWithSector.setor,
+        sector_id: setorRowInp.id,
+        armario_id: normalizedInpWithSector.armario_id ?? undefined,
+        gaveta_id: normalizedInpWithSector.gaveta_id ?? undefined,
+        lote: normalizedInpWithSector.lote ?? null,
       },
       transaction,
     );
@@ -245,6 +281,10 @@ export class StockService {
         casela_id: stockItem.casela_id ?? null,
         validade: stockItem.validade ?? new Date(),
         setor: stockItem.setor,
+        sector_id:
+          'sector_id' in stockItem && stockItem.sector_id != null
+            ? Number(stockItem.sector_id)
+            : null,
         armario_id: stockItem.armario_id ?? undefined,
         gaveta_id: stockItem.gaveta_id ?? undefined,
         lote,
@@ -298,6 +338,20 @@ export class StockService {
         version,
       ),
       () => this.repo.getStockProportionBySector(tenantId, setor, transaction),
+      60,
+    );
+  }
+
+  async getProportionBySectorId(
+    tenantId: number,
+    sectorId: number,
+    transaction?: Prisma.TransactionClient,
+  ) {
+    const version = await this.getStockCacheVersion();
+    return this.cache.getOrSet(
+      CacheKeyHelper.stockDashboard(`${tenantId}:sector:${sectorId}`, version),
+      () =>
+        this.repo.getStockProportionBySectorId(tenantId, sectorId, transaction),
       60,
     );
   }
@@ -466,6 +520,11 @@ export class StockService {
     if (tenantId == null) {
       throw new Error('Tenant não identificado no registro de estoque');
     }
+    const destSetorMed = await this.setorRepo.findByTenantAndKey(
+      tenantId,
+      String(setor).trim().toLowerCase(),
+      transaction,
+    );
     await this.movementRepo.create(
       {
         tenant_id: tenantId,
@@ -477,6 +536,7 @@ export class StockService {
         casela_id: targetCaselaId,
         validade: stock.validade ?? new Date(),
         setor,
+        sector_id: destSetorMed?.id ?? null,
         armario_id: stock.armario_id ?? undefined,
         gaveta_id: stock.gaveta_id ?? undefined,
         lote: stock.lote ?? null,
@@ -607,6 +667,11 @@ export class StockService {
     if (tenantId == null) {
       throw new Error('Tenant não identificado no registro de estoque');
     }
+    const destSetorInp = await this.setorRepo.findByTenantAndKey(
+      tenantId,
+      String(setor).trim().toLowerCase(),
+      transaction,
+    );
     await this.movementRepo.create(
       {
         tenant_id: tenantId,
@@ -618,6 +683,7 @@ export class StockService {
         casela_id: targetCaselaId,
         validade: stock.validade ?? new Date(),
         setor,
+        sector_id: destSetorInp?.id ?? null,
         armario_id: stock.armario_id ?? undefined,
         gaveta_id: stock.gaveta_id ?? undefined,
         lote: stock.lote ?? null,
@@ -723,6 +789,11 @@ export class StockService {
         if (tenantId == null) {
           throw new Error('Tenant não identificado no registro de estoque');
         }
+        const setorRowAdj = await this.setorRepo.findByTenantAndKey(
+          tenantId,
+          String(setor).trim().toLowerCase(),
+          transaction,
+        );
         await this.movementRepo.create(
           {
             tenant_id: tenantId,
@@ -738,6 +809,7 @@ export class StockService {
             casela_id: (updated.casela_id as number | null) ?? null,
             validade,
             setor,
+            sector_id: setorRowAdj?.id ?? null,
             armario_id: (updated.armario_id as number | undefined) ?? undefined,
             gaveta_id: (updated.gaveta_id as number | undefined) ?? undefined,
             lote: (updated.lote as string | null) ?? null,

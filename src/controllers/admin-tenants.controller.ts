@@ -2,6 +2,7 @@ import type { Response } from 'express';
 import type { AuthRequest } from '@middlewares/auth.middleware';
 import { PrismaTenantRepository } from '@repositories/tenant.repository';
 import { PrismaTenantConfigRepository } from '@repositories/tenant-config.repository';
+import { PrismaSetorRepository } from '@repositories/setor.repository';
 import { PrismaContractPortfolioRepository } from '@repositories/contract-portfolio.repository';
 import {
   DEFAULT_TENANT_MODULES,
@@ -12,7 +13,8 @@ import { getErrorMessage } from '@domain/error.types';
 const tenantRepo = new PrismaTenantRepository();
 const portfolioRepo = new PrismaContractPortfolioRepository();
 const configRepo = new PrismaTenantConfigRepository();
-const configService = new TenantConfigService(configRepo);
+const setorRepo = new PrismaSetorRepository();
+const configService = new TenantConfigService(configRepo, setorRepo);
 
 export class AdminTenantsController {
   async listTenants(req: AuthRequest, res: Response) {
@@ -61,6 +63,7 @@ export class AdminTenantsController {
         contract_code_hash,
         contract_portfolio_id,
       });
+      await setorRepo.ensureDefaultSetores(created.id);
       await configService.set(created.id, DEFAULT_TENANT_MODULES);
       return res.status(201).json(created);
     } catch (error: unknown) {
@@ -151,6 +154,7 @@ export class AdminTenantsController {
           contract_code_hash: resolved.hash,
           contract_portfolio_id: resolved.id,
         });
+        await setorRepo.ensureDefaultSetores(created.id);
         await configService.set(created.id, DEFAULT_TENANT_MODULES);
         return res.status(201).json({
           ok: true,

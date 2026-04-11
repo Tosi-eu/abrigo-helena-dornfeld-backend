@@ -12,6 +12,7 @@ import { digestInviteTokenPlain } from '@helpers/invite-token.helper';
 import { HttpError, isHttpError } from '@domain/error.types';
 import type { LoginCreateWithTenant } from '@porto-sdk/sdk';
 import { DEFAULT_TENANT_MODULES } from './tenant-config.service';
+import { PrismaSetorRepository } from '@repositories/setor.repository';
 
 const MIN_PASSWORD_LENGTH = 8;
 
@@ -524,6 +525,8 @@ export class LoginService {
             modules_json: DEFAULT_TENANT_MODULES as Prisma.InputJsonValue,
           },
         });
+        const setorRepo = new PrismaSetorRepository();
+        await setorRepo.ensureDefaultSetores(tenant.id, t);
         const user = await t.login.create({
           data: {
             login: loginTrim,
@@ -779,6 +782,9 @@ export class LoginService {
             modules_json: DEFAULT_TENANT_MODULES as Prisma.InputJsonValue,
           },
         });
+
+        const setorRepo = new PrismaSetorRepository();
+        await setorRepo.ensureDefaultSetores(tenant.id, t);
 
         const userExists = await this.repo.findByLoginForTenant(
           loginTrim,

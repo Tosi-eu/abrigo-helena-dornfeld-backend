@@ -7,6 +7,7 @@ import {
   TenantConfigService,
 } from '@services/tenant-config.service';
 import { PrismaTenantConfigRepository } from '@repositories/tenant-config.repository';
+import { PrismaSetorRepository } from '@repositories/setor.repository';
 import { PrismaSystemConfigRepository } from '@repositories/system-config.repository';
 import { getErrorMessage, HttpError, isHttpError } from '@domain/error.types';
 import { inferImageContentTypeFromBuffer } from '@helpers/image-mime.helper';
@@ -27,7 +28,8 @@ import {
 } from '@services/r2-assets.service';
 
 const configRepo = new PrismaTenantConfigRepository();
-const service = new TenantConfigService(configRepo);
+const setorRepo = new PrismaSetorRepository();
+const service = new TenantConfigService(configRepo, setorRepo);
 const tenantRepo = new PrismaTenantRepository();
 const systemConfigRepo = new PrismaSystemConfigRepository();
 const contractPortfolioRepo = new PrismaContractPortfolioRepository();

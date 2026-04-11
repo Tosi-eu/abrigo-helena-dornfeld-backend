@@ -96,6 +96,12 @@ Com `DATABASE_URL` definida no `.env`:
 npx prisma migrate deploy
 ```
 
+**Erro P3005 (“The database schema is not empty”)** — aparece quando a base já tem tabelas (por exemplo `db push` ou restore de dump) e o histórico em `_prisma_migrations` não está alinhado com as pastas em `prisma/migrations`. Opções:
+
+1. **Docker Compose:** use `PRISMA_AUTO_BASELINE=1` no serviço `backend` (o compose em `backup/docker-compose.yml` define por defeito `1` via variável). O `docker-entrypoint.sh` aplica o SQL, corre `migrate resolve --applied` e volta a executar `migrate deploy`.
+2. **Recriar volume:** `docker compose down -v` (apaga dados do Postgres) e subir de novo.
+3. **Manual (uma vez):** `npx prisma db execute --file prisma/migrations/<pasta>/migration.sql` e `npx prisma migrate resolve --applied "<nome_da_pasta>"`.
+
 Em desenvolvimento, para criar migrações a partir do schema:
 
 ```bash
