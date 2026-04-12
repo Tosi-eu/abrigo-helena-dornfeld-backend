@@ -47,8 +47,9 @@ export async function seedE2EDefaultTenant(): Promise<void> {
     create: {
       slug: E2E_TENANT_SLUG,
       name: 'Abrigo E2E',
+      brand_name: 'Marca E2E',
     },
-    update: { name: 'Abrigo E2E' },
+    update: { name: 'Abrigo E2E', brand_name: 'Marca E2E' },
   });
   const tenant = await getDb().tenant.findUnique({
     where: { slug: E2E_TENANT_SLUG },

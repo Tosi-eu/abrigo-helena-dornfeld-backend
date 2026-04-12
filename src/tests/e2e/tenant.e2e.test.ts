@@ -23,7 +23,7 @@ describe('Tenant E2E — API pública e contexto', () => {
       id: expect.any(Number),
       slug: E2E_TENANT_SLUG,
       name: expect.any(String),
-      brandName: null,
+      brandName: expect.any(String),
     });
   });
 
@@ -84,7 +84,7 @@ describe('Tenant E2E — API pública e contexto', () => {
       slug: E2E_TENANT_SLUG,
       label: expect.any(String),
       tenantName: expect.any(String),
-      brandName: expect.anything(),
+      brandName: expect.any(String),
     });
   });
 
