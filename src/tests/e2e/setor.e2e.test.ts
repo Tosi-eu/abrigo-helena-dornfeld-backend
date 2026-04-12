@@ -132,11 +132,16 @@ describe('Setores (E2E) — catálogo e enabled_sectors', () => {
       .send({
         modules: {
           ...modules,
-          enabled_sectors: [...modules.enabled_sectors, 'setor_inexistente_xyz'],
+          enabled_sectors: [
+            ...modules.enabled_sectors,
+            'setor_inexistente_xyz',
+          ],
         },
       });
     expect(badPut.status).toBe(400);
-    expect(String(badPut.body?.error ?? '')).toMatch(/catálogo|enabled_sectors/i);
+    expect(String(badPut.body?.error ?? '')).toMatch(
+      /catálogo|enabled_sectors/i,
+    );
 
     const okPut = await request(app)
       .put('/api/v1/tenant/config')
