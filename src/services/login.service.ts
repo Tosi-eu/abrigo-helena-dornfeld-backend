@@ -212,12 +212,18 @@ export class LoginService {
     };
   }
 
-  async resolveTenantByLogin(
-    login: string,
-  ): Promise<
+  async resolveTenantByLogin(login: string): Promise<
     | { type: 'unique'; slug: string }
     | { type: 'not_found' }
-    | { type: 'ambiguous'; tenants: { slug: string; label: string }[] }
+    | {
+        type: 'ambiguous';
+        tenants: {
+          slug: string;
+          label: string;
+          tenantName: string;
+          brandName: string | null;
+        }[];
+      }
   > {
     const trimmed = login.trim();
     if (!trimmed) return { type: 'not_found' };
@@ -239,9 +245,14 @@ export class LoginService {
     return { type: 'ambiguous', tenants: list };
   }
 
-  async listTenantSummariesForLogin(
-    login: string,
-  ): Promise<{ slug: string; label: string }[]> {
+  async listTenantSummariesForLogin(login: string): Promise<
+    {
+      slug: string;
+      label: string;
+      tenantName: string;
+      brandName: string | null;
+    }[]
+  > {
     const trimmed = login.trim();
     if (!trimmed) return [];
     return withRootTransaction(async (t: Prisma.TransactionClient) => {
@@ -476,7 +487,10 @@ export class LoginService {
 
         let resolved: { id: number; hash: string } | null = null;
         if (cc) {
-          const ok = await portfolioRepo.isUsableContractCodeForSignup(cc, t);
+          const ok = await portfolioRepo.isUsableContractCodeForSignup(cc, {
+            tx: t,
+            attestedLogin: loginTrim,
+          });
           if (!ok) {
             // Mensagem genérica para não virar oracle de enumeração.
             throw new HttpError('Código de contrato inválido', 403);
@@ -730,7 +744,10 @@ export class LoginService {
         });
 
         // Para criação de abrigo com admin, exige código existente e utilizável.
-        const ok = await portfolioRepo.isUsableContractCodeForSignup(cc, t);
+        const ok = await portfolioRepo.isUsableContractCodeForSignup(cc, {
+          tx: t,
+          attestedLogin: loginTrim,
+        });
         if (!ok) {
           throw new HttpError('Código de contrato inválido', 403);
         }

@@ -74,6 +74,17 @@ export class PrismaTenantRepository {
     return row?.contract_code_hash ?? null;
   }
 
+  async findContractPortfolioIdByTenantId(
+    tenantId: number,
+    tx?: Prisma.TransactionClient,
+  ): Promise<number | null> {
+    const row = await db(tx).tenant.findUnique({
+      where: { id: tenantId },
+      select: { contract_portfolio_id: true },
+    });
+    return row?.contract_portfolio_id ?? null;
+  }
+
   async findContractVerifyPayloadBySlug(
     slug: string,
     tx?: Prisma.TransactionClient,

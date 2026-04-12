@@ -83,6 +83,8 @@ describe('Tenant E2E — API pública e contexto', () => {
     expect(res.body.tenants[0]).toMatchObject({
       slug: E2E_TENANT_SLUG,
       label: expect.any(String),
+      tenantName: expect.any(String),
+      brandName: expect.anything(),
     });
   });
 

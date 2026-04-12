@@ -11,6 +11,13 @@ export async function hashContractCode(plain: string): Promise<string> {
   return bcrypt.hash(pepperedPlain(plain), SALT_ROUNDS);
 }
 
+/** Normaliza e-mail/login para comparação de vínculo com `contract_portfolio.bound_login`. */
+export function normalizeAttestedLoginForContract(s: unknown): string {
+  return String(s ?? '')
+    .trim()
+    .toLowerCase();
+}
+
 export async function verifyContractCode(
   storedHash: string | null | undefined,
   plain: string | undefined,

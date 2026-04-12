@@ -1,5 +1,62 @@
 import { z } from 'zod';
 
+/** Mesmas chaves que `isR2AssetsConfigured()` em `r2-assets.service.ts` (upload de logo / assets). */
+export const R2_ASSETS_REQUIRED_KEYS = [
+  'R2_ACCOUNT_ID',
+  'R2_ACCESS_KEY_ID',
+  'R2_SECRET_ACCESS_KEY',
+  'R2_ASSETS_BUCKET_NAME',
+  'R2_PUBLIC_BASE_URL',
+] as const;
+
+export function getMissingR2AssetsEnvKeys(
+  env: NodeJS.ProcessEnv = process.env,
+): string[] {
+  return R2_ASSETS_REQUIRED_KEYS.filter(k => {
+    const v = env[k]?.trim();
+    return !v;
+  });
+}
+
+export function isR2AssetsEnvComplete(
+  env: NodeJS.ProcessEnv = process.env,
+): boolean {
+  return getMissingR2AssetsEnvKeys(env).length === 0;
+}
+
+export function formatR2AssetsMissingMessage(missing: string[]): string {
+  if (missing.length === 0) return '';
+  return `Armazenamento R2 incompleto. Defina no ambiente: ${missing.join(', ')}. Ver backend/.env.example.`;
+}
+
+/**
+ * Chamado após assertBackendEnv em main.ts.
+ * Por omissão termina o processo (exit 1) se R2 estiver incompleto — o contentor não deve ficar “de pé” sem capacidade de logos.
+ * Para desenvolvimento local sem R2: defina `ALLOW_MISSING_R2=1` no `.env`.
+ */
+export function logR2AssetsEnvStatus(): void {
+  if (process.env.NODE_ENV === 'test') return;
+  const missing = getMissingR2AssetsEnvKeys();
+  if (missing.length === 0) {
+    console.log(
+      '[env] R2 (logos/assets): credenciais e bucket presentes — upload de logo disponível.',
+    );
+    return;
+  }
+  const msg = formatR2AssetsMissingMessage(missing);
+  console.error(`[env] ERRO FATAL: ${msg}`);
+  console.error(
+    '[env] A aplicação vai terminar. Corrija as variáveis ou defina ALLOW_MISSING_R2=1 apenas em desenvolvimento.',
+  );
+  if (process.env.ALLOW_MISSING_R2 === '1') {
+    console.warn(
+      '[env] ALLOW_MISSING_R2=1 — a continuar sem R2 (POST /tenant/branding/logo responderá 503).',
+    );
+    return;
+  }
+  process.exit(1);
+}
+
 const nonEmpty = (name: string) =>
   z
     .string({ required_error: `${name} é obrigatório` })

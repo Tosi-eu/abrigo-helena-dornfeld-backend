@@ -93,7 +93,22 @@ export class TenantApiController {
   })
   @ApiBody({ type: TenantContractCodeBodyDto })
   @UseGuards(contractBody)
-  contractCode(
+  postContractCode(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.setContractCode(req, res, tenantId);
+  }
+
+  @Put('contract-code')
+  @ApiOperation({
+    summary:
+      'Definir ou atualizar código de contrato (tenant); mesmo corpo que POST',
+  })
+  @ApiBody({ type: TenantContractCodeBodyDto })
+  @UseGuards(contractBody)
+  putContractCode(
     @TenantId() tenantId: number,
     @Req() req: Request,
     @Res() res: Response,

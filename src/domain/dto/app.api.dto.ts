@@ -53,6 +53,18 @@ export class SetContractCodeBySlugDto {
   clear_contract_code?: boolean;
 
   @ApiPropertyOptional({
+    description:
+      'Obrigatório com `contract_code`: e-mail (login) ao qual o código fica reservado na base (`contract_portfolio.bound_login`). Aceita também `boundLogin` ou `email`.',
+  })
+  bound_login?: string;
+
+  @ApiPropertyOptional({ description: 'Alias camelCase de bound_login' })
+  boundLogin?: string;
+
+  @ApiPropertyOptional({ description: 'Alias de bound_login' })
+  email?: string;
+
+  @ApiPropertyOptional({
     description: 'Nome do tenant (usado só se o slug ainda não existir)',
   })
   name?: string;

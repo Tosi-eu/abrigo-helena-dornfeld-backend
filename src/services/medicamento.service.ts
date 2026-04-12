@@ -1,5 +1,6 @@
 import type { Medicine } from '@porto-sdk/sdk';
 import type { PrismaMedicineRepository } from '@repositories/medicamento.repository';
+import { withRlsContext } from '@repositories/rls.context';
 import type { IPriceSearchService } from './price-search.types';
 import type { TenantConfigService } from './tenant-config.service';
 import { logger } from '@helpers/logger.helper';
@@ -34,8 +35,13 @@ export class MedicineService {
         );
 
         if (priceResult?.averagePrice) {
-          await this.repo.updateMedicineById(tenantId, medicineId, {
-            preco: priceResult.averagePrice,
+          // Não usar getDb() do pedido: o setImmediate corre após o commit da transação
+          // RLS do middleware; o AsyncLocalStorage ainda aponta para um tx já fechado.
+          await withRlsContext({ tenant_id: String(tenantId) }, async tx => {
+            await tx.medicamento.updateMany({
+              where: { id: medicineId, tenant_id: tenantId },
+              data: { preco: priceResult.averagePrice },
+            });
           });
         }
       } catch (error) {

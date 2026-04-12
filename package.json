@@ -7,6 +7,7 @@
     "dev": "ts-node-dev --respawn --transpile-only -r reflect-metadata/register src/main.ts",
     "dev:nest": "ts-node-dev --respawn --transpile-only -r reflect-metadata/register src/main.ts",
     "build": "tsc && tsc-alias -p tsconfig.json",
+    "check:env:r2": "node dist/scripts/validate-env-build.js",
     "start": "node dist/main.js",
     "postinstall": "prisma generate",
     "prisma:generate": "prisma generate",

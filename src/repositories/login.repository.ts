@@ -76,7 +76,14 @@ export class PrismaLoginRepository {
   async findTenantSummariesForLogin(
     login: string,
     transaction?: Prisma.TransactionClient,
-  ): Promise<{ slug: string; label: string }[]> {
+  ): Promise<
+    {
+      slug: string;
+      label: string;
+      tenantName: string;
+      brandName: string | null;
+    }[]
+  > {
     const trimmed = login.trim();
     if (!trimmed) return [];
 
@@ -90,9 +97,27 @@ export class PrismaLoginRepository {
       ORDER BY t.slug ASC
     `);
 
-    return rawRows.map(r => ({
-      slug: r.slug,
-      label: (r.brand_name && String(r.brand_name).trim()) || r.name,
+    const rows = rawRows.map(r => {
+      const brandRaw = r.brand_name != null ? String(r.brand_name).trim() : '';
+      const brandName = brandRaw.length > 0 ? brandRaw : null;
+      const tenantName = String(r.name ?? '').trim() || r.slug;
+      const baseLabel = brandName ?? tenantName;
+      return { slug: r.slug, tenantName, brandName, baseLabel };
+    });
+
+    const labelCounts = new Map<string, number>();
+    for (const row of rows) {
+      labelCounts.set(row.baseLabel, (labelCounts.get(row.baseLabel) ?? 0) + 1);
+    }
+
+    return rows.map(row => ({
+      slug: row.slug,
+      tenantName: row.tenantName,
+      brandName: row.brandName,
+      label:
+        (labelCounts.get(row.baseLabel) ?? 0) > 1
+          ? `${row.baseLabel} (${row.slug})`
+          : row.baseLabel,
     }));
   }
 

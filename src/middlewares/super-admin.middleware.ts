@@ -12,15 +12,16 @@ function getClientIp(req: AuthRequest): string {
   return req.ip || req.socket?.remoteAddress || 'unknown';
 }
 
+/** Se `SUPERADMIN_APIKEY_IP_ALLOWLIST` estiver vazio, não há filtro por IP (só a chave). */
 function isIpAllowed(req: AuthRequest): boolean {
   if (process.env.NODE_ENV === 'test') return true;
   const raw = String(process.env.SUPERADMIN_APIKEY_IP_ALLOWLIST ?? '').trim();
-  if (!raw) return false;
+  if (!raw) return true;
   const allowed = raw
     .split(',')
     .map(s => s.trim())
     .filter(Boolean);
-  if (allowed.length === 0) return false;
+  if (allowed.length === 0) return true;
   const ip = getClientIp(req);
   return allowed.includes(ip);
 }

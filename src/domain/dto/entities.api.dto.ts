@@ -1,10 +1,11 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   Allow,
   ArrayMinSize,
   IsArray,
   IsBoolean,
+  IsEmail,
   IsIn,
   IsInt,
   IsNotEmpty,
@@ -613,6 +614,21 @@ export class TenantContractCodeBodyDto {
   @Allow()
   @Validate(ContractCodeOrCamelConstraint)
   _contractCodePresent?: never;
+
+  /** Aceita `bound_login`, `boundLogin` ou `email` no JSON; normalizado para minúsculas. */
+  @Transform(({ obj }) => {
+    const v = obj.bound_login ?? obj.boundLogin ?? obj.email;
+    if (v === undefined || v === null) return v;
+    return typeof v === 'string' ? v.trim().toLowerCase() : v;
+  })
+  @IsEmail()
+  @MaxLength(255)
+  @ApiProperty({
+    example: 'responsavel@instituicao.pt',
+    description:
+      'E-mail ao qual o código fica vinculado; tem de ser o mesmo que o login da sessão.',
+  })
+  bound_login!: string;
 }
 
 export class TenantModulesConfigBodyDto {

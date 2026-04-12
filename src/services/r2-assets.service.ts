@@ -3,6 +3,7 @@ import {
   ListObjectsV2Command,
   PutObjectCommand,
 } from '@aws-sdk/client-s3';
+import { isR2AssetsEnvComplete } from '@config/env.validation';
 import { getR2S3Client } from './clients/r2-s3-client';
 
 const MIME_TO_EXT: Record<string, string> = {
@@ -17,13 +18,7 @@ export function getR2AssetsBucketName(): string | undefined {
 }
 
 export function isR2AssetsConfigured(): boolean {
-  return Boolean(
-    process.env.R2_ACCOUNT_ID?.trim() &&
-    process.env.R2_ACCESS_KEY_ID?.trim() &&
-    process.env.R2_SECRET_ACCESS_KEY?.trim() &&
-    getR2AssetsBucketName() &&
-    process.env.R2_PUBLIC_BASE_URL?.trim(),
-  );
+  return isR2AssetsEnvComplete();
 }
 
 export function getR2PublicBaseUrl(): string {

@@ -146,4 +146,46 @@ describe('Admin tenants + verify-contract-code (E2E)', () => {
       reason: 'mismatch',
     });
   });
+
+  it('POST /contract-code/verify continua válido após consumo por tenant provisório (mesmo e-mail reservado)', async () => {
+    const code = `VERIFY-PUB-${Date.now()}`;
+    const slug = `canon-vfy-${Date.now()}`;
+    const email = `e2e-cc-${Date.now()}@example.com`;
+    const put = await request(app)
+      .put(`/api/v1/admin/tenants/by-slug/${slug}/contract-code`)
+      .set('X-API-Key', apiKey())
+      .send({
+        name: 'Canon verify',
+        contract_code: code,
+        bound_login: email,
+      });
+    expect([200, 201]).toContain(put.status);
+
+    const beforeReg = await request(app)
+      .post('/api/v1/contract-code/verify')
+      .send({ contract_code: code, login: email });
+    expect(beforeReg.status).toBe(200);
+    expect(beforeReg.body).toEqual({ valid: true });
+
+    const reg = await request(app).post('/api/v1/login/register-account').send({
+      login: email,
+      password: 'Str0ng!Pass-e2e',
+      first_name: 'E2e',
+      last_name: 'Verify',
+      contract_code: code,
+    });
+    expect(reg.status).toBe(201);
+
+    const afterReg = await request(app)
+      .post('/api/v1/contract-code/verify')
+      .send({ contract_code: code, login: email });
+    expect(afterReg.status).toBe(200);
+    expect(afterReg.body).toEqual({ valid: true });
+
+    const wrongEmail = await request(app)
+      .post('/api/v1/contract-code/verify')
+      .send({ contract_code: code, login: 'outro@example.com' });
+    expect(wrongEmail.status).toBe(200);
+    expect(wrongEmail.body).toEqual({ valid: false });
+  });
 });

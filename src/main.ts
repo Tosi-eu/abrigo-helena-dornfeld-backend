@@ -3,9 +3,13 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-import { assertBackendEnv } from './config/env.validation';
+import {
+  assertBackendEnv,
+  logR2AssetsEnvStatus,
+} from './config/env.validation';
 
 assertBackendEnv();
+logR2AssetsEnvStatus();
 
 import { logger } from '@helpers/logger.helper';
 import { bootstrap } from './bootstrap';

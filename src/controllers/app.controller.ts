@@ -365,8 +365,17 @@ export class AppController {
       if (!plainTrim) {
         return res.status(200).json({ valid: false });
       }
+      const loginRaw =
+        body.login != null && String(body.login).trim() !== ''
+          ? String(body.login)
+          : body.email != null && String(body.email).trim() !== ''
+            ? String(body.email)
+            : '';
       const ok =
-        await contractPortfolioRepo.isUsableContractCodeForSignup(plainTrim);
+        await contractPortfolioRepo.isAttestableContractCodeForSignupVerify(
+          plainTrim,
+          { attestedLogin: loginRaw.trim() || undefined },
+        );
       return res.status(200).json({ valid: ok });
     } catch {
       return res.status(200).json({ valid: false });

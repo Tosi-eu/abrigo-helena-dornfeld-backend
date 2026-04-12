@@ -1,5 +1,6 @@
 import type { Prisma } from '@prisma/client';
 import { HttpError } from '@domain/error.types';
+import { normalizeAttestedLoginForContract } from '@helpers/contract-code.helper';
 import { withRootTransaction } from '@repositories/prisma';
 
 const FULL_PERMISSIONS = {
@@ -33,13 +34,14 @@ export async function migrateProvisionalLoginToCanonicalTenant(params: {
   const { sessionUser, provisionalTenantId, canonicalTenantId } = params;
 
   await withRootTransaction(async t => {
-    const conflict = await t.login.findFirst({
-      where: {
-        tenant_id: canonicalTenantId,
-        login: String(sessionUser.login).trim(),
-      },
-    });
-    if (conflict && conflict.id !== sessionUser.id) {
+    const loginNorm = normalizeAttestedLoginForContract(sessionUser.login);
+    const conflictRows = await t.$queryRaw<{ id: number }[]>`
+      SELECT id FROM login
+      WHERE tenant_id = ${canonicalTenantId}
+        AND LOWER(TRIM(BOTH FROM login)) = ${loginNorm}
+    `;
+    const conflictOther = conflictRows.find(r => r.id !== sessionUser.id);
+    if (conflictOther) {
       throw new HttpError(
         'Já existe utilizador com este e-mail neste abrigo. Use outro e-mail ou peça ao administrador.',
         409,
@@ -48,7 +50,12 @@ export async function migrateProvisionalLoginToCanonicalTenant(params: {
 
     const canonRow = await t.tenant.findUnique({
       where: { id: canonicalTenantId },
-      select: { id: true, brand_name: true, logo_url: true },
+      select: {
+        id: true,
+        brand_name: true,
+        logo_url: true,
+        contract_portfolio_id: true,
+      },
     });
     const provRow = await t.tenant.findUnique({
       where: { id: provisionalTenantId },
@@ -86,6 +93,38 @@ export async function migrateProvisionalLoginToCanonicalTenant(params: {
         is_tenant_owner: canonOwner ? false : true,
       },
     });
+
+    const portfolioId = canonRow.contract_portfolio_id;
+    if (portfolioId != null) {
+      await t.$executeRaw`
+        UPDATE contract_portfolio
+        SET used_by_tenant_id = ${canonicalTenantId}, used_at = NOW()
+        WHERE id = ${portfolioId}
+          AND used_by_tenant_id = ${provisionalTenantId}
+      `;
+    }
+
+    const viewer = await t.tenant.findFirst({
+      where: { slug: 'viewer' },
+      select: { id: true },
+    });
+    if (viewer) {
+      await t.$executeRaw`
+        DELETE FROM login_log
+        WHERE user_id IN (
+          SELECT id FROM login
+          WHERE tenant_id = ${viewer.id}
+            AND LOWER(TRIM(BOTH FROM login)) = ${loginNorm}
+            AND id <> ${sessionUser.id}
+        )
+      `;
+      await t.$executeRaw`
+        DELETE FROM login
+        WHERE tenant_id = ${viewer.id}
+          AND LOWER(TRIM(BOTH FROM login)) = ${loginNorm}
+          AND id <> ${sessionUser.id}
+      `;
+    }
 
     await t.tenantInvite.deleteMany({
       where: { tenant_id: provisionalTenantId },

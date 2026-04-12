@@ -32,7 +32,7 @@ export async function bootstrap(): Promise<INestApplication> {
     status: 'connected',
   });
 
-  const port = Number(process.env.PORT) || 3001;
+  const port = Number(process.env.PORT) || 3000;
   await app.listen(port, '0.0.0.0');
   logger.info('Servidor Nest iniciado', {
     operation: 'server',

@@ -1,5 +1,6 @@
 import type { PrismaInputRepository } from '@repositories/insumo.repository';
 import type { Input } from '@porto-sdk/sdk';
+import { withRlsContext } from '@repositories/rls.context';
 import type { IPriceSearchService } from './price-search.types';
 import type { TenantConfigService } from './tenant-config.service';
 import { logger } from '@helpers/logger.helper';
@@ -22,8 +23,11 @@ export class InputService {
         const priceResult = await search.searchPrice(input.nome, 'input');
 
         if (priceResult?.averagePrice) {
-          await this.repo.updateInputById(tenantId, inputId, {
-            preco: priceResult.averagePrice,
+          await withRlsContext({ tenant_id: String(tenantId) }, async tx => {
+            await tx.insumo.updateMany({
+              where: { id: inputId, tenant_id: tenantId },
+              data: { preco: priceResult.averagePrice },
+            });
           });
         }
       } catch (error) {

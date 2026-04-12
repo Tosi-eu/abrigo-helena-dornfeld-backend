@@ -13,7 +13,15 @@ if needs_npm_install; then
   npm install --legacy-peer-deps --ignore-scripts
 fi
 
-if [ "${ALWAYS_BUILD_DIST:-}" = "1" ] || [ ! -f dist/main.js ]; then
+needs_dist_rebuild() {
+  [ "${ALWAYS_BUILD_DIST:-}" = "1" ] && return 0
+  [ ! -f dist/main.js ] && return 0
+  _any=$(find src -type f -name '*.ts' -newer dist/main.js 2>/dev/null | head -n 1)
+  [ -n "$_any" ] && return 0
+  return 1
+}
+
+if needs_dist_rebuild; then
   echo "[docker-entrypoint] prisma generate + npm run build"
   npx prisma generate
   npm run build
@@ -70,6 +78,40 @@ if [ "${SKIP_PRISMA_SCHEMA_SYNC:-0}" != "1" ]; then
           echo "  - Ou volumes limpos: docker compose down -v (apaga dados Postgres)."
           echo "  - Ou baseline manual: prisma db execute --file prisma/migrations/<pasta>/migration.sql && prisma migrate resolve --applied <nome_pasta>"
           exit "$MIGRATE_EXIT"
+        fi
+      elif grep -qF 'relation "tenant" does not exist' /tmp/prisma_migrate_deploy.log 2>/dev/null \
+        || { grep -qE 'P3009|P3018' /tmp/prisma_migrate_deploy.log 2>/dev/null \
+          && grep -qF '20260205140000_setor_catalog' /tmp/prisma_migrate_deploy.log 2>/dev/null; }; then
+
+        cat /tmp/prisma_migrate_deploy.log
+        echo "[docker-entrypoint] Recuperação: migrate resolve --rolled-back, db push, migrate deploy"
+        FAILED_MIG=$(sed -n 's/.*The `\([^`]*\)`.*/\1/p' /tmp/prisma_migrate_deploy.log 2>/dev/null | head -n1)
+        if [ -z "$FAILED_MIG" ]; then
+          FAILED_MIG=$(
+            grep 'Migration name:' /tmp/prisma_migrate_deploy.log 2>/dev/null | tail -1 | sed 's/.*Migration name:[[:space:]]*//' | tr -d '\r'
+          )
+        fi
+        if [ -z "$FAILED_MIG" ]; then
+          FAILED_MIG="20260205140000_setor_catalog_and_sector_id"
+        fi
+        set +e
+        npx prisma migrate resolve --rolled-back "$FAILED_MIG" >>/tmp/prisma_migrate_recover.log 2>&1
+        _rb=$?
+        set -e
+        if [ "$_rb" -ne 0 ]; then
+          echo "[docker-entrypoint] migrate resolve --rolled-back (código $_rb); continuar se já estiver resolvido. Log:"
+          cat /tmp/prisma_migrate_recover.log 2>/dev/null || true
+        fi
+        if [ "${PRISMA_COMPAT_LEGACY_LOGIN_UNIQUE:-1}" = "1" ]; then
+          echo "[docker-entrypoint] compat Prisma/Postgres (login_login_key) antes de db push"
+          npx prisma db execute --file prisma/compat-before-db-push.sql --schema prisma/schema.prisma || true
+        fi
+        npx prisma db push --skip-generate --accept-data-loss
+        npx prisma migrate deploy > /tmp/prisma_migrate_deploy2.log 2>&1
+        MIGRATE2=$?
+        if [ "$MIGRATE2" -ne 0 ]; then
+          cat /tmp/prisma_migrate_deploy2.log
+          exit "$MIGRATE2"
         fi
       else
         cat /tmp/prisma_migrate_deploy.log

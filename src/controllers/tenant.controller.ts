@@ -19,6 +19,7 @@ import { invalidateAuthCacheForRequest } from '@helpers/auth-token-cache.helper'
 import { migrateProvisionalLoginToCanonicalTenant } from '@services/tenant-contract-migration.service';
 import { PrismaLoginRepository } from '@repositories/login.repository';
 import { PrismaContractPortfolioRepository } from '@repositories/contract-portfolio.repository';
+import { getMissingR2AssetsEnvKeys } from '@config/env.validation';
 import {
   assertLogoUrlBelongsToOurR2,
   deleteTenantLogoObjectsExceptKey,
@@ -181,9 +182,11 @@ export class TenantController {
   ) {
     try {
       if (!isR2AssetsConfigured()) {
+        const missing = getMissingR2AssetsEnvKeys();
         return res.status(503).json({
           error:
-            'Armazenamento de logos (R2) não configurado. Use as mesmas credenciais da conta; defina R2_ASSETS_BUCKET_NAME (ex.: porto-assets) e R2_PUBLIC_BASE_URL.',
+            'Armazenamento de logos (R2) não configurado. Defina as variáveis indicadas em missingEnv (ver backend/.env.example).',
+          missingEnv: missing,
         });
       }
       if (!(await assertCanUpdateBranding(req, tenantId))) {
@@ -373,6 +376,14 @@ export class TenantController {
         return res.status(400).json({ error: 'Informe contract_code (texto)' });
       }
 
+      const attestedEmail = String(req.body?.bound_login ?? '').trim();
+      if (!attestedEmail) {
+        return res.status(400).json({
+          error:
+            'Informe bound_login (e-mail) no corpo, alinhado com o login da sessão.',
+        });
+      }
+
       const tenant = await tenantRepo.findById(tenantId);
       if (!tenant)
         return res.status(404).json({ error: 'Tenant não encontrado' });
@@ -382,6 +393,12 @@ export class TenantController {
 
       const resolved =
         await contractPortfolioRepo.resolveOrCreateByPlainText(code);
+
+      await contractPortfolioRepo.ensurePortfolioBindingAllowsAttestedUser({
+        portfolioId: resolved.id,
+        attestedLoginRaw: attestedEmail,
+        sessionLogin: String(req.user?.login ?? ''),
+      });
 
       const provisionalSlug = String(tenant.slug ?? '');
       const isProvisional = provisionalSlug.startsWith('u-');
@@ -485,6 +502,14 @@ export class TenantController {
         return res.status(400).json({ error: 'Informe contract_code (texto)' });
       }
 
+      const attestedEmail = String(req.body?.bound_login ?? '').trim();
+      if (!attestedEmail) {
+        return res.status(400).json({
+          error:
+            'Informe bound_login (e-mail) no corpo, alinhado com o login da sessão.',
+        });
+      }
+
       const matched =
         await contractPortfolioRepo.findMatchingPortfolioByPlainText(code);
       if (!matched) {
@@ -492,6 +517,12 @@ export class TenantController {
           error: 'Código de contrato não encontrado ou inválido.',
         });
       }
+
+      await contractPortfolioRepo.ensurePortfolioBindingAllowsAttestedUser({
+        portfolioId: matched.id,
+        attestedLoginRaw: attestedEmail,
+        sessionLogin: String(req.user?.login ?? ''),
+      });
 
       const canonical = await tenantRepo.findCanonicalTenantByPortfolioId(
         matched.id,

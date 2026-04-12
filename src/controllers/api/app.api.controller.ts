@@ -154,7 +154,7 @@ export class AppApiController {
   @Post('contract-code/verify')
   @ApiOperation({
     summary:
-      'Verificar código de contrato (cadastro público): não revela se já foi usado',
+      'Verificar código de contrato (cadastro público): valida hash, estado e e-mail reservado; não bloqueia só por existir abrigo provisório com o mesmo código',
   })
   @ApiBody({ type: VerifyContractCodeDto })
   @ApiResponse({ status: 200, description: '{ valid: boolean }' })

@@ -1,5 +1,6 @@
 import type { Response } from 'express';
 import type { AuthRequest } from '@middlewares/auth.middleware';
+import { Prisma } from '@prisma/client';
 import { PrismaTenantRepository } from '@repositories/tenant.repository';
 import { PrismaTenantConfigRepository } from '@repositories/tenant-config.repository';
 import { PrismaSetorRepository } from '@repositories/setor.repository';
@@ -47,6 +48,13 @@ export class AdminTenantsController {
       if (!slug || !name) {
         return res.status(400).json({ error: 'slug e name são obrigatórios' });
       }
+      const slugTaken = await tenantRepo.findIdBySlug(slug);
+      if (slugTaken != null) {
+        return res.status(409).json({
+          error:
+            'Já existe um abrigo com este slug. Cada abrigo precisa de um identificador (slug) único.',
+        });
+      }
       const ccRaw = req.body?.contract_code;
       let contract_code_hash: string | null = null;
       let contract_portfolio_id: number | null = null;
@@ -67,6 +75,15 @@ export class AdminTenantsController {
       await configService.set(created.id, DEFAULT_TENANT_MODULES);
       return res.status(201).json(created);
     } catch (error: unknown) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        return res.status(409).json({
+          error:
+            'Já existe um abrigo com este slug. Cada abrigo precisa de um identificador (slug) único.',
+        });
+      }
       return res
         .status(500)
         .json({ error: getErrorMessage(error) || 'Erro ao criar tenant' });
@@ -100,6 +117,14 @@ export class AdminTenantsController {
         const resolved = await portfolioRepo.resolveOrCreateByPlainText(
           String(req.body.contract_code).trim(),
         );
+        const currentPid =
+          await tenantRepo.findContractPortfolioIdByTenantId(id);
+        if (currentPid != null && currentPid !== resolved.id) {
+          return res.status(409).json({
+            error:
+              'Este abrigo já tem outro código de contrato associado. Para trocar, use clear_contract_code no corpo e volte a enviar o novo código, ou crie um novo abrigo com outro slug.',
+          });
+        }
         patch.contract_code_hash = resolved.hash;
         patch.contract_portfolio_id = resolved.id;
       }
@@ -109,6 +134,15 @@ export class AdminTenantsController {
       const updated = await tenantRepo.update(id, patch);
       return res.json(updated);
     } catch (error: unknown) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        return res.status(409).json({
+          error:
+            'Já existe um abrigo com este slug. Cada abrigo precisa de um identificador (slug) único.',
+        });
+      }
       return res
         .status(500)
         .json({ error: getErrorMessage(error) || 'Erro ao atualizar tenant' });
@@ -142,9 +176,31 @@ export class AdminTenantsController {
         });
       }
 
+      const boundRaw = String(
+        req.body?.bound_login ?? req.body?.boundLogin ?? req.body?.email ?? '',
+      ).trim();
+      if (!boundRaw) {
+        return res.status(400).json({
+          error:
+            'Com contract_code, envie também bound_login (e-mail) ao qual o código fica reservado (ou boundLogin / email).',
+        });
+      }
+
       const resolved = await portfolioRepo.resolveOrCreateByPlainText(
         String(cc).trim(),
+        { boundLogin: boundRaw },
       );
+
+      if (id != null) {
+        const payload = await tenantRepo.findContractVerifyPayloadBySlug(slug);
+        const currentPid = payload?.contract_portfolio_id ?? null;
+        if (currentPid != null && currentPid !== resolved.id) {
+          return res.status(409).json({
+            error:
+              'Este slug já está em uso por um abrigo com outro código de contrato. Para um segundo abrigo, use um slug diferente (ex.: outro identificador na URL). Para alterar o contrato deste abrigo, limpe primeiro com clear_contract_code: true.',
+          });
+        }
+      }
 
       if (!id) {
         const name = String(req.body?.name ?? '').trim() || slug;

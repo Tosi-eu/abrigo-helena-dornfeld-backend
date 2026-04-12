@@ -29,7 +29,6 @@ model Tenant {
   @@map("tenant")
 }
 
-/// Setor de estoque por abrigo (ex.: farmácia, enfermagem, ou setores definidos pela equipa).
 model Setor {
   id                 Int      @id @default(autoincrement())
   tenant_id          Int
@@ -342,6 +341,7 @@ model SystemConfig {
 model ContractPortfolio {
   id                 Int       @id @default(autoincrement())
   contract_code_hash String    @db.VarChar(255)
+  boundLogin         String?   @map("bound_login") @db.VarChar(255)
   used_by_tenant_id  Int?
   used_at            DateTime?
   disabled_at        DateTime?
