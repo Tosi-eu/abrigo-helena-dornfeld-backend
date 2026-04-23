@@ -1,5 +1,5 @@
 import request from 'supertest';
-import { setupTestApp } from '@tests/helpers/database.helper';
+import { closeTestApp, setupTestApp } from '@tests/helpers/database.helper';
 import { getAuthToken } from '@tests/helpers/auth.helper';
 import { App } from 'supertest/types';
 
@@ -11,6 +11,10 @@ describe('Medicines E2E - CRUD básico', () => {
   beforeAll(async () => {
     app = await setupTestApp();
     authToken = await getAuthToken(app);
+  });
+
+  afterAll(async () => {
+    await closeTestApp();
   });
 
   it('deve criar um medicamento', async () => {

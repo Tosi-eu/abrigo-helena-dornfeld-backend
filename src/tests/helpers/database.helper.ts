@@ -1,6 +1,7 @@
 import 'reflect-metadata';
 import { Test } from '@nestjs/testing';
-import type { Application } from 'express';
+import type { INestApplication } from '@nestjs/common';
+import type { Server } from 'node:http';
 import { AppModule } from '@modules/app.module';
 import {
   configureHttpBeforeInit,
@@ -9,18 +10,53 @@ import {
 import { getDatabaseConfig } from '@config/database.config';
 import { seedE2EDefaultTenant } from '@helpers/e2e-tenant-seed.helper';
 import { prisma } from '@repositories/prisma';
+import { execSync } from 'node:child_process';
 
 function isTestEnv(): boolean {
   return process.env.NODE_ENV === 'test';
 }
 
+let lastNestApp: INestApplication | null = null;
+
+export async function closeTestApp(): Promise<void> {
+  if (!lastNestApp) return;
+  try {
+    const httpServer: any = lastNestApp.getHttpServer?.();
+    if (httpServer && typeof httpServer.close === 'function') {
+      if (typeof httpServer.unref === 'function') httpServer.unref();
+      await new Promise<void>(resolve => httpServer.close(() => resolve()));
+    }
+    await lastNestApp.close();
+  } finally {
+    lastNestApp = null;
+  }
+}
+
+async function ensureTestDbSchema(): Promise<void> {
+  // Em alguns ambientes o banco de testes existe mas está vazio (sem tabelas).
+  // Os seeds e2e assumem o schema já aplicado.
+  const rows = await prisma.$queryRawUnsafe<Array<{ regclass: string | null }>>(
+    `SELECT to_regclass('public.tenant')::text AS regclass`,
+  );
+  const hasTenantTable = Boolean(rows?.[0]?.regclass);
+  if (hasTenantTable) return;
+
+  // Em base vazia, as migrações podem depender de tabelas “baseline” não versionadas.
+  // Para e2e, fazemos push do schema completo.
+  execSync('npx prisma db push --accept-data-loss', {
+    stdio: 'inherit',
+    env: process.env,
+  });
+}
+
 async function setupTestData() {
   if (!isTestEnv()) return;
   await prisma.$connect();
+  await ensureTestDbSchema();
   await seedE2EDefaultTenant();
 }
 
-export async function createApp(): Promise<Application> {
+export async function createApp(): Promise<Server> {
   await setupTestData();
   const moduleRef = await Test.createTestingModule({
     imports: [AppModule],
@@ -34,7 +70,8 @@ export async function createApp(): Promise<Application> {
   await app.init();
   registerExpressErrorHandlerLast(app);
 
-  return app.getHttpAdapter().getInstance() as Application;
+  lastNestApp = app;
+  return app.getHttpServer() as Server;
 }
 
 export async function setupTestApp() {

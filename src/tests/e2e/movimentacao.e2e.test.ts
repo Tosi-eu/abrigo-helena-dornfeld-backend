@@ -1,9 +1,8 @@
 import { App } from 'supertest/types';
 import request from 'supertest';
-import { setupTestApp } from '@tests/helpers/database.helper';
+import { closeTestApp, setupTestApp } from '@tests/helpers/database.helper';
 import { seedDB, SeedResult } from '@repositories/seed/estoque.seed';
 import { seedEntriesDB } from '@repositories/seed/movimentacao.seed';
-import { prisma } from '@repositories/prisma';
 
 describe('E2E Movimentação', () => {
   let app: App;
@@ -16,7 +15,7 @@ describe('E2E Movimentação', () => {
   });
 
   afterAll(async () => {
-    await prisma.$disconnect();
+    await closeTestApp();
   });
 
   it('deve criar movimentação de medicamento', async () => {

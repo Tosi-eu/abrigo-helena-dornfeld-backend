@@ -1,5 +1,5 @@
 import request from 'supertest';
-import { setupTestApp } from '@tests/helpers/database.helper';
+import { closeTestApp, setupTestApp } from '@tests/helpers/database.helper';
 import { getAuthToken } from '@tests/helpers/auth.helper';
 import { App } from 'supertest/types';
 
@@ -20,6 +20,10 @@ describe('Cabinet E2E - CRUD básico', () => {
       .send({ nome: 'Categoria Teste' });
 
     categoryId = cat.body.id;
+  });
+
+  afterAll(async () => {
+    await closeTestApp();
   });
 
   it('deve criar um armário', async () => {

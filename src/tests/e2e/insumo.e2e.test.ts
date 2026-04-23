@@ -1,5 +1,5 @@
 import request from 'supertest';
-import { setupTestApp } from '@tests/helpers/database.helper';
+import { closeTestApp, setupTestApp } from '@tests/helpers/database.helper';
 import { getAuthToken } from '@tests/helpers/auth.helper';
 import { App } from 'supertest/types';
 
@@ -12,6 +12,10 @@ describe('InsumoController', () => {
   beforeAll(async () => {
     app = await setupTestApp();
     authToken = await getAuthToken(app);
+  });
+
+  afterAll(async () => {
+    await closeTestApp();
   });
 
   it('deve criar um insumo', async () => {
@@ -37,7 +41,7 @@ describe('InsumoController', () => {
 
   it('deve listar insumos paginados', async () => {
     const res = await request(app)
-      .get('/api/v1/insumos?page=1&limit=10')
+      .get('/api/v1/insumos?page=1&limit=200')
       .set('Authorization', `Bearer ${authToken}`);
     expect(res.status).toBe(200);
     expect(Array.isArray(res.body.data)).toBe(true);

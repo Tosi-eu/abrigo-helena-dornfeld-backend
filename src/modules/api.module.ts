@@ -73,6 +73,9 @@ import { CategoriaArmarioApiController } from '@controllers/api/categoria-armari
 import { ArmarioApiController } from '@controllers/api/armario.api.controller';
 import { SetorApiController } from '@controllers/api/setor.api.controller';
 import { SetorController } from '@controllers/setor.controller';
+import { TenantImportApiController } from '@controllers/api/tenant-import.api.controller';
+import { TenantImportController } from '@controllers/tenant-import.controller';
+import { TenantImportService } from '@services/tenant-import.service';
 import {
   AdminPanelLimiterNest,
   RequireAdminNest,
@@ -186,6 +189,9 @@ const cabinetRepo = new PrismaCabinetRepository();
 const cabinetService = new CabinetService(cabinetRepo);
 const cabinetController = new CabinetController(cabinetService);
 
+const tenantImportService = new TenantImportService();
+const tenantImportController = new TenantImportController(tenantImportService);
+
 @Module({
   controllers: [
     LoginApiController,
@@ -205,6 +211,7 @@ const cabinetController = new CabinetController(cabinetService);
     CategoriaArmarioApiController,
     ArmarioApiController,
     SetorApiController,
+    TenantImportApiController,
   ],
   providers: [
     { provide: LoginController, useValue: loginController },
@@ -229,6 +236,7 @@ const cabinetController = new CabinetController(cabinetService);
     { provide: CabinetCategoryController, useValue: cabinetCategoryController },
     { provide: CabinetController, useValue: cabinetController },
     { provide: SetorController, useValue: setorController },
+    { provide: TenantImportController, useValue: tenantImportController },
   ],
 })
 export class ApiModule implements NestModule {
@@ -242,6 +250,7 @@ export class ApiModule implements NestModule {
       .apply(StandardProtectedMiddleware)
       .forRoutes(
         TenantApiController,
+        TenantImportApiController,
         AdminApiController,
         DashboardApiController,
         EstoqueApiController,

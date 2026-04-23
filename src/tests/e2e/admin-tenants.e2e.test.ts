@@ -1,5 +1,5 @@
 import request from 'supertest';
-import { setupTestApp } from '@tests/helpers/database.helper';
+import { closeTestApp, setupTestApp } from '@tests/helpers/database.helper';
 import { E2E_TENANT_SLUG } from '@helpers/e2e-tenant-seed.helper';
 import { App } from 'supertest/types';
 
@@ -11,6 +11,10 @@ describe('Admin tenants + verify-contract-code (E2E)', () => {
   beforeAll(async () => {
     app = await setupTestApp();
     expect(apiKey().length).toBeGreaterThan(0);
+  });
+
+  afterAll(async () => {
+    await closeTestApp();
   });
 
   it('GET /admin/tenants sem API key deve falhar', async () => {

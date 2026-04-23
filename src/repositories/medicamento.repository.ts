@@ -110,8 +110,9 @@ export class PrismaMedicineRepository {
       dosagem: string;
       unidade_medida: string;
     },
+    tx?: Prisma.TransactionClient,
   ): Promise<Medicine | null> {
-    const row = await getDb().medicamento.findFirst({
+    const row = await db(tx).medicamento.findFirst({
       where: {
         tenant_id: tenantId,
         nome: fields.nome,
@@ -137,8 +138,9 @@ export class PrismaMedicineRepository {
     tenantId: number,
     id: number,
     data: Partial<Omit<Medicine, 'id'>>,
+    tx?: Prisma.TransactionClient,
   ): Promise<Medicine | null> {
-    const res = await getDb().medicamento.updateMany({
+    const res = await db(tx).medicamento.updateMany({
       where: { id, tenant_id: tenantId },
       data: {
         ...data,

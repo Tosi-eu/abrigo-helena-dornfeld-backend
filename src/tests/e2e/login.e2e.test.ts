@@ -1,5 +1,5 @@
 import request from 'supertest';
-import { setupTestApp } from '@tests/helpers/database.helper';
+import { closeTestApp, setupTestApp } from '@tests/helpers/database.helper';
 import {
   E2E_TENANT_SLUG,
   E2E_SEED_USER,
@@ -26,6 +26,10 @@ describe('Login E2E - CRUD', () => {
         },
       },
     });
+  });
+
+  afterAll(async () => {
+    await closeTestApp();
   });
 
   it('deve criar um usuário', async () => {

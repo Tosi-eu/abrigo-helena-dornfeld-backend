@@ -1,5 +1,5 @@
 import request from 'supertest';
-import { setupTestApp } from '@tests/helpers/database.helper';
+import { closeTestApp, setupTestApp } from '@tests/helpers/database.helper';
 import { getAuthToken } from '@tests/helpers/auth.helper';
 import {
   E2E_RESOLVER_SEED_USER,
@@ -40,6 +40,10 @@ describe('Setores (E2E) — catálogo e enabled_sectors', () => {
     app = await setupTestApp();
     adminToken = await getAuthToken(app);
     userToken = await getNonAdminToken(app);
+  });
+
+  afterAll(async () => {
+    await closeTestApp();
   });
 
   it('GET /tenant/setores sem auth retorna 401', async () => {

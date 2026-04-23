@@ -1,5 +1,5 @@
 import request from 'supertest';
-import { setupTestApp } from '@tests/helpers/database.helper';
+import { closeTestApp, setupTestApp } from '@tests/helpers/database.helper';
 import { E2E_TENANT_SLUG } from '@helpers/e2e-tenant-seed.helper';
 import { getAuthToken } from '@tests/helpers/auth.helper';
 import { App } from 'supertest/types';
@@ -9,6 +9,10 @@ describe('Tenant E2E — API pública e contexto', () => {
 
   beforeAll(async () => {
     app = await setupTestApp();
+  });
+
+  afterAll(async () => {
+    await closeTestApp();
   });
 
   it('GET /tenants deve listar o tenant seed com shape do contrato público', async () => {

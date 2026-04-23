@@ -2,9 +2,17 @@ import type { Prisma } from '@prisma/client';
 import type { Input } from '@porto-sdk/sdk';
 import { getDb } from '@repositories/prisma';
 
+function db(tx?: Prisma.TransactionClient) {
+  return tx ?? getDb();
+}
+
 export class PrismaInputRepository {
-  async createInput(data: Omit<Input, 'id'>, tenantId: number): Promise<Input> {
-    const input = await getDb().insumo.create({
+  async createInput(
+    data: Omit<Input, 'id'>,
+    tenantId: number,
+    tx?: Prisma.TransactionClient,
+  ): Promise<Input> {
+    const input = await db(tx).insumo.create({
       data: {
         tenant_id: tenantId,
         nome: data.nome,
@@ -87,8 +95,9 @@ export class PrismaInputRepository {
     tenantId: number,
     id: number,
     data: Partial<Omit<Input, 'id'>>,
+    tx?: Prisma.TransactionClient,
   ): Promise<Input | null> {
-    const res = await getDb().insumo.updateMany({
+    const res = await db(tx).insumo.updateMany({
       where: { id, tenant_id: tenantId },
       data: {
         ...data,

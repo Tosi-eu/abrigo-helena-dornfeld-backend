@@ -1,6 +1,5 @@
 import request from 'supertest';
-import { setupTestApp } from '@tests/helpers/database.helper';
-import { prisma } from '@repositories/prisma';
+import { closeTestApp, setupTestApp } from '@tests/helpers/database.helper';
 import { App } from 'supertest/types';
 import { seedDB, SeedResult } from '@repositories/seed/estoque.seed';
 import { ItemType, StockRawResponse } from '@helpers/utils';
@@ -14,7 +13,7 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await prisma.$disconnect();
+  await closeTestApp();
 });
 
 describe('Input Stock E2E - CRUD', () => {
