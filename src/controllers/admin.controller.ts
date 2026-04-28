@@ -175,12 +175,7 @@ export class AdminController {
       login?: string;
       password?: string;
       role?: 'admin' | 'user';
-      permissions?: {
-        read?: boolean;
-        create?: boolean;
-        update?: boolean;
-        delete?: boolean;
-      };
+      permissions?: Record<string, unknown>;
     } = {};
     if (body.firstName !== undefined) data.first_name = body.firstName;
     if (body.lastName !== undefined) data.last_name = body.lastName;
@@ -195,17 +190,12 @@ export class AdminController {
     }
     if (body.permissions !== undefined) {
       const p = body.permissions;
-      if (typeof p !== 'object' || p === null) {
+      if (typeof p !== 'object' || p === null || Array.isArray(p)) {
         return res
           .status(400)
           .json({ error: 'permissions deve ser um objeto' });
       }
-      data.permissions = {
-        read: p.read !== false,
-        create: Boolean(p.create),
-        update: Boolean(p.update),
-        delete: Boolean(p.delete),
-      };
+      data.permissions = p as Record<string, unknown>;
     }
 
     try {

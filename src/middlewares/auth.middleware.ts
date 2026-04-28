@@ -3,16 +3,15 @@ import jwt from 'jsonwebtoken';
 import * as crypto from 'crypto';
 import { jwtConfig } from '@config/jwt.config';
 import { getDb } from '@repositories/prisma';
+import type { Prisma } from '@prisma/client';
 import type { UserPermissions } from '@domain/user.types';
+import type { EffectivePermissionMatrix } from '@domain/permission-matrix.types';
 import { JWTPayload } from '@domain/jwt.types';
 import { cacheService } from '@config/redis.client';
-
-const DEFAULT_PERMISSIONS: UserPermissions = {
-  read: true,
-  create: false,
-  update: false,
-  delete: false,
-};
+import {
+  buildEffectivePermissionMatrix,
+  summarizeFlatFromMatrix,
+} from '@helpers/permission-matrix.resolver';
 
 export interface AuthRequest extends Request {
   user?: {
@@ -20,6 +19,8 @@ export interface AuthRequest extends Request {
     login: string;
     role?: 'admin' | 'user';
     permissions?: UserPermissions;
+    /** Matriz resolvida (módulos + ações); usada no middleware de rotas. */
+    permissionMatrix?: EffectivePermissionMatrix;
     tenantId?: number;
     isTenantOwner?: boolean;
     isSuperAdmin?: boolean;
@@ -56,7 +57,7 @@ export async function authMiddleware(
 
     type AuthCacheEntry = {
       role: 'admin' | 'user';
-      permissions: UserPermissions;
+      permissionsRaw: Prisma.JsonValue | null;
       tenantId: number;
       isTenantOwner: boolean;
       isSuperAdmin: boolean;
@@ -93,22 +94,10 @@ export async function authMiddleware(
         if (!Number.isInteger(tenantId) || tenantId < 1) return null;
 
         const role = user.role as 'admin' | 'user';
-        const permJson = user.permissions;
-        const parsedPerm =
-          permJson && typeof permJson === 'object' && !Array.isArray(permJson)
-            ? (permJson as Record<string, unknown>)
-            : null;
-        const permissions: UserPermissions =
-          role === 'admin'
-            ? { read: true, create: true, update: true, delete: true }
-            : {
-                ...DEFAULT_PERMISSIONS,
-                ...(parsedPerm as Partial<UserPermissions>),
-              };
 
         return {
           role,
-          permissions,
+          permissionsRaw: user.permissions,
           tenantId,
           isTenantOwner: Boolean((user as any).is_tenant_owner),
           isSuperAdmin: Boolean(user.is_super_admin),
@@ -119,11 +108,18 @@ export async function authMiddleware(
 
     if (!cached) return res.status(401).json({ error: 'Sessão inválida' });
 
+    const permissionMatrix = buildEffectivePermissionMatrix(
+      cached.role,
+      cached.permissionsRaw,
+    );
+    const permissions = summarizeFlatFromMatrix(permissionMatrix);
+
     req.user = {
       id: Number(decoded.sub),
       login: decoded.login,
       role: cached.role,
-      permissions: cached.permissions,
+      permissions,
+      permissionMatrix,
       tenantId: cached.tenantId,
       isTenantOwner: cached.isTenantOwner,
       isSuperAdmin: cached.isSuperAdmin,
@@ -162,7 +158,7 @@ export async function optionalAuthMiddleware(
     const decoded = jwt.verify(token, jwtConfig.secret) as JWTPayload;
     type AuthCacheEntry = {
       role: 'admin' | 'user';
-      permissions: UserPermissions;
+      permissionsRaw: Prisma.JsonValue | null;
       tenantId: number;
       isTenantOwner: boolean;
       isSuperAdmin: boolean;
@@ -199,22 +195,10 @@ export async function optionalAuthMiddleware(
         if (!Number.isInteger(tenantId) || tenantId < 1) return null;
 
         const role = user.role as 'admin' | 'user';
-        const permJson = user.permissions;
-        const parsedPerm =
-          permJson && typeof permJson === 'object' && !Array.isArray(permJson)
-            ? (permJson as Record<string, unknown>)
-            : null;
-        const permissions: UserPermissions =
-          role === 'admin'
-            ? { read: true, create: true, update: true, delete: true }
-            : {
-                ...DEFAULT_PERMISSIONS,
-                ...(parsedPerm as Partial<UserPermissions>),
-              };
 
         return {
           role,
-          permissions,
+          permissionsRaw: user.permissions,
           tenantId,
           isTenantOwner: Boolean((user as any).is_tenant_owner),
           isSuperAdmin: Boolean(user.is_super_admin),
@@ -225,11 +209,18 @@ export async function optionalAuthMiddleware(
 
     if (!cached) return next();
 
+    const permissionMatrix = buildEffectivePermissionMatrix(
+      cached.role,
+      cached.permissionsRaw,
+    );
+    const permissions = summarizeFlatFromMatrix(permissionMatrix);
+
     req.user = {
       id: Number(decoded.sub),
       login: decoded.login,
       role: cached.role,
-      permissions: cached.permissions,
+      permissions,
+      permissionMatrix,
       tenantId: cached.tenantId,
       isTenantOwner: cached.isTenantOwner,
       isSuperAdmin: cached.isSuperAdmin,

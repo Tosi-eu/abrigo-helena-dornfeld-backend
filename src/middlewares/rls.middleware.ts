@@ -4,6 +4,11 @@ import type { RlsContextVars } from '@repositories/rls.context';
 import type { Prisma } from '@prisma/client';
 import { withRlsContext } from '@repositories/rls.context';
 import type { TenantRequest } from './tenant.middleware';
+import {
+  matrixHasAnyCreate,
+  matrixHasAnyDelete,
+  matrixHasAnyUpdate,
+} from '@helpers/permission-matrix.resolver';
 
 export interface RlsRequest extends AuthRequest {
   rlsContext?: RlsContextVars;
@@ -20,12 +25,19 @@ export function rlsContextMiddleware(
     return;
   }
   if (req.user?.id != null) {
-    const p = req.user.permissions;
+    const m = req.user.permissionMatrix;
+    const flat = req.user.permissions;
+    const user_can_create =
+      m != null ? matrixHasAnyCreate(m) : Boolean(flat?.create);
+    const user_can_update =
+      m != null ? matrixHasAnyUpdate(m) : Boolean(flat?.update);
+    const user_can_delete =
+      m != null ? matrixHasAnyDelete(m) : Boolean(flat?.delete);
     req.rlsContext = {
       current_user_id: req.user.id,
-      user_can_create: p?.create ? 'true' : 'false',
-      user_can_update: p?.update ? 'true' : 'false',
-      user_can_delete: p?.delete ? 'true' : 'false',
+      user_can_create: user_can_create ? 'true' : 'false',
+      user_can_update: user_can_update ? 'true' : 'false',
+      user_can_delete: user_can_delete ? 'true' : 'false',
       tenant_id: String(req.tenant.id),
       is_super_admin: req.user.isSuperAdmin ? 'true' : 'false',
     };

@@ -1,8 +1,33 @@
 import type { Prisma } from '@prisma/client';
 import { getDb } from '@repositories/prisma';
+import {
+  computeAgeFromBirthDate,
+  formatDateOnlyIsoUtc,
+} from '@helpers/resident-age.helper';
 
 function db(tx?: Prisma.TransactionClient) {
   return tx ?? getDb();
+}
+
+export type ResidentApiRow = {
+  casela: number;
+  name: string;
+  data_nascimento: string | null;
+  idade: number | null;
+};
+
+function mapResidentRow(r: {
+  num_casela: number;
+  nome: string;
+  data_nascimento: Date | null;
+}): ResidentApiRow {
+  const birth = r.data_nascimento;
+  return {
+    casela: r.num_casela,
+    name: r.nome,
+    data_nascimento: birth ? formatDateOnlyIsoUtc(birth) : null,
+    idade: birth ? computeAgeFromBirthDate(birth) : null,
+  };
 }
 
 export class PrismaResidentRepository {
@@ -25,7 +50,7 @@ export class PrismaResidentRepository {
     ]);
 
     return {
-      data: rows.map(r => ({ casela: r.num_casela, name: r.nome })),
+      data: rows.map(r => mapResidentRow(r)),
       hasNext: offset + rows.length < count,
     };
   }
@@ -35,7 +60,7 @@ export class PrismaResidentRepository {
       where: { num_casela: casela, tenant_id: tenantId },
     });
     if (!row) return null;
-    return { casela: row.num_casela, name: row.nome };
+    return mapResidentRow(row);
   }
 
   async createResident(
@@ -43,6 +68,7 @@ export class PrismaResidentRepository {
       num_casela: number;
       nome: string;
       tenant_id: number;
+      data_nascimento?: Date | null;
     },
     tx?: Prisma.TransactionClient,
   ) {
@@ -51,12 +77,12 @@ export class PrismaResidentRepository {
         num_casela: data.num_casela,
         nome: data.nome,
         tenant_id: data.tenant_id,
+        data_nascimento: data.data_nascimento ?? undefined,
       },
     });
     return {
       id: Number(row.id),
-      casela: row.num_casela,
-      name: row.nome,
+      ...mapResidentRow(row),
     };
   }
 
@@ -65,15 +91,25 @@ export class PrismaResidentRepository {
       num_casela: number;
       nome: string;
       tenant_id: number;
+      data_nascimento?: Date | null;
     },
     tx?: Prisma.TransactionClient,
   ) {
+    const updateData: { nome: string; data_nascimento?: Date | null } = {
+      nome: data.nome,
+    };
+    if (Object.prototype.hasOwnProperty.call(data, 'data_nascimento')) {
+      updateData.data_nascimento = data.data_nascimento ?? null;
+    }
     const res = await db(tx).residente.updateMany({
       where: { num_casela: data.num_casela, tenant_id: data.tenant_id },
-      data: { nome: data.nome },
+      data: updateData,
     });
     if (res.count === 0) return null;
-    return { casela: data.num_casela, name: data.nome };
+    const row = await db(tx).residente.findFirst({
+      where: { num_casela: data.num_casela, tenant_id: data.tenant_id },
+    });
+    return row ? mapResidentRow(row) : null;
   }
 
   async deleteResidentById(tenantId: number, casela: number): Promise<boolean> {

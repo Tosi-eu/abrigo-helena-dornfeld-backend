@@ -233,19 +233,19 @@ function setupResidentes(workbook: ExcelJS.Workbook) {
     ],
   });
 
-  sheet.columns = [{ width: 12 }, { width: 40 }];
+  sheet.columns = [{ width: 12 }, { width: 40 }, { width: 22 }];
 
-  sheet.mergeCells(1, 1, 1, 2);
+  sheet.mergeCells(1, 1, 1, 3);
   styleTitleCell(sheet.getCell(1, 1), 'Residentes', AMBER);
 
-  sheet.mergeCells(2, 1, 2, 2);
+  sheet.mergeCells(2, 1, 2, 3);
   styleHintRow(
     sheet.getCell(2, 1),
-    'Preencha a partir da linha 5. Obrigatório: casela (número inteiro) e nome. Caselas iguais atualizam o nome.',
+    'Preencha a partir da linha 5. Obrigatório: casela (número inteiro) e nome. Opcional: data_nascimento (aaaa-mm-dd ou dd/mm/aaaa). Caselas iguais atualizam nome e data.',
   );
   sheet.getRow(2).height = 32;
 
-  sheet.mergeCells(3, 1, 3, 2);
+  sheet.mergeCells(3, 1, 3, 3);
   const tip = sheet.getCell(3, 1);
   tip.value =
     'Dica: use uma casela por linha; evite linhas em branco no meio da lista.';
@@ -259,9 +259,13 @@ function setupResidentes(workbook: ExcelJS.Workbook) {
   tip.border = thinBorder('FFFDE68A');
   sheet.getRow(3).height = 26;
 
-  applyHeaderRow(sheet.getRow(4), ['casela', 'nome'], SLATE_900);
-  applyDataRow(sheet.getRow(5), [1, 'Fulano de Tal'], false);
-  bandDataArea(sheet, 6, 2, 20);
+  applyHeaderRow(
+    sheet.getRow(4),
+    ['casela', 'nome', 'data_nascimento'],
+    SLATE_900,
+  );
+  applyDataRow(sheet.getRow(5), [1, 'Fulano de Tal', '1950-04-15'], false);
+  bandDataArea(sheet, 6, 3, 20);
 }
 
 function setupSetores(workbook: ExcelJS.Workbook) {

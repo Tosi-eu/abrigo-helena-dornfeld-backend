@@ -147,6 +147,7 @@ export class PrismaTenantRepository {
           brand_name: true,
           logo_url: true,
           contract_portfolio_id: true,
+          contract_code_hash: true,
         },
         orderBy: { id: 'asc' },
         take: safeLimit,

@@ -1,6 +1,7 @@
 import type { Response } from 'express';
 import type { AuthRequest } from '@middlewares/auth.middleware';
 import { Prisma } from '@prisma/client';
+import { getDb } from '@repositories/prisma';
 import { PrismaTenantRepository } from '@repositories/tenant.repository';
 import { PrismaTenantConfigRepository } from '@repositories/tenant-config.repository';
 import { PrismaSetorRepository } from '@repositories/setor.repository';
@@ -23,16 +24,46 @@ export class AdminTenantsController {
       const page = Math.max(1, Number(req.query.page) || 1);
       const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 25));
       const result = await tenantRepo.list(page, limit);
+      const portfolioIds = [
+        ...new Set(
+          result.data
+            .map(t => t.contract_portfolio_id)
+            .filter((x): x is number => typeof x === 'number' && x > 0),
+        ),
+      ];
+      const portfolios =
+        portfolioIds.length > 0
+          ? await getDb().contractPortfolio.findMany({
+              where: { id: { in: portfolioIds } },
+              select: { id: true, boundLogin: true },
+            })
+          : [];
+      const boundByPortfolioId = new Map(
+        portfolios.map(p => [p.id, p.boundLogin ?? null]),
+      );
+
       return res.json({
         ...result,
-        data: result.data.map(t => ({
-          id: t.id,
-          slug: t.slug,
-          name: t.name,
-          brandName: t.brand_name ?? null,
-          logoUrl: t.logo_url ?? null,
-          contractPortfolioId: t.contract_portfolio_id ?? null,
-        })),
+        data: result.data.map(t => {
+          const pid = t.contract_portfolio_id ?? null;
+          const configured =
+            Boolean(pid) ||
+            Boolean(
+              t.contract_code_hash &&
+              String(t.contract_code_hash).trim() !== '',
+            );
+          return {
+            id: t.id,
+            slug: t.slug,
+            name: t.name,
+            brandName: t.brand_name ?? null,
+            logoUrl: t.logo_url ?? null,
+            contractPortfolioId: pid,
+            contractConfigured: configured,
+            contractBoundLogin:
+              pid != null ? (boundByPortfolioId.get(pid) ?? null) : null,
+          };
+        }),
       });
     } catch (error: unknown) {
       return res

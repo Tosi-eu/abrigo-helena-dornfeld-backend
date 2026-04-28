@@ -29,23 +29,34 @@ export class PrismaLoginRepository {
     const tx = options?.transaction;
 
     let role: 'admin' | 'user';
-    let permissions: typeof FULL_PERMISSIONS | typeof DEFAULT_USER_PERMISSIONS;
+    let permissionsJson: Prisma.InputJsonValue;
 
     if (data.role !== undefined && data.role !== null) {
       role = data.role;
-      permissions =
-        data.permissions ??
-        (role === 'admin' ? FULL_PERMISSIONS : DEFAULT_USER_PERMISSIONS);
+      if (data.permissions != null && typeof data.permissions === 'object') {
+        permissionsJson = data.permissions as Prisma.InputJsonValue;
+      } else {
+        permissionsJson =
+          role === 'admin'
+            ? ({ ...FULL_PERMISSIONS } as Prisma.InputJsonValue)
+            : ({ ...DEFAULT_USER_PERMISSIONS } as Prisma.InputJsonValue);
+      }
     } else {
       const usersInTenant = await db(tx).login.count({
         where: { tenant_id: tenantId },
       });
       if (usersInTenant === 0) {
         role = 'admin';
-        permissions = FULL_PERMISSIONS;
+        permissionsJson =
+          data.permissions != null && typeof data.permissions === 'object'
+            ? (data.permissions as Prisma.InputJsonValue)
+            : ({ ...FULL_PERMISSIONS } as Prisma.InputJsonValue);
       } else {
         role = 'user';
-        permissions = data.permissions ?? DEFAULT_USER_PERMISSIONS;
+        permissionsJson =
+          data.permissions != null && typeof data.permissions === 'object'
+            ? (data.permissions as Prisma.InputJsonValue)
+            : ({ ...DEFAULT_USER_PERMISSIONS } as Prisma.InputJsonValue);
       }
     }
 
@@ -58,7 +69,7 @@ export class PrismaLoginRepository {
           last_name: data.last_name ?? null,
           tenant_id: tenantId,
           role,
-          permissions: permissions as Prisma.InputJsonValue,
+          permissions: permissionsJson,
         },
       });
       return { id: user.id, login: user.login, role: user.role };

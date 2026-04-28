@@ -48,8 +48,9 @@ export function configureHttpLayer(app: Application): void {
 
   app.use((req, res, next) => {
     const origin = req.headers.origin;
+    const isAllowedOrigin = Boolean(origin && allowedOrigins.includes(origin));
 
-    if (origin && allowedOrigins.includes(origin)) {
+    if (isAllowedOrigin && origin) {
       res.header('Access-Control-Allow-Origin', origin);
       res.header('Access-Control-Allow-Credentials', 'true');
     }
@@ -58,9 +59,13 @@ export function configureHttpLayer(app: Application): void {
       'Access-Control-Allow-Methods',
       'GET, POST, PUT, DELETE, PATCH, OPTIONS',
     );
+    // Não anunciar headers sensíveis para origens não confiáveis.
+    // Para origens permitidas, liberamos também X-API-Key (rotas super-admin).
+    const baseAllow =
+      'Origin, X-Requested-With, Content-Type, Accept, Authorization';
     res.header(
       'Access-Control-Allow-Headers',
-      'Origin, X-Requested-With, Content-Type, Accept, Authorization',
+      isAllowedOrigin ? `${baseAllow}, X-API-Key` : baseAllow,
     );
 
     if (req.method === 'OPTIONS') {

@@ -4,6 +4,16 @@ import type { AuthRequest } from './auth.middleware';
 
 const HEADER_NAMES = ['x-api-key', 'X-API-Key'];
 
+function isLocalDevOrigin(origin: string): boolean {
+  const o = origin.trim().toLowerCase();
+  return (
+    o.startsWith('http://localhost:') ||
+    o.startsWith('http://127.0.0.1:') ||
+    o === 'http://localhost' ||
+    o === 'http://127.0.0.1'
+  );
+}
+
 function getClientIp(req: AuthRequest): string {
   const forwarded = req.headers['x-forwarded-for'];
   if (typeof forwarded === 'string') {
@@ -49,9 +59,22 @@ export function requireSuperAdminOrApiKey(
   const expected = process.env.X_API_KEY?.trim();
 
   if (expected) {
-    if (req.headers.origin) {
+    const origin =
+      typeof req.headers.origin === 'string' ? req.headers.origin : '';
+    // Em produção, nunca permitir API key via browser (mitiga exfiltração e abuse).
+    // Em desenvolvimento local (localhost/127.0.0.1), permitimos para facilitar o desktop/admin UI.
+    if (origin && process.env.NODE_ENV === 'production') {
       return res.status(403).json({
         error: 'API key não é permitida via browser (Origin presente).',
+      });
+    }
+    if (
+      origin &&
+      process.env.NODE_ENV !== 'production' &&
+      !isLocalDevOrigin(origin)
+    ) {
+      return res.status(403).json({
+        error: 'API key não é permitida via browser (Origin não-local).',
       });
     }
 

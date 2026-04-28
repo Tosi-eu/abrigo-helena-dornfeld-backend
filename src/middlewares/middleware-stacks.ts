@@ -10,10 +10,8 @@ import {
 } from '@middlewares/tenant.middleware';
 import { authMiddleware } from '@middlewares/auth.middleware';
 import { tenantRequestContextLogMiddleware } from '@middlewares/tenant-request-log.middleware';
-import {
-  blockNonAdminWrites,
-  requireAdmin,
-} from '@middlewares/admin.middleware';
+import { requireAdmin } from '@middlewares/admin.middleware';
+import { enforceResourcePermissions } from '@middlewares/resource-permission.middleware';
 import { rlsContextMiddleware } from '@middlewares/rls.middleware';
 import { bindRequestToRlsTransaction } from '@middlewares/request-rls-transaction.middleware';
 import { auditLog } from '@middlewares/audit.middleware';
@@ -24,7 +22,7 @@ export const StandardProtectedMiddleware = chainExpressMiddleware(
   authMiddleware,
   enforceTenantMiddleware,
   tenantRequestContextLogMiddleware,
-  blockNonAdminWrites,
+  enforceResourcePermissions,
   rlsContextMiddleware,
   bindRequestToRlsTransaction,
   auditLog,
@@ -42,7 +40,7 @@ export const LoginSessionWithBlockAuditMiddleware = chainExpressMiddleware(
   enforceTenantMiddleware,
   rlsContextMiddleware,
   bindRequestToRlsTransaction,
-  blockNonAdminWrites,
+  enforceResourcePermissions,
   auditLog,
 );
 
@@ -63,7 +61,7 @@ export const loginSessionHandlers: RequestHandler[] = [
 
 export const loginSessionBlockAuditHandlers: RequestHandler[] = [
   ...loginSessionHandlers,
-  blockNonAdminWrites,
+  enforceResourcePermissions,
   auditLog,
 ];
 

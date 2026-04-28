@@ -15,5 +15,4 @@ node_modules/
 dist/
 /src/generated/prisma
 
-# Gerado por `npm run generate-import-template`
 template-importacao.xlsx

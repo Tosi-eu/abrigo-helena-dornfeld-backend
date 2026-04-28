@@ -15,6 +15,7 @@ import type {
   TenantImportRowResult,
   TenantImportXlsxResponse,
 } from '@domain/dto/tenant-import.dto';
+import { assertBirthDateNotFuture } from '@helpers/resident-age.helper';
 
 type ImportCounters = {
   created: number;
@@ -937,6 +938,48 @@ export class TenantImportService {
         continue;
       }
 
+      const dnRaw =
+        r['data_nascimento'] ??
+        r['Data de nascimento'] ??
+        r['Nascimento'] ??
+        r['nascimento'];
+
+      let birthPart: Date | null | undefined = undefined;
+      if (
+        dnRaw !== undefined &&
+        dnRaw !== null &&
+        String(dnRaw).trim() === ''
+      ) {
+        birthPart = null;
+      } else if (dnRaw != null && String(dnRaw).trim() !== '') {
+        const dn = parseExcelDate(dnRaw);
+        if (!dn) {
+          errors.push({
+            sheet,
+            row: excelRowNumber,
+            field: 'data_nascimento',
+            message: 'Data de nascimento inválida',
+          });
+          counters.errors++;
+          rowResults.push({ sheet, row: excelRowNumber, status: 'error' });
+          continue;
+        }
+        try {
+          assertBirthDateNotFuture(dn);
+        } catch {
+          errors.push({
+            sheet,
+            row: excelRowNumber,
+            field: 'data_nascimento',
+            message: 'Data de nascimento não pode ser no futuro',
+          });
+          counters.errors++;
+          rowResults.push({ sheet, row: excelRowNumber, status: 'error' });
+          continue;
+        }
+        birthPart = dn;
+      }
+
       const existing = await tx.residente.findFirst({
         where: { tenant_id: tenantId, num_casela: casela },
         select: { id: true },
@@ -948,6 +991,7 @@ export class TenantImportService {
             num_casela: casela,
             nome,
             tenant_id: tenantId,
+            ...(birthPart !== undefined ? { data_nascimento: birthPart } : {}),
           },
           tx,
         );
@@ -957,7 +1001,12 @@ export class TenantImportService {
       }
 
       const updated = await this.residentRepo.updateResidentById(
-        { num_casela: casela, nome, tenant_id: tenantId },
+        {
+          num_casela: casela,
+          nome,
+          tenant_id: tenantId,
+          ...(birthPart !== undefined ? { data_nascimento: birthPart } : {}),
+        },
         tx,
       );
       if (!updated) {

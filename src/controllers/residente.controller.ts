@@ -73,9 +73,16 @@ export class ResidentController {
   ) {
     const casela = Number(req.params.casela);
     try {
+      const body = req.body as {
+        nome: string;
+        data_nascimento?: string | null;
+      };
       const updated = await this.service.updateResident(tenantId, {
         casela,
-        nome: req.body.nome,
+        nome: body.nome,
+        ...(Object.prototype.hasOwnProperty.call(body, 'data_nascimento')
+          ? { data_nascimento: body.data_nascimento }
+          : {}),
       });
       res.json(updated);
     } catch (error: unknown) {

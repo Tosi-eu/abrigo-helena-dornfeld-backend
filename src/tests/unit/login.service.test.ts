@@ -145,6 +145,10 @@ describe('LoginService (unit)', () => {
         password: hashed,
         role: 'user',
         tenant_id: 1,
+        first_name: null,
+        last_name: null,
+        is_tenant_owner: false,
+        permissions: null,
         is_super_admin: false,
       } as any);
       mockRepo.update.mockResolvedValue(undefined as any);
@@ -156,13 +160,25 @@ describe('LoginService (unit)', () => {
         throw new Error('expected authenticate result');
       }
       expect(result.token).toBeDefined();
-      expect(result.user).toEqual({
-        id: 1,
-        login: 'user1',
-        role: 'user',
-        tenantId: 1,
-        isSuperAdmin: false,
-      });
+      expect(result.user).toEqual(
+        expect.objectContaining({
+          id: 1,
+          login: 'user1',
+          role: 'user',
+          tenantId: 1,
+          isTenantOwner: false,
+          isSuperAdmin: false,
+          permissions: {
+            read: true,
+            create: false,
+            update: false,
+            delete: false,
+          },
+        }),
+      );
+      expect(result.user.permissionMatrix?.resources?.dashboard?.read).toBe(
+        true,
+      );
       expect(mockRepo.update).toHaveBeenCalledWith(
         1,
         expect.objectContaining({ refreshToken: result.token }),
@@ -186,23 +202,33 @@ describe('LoginService (unit)', () => {
         first_name: 'João',
         last_name: 'Silva',
         role: 'user',
+        permissions: null,
+        tenant_id: 3,
+        is_tenant_owner: false,
+        is_super_admin: false,
       } as any);
 
       const result = await service.getById(1);
 
-      expect(result).toEqual({
-        id: 1,
-        login: 'user1',
-        firstName: 'João',
-        lastName: 'Silva',
-        role: 'user',
-        permissions: {
-          read: true,
-          create: false,
-          update: false,
-          delete: false,
-        },
-      });
+      expect(result).toEqual(
+        expect.objectContaining({
+          id: 1,
+          login: 'user1',
+          firstName: 'João',
+          lastName: 'Silva',
+          role: 'user',
+          tenantId: 3,
+          isTenantOwner: false,
+          isSuperAdmin: false,
+          permissions: {
+            read: true,
+            create: false,
+            update: false,
+            delete: false,
+          },
+        }),
+      );
+      expect(result?.permissionMatrix?.movement_tipos).toBeDefined();
     });
   });
 });

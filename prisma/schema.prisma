@@ -133,10 +133,11 @@ model Gaveta {
 }
 
 model Residente {
-  id         BigInt @id @default(autoincrement())
-  num_casela Int
-  nome       String @db.VarChar(255)
-  tenant_id  Int
+  id                BigInt    @id @default(autoincrement())
+  num_casela        Int
+  nome              String    @db.VarChar(255)
+  tenant_id         Int
+  data_nascimento   DateTime? @db.Date
 
   @@unique([tenant_id, num_casela], map: "uq_residente_tenant_num_casela")
   @@index([tenant_id], map: "idx_residente_tenant_id")

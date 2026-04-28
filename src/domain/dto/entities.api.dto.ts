@@ -5,6 +5,7 @@ import {
   ArrayMinSize,
   IsArray,
   IsBoolean,
+  IsDateString,
   IsEmail,
   IsIn,
   IsInt,
@@ -20,6 +21,7 @@ import {
   Min,
   MinLength,
   Validate,
+  ValidateIf,
   ValidateNested,
 } from 'class-validator';
 import { ContractCodeOrCamelConstraint } from '@validation/constraints/contract-code.constraint';
@@ -134,12 +136,30 @@ export class ResidentCreateBodyDto {
   @TrimmedString(1, 255)
   @ApiProperty({ example: 'Maria Silva' })
   nome!: string;
+
+  @IsOptional()
+  @IsDateString()
+  @ApiPropertyOptional({
+    example: '1990-05-15',
+    description: 'Data de nascimento (idade é derivada)',
+  })
+  data_nascimento?: string;
 }
 
 export class ResidentUpdateBodyDto {
   @TrimmedString(1, 255)
   @ApiProperty({ example: 'Maria Silva' })
   nome!: string;
+
+  @IsOptional()
+  @ValidateIf((_, v) => v !== null && v !== '')
+  @IsDateString()
+  @ApiPropertyOptional({
+    example: '1990-05-15',
+    nullable: true,
+    description: 'Omitir para manter; null ou string vazia remove a data',
+  })
+  data_nascimento?: string | null;
 }
 
 export class MovementCreateBodyDto {

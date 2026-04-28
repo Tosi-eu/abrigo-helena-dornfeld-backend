@@ -80,8 +80,7 @@ if [ "${SKIP_PRISMA_SCHEMA_SYNC:-0}" != "1" ]; then
           exit "$MIGRATE_EXIT"
         fi
       elif grep -qF 'relation "tenant" does not exist' /tmp/prisma_migrate_deploy.log 2>/dev/null \
-        || { grep -qE 'P3009|P3018' /tmp/prisma_migrate_deploy.log 2>/dev/null \
-          && grep -qF '20260205140000_setor_catalog' /tmp/prisma_migrate_deploy.log 2>/dev/null; }; then
+        || grep -qE 'P3009|P3018' /tmp/prisma_migrate_deploy.log 2>/dev/null; then
 
         cat /tmp/prisma_migrate_deploy.log
         echo "[docker-entrypoint] Recuperação: migrate resolve --rolled-back, db push, migrate deploy"

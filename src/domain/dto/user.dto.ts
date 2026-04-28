@@ -12,10 +12,5 @@ export type CreateUserData = Login & {
   tenant_id?: number;
   is_tenant_owner?: boolean;
   is_super_admin?: boolean;
-  permissions?: {
-    read: boolean;
-    create: boolean;
-    update: boolean;
-    delete: boolean;
-  };
+  permissions?: unknown;
 };

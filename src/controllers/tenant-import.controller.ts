@@ -32,11 +32,9 @@ export class TenantImportController {
       });
       return res.status(200).json(result);
     } catch (err) {
-      return res
-        .status(400)
-        .json({
-          error: (err as Error).message || 'Falha ao importar planilha',
-        });
+      return res.status(400).json({
+        error: (err as Error).message || 'Falha ao importar planilha',
+      });
     }
   }
 

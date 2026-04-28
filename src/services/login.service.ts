@@ -13,15 +13,14 @@ import { HttpError, isHttpError } from '@domain/error.types';
 import type { LoginCreateWithTenant } from '@porto-sdk/sdk';
 import { DEFAULT_TENANT_MODULES } from './tenant-config.service';
 import { PrismaSetorRepository } from '@repositories/setor.repository';
+import type { UserPermissions } from '@domain/user.types';
+import {
+  buildEffectivePermissionMatrix,
+  summarizeFlatFromMatrix,
+} from '@helpers/permission-matrix.resolver';
+import { parsePermissionsForStorage } from '@helpers/permission-storage.helper';
 
 const MIN_PASSWORD_LENGTH = 8;
-
-const FULL_PERMISSIONS = {
-  read: true,
-  create: true,
-  update: true,
-  delete: true,
-} as const;
 
 const DEFAULT_PERMISSIONS = {
   read: true,
@@ -33,18 +32,45 @@ const DEFAULT_PERMISSIONS = {
 function effectivePermissions(
   role: string,
   stored: Prisma.JsonValue | null | undefined,
-) {
-  if (role === 'admin') return { ...FULL_PERMISSIONS };
-  const s =
-    stored && typeof stored === 'object' && !Array.isArray(stored)
-      ? (stored as {
-          read?: boolean;
-          create?: boolean;
-          update?: boolean;
-          delete?: boolean;
-        })
-      : null;
-  return { ...DEFAULT_PERMISSIONS, ...(s ?? {}) };
+): UserPermissions {
+  return summarizeFlatFromMatrix(
+    buildEffectivePermissionMatrix(role === 'admin' ? 'admin' : 'user', stored),
+  );
+}
+
+type DbUserForPublicSession = {
+  id: number;
+  login: string;
+  first_name: string | null;
+  last_name: string | null;
+  role: string;
+  permissions: Prisma.JsonValue | null | undefined;
+  tenant_id: number | null;
+  is_tenant_owner?: boolean | null;
+  is_super_admin?: boolean | null;
+};
+
+/** Payload exposto ao cliente (login, usuario-logado, lista admin). */
+export function publicSessionFromDbUser(user: DbUserForPublicSession) {
+  const matrix = buildEffectivePermissionMatrix(
+    user.role === 'admin' ? 'admin' : 'user',
+    user.permissions,
+  );
+  return {
+    id: user.id,
+    login: user.login,
+    firstName: user.first_name,
+    lastName: user.last_name,
+    role: user.role as 'admin' | 'user',
+    tenantId: user.tenant_id,
+    isTenantOwner: Boolean(user.is_tenant_owner),
+    isSuperAdmin: Boolean(user.is_super_admin),
+    permissions: summarizeFlatFromMatrix(matrix),
+    permissionMatrix: {
+      resources: matrix.resources,
+      movement_tipos: matrix.movement_tipos,
+    },
+  };
 }
 
 function validateStrongPassword(password: string): void {
@@ -78,14 +104,17 @@ export class LoginService {
     const user = await this.repo.findById(id);
     if (!user) return null;
 
-    return {
+    return publicSessionFromDbUser({
       id: user.id,
       login: user.login,
-      firstName: user.first_name,
-      lastName: user.last_name,
+      first_name: user.first_name,
+      last_name: user.last_name,
       role: user.role,
-      permissions: effectivePermissions(user.role, user.permissions),
-    };
+      permissions: user.permissions,
+      tenant_id: user.tenant_id,
+      is_tenant_owner: user.is_tenant_owner,
+      is_super_admin: user.is_super_admin,
+    });
   }
 
   async create(attrs: LoginCreateWithTenant) {
@@ -128,12 +157,8 @@ export class LoginService {
     last_name?: string;
     role?: 'admin' | 'user';
     tenantId: number;
-    permissions?: {
-      read?: boolean;
-      create?: boolean;
-      update?: boolean;
-      delete?: boolean;
-    };
+    /** Legado (4 flags) ou matriz `{ version: 2, resources: {...} }`. */
+    permissions?: unknown;
   }) {
     const userExists = await this.repo.findByLoginForTenant(
       attrs.login,
@@ -144,15 +169,7 @@ export class LoginService {
     validateStrongPassword(attrs.password);
     const hashed = await bcrypt.hash(attrs.password, 10);
     const role = attrs.role ?? 'user';
-    const permissions =
-      role === 'admin'
-        ? { ...FULL_PERMISSIONS }
-        : {
-            read: true,
-            create: Boolean(attrs.permissions?.create),
-            update: Boolean(attrs.permissions?.update),
-            delete: Boolean(attrs.permissions?.delete),
-          };
+    const permissions = parsePermissionsForStorage(role, attrs.permissions);
 
     try {
       const created = await this.repo.create({
@@ -202,13 +219,17 @@ export class LoginService {
 
     return {
       token,
-      user: {
+      user: publicSessionFromDbUser({
         id: user.id,
         login: user.login,
+        first_name: user.first_name,
+        last_name: user.last_name,
         role: user.role,
-        tenantId: user.tenant_id,
-        isSuperAdmin: user.is_super_admin,
-      },
+        permissions: user.permissions,
+        tenant_id: user.tenant_id,
+        is_tenant_owner: user.is_tenant_owner,
+        is_super_admin: user.is_super_admin,
+      }),
     };
   }
 
@@ -328,26 +349,36 @@ export class LoginService {
   async listAllUsers() {
     const rows = await this.repo.findAll();
     return rows.map(u => ({
-      id: u.id,
-      login: u.login,
-      firstName: u.first_name,
-      lastName: u.last_name,
-      role: u.role,
-      permissions: effectivePermissions(u.role, u.permissions),
+      ...publicSessionFromDbUser({
+        id: u.id,
+        login: u.login,
+        first_name: u.first_name,
+        last_name: u.last_name,
+        role: u.role,
+        permissions: u.permissions,
+        tenant_id: u.tenant_id,
+        is_tenant_owner: u.is_tenant_owner,
+        is_super_admin: u.is_super_admin,
+      }),
     }));
   }
 
   async listUsersPaginated(page = 1, limit = 25, tenantId?: number | null) {
     const result = await this.repo.listPaginated(page, limit, tenantId);
     return {
-      data: result.data.map(u => ({
-        id: u.id,
-        login: u.login,
-        firstName: u.first_name,
-        lastName: u.last_name,
-        role: u.role,
-        permissions: effectivePermissions(u.role, u.permissions),
-      })),
+      data: result.data.map(u =>
+        publicSessionFromDbUser({
+          id: u.id,
+          login: u.login,
+          first_name: u.first_name,
+          last_name: u.last_name,
+          role: u.role,
+          permissions: u.permissions,
+          tenant_id: u.tenant_id,
+          is_tenant_owner: u.is_tenant_owner,
+          is_super_admin: u.is_super_admin,
+        }),
+      ),
       total: result.total,
       page: result.page,
       limit: result.limit,
@@ -362,12 +393,8 @@ export class LoginService {
       login?: string;
       password?: string;
       role?: 'admin' | 'user';
-      permissions?: {
-        read?: boolean;
-        create?: boolean;
-        update?: boolean;
-        delete?: boolean;
-      };
+      /** Legado (4 flags) ou matriz v2. */
+      permissions?: unknown;
     },
   ) {
     const user = await this.repo.findById(userId);
@@ -379,12 +406,7 @@ export class LoginService {
       login: string;
       role: 'admin' | 'user';
       password: string;
-      permissions: {
-        read: boolean;
-        create: boolean;
-        update: boolean;
-        delete: boolean;
-      };
+      permissions: Prisma.InputJsonValue;
     }> = {};
     if (data.first_name !== undefined) updateData.first_name = data.first_name;
     if (data.last_name !== undefined) updateData.last_name = data.last_name;
@@ -397,15 +419,12 @@ export class LoginService {
 
     const resultingRole = (data.role ?? user.role) as 'admin' | 'user';
     if (resultingRole === 'admin') {
-      updateData.permissions = { ...FULL_PERMISSIONS };
+      updateData.permissions = parsePermissionsForStorage('admin', undefined);
     } else if (data.permissions !== undefined) {
-      const p = data.permissions;
-      updateData.permissions = {
-        read: true,
-        create: p.create ?? false,
-        update: p.update ?? false,
-        delete: p.delete ?? false,
-      };
+      updateData.permissions = parsePermissionsForStorage(
+        'user',
+        data.permissions,
+      );
     }
 
     const updated = await this.repo.update(userId, updateData);
