@@ -78,7 +78,9 @@ export class ResidentService {
 
     if (Object.prototype.hasOwnProperty.call(data, 'data_nascimento')) {
       const raw = data.data_nascimento;
-      if (raw === null || raw === '') {
+      if (raw === undefined) {
+        /* omitido no corpo transformado — não alterar */
+      } else if (raw === null || raw === '') {
         payload.data_nascimento = null;
       } else {
         const d = parseDateOnlyInput(String(raw));

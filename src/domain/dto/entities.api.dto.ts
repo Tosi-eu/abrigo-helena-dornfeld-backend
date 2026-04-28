@@ -152,7 +152,11 @@ export class ResidentUpdateBodyDto {
   nome!: string;
 
   @IsOptional()
-  @ValidateIf((_, v) => v !== null && v !== '')
+  @ValidateIf((_o, v) => {
+    if (v === undefined) return false;
+    if (v === null || v === '') return false;
+    return true;
+  })
   @IsDateString()
   @ApiPropertyOptional({
     example: '1990-05-15',
@@ -601,12 +605,21 @@ export class TenantInviteCreateBodyDto {
 }
 
 export class SetorCreateBodyDto {
-  @TrimmedString(1, 64)
-  @Matches(/^[a-zA-Z0-9_]+$/, {
-    message: 'key: use apenas letras, números e sublinhado',
+  @IsOptional()
+  @OptionalTrimmedString(64)
+  @ValidateIf((o: { key?: string }) => {
+    const k = o?.key;
+    return k != null && String(k).trim() !== '';
   })
-  @ApiProperty({ example: 'psicologia' })
-  key!: string;
+  @Matches(/^[a-z0-9_]+$/, {
+    message: 'key: use apenas letras minúsculas, números e sublinhado',
+  })
+  @ApiPropertyOptional({
+    example: 'psicologia',
+    description:
+      'Opcional. Se omitido, é gerada a partir do nome (minúsculas, snake_case).',
+  })
+  key?: string;
 
   @TrimmedString(1, 120)
   @ApiProperty({ example: 'Psicologia' })

@@ -1,6 +1,7 @@
 import type { Response } from 'express';
 import type { AuthRequest } from '@middlewares/auth.middleware';
 import { getErrorMessage } from '@domain/error.types';
+import { inferSetorKeyFromNome } from '@helpers/setor-key.helper';
 import { PrismaSetorRepository } from '@repositories/setor.repository';
 
 const setorRepo = new PrismaSetorRepository();
@@ -28,8 +29,17 @@ export class SetorController {
       const nomeRaw = req.body?.nome ?? req.body?.name;
       const profileRaw =
         req.body?.proportionProfile ?? req.body?.proportion_profile;
-      const key = keyRaw != null ? String(keyRaw) : '';
-      const nome = nomeRaw != null ? String(nomeRaw) : '';
+      const nome = nomeRaw != null ? String(nomeRaw).trim() : '';
+      if (!nome) {
+        return res.status(400).json({ error: 'Nome do setor é obrigatório' });
+      }
+      let key =
+        keyRaw != null && String(keyRaw).trim() !== ''
+          ? String(keyRaw).trim().toLowerCase()
+          : '';
+      if (!key) {
+        key = inferSetorKeyFromNome(nome);
+      }
       const proportionProfile =
         String(profileRaw ?? 'farmacia').toLowerCase() === 'enfermagem'
           ? 'enfermagem'

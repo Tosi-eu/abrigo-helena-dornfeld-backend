@@ -73,7 +73,7 @@ describe('Setores (E2E) — catálogo e enabled_sectors', () => {
     expect(res.status).toBe(403);
   });
 
-  it('POST /tenant/setores com chave inválida retorna 400', async () => {
+  it('POST /tenant/setores com chave explícita inválida retorna 400', async () => {
     const res = await request(app)
       .post('/api/v1/tenant/setores')
       .set('Authorization', `Bearer ${adminToken}`)
@@ -83,6 +83,20 @@ describe('Setores (E2E) — catálogo e enabled_sectors', () => {
         proportionProfile: 'farmacia',
       });
     expect(res.status).toBe(400);
+  });
+
+  it('POST /tenant/setores só com nome infere chave (snake_case)', async () => {
+    const nome = `Carrinho E2E ${Date.now()}`;
+    const create = await request(app)
+      .post('/api/v1/tenant/setores')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        nome,
+        proportionProfile: 'farmacia',
+      });
+    expect(create.status).toBe(201);
+    expect(create.body.nome).toBe(nome);
+    expect(String(create.body.key)).toMatch(/^carrinho_e2e_\d+$/);
   });
 
   it('admin cria setor personalizado e PUT tenant/config habilita enabled_sectors', async () => {
