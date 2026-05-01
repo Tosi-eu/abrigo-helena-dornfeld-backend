@@ -21,7 +21,6 @@ function sleep(ms: number): Promise<void> {
 }
 
 function jitter(ms: number): number {
-  // +/- 20%
   const delta = ms * 0.2;
   return Math.max(0, Math.floor(ms - delta + Math.random() * delta * 2));
 }
@@ -34,14 +33,11 @@ class GlobalRateGate {
     private readonly minIntervalMs: number,
     private readonly concurrency: number,
   ) {
-    // Implementação simples: concurrency > 1 não é suportada neste gate.
-    // Mantemos o parâmetro para compatibilidade/config futura.
     if (this.concurrency < 1) this.concurrency = 1;
     if (this.concurrency !== 1) this.concurrency = 1;
   }
 
   async schedule<T>(fn: () => Promise<T>): Promise<T> {
-    // Serializa chamadas e garante espaçamento mínimo entre inícios.
     let release!: () => void;
     const next = new Promise<void>(r => {
       release = r;
