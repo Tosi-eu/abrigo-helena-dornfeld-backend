@@ -1,25 +1,58 @@
 import type { Request, Response } from 'express';
 import type { AuthRequest } from '@middlewares/auth.middleware';
-import type { TenantRequest } from '@middlewares/tenant.middleware';
+import { PrismaTenantRepository } from '@repositories/tenant.repository';
 import { TenantImportService } from '@services/tenant-import.service';
 import { TenantPgDumpImportService } from '@services/tenant-pg-dump-import.service';
 import { buildTenantImportTemplateBuffer } from '@helpers/tenant-import-template.excel';
 
 type UploadRequest = Request &
-  AuthRequest &
-  TenantRequest & { file?: Express.Multer.File };
+  AuthRequest & { file?: Express.Multer.File } & { params: { slug?: string } };
 
-export class TenantImportController {
+const tenantRepo = new PrismaTenantRepository();
+
+export class AdminTenantImportController {
   constructor(
-    private readonly service: TenantImportService,
+    private readonly xlsxService: TenantImportService,
     private readonly pgDumpService: TenantPgDumpImportService,
   ) {}
 
-  async importXlsx(req: UploadRequest, res: Response, tenantId: number) {
-    const actorUserId = req.user?.id;
-    if (!actorUserId) {
-      return res.status(401).json({ error: 'Sessão inválida' });
+  private async resolveTenantIdFromSlug(
+    req: UploadRequest,
+    res: Response,
+  ): Promise<number | null> {
+    const slug = String(req.params?.slug ?? '').trim();
+    if (!slug) {
+      res.status(400).json({ error: 'slug obrigatório' });
+      return null;
     }
+    const id = await tenantRepo.findIdBySlug(slug);
+    if (id == null) {
+      res.status(404).json({ error: 'Abrigo não encontrado' });
+      return null;
+    }
+    return id;
+  }
+
+  async getTemplate(_req: Request, res: Response) {
+    try {
+      const buf = await buildTenantImportTemplateBuffer();
+      res.setHeader(
+        'Content-Type',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      );
+      res.setHeader(
+        'Content-Disposition',
+        'attachment; filename="template-importacao.xlsx"',
+      );
+      return res.status(200).send(buf);
+    } catch {
+      return res.status(500).json({ error: 'Falha ao gerar template' });
+    }
+  }
+
+  async importXlsx(req: UploadRequest, res: Response) {
+    const tenantId = await this.resolveTenantIdFromSlug(req, res);
+    if (tenantId == null) return;
 
     const file = req.file;
     if (!file?.buffer || file.buffer.length === 0) {
@@ -28,8 +61,12 @@ export class TenantImportController {
         .json({ error: 'Arquivo .xlsx obrigatório (campo file)' });
     }
 
+    // Em chamadas via X-API-Key, podemos não ter sessão; ainda assim precisamos
+    // setar um current_user_id para RLS/auditoria. Usamos 0 como “sistema”.
+    const actorUserId = req.user?.id ?? 0;
+
     try {
-      const result = await this.service.importXlsx({
+      const result = await this.xlsxService.importXlsx({
         tenantId,
         actorUserId,
         fileBuffer: file.buffer,
@@ -42,11 +79,9 @@ export class TenantImportController {
     }
   }
 
-  async importPgDump(req: UploadRequest, res: Response, tenantId: number) {
-    const actorUserId = req.user?.id;
-    if (!actorUserId) {
-      return res.status(401).json({ error: 'Sessão inválida' });
-    }
+  async importPgDump(req: UploadRequest, res: Response) {
+    const tenantId = await this.resolveTenantIdFromSlug(req, res);
+    if (tenantId == null) return;
 
     const file = req.file;
     if (!file?.buffer || file.buffer.length === 0) {
@@ -55,7 +90,8 @@ export class TenantImportController {
         .json({ error: 'Arquivo obrigatório (campo file: .sql ou .sql.gz)' });
     }
 
-    const q = req.query as Record<string, string | undefined>;
+    const actorUserId = req.user?.id ?? 0;
+    const q = (req.query ?? {}) as Record<string, string | undefined>;
     const replaceTenantData =
       q.replaceTenantData === '1' ||
       q.replaceTenantData === 'true' ||
@@ -87,24 +123,6 @@ export class TenantImportController {
       return res.status(400).json({
         error: (err as Error).message || 'Falha ao importar dump PostgreSQL',
       });
-    }
-  }
-
-  async getTemplate(_req: Request, res: Response) {
-    try {
-      const buf = await buildTenantImportTemplateBuffer();
-
-      res.setHeader(
-        'Content-Type',
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      );
-      res.setHeader(
-        'Content-Disposition',
-        'attachment; filename="template-importacao.xlsx"',
-      );
-      return res.status(200).send(buf);
-    } catch {
-      return res.status(500).json({ error: 'Falha ao gerar template' });
     }
   }
 }

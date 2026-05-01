@@ -89,6 +89,13 @@ export function resolveRoutePermission(
     };
   }
 
+  if (first === 'estoque' && m === 'POST') {
+    const op = seg[1]?.trim().toLowerCase() ?? '';
+    if (isMovementTipo(op)) {
+      return { kind: 'movement_tipo', tipo: op };
+    }
+  }
+
   if (first === 'tenant') {
     if (seg[1] === 'import') {
       if (seg[2] === 'template') {

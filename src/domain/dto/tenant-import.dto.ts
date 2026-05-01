@@ -35,6 +35,27 @@ export type TenantImportRowResult = {
   status: TenantImportRowStatus;
 };
 
+export type TenantPgDumpImportSummary = {
+  categoriaArmario: number;
+  categoriaGaveta: number;
+  armarios: number;
+  gavetas: number;
+  medicamentos: number;
+  insumos: number;
+  residentes: number;
+  logins: number;
+  estoqueMedicamentos: number;
+  estoqueInsumos: number;
+  movimentacoes: number;
+  notificacoes: number;
+};
+
+export type TenantPgDumpImportResponse = {
+  ok: true;
+  warnings: string[];
+  summary: TenantPgDumpImportSummary;
+};
+
 export type TenantImportXlsxResponse = {
   ok: true;
   summary: {

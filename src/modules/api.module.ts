@@ -74,8 +74,12 @@ import { ArmarioApiController } from '@controllers/api/armario.api.controller';
 import { SetorApiController } from '@controllers/api/setor.api.controller';
 import { SetorController } from '@controllers/setor.controller';
 import { TenantImportApiController } from '@controllers/api/tenant-import.api.controller';
+import { AdminTenantImportApiController } from '@controllers/api/admin-tenant-import.api.controller';
+import { InternalPriceBackfillApiController } from '@controllers/api/internal-price-backfill.api.controller';
 import { TenantImportController } from '@controllers/tenant-import.controller';
+import { AdminTenantImportController } from '@controllers/admin-tenant-import.controller';
 import { TenantImportService } from '@services/tenant-import.service';
+import { TenantPgDumpImportService } from '@services/tenant-pg-dump-import.service';
 import {
   AdminPanelLimiterNest,
   RequireAdminNest,
@@ -190,7 +194,15 @@ const cabinetService = new CabinetService(cabinetRepo);
 const cabinetController = new CabinetController(cabinetService);
 
 const tenantImportService = new TenantImportService();
-const tenantImportController = new TenantImportController(tenantImportService);
+const tenantPgDumpImportService = new TenantPgDumpImportService();
+const tenantImportController = new TenantImportController(
+  tenantImportService,
+  tenantPgDumpImportService,
+);
+const adminTenantImportController = new AdminTenantImportController(
+  tenantImportService,
+  tenantPgDumpImportService,
+);
 
 @Module({
   controllers: [
@@ -212,6 +224,8 @@ const tenantImportController = new TenantImportController(tenantImportService);
     ArmarioApiController,
     SetorApiController,
     TenantImportApiController,
+    AdminTenantImportApiController,
+    InternalPriceBackfillApiController,
   ],
   providers: [
     { provide: LoginController, useValue: loginController },
@@ -237,6 +251,10 @@ const tenantImportController = new TenantImportController(tenantImportService);
     { provide: CabinetController, useValue: cabinetController },
     { provide: SetorController, useValue: setorController },
     { provide: TenantImportController, useValue: tenantImportController },
+    {
+      provide: AdminTenantImportController,
+      useValue: adminTenantImportController,
+    },
   ],
 })
 export class ApiModule implements NestModule {

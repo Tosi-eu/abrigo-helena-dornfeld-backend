@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Transform, Type } from 'class-transformer';
+import { Transform } from 'class-transformer';
 import {
   Allow,
   ArrayMinSize,
@@ -22,9 +22,9 @@ import {
   MinLength,
   Validate,
   ValidateIf,
-  ValidateNested,
 } from 'class-validator';
 import { ContractCodeOrCamelConstraint } from '@validation/constraints/contract-code.constraint';
+import { PermissionPayloadConstraint } from '@validation/constraints/permission-payload.constraint';
 import {
   EmailNormalized,
   OptionalTrimmedString,
@@ -594,14 +594,22 @@ export class TenantInviteCreateBodyDto {
   role?: string;
 
   @IsOptional()
-  @IsObject()
-  @ValidateNested()
-  @Type(() => AdminPermissionsDto)
+  @Validate(PermissionPayloadConstraint)
   @ApiPropertyOptional({
-    description: 'Permission flags object',
-    example: { read: true, create: true, update: false, delete: false },
+    description:
+      'Permissões (legado 4 flags) ou matriz v2 por recurso (version:2).',
+    oneOf: [
+      { example: { read: true, create: true, update: false, delete: false } },
+      {
+        example: {
+          version: 2,
+          resources: { stock: { read: true }, medicines: { create: true } },
+          movement_tipos: { entrada: true, saida: false, transferencia: false },
+        },
+      },
+    ],
   })
-  permissions?: AdminPermissionsDto;
+  permissions?: unknown;
 }
 
 export class SetorCreateBodyDto {
@@ -710,10 +718,22 @@ export class AdminCreateUserBodyDto {
   role?: string;
 
   @IsOptional()
-  @ValidateNested()
-  @Type(() => AdminPermissionsDto)
-  @ApiPropertyOptional()
-  permissions?: AdminPermissionsDto;
+  @Validate(PermissionPayloadConstraint)
+  @ApiPropertyOptional({
+    description:
+      'Permissões (legado 4 flags) ou matriz v2 por recurso (version:2).',
+    oneOf: [
+      { example: { read: true, create: false, update: false, delete: false } },
+      {
+        example: {
+          version: 2,
+          resources: { stock: { read: true, create: false } },
+          movement_tipos: { entrada: true, saida: true, transferencia: false },
+        },
+      },
+    ],
+  })
+  permissions?: unknown;
 }
 
 export class AdminUpdateUserBodyDto {
@@ -742,10 +762,26 @@ export class AdminUpdateUserBodyDto {
   role?: string;
 
   @IsOptional()
-  @ValidateNested()
-  @Type(() => AdminPermissionsDto)
-  @ApiPropertyOptional()
-  permissions?: AdminPermissionsDto;
+  @Validate(PermissionPayloadConstraint)
+  @ApiPropertyOptional({
+    description:
+      'Permissões (legado 4 flags) ou matriz v2 por recurso (version:2).',
+    oneOf: [
+      { example: { read: true, create: false, update: false, delete: false } },
+      {
+        example: {
+          version: 2,
+          resources: { admin: { read: true }, reports: { read: true } },
+          movement_tipos: {
+            entrada: false,
+            saida: false,
+            transferencia: false,
+          },
+        },
+      },
+    ],
+  })
+  permissions?: unknown;
 }
 
 export class AdminMergeMedicinesBodyDto {

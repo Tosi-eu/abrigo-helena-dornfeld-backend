@@ -9,6 +9,7 @@ import {
 } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
 import { tenantXlsxUpload } from '@config/upload/multer-xlsx.config';
+import { tenantPgDumpUpload } from '@config/upload/multer-pg-dump.config';
 import { TenantImportController } from '@controllers/tenant-import.controller';
 import { TenantId } from '@decorators/tenant-id.decorator';
 import { UseExpressMwGuard } from '@middlewares/express.middleware';
@@ -18,6 +19,11 @@ const requireAdminGuard = UseExpressMwGuard(requireAdmin);
 const importUploadGuard = UseExpressMwGuard(
   requireAdmin,
   tenantXlsxUpload.single('file'),
+);
+
+const pgDumpUploadGuard = UseExpressMwGuard(
+  requireAdmin,
+  tenantPgDumpUpload.single('file'),
 );
 
 @ApiTags('Tenant')
@@ -55,5 +61,31 @@ export class TenantImportApiController {
     @Res() res: Response,
   ): void {
     void this.controller.importXlsx(req as any, res, tenantId);
+  }
+
+  @Post('pg-dump')
+  @ApiOperation({
+    summary:
+      '[Admin] Importar dump PostgreSQL do abrigo (.sql / .sql.gz, COPY stdin)',
+    description:
+      'Anexa dados operacionais ao abrigo atual (não altera logo nem configurações do tenant). Query opcional: birthDateFallback (sobrepõe IMPORT_BIRTH_DATE_FALLBACK / system_config), replaceTenantData=1 (apaga dados do abrigo antes; raramente necessário), sourceTenantId (dump multi-tenant).',
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['file'],
+      properties: {
+        file: { type: 'string', format: 'binary' },
+      },
+    },
+  })
+  @UseGuards(pgDumpUploadGuard)
+  importPgDump(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.importPgDump(req as any, res, tenantId);
   }
 }

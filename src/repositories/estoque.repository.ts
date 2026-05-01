@@ -361,6 +361,9 @@ export class PrismaStockRepository {
     const buildMedicineWhere = (): Prisma.EstoqueMedicamentoWhereInput => {
       const base: Prisma.EstoqueMedicamentoWhereInput = { tenant_id: tenantId };
       switch (filter) {
+        case 'noStock':
+          base.quantidade = 0;
+          break;
         case 'belowMin':
           base.quantidade = { gte: 0 };
           break;
@@ -381,6 +384,9 @@ export class PrismaStockRepository {
     const buildInputWhere = (): Prisma.EstoqueInsumoWhereInput => {
       const base: Prisma.EstoqueInsumoWhereInput = { tenant_id: tenantId };
       switch (filter) {
+        case 'noStock':
+          base.quantidade = 0;
+          break;
         case 'belowMin':
           base.quantidade = { gte: 0 };
           break;
@@ -499,6 +505,10 @@ export class PrismaStockRepository {
             stock.casela_id != null
               ? resMap.get(resKey(stock.tenant_id, stock.casela_id))
               : undefined;
+
+          if (filter === 'noStock') {
+            if (stock.quantidade !== 0) continue;
+          }
 
           if (filter === 'belowMin') {
             const minStock = medicine?.estoque_minimo ?? 0;
@@ -634,6 +644,10 @@ export class PrismaStockRepository {
             stock.casela_id != null
               ? resMapInp.get(resKey(stock.tenant_id, stock.casela_id))
               : undefined;
+
+          if (filter === 'noStock') {
+            if (stock.quantidade !== 0) continue;
+          }
 
           if (filter === StockFilterType.BELOW_MIN) {
             const minStock = input?.estoque_minimo ?? 0;

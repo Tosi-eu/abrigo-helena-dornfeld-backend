@@ -111,12 +111,8 @@ export class AdminController {
       last_name?: string;
       role?: 'admin' | 'user';
       tenantId: number;
-      permissions?: {
-        read?: boolean;
-        create?: boolean;
-        update?: boolean;
-        delete?: boolean;
-      };
+      /** Legado (4 flags) ou matriz `{ version: 2, resources, movement_tipos }`. */
+      permissions?: unknown;
     } = { login, password, tenantId };
     if (firstName !== undefined) data.first_name = firstName;
     if (lastName !== undefined) data.last_name = lastName;
@@ -126,17 +122,15 @@ export class AdminController {
       }
       data.role = role;
     }
-    if (
-      permissions !== undefined &&
-      typeof permissions === 'object' &&
-      permissions !== null
-    ) {
-      data.permissions = {
-        read: permissions.read !== false,
-        create: Boolean(permissions.create),
-        update: Boolean(permissions.update),
-        delete: Boolean(permissions.delete),
-      };
+    if (permissions !== undefined) {
+      const p = permissions;
+      if (typeof p !== 'object' || p === null || Array.isArray(p)) {
+        return res
+          .status(400)
+          .json({ error: 'permissions deve ser um objeto' });
+      }
+      // Não normaliza aqui: o serviço aceita tanto o legado (4 flags) quanto v2.
+      data.permissions = p as Record<string, unknown>;
     }
 
     try {

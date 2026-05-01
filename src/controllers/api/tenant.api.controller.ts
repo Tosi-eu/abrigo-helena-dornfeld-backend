@@ -128,6 +128,34 @@ export class TenantApiController {
     void this.controller.updateConfig(req, res, tenantId);
   }
 
+  @Post('price-backfill/run')
+  @ApiOperation({
+    summary:
+      '[Admin] Forçar busca retroativa de preços (itens sem preço neste abrigo). Responde 202 e corre em segundo plano.',
+  })
+  @UseGuards(requireAdminGuard)
+  forcePriceBackfill(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.forcePriceBackfill(req, res, tenantId);
+  }
+
+  @Get('price-backfill/status')
+  @ApiOperation({
+    summary:
+      '[Admin] Estado da busca manual (em curso, cooldown, último resultado)',
+  })
+  @UseGuards(requireAdminGuard)
+  priceBackfillStatus(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.getPriceBackfillStatus(req, res, tenantId);
+  }
+
   @Put('branding')
   @ApiOperation({ summary: '[Admin] Atualizar branding (JSON)' })
   @ApiBody({ type: TenantBrandingBodyDto })

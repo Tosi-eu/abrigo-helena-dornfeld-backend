@@ -264,10 +264,23 @@ export class PrismaNotificationEventRepository {
           ? `${row.medicamento_id}:${row.residente_id}`
           : '';
       const estoque = sk ? stockByKey.get(sk) : undefined;
-      const qtd =
+      const qtdFromMov =
         tipo === NotificationEventType.REPOSICAO_ESTOQUE && sk
           ? (movByKey.get(sk) ?? null)
           : undefined;
+
+      const quantidadeOut =
+        tipo === NotificationEventType.REPOSICAO_ESTOQUE
+          ? row.quantidade != null
+            ? row.quantidade
+            : qtdFromMov
+          : undefined;
+      const diasOut =
+        tipo === NotificationEventType.REPOSICAO_ESTOQUE
+          ? row.dias_para_repor != null
+            ? row.dias_para_repor
+            : Number(estoque?.dias_para_repor ?? 0) || null
+          : null;
 
       return {
         id: row.id,
@@ -280,14 +293,10 @@ export class PrismaNotificationEventRepository {
         medicamento_id: row.medicamento_id,
         residente_id: row.residente_id,
         usuario: usuarioStr,
-        quantidade:
-          tipo === NotificationEventType.REPOSICAO_ESTOQUE ? qtd : undefined,
+        quantidade: quantidadeOut,
         visto: row.visto,
         tipo_evento: row.tipo_evento as NotificationEventType,
-        dias_para_repor:
-          tipo === NotificationEventType.REPOSICAO_ESTOQUE
-            ? Number(estoque?.dias_para_repor ?? 0) || null
-            : null,
+        dias_para_repor: diasOut,
       };
     });
 

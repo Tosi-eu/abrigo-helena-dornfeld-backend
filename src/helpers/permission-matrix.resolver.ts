@@ -166,7 +166,9 @@ export function canMovementTipo(
   matrix: EffectivePermissionMatrix,
   tipo: MovementTipoKey,
 ): boolean {
-  if (!matrix.resources.movements.create) return false;
+  // Movimentações são derivadas de operações de estoque; o controle fino por tipo
+  // (entrada/saida/transferencia) deve depender da permissão de criar no módulo de estoque.
+  if (!matrix.resources.stock?.create) return false;
   return Boolean(matrix.movement_tipos[tipo]);
 }
 

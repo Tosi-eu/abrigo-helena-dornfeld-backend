@@ -8,7 +8,7 @@ function createPriceSearchService(): IPriceSearchService | undefined {
   if (!url || !key) {
     if (process.env.NODE_ENV !== 'test') {
       logger.warn(
-        'Busca de preços desativada: defina PRICING_API_URL e PRICING_API_KEY (microserviço porto-api-price-search). A opção no painel do abrigo não ativa a integração sem estas variáveis.',
+        'Busca de preços desativada: defina PRICING_API_URL e PRICING_API_KEY. A opção no painel do abrigo não ativa a integração sem estas variáveis.',
         { operation: 'pricing_api_init' },
       );
     }

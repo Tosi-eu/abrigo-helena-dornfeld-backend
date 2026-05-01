@@ -20,6 +20,14 @@ import { migrateProvisionalLoginToCanonicalTenant } from '@services/tenant-contr
 import { PrismaLoginRepository } from '@repositories/login.repository';
 import { PrismaContractPortfolioRepository } from '@repositories/contract-portfolio.repository';
 import { getMissingR2AssetsEnvKeys } from '@config/env.validation';
+import { logger } from '@helpers/logger.helper';
+import { priceSearchService } from '@helpers/price-service.helper';
+import { PriceBackfillService } from '@services/price-backfill.service';
+import {
+  acquireManualPriceBackfillSlot,
+  finishManualPriceBackfill,
+  getManualPriceBackfillStatus,
+} from '@services/price-backfill-manual.guard';
 import {
   assertLogoUrlBelongsToOurR2,
   deleteTenantLogoObjectsExceptKey,
@@ -35,6 +43,8 @@ const tenantRepo = new PrismaTenantRepository();
 const systemConfigRepo = new PrismaSystemConfigRepository();
 const contractPortfolioRepo = new PrismaContractPortfolioRepository();
 const loginRepo = new PrismaLoginRepository();
+
+const priceBackfillService = new PriceBackfillService();
 
 const FULL_PERMISSIONS = {
   read: true,
@@ -171,6 +181,113 @@ export class TenantController {
     } catch (error: unknown) {
       return res.status(400).json({
         error: getErrorMessage(error) || 'Config inválida',
+      });
+    }
+  }
+
+  /**
+   * [Admin] Executa uma rodada de busca retroativa de preços para o tenant atual
+   * (mesmos limites do cron via ENV). Não exige que a busca automática esteja ligada.
+   * Responde 202 e processa em segundo plano; estado em GET `price-backfill/status`.
+   */
+  async forcePriceBackfill(
+    req: AuthRequest & TenantRequest,
+    res: Response,
+    tenantId: number,
+  ) {
+    try {
+      if (!assertCanUpdateModules(req)) {
+        return res.status(403).json({
+          error:
+            'Apenas administradores do painel (ou super admin) podem executar esta ação.',
+        });
+      }
+      if (!priceSearchService) {
+        return res.status(503).json({
+          code: 'PRICING_API_UNAVAILABLE',
+          error:
+            'Busca de preços não está disponível no servidor. Configure PRICING_API_URL e PRICING_API_KEY (no Docker, inclua estas variáveis no env do container e use host.docker.internal em vez de 127.0.0.1 se a API de preços estiver na sua máquina).',
+        });
+      }
+
+      const acquired = await acquireManualPriceBackfillSlot(tenantId);
+      if (acquired.ok === false) {
+        if (acquired.blocked === 'cooldown') {
+          const secs = acquired.retryAfterSeconds;
+          const mins = Math.ceil(secs / 60);
+          return res.status(429).json({
+            code: 'PRICE_BACKFILL_COOLDOWN',
+            retryAfterSeconds: secs,
+            error:
+              mins >= 1
+                ? `Esta ação foi usada recentemente. Tente de novo em cerca de ${mins} min.`
+                : `Esta ação foi usada recentemente. Tente de novo em ${secs} s.`,
+          });
+        }
+        return res.status(409).json({
+          code: 'PRICE_BACKFILL_ALREADY_RUNNING',
+          error:
+            'Já há uma busca em curso para este abrigo. Pode mudar de página; avisamos quando terminar.',
+        });
+      }
+
+      const acceptedAtMs = Date.now();
+
+      void (async () => {
+        try {
+          const processed =
+            await priceBackfillService.runWithCronLimits(tenantId);
+          await finishManualPriceBackfill(tenantId, { processed });
+        } catch (error: unknown) {
+          logger.error(
+            '[price-backfill] falha manual em background',
+            { tenantId },
+            error instanceof Error ? error : new Error(String(error)),
+          );
+          await finishManualPriceBackfill(tenantId, {
+            processed: 0,
+            error:
+              getErrorMessage(error) ||
+              'Não foi possível concluir a busca retroativa.',
+          });
+        }
+      })();
+
+      return res.status(202).json({
+        accepted: true,
+        acceptedAtMs,
+        message:
+          'Processo iniciado. Pode continuar a usar o sistema — a busca corre em segundo plano e avisamos quando terminar.',
+      });
+    } catch (error: unknown) {
+      return res.status(500).json({
+        error:
+          getErrorMessage(error) ||
+          'Não foi possível iniciar a busca retroativa de preços.',
+      });
+    }
+  }
+
+  /** [Admin] Estado da última busca manual e cooldown (para polling). */
+  async getPriceBackfillStatus(
+    req: AuthRequest & TenantRequest,
+    res: Response,
+    tenantId: number,
+  ) {
+    try {
+      if (!assertCanUpdateModules(req)) {
+        return res.status(403).json({
+          error:
+            'Apenas administradores do painel (ou super admin) podem ver este estado.',
+        });
+      }
+      const status = await getManualPriceBackfillStatus(tenantId);
+      return res.json(status);
+    } catch (error: unknown) {
+      return res.status(500).json({
+        error:
+          getErrorMessage(error) ||
+          'Não foi possível obter o estado da busca de preços.',
       });
     }
   }
