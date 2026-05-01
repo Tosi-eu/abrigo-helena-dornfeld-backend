@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Req, Res, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  Post,
+  Req,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiBody,
   ApiConsumes,
@@ -72,6 +80,25 @@ export class AdminTenantImportApiController {
     void this.controller.importXlsx(req as any, res);
   }
 
+  @Post('xlsx/async')
+  @ApiOperation({
+    summary:
+      '[Super-admin] Importar dados via XLSX (assíncrono via Temporal, por slug)',
+  })
+  @ApiParam({ name: 'slug' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['file'],
+      properties: { file: { type: 'string', format: 'binary' } },
+    },
+  })
+  @UseGuards(adminImportXlsxUploadGuard)
+  importXlsxAsync(@Req() req: Request, @Res() res: Response): void {
+    void this.controller.importXlsxAsync(req as any, res);
+  }
+
   @Post('pg-dump')
   @ApiOperation({
     summary:
@@ -91,5 +118,39 @@ export class AdminTenantImportApiController {
   @UseGuards(adminImportPgDumpUploadGuard)
   importPgDump(@Req() req: Request, @Res() res: Response): void {
     void this.controller.importPgDump(req as any, res);
+  }
+
+  @Post('pg-dump/async')
+  @ApiOperation({
+    summary:
+      '[Super-admin] Importar dump PostgreSQL (assíncrono via Temporal, por slug)',
+  })
+  @ApiParam({ name: 'slug' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['file'],
+      properties: { file: { type: 'string', format: 'binary' } },
+    },
+  })
+  @UseGuards(adminImportPgDumpUploadGuard)
+  importPgDumpAsync(@Req() req: Request, @Res() res: Response): void {
+    void this.controller.importPgDumpAsync(req as any, res);
+  }
+
+  @Get('jobs/:jobId')
+  @ApiOperation({
+    summary: '[Super-admin] Consultar estado de importação (job, por slug)',
+  })
+  @ApiParam({ name: 'slug' })
+  @UseGuards(adminImportGuard)
+  getJob(
+    @Param('jobId') jobId: string,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    (req as any).params = { ...(req as any).params, jobId };
+    void this.controller.getJob(req as any, res);
   }
 }

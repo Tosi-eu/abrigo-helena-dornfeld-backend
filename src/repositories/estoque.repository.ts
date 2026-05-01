@@ -1694,11 +1694,16 @@ export class PrismaStockRepository {
   }
 
   async getExpiringItems(
+    tenantId: number,
     days: number,
     page: number = 1,
     limit: number = 50,
     transaction?: Prisma.TransactionClient,
   ): Promise<{ data: ExpiringStockItem[]; total: number; hasNext: boolean }> {
+    const tid = Number(tenantId);
+    if (!Number.isInteger(tid) || tid < 1) {
+      throw new Error('tenantId inválido');
+    }
     const client = db(transaction);
     const today = startOfDay(new Date());
     const endDate = new Date(today);
@@ -1707,6 +1712,7 @@ export class PrismaStockRepository {
     const [medRows, inpRows] = await Promise.all([
       client.estoqueMedicamento.findMany({
         where: {
+          tenant_id: tid,
           quantidade: { gt: 0 },
           validade: { gte: today, lte: endDate },
         },
@@ -1715,6 +1721,7 @@ export class PrismaStockRepository {
       }),
       client.estoqueInsumo.findMany({
         where: {
+          tenant_id: tid,
           quantidade: { gt: 0 },
           validade: { gte: today, lte: endDate },
         },
@@ -1726,10 +1733,10 @@ export class PrismaStockRepository {
     const medIds = [...new Set(medRows.map(r => r.medicamento_id))];
     const insIds = [...new Set(inpRows.map(r => r.insumo_id))];
     const medDetails = await client.medicamento.findMany({
-      where: { id: { in: medIds } },
+      where: { tenant_id: tid, id: { in: medIds } },
     });
     const insDetails = await client.insumo.findMany({
-      where: { id: { in: insIds } },
+      where: { tenant_id: tid, id: { in: insIds } },
     });
     const medMap = new Map(medDetails.map(m => [m.id, m]));
     const insMap = new Map(insDetails.map(i => [i.id, i]));
@@ -1845,6 +1852,7 @@ export class PrismaStockRepository {
   }
 
   async getAlertCounts(
+    tenantId: number,
     transaction?: Prisma.TransactionClient,
     expiringDays: number = 45,
   ): Promise<{
@@ -1854,8 +1862,13 @@ export class PrismaStockRepository {
     expired: number;
     expiringSoon: number;
   }> {
+    const tid = Number(tenantId);
+    if (!Number.isInteger(tid) || tid < 1) {
+      throw new Error('tenantId inválido');
+    }
     const client = db(transaction);
     const safeDays = Math.min(365, Math.max(1, expiringDays));
+    const todayDate = new Date(new Date().toISOString().slice(0, 10));
 
     const [
       noStockMed,
@@ -1869,15 +1882,20 @@ export class PrismaStockRepository {
       expiringMed,
       expiringInp,
     ] = await Promise.all([
-      client.estoqueMedicamento.count({ where: { quantidade: 0 } }),
-      client.estoqueInsumo.count({ where: { quantidade: 0 } }),
+      client.estoqueMedicamento.count({
+        where: { tenant_id: tid, quantidade: 0 },
+      }),
+      client.estoqueInsumo.count({
+        where: { tenant_id: tid, quantidade: 0 },
+      }),
       this.countRaw(
         client,
         Prisma.sql`
         SELECT COUNT(*)::bigint AS count
         FROM estoque_medicamento em
         INNER JOIN medicamento m ON m.id = em.medicamento_id
-        WHERE em.quantidade >= 0
+        WHERE em.tenant_id = ${tid}
+          AND em.quantidade >= 0
           AND em.quantidade < m.estoque_minimo`,
       ),
       this.countRaw(
@@ -1886,7 +1904,8 @@ export class PrismaStockRepository {
         SELECT COUNT(*)::bigint AS count
         FROM estoque_insumo ei
         INNER JOIN insumo i ON i.id = ei.insumo_id
-        WHERE ei.quantidade >= 0
+        WHERE ei.tenant_id = ${tid}
+          AND ei.quantidade >= 0
           AND ei.quantidade < i.estoque_minimo`,
       ),
       this.countRaw(
@@ -1895,7 +1914,8 @@ export class PrismaStockRepository {
         SELECT COUNT(*)::bigint AS count
         FROM estoque_medicamento em
         INNER JOIN medicamento m ON m.id = em.medicamento_id
-        WHERE em.quantidade > m.estoque_minimo
+        WHERE em.tenant_id = ${tid}
+          AND em.quantidade > m.estoque_minimo
           AND em.quantidade <= (m.estoque_minimo * 1.2)`,
       ),
       this.countRaw(
@@ -1904,19 +1924,22 @@ export class PrismaStockRepository {
         SELECT COUNT(*)::bigint AS count
         FROM estoque_insumo ei
         INNER JOIN insumo i ON i.id = ei.insumo_id
-        WHERE ei.quantidade > i.estoque_minimo
+        WHERE ei.tenant_id = ${tid}
+          AND ei.quantidade > i.estoque_minimo
           AND ei.quantidade <= (i.estoque_minimo * 1.2)`,
       ),
       client.estoqueMedicamento.count({
         where: {
+          tenant_id: tid,
           quantidade: { gt: 0 },
-          validade: { lt: new Date(new Date().toISOString().slice(0, 10)) },
+          validade: { lt: todayDate },
         },
       }),
       client.estoqueInsumo.count({
         where: {
+          tenant_id: tid,
           quantidade: { gt: 0 },
-          validade: { lt: new Date(new Date().toISOString().slice(0, 10)) },
+          validade: { lt: todayDate },
         },
       }),
       this.countRaw(
@@ -1924,7 +1947,8 @@ export class PrismaStockRepository {
         Prisma.sql`
         SELECT COUNT(*)::bigint AS count
         FROM estoque_medicamento em
-        WHERE em.quantidade > 0
+        WHERE em.tenant_id = ${tid}
+          AND em.quantidade > 0
           AND em.validade >= CURRENT_DATE
           AND em.validade <= CURRENT_DATE + ${safeDays} * INTERVAL '1 day'`,
       ),
@@ -1933,7 +1957,8 @@ export class PrismaStockRepository {
         Prisma.sql`
         SELECT COUNT(*)::bigint AS count
         FROM estoque_insumo ei
-        WHERE ei.quantidade > 0
+        WHERE ei.tenant_id = ${tid}
+          AND ei.quantidade > 0
           AND ei.validade >= CURRENT_DATE
           AND ei.validade <= CURRENT_DATE + ${safeDays} * INTERVAL '1 day'`,
       ),

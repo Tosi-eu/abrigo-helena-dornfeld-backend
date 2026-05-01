@@ -369,19 +369,22 @@ export class StockService {
   }
 
   async getAlertCounts(
+    tenantId: number,
     transaction?: Prisma.TransactionClient,
     expiringDays?: number,
   ) {
-    return this.repo.getAlertCounts(transaction, expiringDays ?? 45);
+    return this.repo.getAlertCounts(tenantId, transaction, expiringDays ?? 45);
   }
 
   async getExpiringItems(
+    tenantId: number,
     days: number,
     page?: number,
     limit?: number,
     transaction?: Prisma.TransactionClient,
   ) {
     return this.repo.getExpiringItems(
+      tenantId,
       days ?? 30,
       page ?? 1,
       limit ?? 50,

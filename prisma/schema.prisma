@@ -34,13 +34,11 @@ model Setor {
   tenant_id          Int
   key                String   @db.VarChar(64)
   nome               String   @db.VarChar(120)
-  /// Qual regra de gráfico de proporção usar: `farmacia` ou `enfermagem` (buckets de carrinho).
   proportion_profile String   @default("farmacia") @db.VarChar(20)
   sort_order         Int      @default(0)
   active             Boolean  @default(true)
   created_at         DateTime @default(now())
   updated_at         DateTime @updatedAt
-
   tenant              Tenant               @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
   estoqueMedicamentos EstoqueMedicamento[]
   estoqueInsumos      EstoqueInsumo[]
@@ -116,6 +114,25 @@ model Armario {
   @@index([tenant_id], map: "idx_armario_tenant_id")
   @@index([tenant_id, categoria_id], map: "idx_armario_tenant_categoria_id")
   @@map("armario")
+}
+
+model TenantImportJob {
+  id            String   @id @default(cuid()) @db.VarChar(64)
+  tenant_id     Int
+  actor_user_id Int
+  kind          String   @db.VarChar(20) // xlsx | pg_dump
+  status        String   @db.VarChar(20) // queued | running | succeeded | failed
+  file_path     String   @db.VarChar(512)
+  options_json  Json?
+  result_json   Json?
+  error         String?
+  created_at    DateTime @default(now())
+  started_at    DateTime?
+  finished_at   DateTime?
+
+  @@index([tenant_id], map: "idx_tenant_import_job_tenant_id")
+  @@index([tenant_id, created_at], map: "idx_tenant_import_job_tenant_created_at")
+  @@map("tenant_import_job")
 }
 
 model Gaveta {

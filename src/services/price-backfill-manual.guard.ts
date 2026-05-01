@@ -96,7 +96,8 @@ export async function finishManualPriceBackfill(
   result: { processed: number; error?: string },
 ): Promise<void> {
   const ok = !result.error;
-  const coolSuccessSec = envInt('PRICE_BACKFILL_MANUAL_COOLDOWN_SEC', 1800);
+  /** Padrão 10 min; defina `PRICE_BACKFILL_MANUAL_COOLDOWN_SEC` (ex.: 900 = 15 min). */
+  const coolSuccessSec = envInt('PRICE_BACKFILL_MANUAL_COOLDOWN_SEC', 600);
   const coolErrorSec = envInt(
     'PRICE_BACKFILL_MANUAL_COOLDOWN_ON_ERROR_SEC',
     120,
@@ -136,6 +137,32 @@ export async function finishManualPriceBackfill(
   memRunning.delete(tenantId);
   memCooldownUntil.set(tenantId, Date.now() + cooldownSec * 1000);
   memLastByTenant.set(tenantId, payload);
+}
+
+/**
+ * Remove apenas o lock de “run” (sem cooldown nem last).
+ * Usado quando o Temporal já não tem workflow ativo mas o Redis ficou preso
+ * (ex.: cancelamento manual do workflow antes da atividade libertar o slot).
+ */
+export async function forceReleaseManualPriceBackfillRunLock(
+  tenantId: number,
+): Promise<void> {
+  const redis = getRedisClient();
+  if (redis && isRedisAvailable()) {
+    try {
+      await redis.del(keyRun(tenantId));
+      return;
+    } catch (err) {
+      logger.warn(
+        '[price-backfill-manual] Redis force release falhou, usando memória',
+        {
+          tenantId,
+          error: err instanceof Error ? err.message : String(err),
+        },
+      );
+    }
+  }
+  memRunning.delete(tenantId);
 }
 
 export async function getManualPriceBackfillStatus(

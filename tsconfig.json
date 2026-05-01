@@ -19,6 +19,7 @@
       "@services/*": ["src/services/*"],
       "@repositories/*": ["src/repositories/*"],
       "@helpers/*": ["src/helpers/*"],
+      "@temporal/*": ["src/temporal/*"],
       "@domain/*": ["src/domain/*"],
       "@config/*": ["src/config/*"],
       "@middlewares/*": ["src/middlewares/*"],

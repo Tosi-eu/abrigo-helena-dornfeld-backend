@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Req, Res, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  Post,
+  Req,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiBody,
   ApiConsumes,
@@ -63,6 +71,29 @@ export class TenantImportApiController {
     void this.controller.importXlsx(req as any, res, tenantId);
   }
 
+  @Post('xlsx/async')
+  @ApiOperation({
+    summary: '[Admin] Importar dados via XLSX (assíncrono via Temporal)',
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['file'],
+      properties: {
+        file: { type: 'string', format: 'binary' },
+      },
+    },
+  })
+  @UseGuards(importUploadGuard)
+  importXlsxAsync(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.importXlsxAsync(req as any, res, tenantId);
+  }
+
   @Post('pg-dump')
   @ApiOperation({
     summary:
@@ -87,5 +118,42 @@ export class TenantImportApiController {
     @Res() res: Response,
   ): void {
     void this.controller.importPgDump(req as any, res, tenantId);
+  }
+
+  @Post('pg-dump/async')
+  @ApiOperation({
+    summary:
+      '[Admin] Importar dump PostgreSQL (assíncrono via Temporal, multipart file)',
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['file'],
+      properties: {
+        file: { type: 'string', format: 'binary' },
+      },
+    },
+  })
+  @UseGuards(pgDumpUploadGuard)
+  importPgDumpAsync(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.importPgDumpAsync(req as any, res, tenantId);
+  }
+
+  @Get('jobs/:jobId')
+  @ApiOperation({ summary: '[Admin] Consultar estado de importação (job)' })
+  @UseGuards(requireAdminGuard)
+  getJob(
+    @TenantId() tenantId: number,
+    @Param('jobId') jobId: string,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    (req as any).params = { ...(req as any).params, jobId };
+    void this.controller.getJob(req as any, res, tenantId);
   }
 }

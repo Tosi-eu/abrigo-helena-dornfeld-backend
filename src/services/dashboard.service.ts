@@ -59,7 +59,11 @@ export class DashboardService {
       cabinetList,
       drawerList,
     ] = await Promise.all([
-      this.stockService.getAlertCounts(transaction, expiringDays ?? 45),
+      this.stockService.getAlertCounts(
+        tenantId,
+        transaction,
+        expiringDays ?? 45,
+      ),
       this.movementService.findMedicineMovements({
         tenantId,
         days: 7,
@@ -209,11 +213,18 @@ export class DashboardService {
   }
 
   async getExpiringItems(
+    tenantId: number,
     days: number,
     page: number,
     limit: number,
     transaction?: Prisma.TransactionClient,
   ) {
-    return this.stockService.getExpiringItems(days, page, limit, transaction);
+    return this.stockService.getExpiringItems(
+      tenantId,
+      days,
+      page,
+      limit,
+      transaction,
+    );
   }
 }

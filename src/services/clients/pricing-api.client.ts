@@ -85,10 +85,18 @@ export class PricingApiClient implements IPriceSearchService {
     const maxRetries = envInt('PRICING_API_RETRY_MAX', 5);
     const baseBackoffMs = envInt('PRICING_API_RETRY_BASE_MS', 800);
     const maxBackoffMs = envInt('PRICING_API_RETRY_MAX_MS', 15_000);
+    const searchUrl = `${this.base}/v1/search`;
+    const requestContext = {
+      searchUrl,
+      itemName,
+      itemType,
+      dosage: dosage ?? null,
+      measurementUnit: measurementUnit ?? null,
+    };
 
     const runOnce = async (): Promise<PricingApiSearchResponse> => {
       const { data } = await axios.post<PricingApiSearchResponse>(
-        `${this.base}/v1/search`,
+        searchUrl,
         { itemName, itemType, dosage, measurementUnit },
         {
           timeout: this.timeoutMs,
@@ -97,57 +105,73 @@ export class PricingApiClient implements IPriceSearchService {
             'X-Pricing-API-Key': this.apiKey,
           },
           // Tratamos 429/5xx como erro para o retry.
-          validateStatus: status => (status >= 200 && status < 300) || status === 429,
+          validateStatus: status =>
+            (status >= 200 && status < 300) || status === 429,
         },
       );
       return data;
     };
 
-    const callWithRetry = async (): Promise<PricingApiSearchResponse | null> => {
-      for (let attempt = 0; attempt <= maxRetries; attempt++) {
-        try {
-          const data = await PricingApiClient.gate!.schedule(runOnce);
-          // Se a API respondeu mas sinalizou rate limit, tratamos como retry.
-          // (Algumas implementações retornam 429 com body JSON)
-          if ((data as any)?.statusCode === 429) {
-            throw new Error('429');
-          }
-          return data;
-        } catch (err) {
-          const axiosErr = err as any;
-          const status: number | undefined = axiosErr?.response?.status;
-          const is429 = status === 429 || String(axiosErr?.message ?? '').includes('429');
-          const isRetryable =
-            is429 || (status != null && status >= 500) || status == null;
+    const callWithRetry =
+      async (): Promise<PricingApiSearchResponse | null> => {
+        for (let attempt = 0; attempt <= maxRetries; attempt++) {
+          try {
+            const data = await PricingApiClient.gate!.schedule(runOnce);
+            // Se a API respondeu mas sinalizou rate limit, tratamos como retry.
+            // (Algumas implementações retornam 429 com body JSON)
+            if ((data as any)?.statusCode === 429) {
+              throw new Error('429');
+            }
+            return data;
+          } catch (err) {
+            const axiosErr = err as any;
+            const status: number | undefined = axiosErr?.response?.status;
+            const is429 =
+              status === 429 || String(axiosErr?.message ?? '').includes('429');
+            const isRetryable =
+              is429 || (status != null && status >= 500) || status == null;
 
-          if (!isRetryable || attempt >= maxRetries) {
-            logger.error(
-              'Falha ao chamar porto-api-price-search',
-              {
-                operation: 'pricing_api',
-                status,
-                attempt,
-                itemType,
-              },
-              err as Error,
+            if (!isRetryable || attempt >= maxRetries) {
+              logger.error(
+                'Falha ao chamar porto-api-price-search',
+                {
+                  operation: 'pricing_api',
+                  status,
+                  attempt,
+                  ...requestContext,
+                },
+                err as Error,
+              );
+              return null;
+            }
+
+            const backoff = Math.min(
+              maxBackoffMs,
+              baseBackoffMs * Math.pow(2, attempt),
             );
-            return null;
+            await sleep(jitter(backoff));
           }
-
-          const backoff = Math.min(
-            maxBackoffMs,
-            baseBackoffMs * Math.pow(2, attempt),
-          );
-          await sleep(jitter(backoff));
         }
-      }
-      return null;
-    };
+        return null;
+      };
 
     const data = await callWithRetry();
     if (!data) return null;
 
     if (data.averagePrice == null || data.lastUpdated == null) {
+      logger.warn('No price found in any source', {
+        operation: 'pricing_api',
+        reason:
+          data.averagePrice == null && data.lastUpdated == null
+            ? 'no_price_and_no_update_time'
+            : data.averagePrice == null
+              ? 'no_price'
+              : 'no_update_time',
+        ...requestContext,
+        responseSource: data.source ?? null,
+        responseAveragePrice: data.averagePrice,
+        responseLastUpdated: data.lastUpdated,
+      });
       return null;
     }
 

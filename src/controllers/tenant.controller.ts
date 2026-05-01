@@ -22,12 +22,13 @@ import { PrismaContractPortfolioRepository } from '@repositories/contract-portfo
 import { getMissingR2AssetsEnvKeys } from '@config/env.validation';
 import { logger } from '@helpers/logger.helper';
 import { priceSearchService } from '@helpers/price-service.helper';
-import { PriceBackfillService } from '@services/price-backfill.service';
 import {
   acquireManualPriceBackfillSlot,
   finishManualPriceBackfill,
   getManualPriceBackfillStatus,
 } from '@services/price-backfill-manual.guard';
+import { repairStaleManualPriceBackfillLock } from '@services/price-backfill-stale-lock.repair';
+import { envTemporalTaskQueue, getTemporalClient } from '@temporal/client';
 import {
   assertLogoUrlBelongsToOurR2,
   deleteTenantLogoObjectsExceptKey,
@@ -43,8 +44,6 @@ const tenantRepo = new PrismaTenantRepository();
 const systemConfigRepo = new PrismaSystemConfigRepository();
 const contractPortfolioRepo = new PrismaContractPortfolioRepository();
 const loginRepo = new PrismaLoginRepository();
-
-const priceBackfillService = new PriceBackfillService();
 
 const FULL_PERMISSIONS = {
   read: true,
@@ -210,7 +209,13 @@ export class TenantController {
         });
       }
 
-      const acquired = await acquireManualPriceBackfillSlot(tenantId);
+      let acquired = await acquireManualPriceBackfillSlot(tenantId);
+      if (acquired.ok === false && acquired.blocked === 'running') {
+        const repaired = await repairStaleManualPriceBackfillLock(tenantId);
+        if (repaired) {
+          acquired = await acquireManualPriceBackfillSlot(tenantId);
+        }
+      }
       if (acquired.ok === false) {
         if (acquired.blocked === 'cooldown') {
           const secs = acquired.retryAfterSeconds;
@@ -233,22 +238,28 @@ export class TenantController {
 
       const acceptedAtMs = Date.now();
 
+      const wid = `tenant:${tenantId}:price-backfill-queue`;
+      const requestId = `req:${acceptedAtMs}`;
       void (async () => {
         try {
-          const processed =
-            await priceBackfillService.runWithCronLimits(tenantId);
-          await finishManualPriceBackfill(tenantId, { processed });
+          const { client } = await getTemporalClient();
+          await client.workflow.signalWithStart('priceBackfillQueueWorkflow', {
+            taskQueue: envTemporalTaskQueue(),
+            workflowId: wid,
+            args: [tenantId],
+            signal: 'priceBackfillQueueEnqueue',
+            signalArgs: [requestId],
+          });
         } catch (error: unknown) {
           logger.error(
-            '[price-backfill] falha manual em background',
-            { tenantId },
+            '[price-backfill] failed to start Temporal workflow',
+            { tenantId, workflowId: wid },
             error instanceof Error ? error : new Error(String(error)),
           );
           await finishManualPriceBackfill(tenantId, {
             processed: 0,
             error:
-              getErrorMessage(error) ||
-              'Não foi possível concluir a busca retroativa.',
+              getErrorMessage(error) || 'Failed to start Temporal workflow.',
           });
         }
       })();
@@ -256,6 +267,8 @@ export class TenantController {
       return res.status(202).json({
         accepted: true,
         acceptedAtMs,
+        workflowId: wid,
+        requestId,
         message:
           'Processo iniciado. Pode continuar a usar o sistema — a busca corre em segundo plano e avisamos quando terminar.',
       });
@@ -281,8 +294,41 @@ export class TenantController {
             'Apenas administradores do painel (ou super admin) podem ver este estado.',
         });
       }
-      const status = await getManualPriceBackfillStatus(tenantId);
-      return res.json(status);
+      const wid = `tenant:${tenantId}:price-backfill-queue`;
+      try {
+        const { client } = await getTemporalClient();
+        const handle = client.workflow.getHandle(wid);
+        const s = (await handle.query('priceBackfillQueueStatus')) as any;
+
+        const redis = await getManualPriceBackfillStatus(tenantId);
+
+        const now = Date.now();
+        const nextMs =
+          typeof s?.nextRunAtMs === 'number' ? Number(s.nextRunAtMs) : null;
+        const temporalCooldown =
+          nextMs != null && nextMs > now
+            ? Math.max(1, Math.ceil((nextMs - now) / 1000))
+            : null;
+
+        const cooldownSeconds =
+          temporalCooldown != null && redis.cooldownSeconds != null
+            ? Math.max(temporalCooldown, redis.cooldownSeconds)
+            : (temporalCooldown ?? redis.cooldownSeconds ?? null);
+
+        return res.json({
+          running: Boolean(s?.running) || redis.running,
+          cooldownSeconds,
+          last: s?.last ?? redis.last ?? null,
+          queueLength: Number.isFinite(s?.queueLength) ? s.queueLength : 0,
+          currentRequestId: s?.currentRequestId ?? null,
+          workflowId: wid,
+        });
+      } catch {
+        // Workflow inexistente / cancelado: o lock Redis pode ter ficado preso.
+        await repairStaleManualPriceBackfillLock(tenantId);
+        const status = await getManualPriceBackfillStatus(tenantId);
+        return res.json(status);
+      }
     } catch (error: unknown) {
       return res.status(500).json({
         error:

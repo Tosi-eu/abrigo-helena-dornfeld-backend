@@ -40,7 +40,11 @@ export class DashboardApiController {
   })
   @ApiResponse({ status: 200, description: 'Lista de itens' })
   @UseGuards(dashModule)
-  expiringItems(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.getExpiringItems(req, res);
+  expiringItems(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.getExpiringItems(req, res, tenantId);
   }
 }
