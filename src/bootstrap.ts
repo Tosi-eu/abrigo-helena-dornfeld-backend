@@ -27,20 +27,20 @@ export async function bootstrap(): Promise<INestApplication> {
   registerExpressErrorHandlerLast(app);
 
   await prisma.$connect();
-  logger.info('Conexão com o banco estabelecida', {
+  logger.info('Database connection established', {
     operation: 'database',
     status: 'connected',
   });
 
   const port = Number(process.env.PORT) || 3000;
   await app.listen(port, '0.0.0.0');
-  logger.info('Servidor Nest iniciado', {
+  logger.info('Nest server started', {
     operation: 'server',
     port,
     host: '0.0.0.0',
     status: 'running',
   });
-  logger.info('Stokio OpenAPI (Swagger UI)', {
+  logger.info('OpenAPI docs (Swagger UI)', {
     operation: 'server',
     path: '/api/v1/docs',
   });

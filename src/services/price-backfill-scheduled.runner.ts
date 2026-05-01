@@ -81,7 +81,7 @@ export async function runScheduledPriceBackfillForAllTenants(): Promise<Schedule
       );
       itemsProcessed += processed;
     } catch (err) {
-      logger.error('[price-backfill] falha por tenant', {
+      logger.error('[price-backfill] tenant run failed', {
         tenantId,
         error: err instanceof Error ? err.message : String(err),
       });
