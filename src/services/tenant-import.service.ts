@@ -372,13 +372,9 @@ export class TenantImportService {
           tx,
         );
         if (existing) {
-          await (tx as any).setor.updateMany({
+          await tx.setor.updateMany({
             where: { id: existing.id, tenant_id: tenantId },
-            data: {
-              nome,
-              proportion_profile: proportionProfile,
-              active: true,
-            },
+            data: { nome, proportion_profile: proportionProfile, active: true },
           });
           counters.updated++;
           rowResults.push({ sheet, row: excelRowNumber, status: 'updated' });

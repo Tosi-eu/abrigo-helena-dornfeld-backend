@@ -60,8 +60,13 @@ if [ "${SKIP_PRISMA_SCHEMA_SYNC:-0}" != "1" ]; then
       if grep -qE 'P3005|database schema is not empty' /tmp/prisma_migrate_deploy.log 2>/dev/null; then
         cat /tmp/prisma_migrate_deploy.log
         if [ "${PRISMA_AUTO_BASELINE:-0}" = "1" ]; then
-          echo "[docker-entrypoint] P3005: PRISMA_AUTO_BASELINE=1 — aplicar SQL + migrate resolve e repetir deploy"
-          for mig_dir in prisma/migrations/*/; do
+          MIG_CNT=$(psql "$STOKIO_DATABASE_URL" -tAc "SELECT count(*)::bigint FROM _prisma_migrations" 2>/dev/null || echo "-1")
+          if [ "$MIG_CNT" != "-1" ] && [ "${MIG_CNT:-0}" -gt 0 ] 2>/dev/null; then
+            echo "[docker-entrypoint] P3005 + PRISMA_AUTO_BASELINE: _prisma_migrations já tem ${MIG_CNT} linhas — baseline automático abortado (evita re-aplicar DDL/DML). Use migrate resolve manual ou base limpa."
+            exit "$MIGRATE_EXIT"
+          fi
+          echo "[docker-entrypoint] P3005: PRISMA_AUTO_BASELINE=1 — _prisma_migrations vazio; aplicar SQL + migrate resolve e repetir deploy"
+          for mig_dir in $(ls -d prisma/migrations/*/ 2>/dev/null | sort); do
             [ -d "$mig_dir" ] || continue
             name=$(basename "$mig_dir")
             sql="${mig_dir}migration.sql"

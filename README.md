@@ -140,7 +140,7 @@ docker compose up -d backend
 
 ## 📁 Estrutura do Projeto
 
-Camadas (ver também `docs/ESTRUTURA-PASTAS.md`):
+Camadas:
 
 ```
 backend/

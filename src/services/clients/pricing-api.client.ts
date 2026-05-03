@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import type {
   IPriceSearchService,
   PriceSearchResult,
@@ -10,6 +10,7 @@ interface PricingApiSearchResponse {
   averagePrice: number | null;
   source: string;
   lastUpdated: string | null;
+  statusCode?: number;
 }
 
 function sleep(ms: number): Promise<void> {
@@ -119,15 +120,18 @@ export class PricingApiClient implements IPriceSearchService {
           try {
             const data = await PricingApiClient.gate!.schedule(runOnce);
 
-            if ((data as any)?.statusCode === 429) {
+            if (data?.statusCode === 429) {
               throw new Error('429');
             }
             return data;
           } catch (err) {
-            const axiosErr = err as any;
-            const status: number | undefined = axiosErr?.response?.status;
+            const axiosErr = err as AxiosError | Error;
+            const status =
+              axiosErr instanceof AxiosError
+                ? axiosErr.response?.status
+                : undefined;
             const is429 =
-              status === 429 || String(axiosErr?.message ?? '').includes('429');
+              status === 429 || String(axiosErr.message ?? '').includes('429');
             const isRetryable =
               is429 || (status != null && status >= 500) || status == null;
 

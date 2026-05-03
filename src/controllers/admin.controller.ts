@@ -37,6 +37,8 @@ import {
   filterNonRuntimeConfig,
   isRuntimeConfigKey,
 } from '@domain/dto/system-config.dto';
+import { logger } from '@helpers/logger.helper';
+import type { AdminMetricsResponse } from '@stokio/sdk';
 
 const DEFAULT_DAYS = 30;
 const MAX_DAYS = 365;
@@ -52,6 +54,27 @@ export class AdminController {
     private readonly notificationService?: NotificationEventService,
     private readonly systemConfigService?: SystemConfigService,
   ) {}
+
+  /** Dependência opcional ausente: 503 (não 501) para alertar proxies/monitorização. */
+  private adminServiceUnavailable(
+    res: Response,
+    serviceKey: string,
+    message: string,
+  ): Response {
+    logger.warn('Admin: dependência opcional não injectada', {
+      operation: 'admin_service_unavailable',
+      service: serviceKey,
+    });
+    return res
+      .status(503)
+      .set('Retry-After', '120')
+      .set('X-Stokio-Availability', 'unavailable')
+      .json({
+        error: message,
+        code: 'SERVICE_UNAVAILABLE',
+        service: serviceKey,
+      });
+  }
 
   private async isTenantOwner(
     tenantId: number,
@@ -337,7 +360,11 @@ export class AdminController {
 
   async getLoginLog(req: AuthRequest, res: Response) {
     if (!this.loginLogRepo) {
-      return res.status(501).json({ error: 'Log de acessos não disponível' });
+      return this.adminServiceUnavailable(
+        res,
+        'loginLog',
+        'Log de acessos não disponível',
+      );
     }
     try {
       const page = Math.max(1, Number(req.query.page) || 1);
@@ -385,9 +412,11 @@ export class AdminController {
 
   async getStockHistory(req: AuthRequest, res: Response) {
     if (!this.movementService) {
-      return res
-        .status(501)
-        .json({ error: 'Serviço de movimentação não disponível' });
+      return this.adminServiceUnavailable(
+        res,
+        'movement',
+        'Serviço de movimentação não disponível',
+      );
     }
     try {
       const lote = (req.query.lote as string)?.trim();
@@ -430,7 +459,11 @@ export class AdminController {
 
   async getExport(req: AuthRequest, res: Response) {
     if (!this.reportService) {
-      return res.status(501).json({ error: 'Exportação não disponível' });
+      return this.adminServiceUnavailable(
+        res,
+        'reportExport',
+        'Exportação não disponível',
+      );
     }
     try {
       const type = (req.query.type as string)?.trim();
@@ -612,7 +645,11 @@ export class AdminController {
 
   async getBackupStatus(_req: AuthRequest, res: Response) {
     if (!this.systemConfigRepo) {
-      return res.status(501).json({ error: 'Configurações não disponíveis' });
+      return this.adminServiceUnavailable(
+        res,
+        'systemConfig',
+        'Configurações não disponíveis',
+      );
     }
 
     try {
@@ -985,10 +1022,11 @@ export class AdminController {
       const activeUsersThisMonth = this.loginLogRepo
         ? await this.loginLogRepo.countActiveUsersThisMonth()
         : 0;
-      return res.json({
+      const payload: AdminMetricsResponse = {
         movementsThisMonth,
         activeUsersThisMonth,
-      });
+      };
+      return res.json(payload);
     } catch (error: unknown) {
       return res.status(500).json({
         error: getErrorMessage(error) || 'Erro ao carregar métricas',
@@ -998,7 +1036,11 @@ export class AdminController {
 
   async getActiveUsersThisMonth(req: AuthRequest, res: Response) {
     if (!this.loginLogRepo) {
-      return res.status(501).json({ error: 'Log de acessos não disponível' });
+      return this.adminServiceUnavailable(
+        res,
+        'loginLog',
+        'Log de acessos não disponível',
+      );
     }
     try {
       const page = Math.max(1, Number(req.query.page) || 1);
@@ -1018,7 +1060,11 @@ export class AdminController {
 
   async getMovementsThisMonth(req: AuthRequest, res: Response) {
     if (!this.movementService) {
-      return res.status(501).json({ error: 'Movimentações não disponíveis' });
+      return this.adminServiceUnavailable(
+        res,
+        'movement',
+        'Movimentações não disponíveis',
+      );
     }
     try {
       const page = Math.max(1, Number(req.query.page) || 1);
@@ -1037,7 +1083,11 @@ export class AdminController {
 
   async getConfig(_req: AuthRequest, res: Response) {
     if (!this.systemConfigRepo) {
-      return res.status(501).json({ error: 'Configurações não disponíveis' });
+      return this.adminServiceUnavailable(
+        res,
+        'systemConfig',
+        'Configurações não disponíveis',
+      );
     }
     try {
       const all = await this.systemConfigRepo.getAll();
@@ -1056,7 +1106,11 @@ export class AdminController {
 
   async getNotifications(req: AuthRequest, res: Response) {
     if (!this.notificationService) {
-      return res.status(501).json({ error: 'Notificações não disponíveis' });
+      return this.adminServiceUnavailable(
+        res,
+        'notifications',
+        'Notificações não disponíveis',
+      );
     }
     try {
       const page = Math.max(1, Number(req.query.page) || 1);
@@ -1086,7 +1140,11 @@ export class AdminController {
 
   async patchNotification(req: AuthRequest, res: Response, tenantId: number) {
     if (!this.notificationService) {
-      return res.status(501).json({ error: 'Notificações não disponíveis' });
+      return this.adminServiceUnavailable(
+        res,
+        'notifications',
+        'Notificações não disponíveis',
+      );
     }
     const id = Number(req.params.id);
     if (Number.isNaN(id) || id < 1) {
@@ -1122,7 +1180,11 @@ export class AdminController {
 
   async updateConfig(req: AuthRequest, res: Response) {
     if (!this.systemConfigRepo) {
-      return res.status(501).json({ error: 'Configurações não disponíveis' });
+      return this.adminServiceUnavailable(
+        res,
+        'systemConfig',
+        'Configurações não disponíveis',
+      );
     }
     const body = req.body ?? {};
     if (typeof body !== 'object' || body === null || Array.isArray(body)) {
@@ -1190,9 +1252,11 @@ export class AdminController {
       }
       if (systemPatch != null && Object.keys(systemPatch).length > 0) {
         if (!this.systemConfigService) {
-          return res
-            .status(501)
-            .json({ error: 'SystemConfigService não disponível' });
+          return this.adminServiceUnavailable(
+            res,
+            'systemConfigService',
+            'SystemConfigService não disponível',
+          );
         }
         await this.systemConfigService.update(systemPatch);
       }

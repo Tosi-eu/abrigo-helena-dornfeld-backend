@@ -5,6 +5,7 @@ import { TenantImportService } from '@services/tenant-import.service';
 import { TenantPgDumpImportService } from '@services/tenant-pg-dump-import.service';
 import { buildTenantImportTemplateBuffer } from '@helpers/tenant-import-template.excel';
 import { prisma } from '@repositories/prisma';
+import { Prisma } from '@prisma/client';
 import { envTemporalTaskQueue, getTemporalClient } from '@temporal/client';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -12,7 +13,9 @@ import crypto from 'node:crypto';
 
 type UploadRequest = Request &
   AuthRequest &
-  TenantRequest & { file?: Express.Multer.File };
+  TenantRequest & { file?: Express.Multer.File } & {
+    params?: { jobId?: string };
+  };
 
 export class TenantImportController {
   constructor(
@@ -208,7 +211,7 @@ export class TenantImportController {
             sourceTenantId != null && Number.isFinite(sourceTenantId)
               ? sourceTenantId
               : undefined,
-        } as any,
+        } satisfies Prisma.InputJsonObject,
       },
     });
 
@@ -228,7 +231,7 @@ export class TenantImportController {
     if (!actorUserId) {
       return res.status(401).json({ error: 'Sessão inválida' });
     }
-    const id = String((req as any).params?.jobId ?? '').trim();
+    const id = String(req.params?.jobId ?? '').trim();
     if (!id) return res.status(400).json({ error: 'jobId obrigatório' });
     const job = await prisma.tenantImportJob.findFirst({
       where: { id, tenant_id: tenantId },
