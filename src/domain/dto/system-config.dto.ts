@@ -92,7 +92,8 @@ export type SystemConfigPatch = Partial<{
 }>;
 
 /** Legado (antes de runtime.tenant_import.*) — lido em decode para migração */
-export const LEGACY_IMPORT_BIRTH_DATE_FALLBACK_KEY = 'import_birth_date_fallback';
+export const LEGACY_IMPORT_BIRTH_DATE_FALLBACK_KEY =
+  'import_birth_date_fallback';
 
 export const RUNTIME_DB_KEYS = {
   corsAllowedOrigins: `${RUNTIME_CONFIG_PREFIX}cors.allowed_origins`,
