@@ -656,7 +656,6 @@ export class TenantContractCodeBodyDto {
   @Validate(ContractCodeOrCamelConstraint)
   _contractCodePresent?: never;
 
-  /** Aceita `bound_login`, `boundLogin` ou `email` no JSON; normalizado para minúsculas. */
   @Transform(({ obj }) => {
     const v = obj.bound_login ?? obj.boundLogin ?? obj.email;
     if (v === undefined || v === null) return v;

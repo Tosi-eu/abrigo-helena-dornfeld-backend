@@ -22,10 +22,6 @@ function hasIdentity(
   );
 }
 
-/**
- * Move o login atual do tenant provisório (`u-*`) para o tenant canónico,
- * copia branding se fizer sentido, e remove o tenant provisório.
- */
 export async function migrateProvisionalLoginToCanonicalTenant(params: {
   sessionUser: { id: number; login: string };
   provisionalTenantId: number;
@@ -89,7 +85,7 @@ export async function migrateProvisionalLoginToCanonicalTenant(params: {
         tenant_id: canonicalTenantId,
         role: 'admin',
         permissions: { ...FULL_PERMISSIONS } as Prisma.InputJsonValue,
-        // Se ainda não existe owner no abrigo definitivo, este primeiro utilizador vira owner.
+
         is_tenant_owner: canonOwner ? false : true,
       },
     });

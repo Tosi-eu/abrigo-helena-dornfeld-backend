@@ -16,11 +16,6 @@ function isBypassUser(u: AuthRequest['user'] | undefined): boolean {
   return false;
 }
 
-/**
- * Substitui o bloqueio “tudo ou nada” para não-admins: aplica a matriz de permissões
- * por rota (recurso + ação CRUD; movimentações por tipo).
- * Requer `req.user.permissionMatrix` (preenchido no `authMiddleware`).
- */
 export function enforceResourcePermissions(
   req: AuthRequest,
   res: Response,

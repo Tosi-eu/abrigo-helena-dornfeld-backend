@@ -3,7 +3,7 @@ import { randomBytes } from 'crypto';
 import jwt from 'jsonwebtoken';
 import { Prisma } from '@prisma/client';
 import type { PrismaLoginRepository } from '@repositories/login.repository';
-import { jwtConfig } from '@config/jwt.config';
+import { getJwtExpiresIn, jwtConfig } from '@config/jwt.config';
 import { withRootTransaction } from '@repositories/prisma';
 import { setRlsSessionGucs } from '@repositories/rls.context';
 import { PrismaContractPortfolioRepository } from '@repositories/contract-portfolio.repository';
@@ -50,7 +50,6 @@ type DbUserForPublicSession = {
   is_super_admin?: boolean | null;
 };
 
-/** Payload exposto ao cliente (login, usuario-logado, lista admin). */
 export function publicSessionFromDbUser(user: DbUserForPublicSession) {
   const matrix = buildEffectivePermissionMatrix(
     user.role === 'admin' ? 'admin' : 'user',
@@ -157,7 +156,7 @@ export class LoginService {
     last_name?: string;
     role?: 'admin' | 'user';
     tenantId: number;
-    /** Legado (4 flags) ou matriz `{ version: 2, resources: {...} }`. */
+
     permissions?: unknown;
   }) {
     const userExists = await this.repo.findByLoginForTenant(
@@ -212,7 +211,7 @@ export class LoginService {
     const token = jwt.sign(
       { sub: user.id, login: user.login },
       jwtConfig.secret,
-      { expiresIn: jwtConfig.expiresIn },
+      { expiresIn: getJwtExpiresIn() },
     );
 
     await this.repo.update(user.id, { refreshToken: token });
@@ -393,7 +392,7 @@ export class LoginService {
       login?: string;
       password?: string;
       role?: 'admin' | 'user';
-      /** Legado (4 flags) ou matriz v2. */
+
       permissions?: unknown;
     },
   ) {
@@ -511,7 +510,6 @@ export class LoginService {
             attestedLogin: loginTrim,
           });
           if (!ok) {
-            // Mensagem genérica para não virar oracle de enumeração.
             throw new HttpError('Código de contrato inválido', 403);
           }
           const matched = await portfolioRepo.findMatchingPortfolioByPlainText(
@@ -762,7 +760,6 @@ export class LoginService {
           is_super_admin: 'true',
         });
 
-        // Para criação de abrigo com admin, exige código existente e utilizável.
         const ok = await portfolioRepo.isUsableContractCodeForSignup(cc, {
           tx: t,
           attestedLogin: loginTrim,

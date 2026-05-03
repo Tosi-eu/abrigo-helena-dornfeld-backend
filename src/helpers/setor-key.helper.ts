@@ -1,7 +1,3 @@
-/**
- * Gera chave técnica de setor a partir do nome visível:
- * minúsculas, snake_case, sem acentos (ASCII).
- */
 export function inferSetorKeyFromNome(nome: string): string {
   const stripped = nome
     .normalize('NFD')

@@ -22,7 +22,6 @@ function getClientIp(req: AuthRequest): string {
   return req.ip || req.socket?.remoteAddress || 'unknown';
 }
 
-/** Se `SUPERADMIN_APIKEY_IP_ALLOWLIST` estiver vazio, não há filtro por IP (só a chave). */
 function isIpAllowed(req: AuthRequest): boolean {
   if (process.env.NODE_ENV === 'test') return true;
   const raw = String(process.env.SUPERADMIN_APIKEY_IP_ALLOWLIST ?? '').trim();
@@ -61,8 +60,7 @@ export function requireSuperAdminOrApiKey(
   if (expected) {
     const origin =
       typeof req.headers.origin === 'string' ? req.headers.origin : '';
-    // Em produção, nunca permitir API key via browser (mitiga exfiltração e abuse).
-    // Em desenvolvimento local (localhost/127.0.0.1), permitimos para facilitar o desktop/admin UI.
+
     if (origin && process.env.NODE_ENV === 'production') {
       return res.status(403).json({
         error: 'API key não é permitida via browser (Origin presente).',

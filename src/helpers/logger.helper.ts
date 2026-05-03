@@ -1,4 +1,6 @@
 import winston from 'winston';
+import type { SystemConfigDto } from '@domain/dto/system-config.dto';
+import { getBuiltinDefaultSystemConfig } from '@services/system-config.defaults';
 
 export enum LogLevel {
   ERROR = 'error',
@@ -11,66 +13,83 @@ export interface LogContext {
   [key: string]: unknown;
 }
 
+function buildWinstonLogger(
+  logging: SystemConfigDto['logging'],
+): winston.Logger {
+  const isTest = process.env.NODE_ENV === 'test';
+  const logLevel = isTest ? 'silent' : logging.level;
+
+  const consoleFormat =
+    logging.format === 'pretty'
+      ? winston.format.combine(
+          winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+          winston.format.errors({ stack: true }),
+          winston.format.colorize(),
+          winston.format.printf(info => {
+            const { timestamp, level, message, ...meta } = info;
+            const metaString = Object.keys(meta).length
+              ? ` ${JSON.stringify(meta, null, 2)}`
+              : '';
+            return `${timestamp} [${level}]: ${message}${metaString}`;
+          }),
+        )
+      : winston.format.combine(
+          winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+          winston.format.errors({ stack: true }),
+          winston.format.json(),
+        );
+
+  const instance = winston.createLogger({
+    level: logLevel,
+    format: winston.format.combine(
+      winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+      winston.format.errors({ stack: true }),
+      winston.format.json(),
+    ),
+    defaultMeta: {
+      service: 'abrigo-backend',
+      environment: process.env.NODE_ENV || 'development',
+    },
+    transports: [
+      new winston.transports.Console({
+        format: consoleFormat,
+      }),
+    ],
+  });
+
+  if (process.env.NODE_ENV === 'production') {
+    instance.add(
+      new winston.transports.File({
+        filename: 'logs/error.log',
+        level: 'error',
+        format: winston.format.json(),
+      }),
+    );
+    instance.add(
+      new winston.transports.File({
+        filename: 'logs/combined.log',
+        format: winston.format.json(),
+      }),
+    );
+  }
+
+  return instance;
+}
+
 class StructuredLogger {
-  private logger: winston.Logger;
+  private inner: winston.Logger;
 
   constructor() {
-    const isTest = process.env.NODE_ENV === 'test';
-    const logLevel = isTest
-      ? 'silent'
-      : process.env.LOG_LEVEL ||
-        (process.env.NODE_ENV === 'production' ? 'info' : 'debug');
+    this.inner = buildWinstonLogger(getBuiltinDefaultSystemConfig().logging);
+  }
 
-    this.logger = winston.createLogger({
-      level: logLevel,
-      format: winston.format.combine(
-        winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-        winston.format.errors({ stack: true }),
-        winston.format.json(),
-      ),
-      defaultMeta: {
-        service: 'abrigo-backend',
-        environment: process.env.NODE_ENV || 'development',
-      },
-      transports: [
-        new winston.transports.Console({
-          format:
-            process.env.NODE_ENV === 'production' &&
-            process.env.LOG_FORMAT !== 'pretty'
-              ? winston.format.combine(
-                  winston.format.timestamp(),
-                  winston.format.json(),
-                )
-              : winston.format.combine(
-                  winston.format.colorize(),
-                  winston.format.printf(
-                    ({ timestamp, level, message, ...meta }) => {
-                      const metaString = Object.keys(meta).length
-                        ? ` ${JSON.stringify(meta, null, 2)}`
-                        : '';
-                      return `${timestamp} [${level}]: ${message}${metaString}`;
-                    },
-                  ),
-                ),
-        }),
-      ],
-    });
-
-    if (process.env.NODE_ENV === 'production') {
-      this.logger.add(
-        new winston.transports.File({
-          filename: 'logs/error.log',
-          level: 'error',
-          format: winston.format.json(),
-        }),
-      );
-      this.logger.add(
-        new winston.transports.File({
-          filename: 'logs/combined.log',
-          format: winston.format.json(),
-        }),
-      );
+  applyRuntimeLogging(logging: SystemConfigDto['logging']): void {
+    try {
+      this.inner.end();
+    } catch {
+      /* ignore */
     }
+    this.inner = buildWinstonLogger(logging);
   }
 
   error(message: string, context?: LogContext, error?: Error): void {
@@ -84,19 +103,19 @@ class StructuredLogger {
       };
     }
 
-    this.logger.error(message, meta);
+    this.inner.error(message, meta);
   }
 
   warn(message: string, context?: LogContext): void {
-    this.logger.warn(message, context);
+    this.inner.warn(message, context);
   }
 
   info(message: string, context?: LogContext): void {
-    this.logger.info(message, context);
+    this.inner.info(message, context);
   }
 
   debug(message: string, context?: LogContext): void {
-    this.logger.debug(message, context);
+    this.inner.debug(message, context);
   }
 
   logRequest(
@@ -144,5 +163,9 @@ class StructuredLogger {
 }
 
 export const logger = new StructuredLogger();
+
+export function applyRuntimeLogging(logging: SystemConfigDto['logging']): void {
+  logger.applyRuntimeLogging(logging);
+}
 
 export { StructuredLogger };

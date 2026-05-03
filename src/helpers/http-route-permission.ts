@@ -44,10 +44,6 @@ function isMovementTipo(x: string): x is MovementTipoKey {
   return x === 'entrada' || x === 'saida' || x === 'transferencia';
 }
 
-/**
- * Infere qual permissão da matriz deve ser verificada para o pedido HTTP atual.
- * Utilizadores `admin` / dono do tenant / super-admin não passam por aqui (bypass).
- */
 export function resolveRoutePermission(
   method: string,
   originalUrl: string,

@@ -145,8 +145,6 @@ function logAuditEvent(
 
   logger.logSecurity('Audit log', { ...logEntry, operation: 'audit' });
 
-  // Audit log deve ser persistido fora da transação de request (RLS/ALS),
-  // senão o callback pode disparar após o commit e o tx estar fechado.
   prisma.auditLog
     .create({
       data: {

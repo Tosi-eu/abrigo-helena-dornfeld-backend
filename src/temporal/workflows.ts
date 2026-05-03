@@ -76,10 +76,6 @@ export const priceBackfillQueueEnqueueSignal = defineSignal<[string]>(
 export const priceBackfillQueueStatusQuery =
   defineQuery<PriceBackfillQueueStatus>('priceBackfillQueueStatus');
 
-/**
- * Queue-per-tenant workflow: serializes manual price backfill requests.
- * Each request is processed sequentially with a cooldown between runs.
- */
 export async function priceBackfillQueueWorkflow(
   tenantId: number,
 ): Promise<void> {
@@ -93,9 +89,6 @@ export async function priceBackfillQueueWorkflow(
     },
   });
 
-  // Cooldown entre cliques no admin é aplicado no Redis (`finishManualPriceBackfill`);
-  // não repetimos timer longo aqui — um sleep duplicava 30 min bloqueando a fila e deixando
-  // o workflow "Running" no Temporal sem atividade útil.
   const queue: string[] = [];
   let running = false;
   let currentRequestId: string | null = null;
@@ -115,11 +108,9 @@ export async function priceBackfillQueueWorkflow(
     last,
   }));
 
-  // Main loop
   // eslint-disable-next-line no-constant-condition
   while (true) {
     if (queue.length === 0) {
-      // wait for next signal without busy-looping
       await sleep('10s');
       continue;
     }

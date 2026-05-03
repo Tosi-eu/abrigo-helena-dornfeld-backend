@@ -21,7 +21,7 @@ import { PrismaLoginRepository } from '@repositories/login.repository';
 import { PrismaContractPortfolioRepository } from '@repositories/contract-portfolio.repository';
 import { getMissingR2AssetsEnvKeys } from '@config/env.validation';
 import { logger } from '@helpers/logger.helper';
-import { priceSearchService } from '@helpers/price-service.helper';
+import { getPriceSearchService } from '@helpers/price-service.helper';
 import {
   acquireManualPriceBackfillSlot,
   finishManualPriceBackfill,
@@ -184,11 +184,6 @@ export class TenantController {
     }
   }
 
-  /**
-   * [Admin] Executa uma rodada de busca retroativa de preços para o tenant atual
-   * (mesmos limites do cron via ENV). Não exige que a busca automática esteja ligada.
-   * Responde 202 e processa em segundo plano; estado em GET `price-backfill/status`.
-   */
   async forcePriceBackfill(
     req: AuthRequest & TenantRequest,
     res: Response,
@@ -201,11 +196,11 @@ export class TenantController {
             'Apenas administradores do painel (ou super admin) podem executar esta ação.',
         });
       }
-      if (!priceSearchService) {
+      if (!getPriceSearchService()) {
         return res.status(503).json({
           code: 'PRICING_API_UNAVAILABLE',
           error:
-            'Busca de preços não está disponível no servidor. Configure PRICING_API_URL e PRICING_API_KEY (no Docker, inclua estas variáveis no env do container e use host.docker.internal em vez de 127.0.0.1 se a API de preços estiver na sua máquina).',
+            'Busca de preços não está disponível: defina em configuração global o URL e a chave da API de preços (GET/PUT /api/v1/admin/config, campo system.pricing, ou desktop «Sistema»). No Docker, o URL costuma ser http://host.docker.internal:PORT em vez de 127.0.0.1.',
         });
       }
 
@@ -281,7 +276,6 @@ export class TenantController {
     }
   }
 
-  /** [Admin] Estado da última busca manual e cooldown (para polling). */
   async getPriceBackfillStatus(
     req: AuthRequest & TenantRequest,
     res: Response,
@@ -324,7 +318,6 @@ export class TenantController {
           workflowId: wid,
         });
       } catch {
-        // Workflow inexistente / cancelado: o lock Redis pode ter ficado preso.
         await repairStaleManualPriceBackfillLock(tenantId);
         const status = await getManualPriceBackfillStatus(tenantId);
         return res.json(status);
@@ -612,11 +605,8 @@ export class TenantController {
         contract_code_hash: resolved.hash,
         contract_portfolio_id: resolved.id,
       });
-      // Marca como "usado" quando o código é vinculado a um abrigo definitivo.
-      // Isso impede reutilização do mesmo contrato para outro abrigo (por padrão).
+
       await withRootTransaction(async t => {
-        // Usa SQL direto para não depender de `prisma generate` para os novos campos
-        // (used_by_tenant_id/used_at/disabled_at) no client durante deploy.
         await t.$executeRaw`
           UPDATE contract_portfolio
           SET used_by_tenant_id = ${tenantId}, used_at = NOW()

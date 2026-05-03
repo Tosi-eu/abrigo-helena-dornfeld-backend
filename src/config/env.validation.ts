@@ -1,6 +1,5 @@
 import { z } from 'zod';
 
-/** Mesmas chaves que `isR2AssetsConfigured()` em `r2-assets.service.ts` (upload de logo / assets). */
 export const R2_ASSETS_REQUIRED_KEYS = [
   'R2_ACCOUNT_ID',
   'R2_ACCESS_KEY_ID',
@@ -29,11 +28,6 @@ export function formatR2AssetsMissingMessage(missing: string[]): string {
   return `Armazenamento R2 incompleto. Defina no ambiente: ${missing.join(', ')}. Ver backend/.env.example.`;
 }
 
-/**
- * Chamado após assertBackendEnv em main.ts.
- * Por omissão termina o processo (exit 1) se R2 estiver incompleto — o contentor não deve ficar “de pé” sem capacidade de logos.
- * Para desenvolvimento local sem R2: defina `ALLOW_MISSING_R2=1` no `.env`.
- */
 export function logR2AssetsEnvStatus(): void {
   if (process.env.NODE_ENV === 'test') return;
   const missing = getMissingR2AssetsEnvKeys();

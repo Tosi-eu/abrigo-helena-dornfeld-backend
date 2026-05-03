@@ -107,7 +107,6 @@ export class PrismaTenantRepository {
     };
   }
 
-  /** Tenant definitivo (não viewer, não `u-*`) que partilha o mesmo portfolio de contrato. */
   async findCanonicalTenantByPortfolioId(
     portfolioId: number,
     excludeTenantId: number,

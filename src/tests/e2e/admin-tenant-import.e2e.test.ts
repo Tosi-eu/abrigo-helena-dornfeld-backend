@@ -39,7 +39,7 @@ describe('Super-admin tenant import by slug (E2E)', () => {
     expect(String(res.headers['content-type'] ?? '')).toContain(
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     );
-    // Supertest nem sempre expõe `res.body` como Buffer sem parser custom.
+
     const len = Number(res.headers['content-length'] ?? 0);
     expect(len).toBeGreaterThan(0);
   });

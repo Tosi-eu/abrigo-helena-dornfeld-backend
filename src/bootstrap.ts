@@ -8,8 +8,8 @@ import {
   registerExpressErrorHandlerLast,
 } from './config/http/apply-http-stack';
 import { setupSwagger } from './config/swagger.setup';
-import { prisma } from '@repositories/prisma';
 import { logger } from '@helpers/logger.helper';
+import { wireSystemConfigAfterNestInit } from '@config/bootstrap-system-config';
 
 dotenv.config();
 
@@ -26,7 +26,7 @@ export async function bootstrap(): Promise<INestApplication> {
 
   registerExpressErrorHandlerLast(app);
 
-  await prisma.$connect();
+  await wireSystemConfigAfterNestInit(app);
   logger.info('Database connection established', {
     operation: 'database',
     status: 'connected',

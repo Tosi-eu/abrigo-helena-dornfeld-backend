@@ -1,11 +1,7 @@
 import { withRlsContext } from '@repositories/rls.context';
-import { priceSearchService } from '@helpers/price-service.helper';
+import { getPriceSearchService } from '@helpers/price-service.helper';
 import { normalizeDosage } from '@helpers/dosage.helper';
-
-function envInt(name: string, fallback: number): number {
-  const raw = Number(process.env[name]);
-  return Number.isFinite(raw) && raw > 0 ? Math.floor(raw) : fallback;
-}
+import { getRuntimeHttpConfig } from '@config/http/runtime-http-config';
 
 function sleep(ms: number): Promise<void> {
   return new Promise(resolve => {
@@ -16,27 +12,19 @@ function sleep(ms: number): Promise<void> {
 const DEFAULT_BATCH = 40;
 const DEFAULT_INTER_REQUEST_MS = 300;
 
-/**
- * Busca retroativa de preços (medicamentos e insumos sem `preco`)
- * usando a API externa de preços.
- */
 export class PriceBackfillService {
-  /**
-   * Processa até `perTenantMax` itens (contagem de avaliados), em passos de `batch`.
-   */
   async backfillTenantOnce(
     tenantId: number,
     batch: number,
     perTenantMax: number,
   ): Promise<number> {
-    if (!priceSearchService) {
+    if (!getPriceSearchService()) {
       return 0;
     }
 
-    const interRequestMs = envInt(
-      'PRICE_BACKFILL_INTER_REQUEST_DELAY_MS',
-      DEFAULT_INTER_REQUEST_MS,
-    );
+    const interRequestMs =
+      getRuntimeHttpConfig().concurrency.priceBackfill.interRequestDelayMs ||
+      DEFAULT_INTER_REQUEST_MS;
     let afterFirstRequest = false;
 
     let processed = 0;
@@ -77,7 +65,7 @@ export class PriceBackfillService {
         }
         afterFirstRequest = true;
         const dosageNorm = normalizeDosage(String(m.dosagem ?? '').trim());
-        const result = await priceSearchService!.searchPrice(
+        const result = await getPriceSearchService()!.searchPrice(
           m.nome,
           'medicine',
           dosageNorm,
@@ -94,7 +82,10 @@ export class PriceBackfillService {
           await sleep(interRequestMs);
         }
         afterFirstRequest = true;
-        const result = await priceSearchService!.searchPrice(i.nome, 'input');
+        const result = await getPriceSearchService()!.searchPrice(
+          i.nome,
+          'input',
+        );
         if (result?.averagePrice) {
           inputPrices.set(i.id, result.averagePrice);
         }
@@ -122,10 +113,10 @@ export class PriceBackfillService {
     return processed;
   }
 
-  /** Mesmos limites do cron (ENV ou default). */
   runWithCronLimits(tenantId: number): Promise<number> {
-    const batch = envInt('PRICE_BACKFILL_BATCH', DEFAULT_BATCH);
-    const perTenantMax = envInt('PRICE_BACKFILL_MAX_PER_TENANT', batch * 2);
+    const pb = getRuntimeHttpConfig().concurrency.priceBackfill;
+    const batch = pb.batch || DEFAULT_BATCH;
+    const perTenantMax = pb.maxPerTenant || batch * 2;
     return this.backfillTenantOnce(tenantId, batch, perTenantMax);
   }
 }

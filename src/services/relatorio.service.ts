@@ -35,7 +35,7 @@ export type MovementsParams =
     }
   | {
       periodo: MovementPeriod.MENSAL;
-      mes: string; // YYYY-MM
+      mes: string;
     }
   | {
       periodo: MovementPeriod.INTERVALO;

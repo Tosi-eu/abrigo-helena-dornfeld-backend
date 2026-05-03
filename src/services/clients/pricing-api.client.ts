@@ -4,16 +4,12 @@ import type {
   PriceSearchResult,
 } from '../price-search.types';
 import { logger } from '@helpers/logger.helper';
+import { getRuntimeHttpConfig } from '@config/http/runtime-http-config';
 
 interface PricingApiSearchResponse {
   averagePrice: number | null;
   source: string;
   lastUpdated: string | null;
-}
-
-function envInt(name: string, fallback: number): number {
-  const raw = Number(process.env[name]);
-  return Number.isFinite(raw) && raw >= 0 ? Math.floor(raw) : fallback;
 }
 
 function sleep(ms: number): Promise<void> {
@@ -62,6 +58,10 @@ export class PricingApiClient implements IPriceSearchService {
   private readonly base: string;
   private static gate: GlobalRateGate | null = null;
 
+  static resetPricingGate(): void {
+    PricingApiClient.gate = null;
+  }
+
   constructor(
     baseUrl: string,
     private readonly apiKey: string,
@@ -76,15 +76,16 @@ export class PricingApiClient implements IPriceSearchService {
     dosage?: string,
     measurementUnit?: string,
   ): Promise<PriceSearchResult | null> {
-    const minIntervalMs = envInt('PRICING_API_MIN_INTERVAL_MS', 900);
-    const concurrency = envInt('PRICING_API_CONCURRENCY', 1);
+    const rt = getRuntimeHttpConfig();
+    const minIntervalMs = rt.concurrency.pricingApi.minIntervalMs;
+    const concurrency = rt.concurrency.pricingApi.parallel;
     if (!PricingApiClient.gate) {
       PricingApiClient.gate = new GlobalRateGate(minIntervalMs, concurrency);
     }
 
-    const maxRetries = envInt('PRICING_API_RETRY_MAX', 5);
-    const baseBackoffMs = envInt('PRICING_API_RETRY_BASE_MS', 800);
-    const maxBackoffMs = envInt('PRICING_API_RETRY_MAX_MS', 15_000);
+    const maxRetries = rt.retries.pricingApi.max;
+    const baseBackoffMs = rt.retries.pricingApi.baseMs;
+    const maxBackoffMs = rt.retries.pricingApi.maxMs;
     const searchUrl = `${this.base}/v1/search`;
     const requestContext = {
       searchUrl,
@@ -104,7 +105,7 @@ export class PricingApiClient implements IPriceSearchService {
             'Content-Type': 'application/json',
             'X-Pricing-API-Key': this.apiKey,
           },
-          // Tratamos 429/5xx como erro para o retry.
+
           validateStatus: status =>
             (status >= 200 && status < 300) || status === 429,
         },
@@ -117,8 +118,7 @@ export class PricingApiClient implements IPriceSearchService {
         for (let attempt = 0; attempt <= maxRetries; attempt++) {
           try {
             const data = await PricingApiClient.gate!.schedule(runOnce);
-            // Se a API respondeu mas sinalizou rate limit, tratamos como retry.
-            // (Algumas implementações retornam 429 com body JSON)
+
             if ((data as any)?.statusCode === 429) {
               throw new Error('429');
             }

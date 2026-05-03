@@ -21,23 +21,40 @@ const tenantConfigRepo = new PrismaTenantConfigRepository();
 const setorRepo = new PrismaSetorRepository();
 const loginRepo = new PrismaLoginRepository();
 
+const ADMIN_PERMISSIONS = {
+  read: true,
+  create: true,
+  update: true,
+  delete: true,
+} as const;
+
+const USER_PERMISSIONS = {
+  read: true,
+  create: false,
+  update: false,
+  delete: false,
+} as const;
+
 const seedLogins: readonly {
   login: string;
   password: string;
   first_name: string;
   last_name: string;
+  role: 'admin' | 'user';
 }[] = [
   {
     login: E2E_SEED_USER.login,
     password: E2E_SEED_USER.password,
     first_name: 'E2E',
     last_name: 'User',
+    role: 'admin',
   },
   {
     login: E2E_RESOLVER_SEED_USER.login,
     password: E2E_RESOLVER_SEED_USER.password,
     first_name: 'Resolver',
     last_name: 'E2E',
+    role: 'user',
   },
 ];
 
@@ -60,7 +77,20 @@ export async function seedE2EDefaultTenant(): Promise<void> {
 
   for (const u of seedLogins) {
     const existing = await loginRepo.findByLoginForTenant(u.login, tenant.id);
-    if (existing) continue;
+    if (existing) {
+      // Reparar BD onde outro login foi criado primeiro e e2e_user ficou como user.
+      if (existing.role !== u.role) {
+        await getDb().login.update({
+          where: { id: existing.id },
+          data: {
+            role: u.role,
+            permissions:
+              u.role === 'admin' ? ADMIN_PERMISSIONS : USER_PERMISSIONS,
+          },
+        });
+      }
+      continue;
+    }
     const hashed = await bcrypt.hash(u.password, 10);
     await loginRepo.create({
       login: u.login,
@@ -68,6 +98,7 @@ export async function seedE2EDefaultTenant(): Promise<void> {
       first_name: u.first_name,
       last_name: u.last_name,
       tenant_id: tenant.id,
+      role: u.role,
     });
   }
 }

@@ -48,7 +48,6 @@ export class PrismaCabinetRepository {
       categoria: catNome.get(i.categoria_id) ?? null,
     }));
 
-    // Ordenação consistente: primeiro por nome da categoria, depois por número.
     data.sort((a, b) => {
       const an = (a.categoria ?? '').trim();
       const bn = (b.categoria ?? '').trim();

@@ -973,7 +973,6 @@ export class PrismaStockRepository {
     return baseResult;
   }
 
-  /** Proporção por linha de `setor` (FK) — usa `proportion_profile` da tabela setor. */
   async getStockProportionBySectorId(
     tenantId: number,
     sectorId: number,

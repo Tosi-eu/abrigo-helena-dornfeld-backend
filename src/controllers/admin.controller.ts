@@ -25,6 +25,12 @@ import { toCSV, reportResultToArrays } from '@helpers/csv.helper';
 import { EventStatus, NotificationEventType } from '@domain/notificacao.types';
 import { validateDisplayConfigPatch } from '@helpers/ui-display.helper';
 import { getDb } from '@repositories/prisma';
+import type { SystemConfigService } from '@services/system-config.service';
+import type { SystemConfigPatch } from '@domain/dto/system-config.dto';
+import {
+  filterNonRuntimeConfig,
+  isRuntimeConfigKey,
+} from '@domain/dto/system-config.dto';
 
 const DEFAULT_DAYS = 30;
 const MAX_DAYS = 365;
@@ -38,6 +44,7 @@ export class AdminController {
     private readonly reportService?: ReportService,
     private readonly systemConfigRepo?: PrismaSystemConfigRepository,
     private readonly notificationService?: NotificationEventService,
+    private readonly systemConfigService?: SystemConfigService,
   ) {}
 
   private async isTenantOwner(
@@ -111,7 +118,7 @@ export class AdminController {
       last_name?: string;
       role?: 'admin' | 'user';
       tenantId: number;
-      /** Legado (4 flags) ou matriz `{ version: 2, resources, movement_tipos }`. */
+
       permissions?: unknown;
     } = { login, password, tenantId };
     if (firstName !== undefined) data.first_name = firstName;
@@ -129,7 +136,7 @@ export class AdminController {
           .status(400)
           .json({ error: 'permissions deve ser um objeto' });
       }
-      // Não normaliza aqui: o serviço aceita tanto o legado (4 flags) quanto v2.
+
       data.permissions = p as Record<string, unknown>;
     }
 
@@ -219,7 +226,6 @@ export class AdminController {
         });
       }
 
-      // Se está promovendo alguém a admin, só o owner pode.
       if (data.role === 'admin' && !isOwner) {
         return res.status(403).json({
           error:
@@ -1002,8 +1008,13 @@ export class AdminController {
       return res.status(501).json({ error: 'Configurações não disponíveis' });
     }
     try {
-      const config = await this.systemConfigRepo.getAll();
-      return res.json(config);
+      const all = await this.systemConfigRepo.getAll();
+      const display = filterNonRuntimeConfig(all);
+      const system = this.systemConfigService?.get();
+      if (system) {
+        return res.json({ display, system });
+      }
+      return res.json({ display, system: null });
     } catch (error: unknown) {
       return res.status(500).json({
         error: getErrorMessage(error) || 'Erro ao carregar configurações',
@@ -1082,25 +1093,88 @@ export class AdminController {
       return res.status(501).json({ error: 'Configurações não disponíveis' });
     }
     const body = req.body ?? {};
-    if (typeof body !== 'object' || body === null) {
+    if (typeof body !== 'object' || body === null || Array.isArray(body)) {
       return res.status(400).json({ error: 'Body deve ser um objeto' });
     }
-    const config: Record<string, string> = {};
-    for (const [key, value] of Object.entries(body)) {
-      if (typeof key !== 'string' || key.trim() === '') continue;
-      config[key.trim()] = value == null ? '' : String(value);
+
+    const isV2 = 'display' in body || 'system' in body;
+
+    const displayPatch: Record<string, string> = {};
+    let systemPatch: SystemConfigPatch | undefined;
+
+    if (isV2) {
+      if (body.display != null) {
+        if (typeof body.display !== 'object' || body.display === null) {
+          return res.status(400).json({ error: 'display deve ser um objeto' });
+        }
+        for (const [key, value] of Object.entries(
+          body.display as Record<string, unknown>,
+        )) {
+          if (typeof key !== 'string' || key.trim() === '') continue;
+          if (isRuntimeConfigKey(key)) {
+            return res.status(400).json({
+              error: `Chave reservada em display: ${key}`,
+            });
+          }
+          displayPatch[key.trim()] =
+            value == null ? '' : String(value as string);
+        }
+      }
+      if (body.system != null) {
+        if (typeof body.system !== 'object' || body.system === null) {
+          return res.status(400).json({ error: 'system deve ser um objeto' });
+        }
+        systemPatch = body.system as SystemConfigPatch;
+      }
+      for (const [key] of Object.entries(body)) {
+        if (key === 'display' || key === 'system') continue;
+        if (!isRuntimeConfigKey(key)) continue;
+        return res.status(400).json({
+          error:
+            'Chaves runtime.* não são permitidas no corpo raiz; use { system: { ... } }.',
+        });
+      }
+    } else {
+      for (const [key, value] of Object.entries(body)) {
+        if (typeof key !== 'string' || key.trim() === '') continue;
+        if (isRuntimeConfigKey(key)) {
+          return res.status(400).json({
+            error:
+              'Use o formato { display: {...}, system: {...} } para configuração runtime.',
+          });
+        }
+        displayPatch[key.trim()] = value == null ? '' : String(value);
+      }
     }
-    const displayErr = validateDisplayConfigPatch(config);
+
+    const displayErr = validateDisplayConfigPatch(displayPatch);
     if (displayErr) {
       return res.status(400).json({ error: displayErr });
     }
+
     try {
-      await this.systemConfigRepo.setMany(config);
-      const updated = await this.systemConfigRepo.getAll();
-      return res.json(updated);
+      if (Object.keys(displayPatch).length > 0) {
+        await this.systemConfigRepo.setMany(displayPatch);
+      }
+      if (systemPatch != null && Object.keys(systemPatch).length > 0) {
+        if (!this.systemConfigService) {
+          return res
+            .status(501)
+            .json({ error: 'SystemConfigService não disponível' });
+        }
+        await this.systemConfigService.update(systemPatch);
+      }
+      const all = await this.systemConfigRepo.getAll();
+      const display = filterNonRuntimeConfig(all);
+      const system = this.systemConfigService?.get() ?? null;
+      return res.json({ display, system });
     } catch (error: unknown) {
+      const msg = getErrorMessage(error);
+      if (msg?.startsWith('Configuração inválida')) {
+        return res.status(400).json({ error: msg });
+      }
       return res.status(500).json({
-        error: getErrorMessage(error) || 'Erro ao salvar configurações',
+        error: msg || 'Erro ao salvar configurações',
       });
     }
   }

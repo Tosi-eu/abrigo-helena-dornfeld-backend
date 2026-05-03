@@ -1,7 +1,6 @@
 import type { Prisma } from '@prisma/client';
 import { prisma } from '@repositories/prisma';
 
-/** Data usada quando o backup não traz data de nascimento (env → system_config → padrão). */
 const BIRTH_FALLBACK_ENV = 'IMPORT_BIRTH_DATE_FALLBACK';
 const BIRTH_FALLBACK_SYSCONFIG_KEY = 'import_birth_date_fallback';
 
@@ -30,11 +29,6 @@ import {
 } from '@helpers/pg-dump-copy.parser';
 import type { TenantPgDumpImportResponse } from '@domain/dto/tenant-import.dto';
 
-/**
- * Importa apenas tabelas operacionais do dump (COPY) para o tenant atual.
- * Não altera a linha `tenant` (nome, slug, logo, contrato) nem `tenant_config`
- * — logo, marca e “onboarding” no sentido de identidade visual mantêm-se.
- */
 export type TenantPgDumpImportParams = {
   tenantId: number;
   actorUserId: number;
@@ -118,7 +112,6 @@ function parseJsonPermissions(
   }
 }
 
-/** Resolve tenant_id de origem quando o dump já é multi-tenant. */
 function resolveSourceTenantId(
   blocks: ParsedPgDump,
   hint?: number,
@@ -156,7 +149,6 @@ function rowMatchesSourceTenant(
   return tid === sourceTenantId;
 }
 
-/** Apaga dados operacionais do tenant; não toca em `tenant` nem `tenant_config`. */
 async function wipeTenantScopedData(
   tx: Prisma.TransactionClient,
   tenantId: number,
@@ -244,13 +236,9 @@ export class TenantPgDumpImportService {
         const mapArm = new Map<number, bigint>();
         const mapGav = new Map<number, bigint>();
         const mapLogin = new Map<number, number>();
-        /**
-         * residente.id antigo → num_casela no tenant novo.
-         * `notificacao.residente_id` no produto é sempre num_casela (não FK para residente.id).
-         */
+
         const mapOldResidentPkToCasela = new Map<number, number>();
 
-        /* --- Categorias armário --- */
         const bCatArm = blocks.get('categoria_armario');
         if (bCatArm) {
           for (const row of bCatArm.rows) {
@@ -272,7 +260,6 @@ export class TenantPgDumpImportService {
           }
         }
 
-        /* --- Categorias gaveta --- */
         const bCatGav = blocks.get('categoria_gaveta');
         if (bCatGav) {
           for (const row of bCatGav.rows) {
@@ -294,7 +281,6 @@ export class TenantPgDumpImportService {
           }
         }
 
-        /* --- Medicamentos --- */
         const bMed = blocks.get('medicamento');
         if (bMed) {
           for (const row of bMed.rows) {
@@ -321,7 +307,6 @@ export class TenantPgDumpImportService {
           }
         }
 
-        /* --- Insumos --- */
         const bIns = blocks.get('insumo');
         if (bIns) {
           for (const row of bIns.rows) {
@@ -346,7 +331,6 @@ export class TenantPgDumpImportService {
           }
         }
 
-        /* --- Armários (IDs antigos por sequência contígua no dump) --- */
         const armRefs = new Set<number>();
         collectRefsFromTable(blocks, 'estoque_medicamento', o =>
           parseIntCell(o.armario_id),
@@ -391,7 +375,6 @@ export class TenantPgDumpImportService {
           }
         }
 
-        /* --- Gavetas --- */
         const gavRefs = new Set<number>();
         collectRefsFromTable(blocks, 'estoque_medicamento', o =>
           parseIntCell(o.gaveta_id),
@@ -436,7 +419,6 @@ export class TenantPgDumpImportService {
           }
         }
 
-        /* --- Residentes --- */
         const bRes = blocks.get('residente');
         const resHasId = bRes ? hasColumn(bRes.columns, 'id') : false;
         const resHasBirth = bRes
@@ -485,7 +467,6 @@ export class TenantPgDumpImportService {
           );
         }
 
-        /* --- Logins --- */
         const bLog = blocks.get('login');
         if (bLog) {
           for (const row of bLog.rows) {
@@ -520,7 +501,6 @@ export class TenantPgDumpImportService {
           }
         }
 
-        /* --- Estoque medicamentos --- */
         const bEm = blocks.get('estoque_medicamento');
         if (bEm) {
           for (const row of bEm.rows) {
@@ -582,7 +562,6 @@ export class TenantPgDumpImportService {
           }
         }
 
-        /* --- Estoque insumos --- */
         const bEi = blocks.get('estoque_insumo');
         if (bEi) {
           for (const row of bEi.rows) {
@@ -644,7 +623,6 @@ export class TenantPgDumpImportService {
           }
         }
 
-        /* --- Movimentações --- */
         const bMov = blocks.get('movimentacao');
         if (bMov) {
           for (const row of bMov.rows) {
@@ -707,7 +685,6 @@ export class TenantPgDumpImportService {
           }
         }
 
-        /* --- Notificações --- */
         const bNot = blocks.get('notificacao');
         if (bNot) {
           const hasTenantCol = hasColumn(bNot.columns, 'tenant_id');

@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import * as crypto from 'crypto';
 import { jwtConfig } from '@config/jwt.config';
+import { getRuntimeHttpConfig } from '@config/http/runtime-http-config';
 import { getDb } from '@repositories/prisma';
 import type { Prisma } from '@prisma/client';
 import type { UserPermissions } from '@domain/user.types';
@@ -19,7 +20,7 @@ export interface AuthRequest extends Request {
     login: string;
     role?: 'admin' | 'user';
     permissions?: UserPermissions;
-    /** Matriz resolvida (módulos + ações); usada no middleware de rotas. */
+
     permissionMatrix?: EffectivePermissionMatrix;
     tenantId?: number;
     isTenantOwner?: boolean;
@@ -33,8 +34,9 @@ export async function authMiddleware(
   next: NextFunction,
 ) {
   let token: string | undefined;
-  const authCacheTtlSeconds = Number(process.env.AUTH_CACHE_TTL_SECONDS) || 30;
-  const allowCookieAuth = process.env.ALLOW_COOKIE_AUTH === 'true';
+  const ttl = getRuntimeHttpConfig().ttl;
+  const authCacheTtlSeconds = ttl.authCacheSeconds;
+  const allowCookieAuth = ttl.allowCookieAuth;
 
   const authHeader = req.headers.authorization;
   if (authHeader) {
@@ -137,8 +139,9 @@ export async function optionalAuthMiddleware(
   next: NextFunction,
 ) {
   let token: string | undefined;
-  const authCacheTtlSeconds = Number(process.env.AUTH_CACHE_TTL_SECONDS) || 30;
-  const allowCookieAuth = process.env.ALLOW_COOKIE_AUTH === 'true';
+  const ttl = getRuntimeHttpConfig().ttl;
+  const authCacheTtlSeconds = ttl.authCacheSeconds;
+  const allowCookieAuth = ttl.allowCookieAuth;
 
   const authHeader = req.headers.authorization;
   if (authHeader) {

@@ -1,10 +1,6 @@
 import { getRedisClient, isRedisAvailable } from '@config/redis.client';
+import { getRuntimeHttpConfig } from '@config/http/runtime-http-config';
 import { logger } from '@helpers/logger.helper';
-
-function envInt(name: string, fallback: number): number {
-  const raw = Number(process.env[name]);
-  return Number.isFinite(raw) && raw > 0 ? Math.floor(raw) : fallback;
-}
 
 const RUN_TTL_SEC = 7200;
 const LAST_TTL_SEC = 86400;
@@ -96,12 +92,9 @@ export async function finishManualPriceBackfill(
   result: { processed: number; error?: string },
 ): Promise<void> {
   const ok = !result.error;
-  /** Padrão 10 min; defina `PRICE_BACKFILL_MANUAL_COOLDOWN_SEC` (ex.: 900 = 15 min). */
-  const coolSuccessSec = envInt('PRICE_BACKFILL_MANUAL_COOLDOWN_SEC', 600);
-  const coolErrorSec = envInt(
-    'PRICE_BACKFILL_MANUAL_COOLDOWN_ON_ERROR_SEC',
-    120,
-  );
+  const spb = getRuntimeHttpConfig().scheduledPriceBackfill;
+  const coolSuccessSec = spb.manualCooldownSuccessSec;
+  const coolErrorSec = spb.manualCooldownErrorSec;
   const cooldownSec = ok ? coolSuccessSec : coolErrorSec;
 
   const payload: ManualPriceBackfillLast = {
@@ -139,11 +132,6 @@ export async function finishManualPriceBackfill(
   memLastByTenant.set(tenantId, payload);
 }
 
-/**
- * Remove apenas o lock de “run” (sem cooldown nem last).
- * Usado quando o Temporal já não tem workflow ativo mas o Redis ficou preso
- * (ex.: cancelamento manual do workflow antes da atividade libertar o slot).
- */
 export async function forceReleaseManualPriceBackfillRunLock(
   tenantId: number,
 ): Promise<void> {

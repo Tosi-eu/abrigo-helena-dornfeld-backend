@@ -1,21 +1,67 @@
+import * as fs from 'node:fs';
 import type { IPriceSearchService } from '@services/price-search.types';
 import { PricingApiClient } from '@services/clients/pricing-api.client';
-import { logger } from '@helpers/logger.helper';
+import { tryGetSystemConfigRuntime } from '@config/system-config-runtime';
+import { getBuiltinDefaultSystemConfig } from '@services/system-config.defaults';
 
-function createPriceSearchService(): IPriceSearchService | undefined {
-  const url = process.env.PRICING_API_URL?.trim();
-  const key = process.env.PRICING_API_KEY?.trim();
-  if (!url || !key) {
-    if (process.env.NODE_ENV !== 'test') {
-      logger.warn(
-        'Pricing integration disabled: set PRICING_API_URL and PRICING_API_KEY. Enabling it in the admin panel does not activate integration without these env vars.',
-        { operation: 'pricing_api_init' },
-      );
-    }
-    return undefined;
+let cached: {
+  url: string;
+  key: string;
+  client: PricingApiClient;
+} | null = null;
+
+function normalizePricingBaseUrlForDocker(url: string): string {
+  const t = String(url ?? '').trim();
+  if (!t) return t;
+  if (process.env.PRICING_DISABLE_DOCKER_HOST_REMAP === '1') return t;
+  let inDocker = false;
+  try {
+    inDocker = fs.existsSync('/.dockerenv');
+  } catch {
+    inDocker = false;
   }
-  return new PricingApiClient(url, key);
+  if (!inDocker) return t;
+
+  try {
+    const u = new URL(t);
+    if (u.hostname !== '127.0.0.1' && u.hostname !== 'localhost') return t;
+    const host =
+      process.env.PRICING_SEARCH_DOCKER_HOST?.trim() || 'price-search';
+    u.hostname = host;
+    return u.toString().replace(/\/$/, '');
+  } catch {
+    return t;
+  }
 }
 
-export const priceSearchService: IPriceSearchService | undefined =
-  createPriceSearchService();
+function resolvePricingPair(): { url: string; key: string } {
+  const svc = tryGetSystemConfigRuntime();
+  if (svc) {
+    const p = svc.get().pricing;
+    return {
+      url: normalizePricingBaseUrlForDocker(String(p.baseUrl ?? '').trim()),
+      key: String(p.apiKey ?? '').trim(),
+    };
+  }
+  const p = getBuiltinDefaultSystemConfig().pricing;
+  return {
+    url: normalizePricingBaseUrlForDocker(String(p.baseUrl ?? '').trim()),
+    key: String(p.apiKey ?? '').trim(),
+  };
+}
+
+export function getPriceSearchService(): IPriceSearchService | undefined {
+  const { url, key } = resolvePricingPair();
+  if (!url || !key) {
+    return undefined;
+  }
+  if (cached && cached.url === url && cached.key === key) {
+    return cached.client;
+  }
+  cached = { url, key, client: new PricingApiClient(url, key) };
+  return cached.client;
+}
+
+export function invalidatePriceSearchServiceCache(): void {
+  cached = null;
+}

@@ -75,7 +75,6 @@ jobs:
       - name: Create test database
         run: npm run test:db:create
 
-      # E2e usam Prisma (seed tenant, etc.); o DB vazio não tem tabelas até aplicar o schema.
       - name: Prisma — generate + db push (test_db)
         run: |
           export DATABASE_URL="postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${TEST_DB_NAME}?schema=public"

@@ -555,9 +555,6 @@ function setupEstoqueInsumos(workbook: ExcelJS.Workbook) {
   bandDataArea(sheet, 6, 10, 16);
 }
 
-/**
- * Gera o buffer `.xlsx` do template de importação (mesmo ficheiro servido em GET /tenant/import/template).
- */
 export async function buildTenantImportTemplateBuffer(): Promise<Buffer> {
   const wb = new ExcelJS.Workbook();
   wb.creator = 'Stokio';

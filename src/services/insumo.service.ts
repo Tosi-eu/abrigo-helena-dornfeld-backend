@@ -1,21 +1,20 @@
 import type { PrismaInputRepository } from '@repositories/insumo.repository';
 import type { Input } from '@porto-sdk/sdk';
 import { withRlsContext } from '@repositories/rls.context';
-import type { IPriceSearchService } from './price-search.types';
 import type { TenantConfigService } from './tenant-config.service';
+import { getPriceSearchService } from '@helpers/price-service.helper';
 import { logger } from '@helpers/logger.helper';
 
 export class InputService {
   constructor(
     private readonly repo: PrismaInputRepository,
-    private readonly priceSearchService?: IPriceSearchService,
     private readonly tenantConfigService?: TenantConfigService,
   ) {}
 
   private triggerPriceSearchInBackground(tenantId: number, input: Input) {
     setImmediate(async () => {
       try {
-        const search = this.priceSearchService;
+        const search = getPriceSearchService();
         if (!search) return;
         const inputId = input.id;
         if (inputId == null) return;
@@ -50,7 +49,7 @@ export class InputService {
     const created = await this.repo.createInput(data, tenantId);
 
     if (
-      this.priceSearchService &&
+      getPriceSearchService() &&
       created.id &&
       (await this.isAutomaticPriceSearchEnabled(tenantId))
     ) {

@@ -4,6 +4,7 @@ import {
   PutObjectCommand,
 } from '@aws-sdk/client-s3';
 import { isR2AssetsEnvComplete } from '@config/env.validation';
+import { getRuntimeHttpConfig } from '@config/http/runtime-http-config';
 import { getR2S3Client } from './clients/r2-s3-client';
 
 const MIME_TO_EXT: Record<string, string> = {
@@ -187,11 +188,7 @@ export async function deleteTenantLogoObjectsExceptKey(params: {
 }
 
 function logoListCacheTtlMs(): number {
-  const raw = process.env.R2_LOGO_LIST_CACHE_TTL_MS?.trim();
-  if (raw === '0') return 0;
-  const n = raw != null ? Number(raw) : NaN;
-  if (Number.isFinite(n) && n >= 0) return n;
-  return 10 * 60 * 1000;
+  return getRuntimeHttpConfig().ttl.r2LogoListMs;
 }
 
 const LOGO_RESOLVE_CACHE_MAX = 2000;

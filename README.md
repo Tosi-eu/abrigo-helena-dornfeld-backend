@@ -45,17 +45,24 @@ REDIS_PORT=6379
 
 # JWT (Autenticação)
 JWT_SECRET=seu_jwt_secret_aqui
-JWT_EXPIRES_IN=24h
 
-# CORS (Origens permitidas)
-ALLOWED_ORIGINS=http://localhost:8081,http://localhost:5173
-
-# Rate Limiting (por IP)
-RATE_LIMIT_MAX=200
-RATE_LIMIT_WINDOW_MS=900000
+# Redis, R2, X_API_KEY, etc. — ver backend/.env.example (API de preços: campo `system.pricing`)
 ```
 
-O limite é aplicado **por IP**: cada endereço pode fazer no máximo `RATE_LIMIT_MAX` requisições a cada `RATE_LIMIT_WINDOW_MS` ms (padrão 15 min). Requisições OPTIONS são ignoradas.
+### Configuração runtime (`system_config`)
+
+Comportamento que antes vinha só de variáveis de ambiente (CORS, TTL de health/cache, URL/chave da API de preços, retries/concorrência dessa API, backfill, rate limits global e público, expiração JWT de sessão, cookies de auth) está na tabela **`system_config`** (chaves `runtime.*`) e exposto como objeto **`system`** em:
+
+- `GET /api/v1/admin/config` — resposta `{ display, system }`
+- `PUT /api/v1/admin/config` — corpo `{ display?: {...}, system?: {...} }` (formato novo) ou o mapa legado só para chaves `display_*`
+
+Autenticação: **sessão JWT de admin** do tenant ou **`X-API-Key`** (super-admin), o mesmo modelo das rotas de tenants.
+
+Valores por omissão estão em `getBuiltinDefaultSystemConfig()` e são gravados na migração `20260502190000_seed_system_config_runtime`; sobrescritos por linhas em `system_config`. Estas opções **não** são lidas do `.env`.
+
+O **desktop admin** (`abrigo-admin-desktop`) inclui o separador **Sistema** para editar o DTO sem JWT.
+
+O limite global é aplicado **por IP** (requisições OPTIONS ignoradas). Limites públicos de listagem/branding de tenants seguem a secção `system.rateLimits.publicTenant`.
 
 > ⚠️ **Importante**: Substitua os valores de exemplo pelos seus dados reais. Nunca commite o arquivo `.env` no repositório.
 

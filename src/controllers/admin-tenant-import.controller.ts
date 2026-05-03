@@ -66,8 +66,6 @@ export class AdminTenantImportController {
         .json({ error: 'Arquivo .xlsx obrigatório (campo file)' });
     }
 
-    // Em chamadas via X-API-Key, podemos não ter sessão; ainda assim precisamos
-    // setar um current_user_id para RLS/auditoria. Usamos 0 como “sistema”.
     const actorUserId = req.user?.id ?? 0;
 
     try {

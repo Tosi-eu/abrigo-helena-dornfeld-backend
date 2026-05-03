@@ -53,6 +53,7 @@ module.exports = {
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
 
   moduleNameMapper: {
+    '^@temporal/(.*)$': '<rootDir>/src/temporal/$1',
     '^@controllers/(.*)$': '<rootDir>/src/controllers/$1',
     '^@services/(.*)$': '<rootDir>/src/services/$1',
     '^@repositories/(.*)$': '<rootDir>/src/repositories/$1',

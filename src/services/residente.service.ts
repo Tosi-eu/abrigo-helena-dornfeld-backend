@@ -5,7 +5,6 @@ import {
   parseDateOnlyInput,
 } from '@helpers/resident-age.helper';
 
-/** Corpo de API (SDK publicado pode estar atrás do repo). */
 type ResidentInput = Resident & { data_nascimento?: string | null };
 
 export class ResidentService {
@@ -93,7 +92,6 @@ export class ResidentService {
   }
 
   async deleteResident(casela: number): Promise<boolean> {
-    // Mantido por compatibilidade com chamadas antigas; preferir deleteResidentForTenant.
     const exists = await this.repo.findByCasela(1, casela);
     if (!exists) return false;
 

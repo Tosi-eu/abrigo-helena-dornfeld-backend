@@ -136,7 +136,6 @@ export function buildEffectivePermissionMatrix(
   return expandLegacyFlatToMatrix(flat);
 }
 
-/** Resumo plano (compatível com UI/API antiga): OR lógico sobre todos os recursos. */
 export function summarizeFlatFromMatrix(
   matrix: EffectivePermissionMatrix,
 ): UserPermissions {
@@ -166,13 +165,10 @@ export function canMovementTipo(
   matrix: EffectivePermissionMatrix,
   tipo: MovementTipoKey,
 ): boolean {
-  // Movimentações são derivadas de operações de estoque; o controle fino por tipo
-  // (entrada/saida/transferencia) deve depender da permissão de criar no módulo de estoque.
   if (!matrix.resources.stock?.create) return false;
   return Boolean(matrix.movement_tipos[tipo]);
 }
 
-/** Para RLS / contexto grosseiro: algum recurso permite criar? */
 export function matrixHasAnyCreate(matrix: EffectivePermissionMatrix): boolean {
   return ALL_PERMISSION_RESOURCE_KEYS.some(k => matrix.resources[k]?.create);
 }

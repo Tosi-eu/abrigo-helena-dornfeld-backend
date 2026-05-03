@@ -14,7 +14,7 @@ export type TenantImportSheet =
 
 export type TenantImportRowError = {
   sheet: TenantImportSheet;
-  /** 1-indexed row number in the sheet (including header row). */
+
   row: number;
   field?: string;
   message: string;
@@ -30,7 +30,7 @@ export type TenantImportEntitySummary = {
 
 export type TenantImportRowResult = {
   sheet: TenantImportSheet;
-  /** 1-indexed row number in the sheet (including header row). */
+
   row: number;
   status: TenantImportRowStatus;
 };

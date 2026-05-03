@@ -1,3 +1,4 @@
+import { randomBytes } from 'crypto';
 import request from 'supertest';
 import { closeTestApp, setupTestApp } from '@tests/helpers/database.helper';
 import { getAuthToken } from '@tests/helpers/auth.helper';
@@ -29,6 +30,11 @@ function sectorKeys(data: unknown): string[] {
   return (data as { data: Array<{ key: string }> }).data.map(s =>
     String(s.key).toLowerCase(),
   );
+}
+
+/** Evita colisões entre execuções ou workers Jest (Date.now() só não basta). */
+function uniqueSetorKey(prefix: string): string {
+  return `${prefix}_${Date.now()}_${randomBytes(4).toString('hex')}`;
 }
 
 describe('Setores (E2E) — catálogo e enabled_sectors', () => {
@@ -86,7 +92,7 @@ describe('Setores (E2E) — catálogo e enabled_sectors', () => {
   });
 
   it('POST /tenant/setores só com nome infere chave (snake_case)', async () => {
-    const nome = `Carrinho E2E ${Date.now()}`;
+    const nome = `Carrinho E2E ${Date.now()} ${randomBytes(3).toString('hex')}`;
     const create = await request(app)
       .post('/api/v1/tenant/setores')
       .set('Authorization', `Bearer ${adminToken}`)
@@ -96,11 +102,11 @@ describe('Setores (E2E) — catálogo e enabled_sectors', () => {
       });
     expect(create.status).toBe(201);
     expect(create.body.nome).toBe(nome);
-    expect(String(create.body.key)).toMatch(/^carrinho_e2e_\d+$/);
+    expect(String(create.body.key)).toMatch(/^carrinho_e2e_\d+_[a-f0-9]+$/);
   });
 
   it('admin cria setor personalizado e PUT tenant/config habilita enabled_sectors', async () => {
-    const key = `e2e_sec_${Date.now()}`;
+    const key = uniqueSetorKey('e2e_sec');
     const create = await request(app)
       .post('/api/v1/tenant/setores')
       .set('Authorization', `Bearer ${adminToken}`)

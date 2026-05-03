@@ -11,14 +11,10 @@ import type { Prisma } from '@prisma/client';
 export class PrismaContractPortfolioRepository {
   private static enforceSingleUse(): boolean {
     const v = String(process.env.CONTRACT_CODE_ENFORCE_SINGLE_USE ?? '').trim();
-    if (!v) return true; // default: on (hardening)
+    if (!v) return true;
     return ['1', 'true', 'yes', 'on'].includes(v.toLowerCase());
   }
 
-  /**
-   * Garante que o e-mail declarado no pedido coincide com a sessão e com o
-   * vínculo gravado em `contract_portfolio.bound_login` (ou grava o vínculo na primeira vez).
-   */
   async ensurePortfolioBindingAllowsAttestedUser(params: {
     portfolioId: number;
     attestedLoginRaw: string;
@@ -70,10 +66,6 @@ export class PrismaContractPortfolioRepository {
     else await withRootTransaction(run);
   }
 
-  /**
-   * Apenas procura um portfolio cujo hash corresponda ao texto — não cria registos.
-   * Usado na verificação pública do código (ex.: onboarding em tenant `u-*`).
-   */
   async findMatchingPortfolioByPlainText(
     plain: string,
     tx?: Prisma.TransactionClient,
@@ -124,12 +116,6 @@ export class PrismaContractPortfolioRepository {
     return withRootTransaction(run);
   }
 
-  /**
-   * Verificação só para UI no cadastro público (`POST /contract-code/verify`):
-   * hash válido, não desabilitado, e (se houver) `bound_login` coincide com o e-mail
-   * declarado. **Não** usa `used_by_tenant_id` — um código pode já estar associado a um
-   * abrigo provisório (`u-*`) e continuar “válido” para o mesmo e-mail até concluir a migração.
-   */
   async isAttestableContractCodeForSignupVerify(
     plain: string,
     opts?: { tx?: Prisma.TransactionClient; attestedLogin?: string },
@@ -156,13 +142,6 @@ export class PrismaContractPortfolioRepository {
     return true;
   }
 
-  /**
-   * Verificação para **consumir** o código (novo abrigo provisório, registo com admin, etc.):
-   * - precisa existir
-   * - não pode estar desabilitado
-   * - (por defeito) não pode estar em uso (`used_by_tenant_id`)
-   * - se existir `bound_login` no portfolio, o e-mail em `attestedLogin` tem de coincidir
-   */
   async isUsableContractCodeForSignup(
     plain: string,
     opts?: { tx?: Prisma.TransactionClient; attestedLogin?: string },

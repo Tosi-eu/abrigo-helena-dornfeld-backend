@@ -28,12 +28,11 @@ export class PermissionPayloadConstraint implements ValidatorConstraintInterface
     if (value === undefined || value === null) return true;
     if (!isPlainObject(value)) return false;
 
-    // V2: { version: 2, resources: {...}, movement_tipos: {...} }
     if (value.version === 2) {
       const resources = value.resources;
       const movement_tipos = value.movement_tipos;
       if (!isPlainObject(resources)) return false;
-      if (!isPlainObject(movement_tipos)) return false; // exigimos para consistência do contrato
+      if (!isPlainObject(movement_tipos)) return false;
 
       if (!hasOnlyKeys(resources, ALL_PERMISSION_RESOURCE_KEYS)) return false;
       if (!hasOnlyKeys(movement_tipos, MOVEMENT_TIPOS)) return false;
@@ -60,7 +59,6 @@ export class PermissionPayloadConstraint implements ValidatorConstraintInterface
       return true;
     }
 
-    // Legacy flat: { read, create, update, delete }
     if (!hasOnlyKeys(value, ['read', 'create', 'update', 'delete']))
       return false;
     return (

@@ -62,7 +62,6 @@ describe('Tenant import XLSX (E2E)', () => {
     expect(Array.isArray(res.body.errors)).toBe(true);
     expect(res.body.errors.length).toBeGreaterThanOrEqual(1);
 
-    // Confere que os dados entraram pro tenant do token (via DB).
     const tenant = await getDb().tenant.findUnique({
       where: { slug: E2E_TENANT_SLUG },
       select: { id: true },

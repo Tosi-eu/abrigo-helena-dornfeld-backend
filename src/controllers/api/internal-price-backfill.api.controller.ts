@@ -4,10 +4,6 @@ import type { Request, Response } from 'express';
 import { getErrorMessage } from '@domain/error.types';
 import { runScheduledPriceBackfillForAllTenants } from '@services/price-backfill-scheduled.runner';
 
-/**
- * Chamadas serviço-a-serviço (ex.: cron na API Price Search).
- * Protegido por `INTERNAL_PRICE_BACKFILL_SECRET` — não usa JWT de utilizador.
- */
 @ApiTags('Internal')
 @Controller('internal/price-backfill')
 export class InternalPriceBackfillApiController {
@@ -17,15 +13,19 @@ export class InternalPriceBackfillApiController {
       'Executar uma rodada agendada de backfill de preços (todos os tenants elegíveis)',
   })
   async cron(@Req() req: Request, @Res() res: Response): Promise<Response> {
-    const expected = process.env.INTERNAL_PRICE_BACKFILL_SECRET?.trim();
-    const got =
-      req.header('x-internal-secret')?.trim() ??
-      req.header('X-Internal-Secret')?.trim();
+    const expected = process.env.X_API_KEY?.trim();
+    const got = req.header('x-api-key')?.trim();
 
-    if (!expected || got !== expected) {
+    if (!expected) {
+      return res.status(503).json({
+        error: 'Servidor sem X_API_KEY configurado',
+        code: 'X_API_KEY_MISSING',
+      });
+    }
+    if (got !== expected) {
       return res.status(401).json({
         error: 'Não autorizado',
-        code: 'INTERNAL_SECRET_MISMATCH',
+        code: 'API_KEY_MISMATCH',
       });
     }
 

@@ -1,5 +1,7 @@
 import { NativeConnection, Worker } from '@temporalio/worker';
-import { logger } from '@helpers/logger.helper';
+import { loadMergedSystemConfigFromDb } from '@config/load-system-config-from-db';
+import { setSystemConfigWorkerSnapshot } from '@config/system-config-runtime';
+import { applyRuntimeLogging, logger } from '@helpers/logger.helper';
 import { runScheduledPriceBackfillForAllTenants } from '@services/price-backfill-scheduled.runner';
 import { PriceBackfillService } from '@services/price-backfill.service';
 import { finishManualPriceBackfill } from '@services/price-backfill-manual.guard';
@@ -145,6 +147,21 @@ async function main(): Promise<void> {
   const address = process.env.TEMPORAL_ADDRESS?.trim() || 'temporal:7233';
   const namespace = process.env.TEMPORAL_NAMESPACE?.trim() || 'default';
   const taskQueue = process.env.TEMPORAL_TASK_QUEUE?.trim() || 'abrigo';
+
+  try {
+    const cfg = await loadMergedSystemConfigFromDb();
+    setSystemConfigWorkerSnapshot(cfg);
+    applyRuntimeLogging(cfg.logging);
+  } catch (err) {
+    logger.warn(
+      '[temporal-worker] Falha ao carregar system_config — a usar valores builtin',
+      {
+        operation: 'temporal_worker_config',
+        error: err instanceof Error ? err.message : String(err),
+      },
+    );
+    setSystemConfigWorkerSnapshot(null);
+  }
 
   const conn = await NativeConnection.connect({ address });
   const activities = await createActivities();

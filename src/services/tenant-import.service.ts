@@ -111,9 +111,6 @@ function parseOperationType(
 
 type ImportSheetRow = { excelRow: number; data: Record<string, unknown> };
 
-/**
- * Localiza a linha de cabeçalho (permite linhas de título/ajuda acima) e devolve dados com número de linha Excel (1-based).
- */
 function readSheetRows(
   wb: XLSX.WorkBook,
   sheet: TenantImportSheet,

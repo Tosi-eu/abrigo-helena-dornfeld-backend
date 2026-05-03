@@ -26,7 +26,6 @@ import { AdminController } from '@controllers/admin.controller';
 import { TenantId } from '@decorators/tenant-id.decorator';
 import { UseExpressMwGuard } from '@middlewares/express.middleware';
 import { requireSuperAdmin } from '@middlewares/super-admin.middleware';
-import { STRING_MAP_BODY } from '@domain/dto/common.api.dto';
 import {
   AdminCreateUserBodyDto,
   AdminMergeMedicinesBodyDto,
@@ -34,11 +33,7 @@ import {
   AdminPatchNotificationBodyDto,
   AdminUpdateUserBodyDto,
 } from '@domain/dto/entities.api.dto';
-import { adminStringMapBodyMiddleware } from '@validation/admin-string-map.middleware';
-import {
-  UseExpressMiddleware,
-  UseValidatedBody,
-} from '@validation/use-validated-body.guard';
+import { UseValidatedBody } from '@validation/use-validated-body.guard';
 
 const superAdminUpload = UseExpressMwGuard(
   requireSuperAdmin,
@@ -47,7 +42,6 @@ const superAdminUpload = UseExpressMwGuard(
 const superAdminOnly = UseExpressMwGuard(requireSuperAdmin);
 const adminCreateUserBody = UseValidatedBody(AdminCreateUserBodyDto);
 const adminUpdateUserBody = UseValidatedBody(AdminUpdateUserBodyDto);
-const adminConfigMap = UseExpressMiddleware(adminStringMapBodyMiddleware);
 const adminMergeMeds = UseValidatedBody(AdminMergeMedicinesBodyDto);
 const adminNormUnits = UseValidatedBody(AdminNormalizeUnitsBodyDto);
 const adminPatchNotif = UseValidatedBody(AdminPatchNotificationBodyDto);
@@ -196,8 +190,27 @@ export class AdminApiController {
 
   @Put('config')
   @ApiOperation({ summary: 'Atualizar configuração global' })
-  @ApiBody(STRING_MAP_BODY)
-  @UseGuards(adminConfigMap)
+  @ApiBody({
+    schema: {
+      oneOf: [
+        {
+          type: 'object',
+          additionalProperties: { type: 'string' },
+          description: 'Legado: mapa chave→string (apenas display_* )',
+        },
+        {
+          type: 'object',
+          properties: {
+            display: {
+              type: 'object',
+              additionalProperties: { type: 'string' },
+            },
+            system: { type: 'object' },
+          },
+        },
+      ],
+    },
+  })
   putConfig(@Req() req: Request, @Res() res: Response): void {
     void this.controller.updateConfig(req, res);
   }

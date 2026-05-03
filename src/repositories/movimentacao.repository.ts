@@ -1,6 +1,5 @@
 import type { MovementRecord } from '@porto-sdk/sdk';
 
-/** Campos persistidos além do contrato publicado do SDK. */
 export type MovementCreateInput = MovementRecord & {
   sector_id?: number | null;
 };

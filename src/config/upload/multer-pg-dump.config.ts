@@ -2,7 +2,6 @@ import multer from 'multer';
 
 const memory = multer.memoryStorage();
 
-/** Dump PostgreSQL (.sql / .sql.gz) para importação por tenant. */
 export const tenantPgDumpUpload = multer({
   storage: memory,
   limits: { fileSize: 200 * 1024 * 1024 },

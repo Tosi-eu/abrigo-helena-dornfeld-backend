@@ -39,7 +39,6 @@ export class PrismaSetorRepository {
     });
   }
 
-  /** Garante os setores padrão (chaves farmacia / enfermagem) para o tenant. */
   async ensureDefaultSetores(
     tenantId: number,
     tx?: Prisma.TransactionClient,

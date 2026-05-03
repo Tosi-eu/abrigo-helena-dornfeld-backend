@@ -4,6 +4,7 @@ import {
   NestModule,
   RequestMethod,
 } from '@nestjs/common';
+import { SystemConfigService } from '@services/system-config.service';
 import { PrismaLoginRepository } from '@repositories/login.repository';
 import { PrismaLoginLogRepository } from '@repositories/login-log.repository';
 import { PrismaSystemConfigRepository } from '@repositories/system-config.repository';
@@ -39,7 +40,6 @@ import { NotificationEventController } from '@controllers/notificacao.controller
 import { PrismaMedicineRepository } from '@repositories/medicamento.repository';
 import { MedicineService } from '@services/medicamento.service';
 import { MedicineController } from '@controllers/medicamento.controller';
-import { priceSearchService } from '@helpers/price-service.helper';
 import { PrismaInputRepository } from '@repositories/insumo.repository';
 import { InputService } from '@services/insumo.service';
 import { InsumoController } from '@controllers/insumo.controller';
@@ -86,6 +86,16 @@ import {
   StandardProtectedMiddleware,
   TenantMiddlewareNest,
 } from '@middlewares/middleware-stacks';
+import { wrapExpressMiddleware } from '@middlewares/wrap';
+import { adminConfigPutBodyMiddleware } from '@validation/admin-config-put.middleware';
+import { adminConfigAccessMiddleware } from '@middlewares/admin-config-access.middleware';
+
+const AdminConfigAccessNest = wrapExpressMiddleware(
+  adminConfigAccessMiddleware,
+);
+const AdminConfigPutBodyNest = wrapExpressMiddleware(
+  adminConfigPutBodyMiddleware,
+);
 
 const loginRepo = new PrismaLoginRepository();
 const loginLogRepo = new PrismaLoginLogRepository();
@@ -115,15 +125,18 @@ const notificationService = new NotificationEventService(
 const auditRepo = new PrismaAuditRepository();
 const movementRepo = new PrismaMovementRepository();
 const movementService = new MovementService(movementRepo, cacheService);
-const adminController = new AdminController(
-  loginService,
-  auditRepo,
-  movementService,
-  loginLogRepo,
-  reportService,
-  systemConfigRepo,
-  notificationService,
-);
+function createAdminController(systemConfig: SystemConfigService) {
+  return new AdminController(
+    loginService,
+    auditRepo,
+    movementService,
+    loginLogRepo,
+    reportService,
+    systemConfigRepo,
+    notificationService,
+    systemConfig,
+  );
+}
 
 const stockRepo = new PrismaStockRepository();
 const stockService = new StockService(
@@ -158,19 +171,11 @@ const notificationEventController = new NotificationEventController(
 );
 
 const medicineRepo = new PrismaMedicineRepository();
-const medicineService = new MedicineService(
-  medicineRepo,
-  priceSearchService,
-  tenantConfigService,
-);
+const medicineService = new MedicineService(medicineRepo, tenantConfigService);
 const medicineController = new MedicineController(medicineService);
 
 const inputRepo = new PrismaInputRepository();
-const inputService = new InputService(
-  inputRepo,
-  priceSearchService,
-  tenantConfigService,
-);
+const inputService = new InputService(inputRepo, tenantConfigService);
 const insumoController = new InsumoController(inputService);
 
 const drawerRepo = new PrismaDrawerRepository();
@@ -231,7 +236,15 @@ const adminTenantImportController = new AdminTenantImportController(
     { provide: LoginController, useValue: loginController },
     { provide: AppController, useValue: appController },
     { provide: AdminTenantsController, useValue: adminTenantsController },
-    { provide: AdminController, useValue: adminController },
+    {
+      provide: SystemConfigService,
+      useFactory: () => new SystemConfigService(systemConfigRepo),
+    },
+    {
+      provide: AdminController,
+      useFactory: (sc: SystemConfigService) => createAdminController(sc),
+      inject: [SystemConfigService],
+    },
     { provide: DashboardController, useValue: dashboardController },
     { provide: StockController, useValue: stockController },
     { provide: MovementController, useValue: movementController },
@@ -265,7 +278,22 @@ export class ApiModule implements NestModule {
     });
 
     consumer
+      .apply(AdminConfigAccessNest)
+      .forRoutes(
+        { path: 'admin/config', method: RequestMethod.GET },
+        { path: 'admin/config', method: RequestMethod.PUT },
+      );
+
+    consumer
+      .apply(AdminConfigPutBodyNest)
+      .forRoutes({ path: 'admin/config', method: RequestMethod.PUT });
+
+    consumer
       .apply(StandardProtectedMiddleware)
+      .exclude(
+        { path: 'admin/config', method: RequestMethod.GET },
+        { path: 'admin/config', method: RequestMethod.PUT },
+      )
       .forRoutes(
         TenantApiController,
         TenantImportApiController,
@@ -287,6 +315,10 @@ export class ApiModule implements NestModule {
 
     consumer
       .apply(AdminPanelLimiterNest, RequireAdminNest)
+      .exclude(
+        { path: 'admin/config', method: RequestMethod.GET },
+        { path: 'admin/config', method: RequestMethod.PUT },
+      )
       .forRoutes(AdminApiController);
   }
 }

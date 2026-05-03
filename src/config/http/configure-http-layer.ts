@@ -1,17 +1,17 @@
 import type { Application } from 'express';
 import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
 import cookieParser from 'cookie-parser';
 import express from 'express';
 import { Prisma } from '@prisma/client';
 import { sanitizeInput } from '@middlewares/sanitize.middleware';
 import { prisma } from '@repositories/prisma';
 import { getRedisClient } from '@config/redis.client';
+import { getRuntimeHttpConfig } from './runtime-http-config';
+import { globalRateLimitMiddleware } from './http-rate-limit-wrappers';
 
 let lastHealthCheckAt = 0;
 let lastHealthHttpStatus = 503;
 let lastHealthBody: Record<string, unknown> | null = null;
-const healthCacheTtlMs = Number(process.env.HEALTHCHECK_CACHE_TTL_MS) || 10_000;
 
 function isSwaggerUiPath(path: string): boolean {
   return path.startsWith('/api/v1/docs');
@@ -36,17 +36,8 @@ export function configureHttpLayer(app: Application): void {
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));
   app.use(sanitizeInput);
 
-  if (!process.env.ALLOWED_ORIGINS) {
-    throw new Error(
-      'ALLOWED_ORIGINS environment variable is required. Please set it in your .env file.',
-    );
-  }
-
-  const allowedOrigins = process.env.ALLOWED_ORIGINS.split(',').map(origin =>
-    origin.trim(),
-  );
-
   app.use((req, res, next) => {
+    const allowedOrigins = getRuntimeHttpConfig().cors.allowedOrigins;
     const origin = req.headers.origin;
     const isAllowedOrigin = Boolean(origin && allowedOrigins.includes(origin));
 
@@ -59,8 +50,6 @@ export function configureHttpLayer(app: Application): void {
       'Access-Control-Allow-Methods',
       'GET, POST, PUT, DELETE, PATCH, OPTIONS',
     );
-    // Não anunciar headers sensíveis para origens não confiáveis.
-    // Para origens permitidas, liberamos também X-API-Key (rotas super-admin).
     const baseAllow =
       'Origin, X-Requested-With, Content-Type, Accept, Authorization';
     res.header(
@@ -76,6 +65,7 @@ export function configureHttpLayer(app: Application): void {
   });
 
   app.get('/api/v1/health', async (_req, res) => {
+    const healthCacheTtlMs = getRuntimeHttpConfig().ttl.healthcheckMs;
     const now = Date.now();
     if (lastHealthBody && now - lastHealthCheckAt < healthCacheTtlMs) {
       return res.status(lastHealthHttpStatus).json(lastHealthBody);
@@ -106,20 +96,5 @@ export function configureHttpLayer(app: Application): void {
     }
   });
 
-  const limiter = rateLimit({
-    windowMs: Number(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
-    max: Number(process.env.RATE_LIMIT_MAX) || 1000,
-    message: {
-      error: 'Too many requests from this IP, please try again later.',
-    },
-    standardHeaders: true,
-    legacyHeaders: false,
-    skip: req => req.method === 'OPTIONS',
-    keyGenerator: req => {
-      const ip = req.ip || req.socket?.remoteAddress || 'unknown';
-      return ip;
-    },
-  });
-
-  app.use(limiter);
+  app.use(globalRateLimitMiddleware);
 }

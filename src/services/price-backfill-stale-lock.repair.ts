@@ -16,11 +16,6 @@ function priceBackfillQueueWorkflowId(tenantId: number): string {
   return `tenant:${tenantId}:price-backfill-queue`;
 }
 
-/**
- * Se o Redis indica “busca manual em curso” mas o workflow Temporal deste abrigo
- * já não está RUNNING (cancelado, terminado, ou inexistente), liberta o lock Redis.
- * Evita 409 PRICE_BACKFILL_ALREADY_RUNNING após cancelar o workflow na UI do Temporal.
- */
 export async function repairStaleManualPriceBackfillLock(
   tenantId: number,
 ): Promise<boolean> {

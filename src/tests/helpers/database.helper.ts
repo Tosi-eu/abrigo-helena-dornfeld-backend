@@ -10,6 +10,7 @@ import {
 import { getDatabaseConfig } from '@config/database.config';
 import { seedE2EDefaultTenant } from '@helpers/e2e-tenant-seed.helper';
 import { prisma } from '@repositories/prisma';
+import { wireSystemConfigAfterNestInit } from '@config/bootstrap-system-config';
 import { execSync } from 'node:child_process';
 
 function isTestEnv(): boolean {
@@ -33,16 +34,12 @@ export async function closeTestApp(): Promise<void> {
 }
 
 async function ensureTestDbSchema(): Promise<void> {
-  // Em alguns ambientes o banco de testes existe mas está vazio (sem tabelas).
-  // Os seeds e2e assumem o schema já aplicado.
   const rows = await prisma.$queryRawUnsafe<Array<{ regclass: string | null }>>(
     `SELECT to_regclass('public.tenant')::text AS regclass`,
   );
   const hasTenantTable = Boolean(rows?.[0]?.regclass);
   if (hasTenantTable) return;
 
-  // Em base vazia, as migrações podem depender de tabelas “baseline” não versionadas.
-  // Para e2e, fazemos push do schema completo.
   execSync('npx prisma db push --accept-data-loss', {
     stdio: 'inherit',
     env: process.env,
@@ -69,6 +66,7 @@ export async function createApp(): Promise<Server> {
   configureHttpBeforeInit(app);
   await app.init();
   registerExpressErrorHandlerLast(app);
+  await wireSystemConfigAfterNestInit(app);
 
   lastNestApp = app;
   return app.getHttpServer() as Server;

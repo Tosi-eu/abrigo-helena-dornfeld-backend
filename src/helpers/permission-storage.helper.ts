@@ -7,9 +7,6 @@ function isV2(x: Record<string, unknown>): x is PermissionMatrixV2Stored {
   );
 }
 
-/**
- * Normaliza o corpo de `permissions` (legado 4 flags ou `version:2` + `resources`) para JSON no `login.permissions`.
- */
 export function parsePermissionsForStorage(
   role: 'admin' | 'user',
   raw: unknown,

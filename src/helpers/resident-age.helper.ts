@@ -1,4 +1,3 @@
-/** Idade em anos completos a partir de uma data (somente data, comparação em UTC). */
 export function computeAgeFromBirthDate(
   birth: Date,
   ref: Date = new Date(),

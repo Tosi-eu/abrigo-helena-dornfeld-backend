@@ -18,8 +18,9 @@ import {
   ApiSecurity,
   ApiTags,
 } from '@nestjs/swagger';
-import type { Request, Response } from 'express';
+import type { Request, RequestHandler, Response } from 'express';
 import rateLimit from 'express-rate-limit';
+import { getRuntimeHttpConfig } from '@config/http/runtime-http-config';
 import { AppController } from '@controllers/app.controller';
 import { AdminTenantsController } from '@controllers/admin-tenants.controller';
 import { UseExpressMwGuard } from '@middlewares/express.middleware';
@@ -34,12 +35,6 @@ import {
   VerifyContractCodeDto,
 } from '@domain/dto/app.api.dto';
 
-const publicTenantWindowMs =
-  Number(process.env.PUBLIC_TENANT_RATE_WINDOW_MS) || 60_000;
-const publicTenantListMax = Number(process.env.PUBLIC_TENANT_LIST_MAX) || 120;
-const publicTenantBrandingMax =
-  Number(process.env.PUBLIC_TENANT_BRANDING_MAX) || 120;
-
 const statusLimiter = rateLimit({
   windowMs: 1 * 60 * 1000,
   max: 60,
@@ -48,22 +43,42 @@ const statusLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-const tenantListLimiter = rateLimit({
-  windowMs: publicTenantWindowMs,
-  max: publicTenantListMax,
-  message:
-    'Muitas requisições à lista de abrigos. Tente novamente em instantes.',
-  standardHeaders: true,
-  legacyHeaders: false,
-});
+function buildPublicTenantListLimiter(): ReturnType<typeof rateLimit> {
+  const pt = getRuntimeHttpConfig().rateLimits.publicTenant;
+  return rateLimit({
+    windowMs: pt.windowMs,
+    max: pt.listMax,
+    message:
+      'Muitas requisições à lista de abrigos. Tente novamente em instantes.',
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+}
 
-const tenantBrandingLimiter = rateLimit({
-  windowMs: publicTenantWindowMs,
-  max: publicTenantBrandingMax,
-  message: 'Muitas requisições de branding. Tente novamente em instantes.',
-  standardHeaders: true,
-  legacyHeaders: false,
-});
+function buildPublicTenantBrandingLimiter(): ReturnType<typeof rateLimit> {
+  const pt = getRuntimeHttpConfig().rateLimits.publicTenant;
+  return rateLimit({
+    windowMs: pt.windowMs,
+    max: pt.brandingMax,
+    message: 'Muitas requisições de branding. Tente novamente em instantes.',
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+}
+
+let tenantListLimiterImpl = buildPublicTenantListLimiter();
+let tenantBrandingLimiterImpl = buildPublicTenantBrandingLimiter();
+
+const tenantListLimiterWrap: RequestHandler = (req, res, next) =>
+  tenantListLimiterImpl(req, res, next);
+
+const tenantBrandingLimiterWrap: RequestHandler = (req, res, next) =>
+  tenantBrandingLimiterImpl(req, res, next);
+
+export function rebuildPublicTenantLimitersFromConfig(): void {
+  tenantListLimiterImpl = buildPublicTenantListLimiter();
+  tenantBrandingLimiterImpl = buildPublicTenantBrandingLimiter();
+}
 
 const verifyContractCodeLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -86,9 +101,9 @@ const systemTenantsLimiter = rateLimit({
 });
 
 const statusGuard = UseExpressMwGuard(statusLimiter);
-const tenantBrandingGuard = UseExpressMwGuard(tenantBrandingLimiter);
+const tenantBrandingGuard = UseExpressMwGuard(tenantBrandingLimiterWrap);
 const verifyContractGuard = UseExpressMwGuard(verifyContractCodeLimiter);
-const tenantListGuard = UseExpressMwGuard(tenantListLimiter);
+const tenantListGuard = UseExpressMwGuard(tenantListLimiterWrap);
 
 const adminTenantsChain = UseExpressMwGuard(
   bindSuperAdminRlsTransaction,
