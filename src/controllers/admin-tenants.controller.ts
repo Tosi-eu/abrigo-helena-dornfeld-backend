@@ -1,0 +1,329 @@
+import type { Response } from 'express';
+import type { AuthRequest } from '@middlewares/auth.middleware';
+import { Prisma } from '@prisma/client';
+import { getDb } from '@repositories/prisma';
+import { PrismaTenantRepository } from '@repositories/tenant.repository';
+import { PrismaTenantConfigRepository } from '@repositories/tenant-config.repository';
+import { PrismaSetorRepository } from '@repositories/setor.repository';
+import { PrismaContractPortfolioRepository } from '@repositories/contract-portfolio.repository';
+import {
+  DEFAULT_TENANT_MODULES,
+  TenantConfigService,
+} from '@services/tenant-config.service';
+import { getErrorMessage } from '@domain/error.types';
+
+const tenantRepo = new PrismaTenantRepository();
+const portfolioRepo = new PrismaContractPortfolioRepository();
+const configRepo = new PrismaTenantConfigRepository();
+const setorRepo = new PrismaSetorRepository();
+const configService = new TenantConfigService(configRepo, setorRepo);
+
+export class AdminTenantsController {
+  async listTenants(req: AuthRequest, res: Response) {
+    try {
+      const page = Math.max(1, Number(req.query.page) || 1);
+      const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 25));
+      const result = await tenantRepo.list(page, limit);
+      const portfolioIds = [
+        ...new Set(
+          result.data
+            .map(t => t.contract_portfolio_id)
+            .filter((x): x is number => typeof x === 'number' && x > 0),
+        ),
+      ];
+      const portfolios =
+        portfolioIds.length > 0
+          ? await getDb().contractPortfolio.findMany({
+              where: { id: { in: portfolioIds } },
+              select: { id: true, boundLogin: true },
+            })
+          : [];
+      const boundByPortfolioId = new Map(
+        portfolios.map(p => [p.id, p.boundLogin ?? null]),
+      );
+
+      return res.json({
+        ...result,
+        data: result.data.map(t => {
+          const pid = t.contract_portfolio_id ?? null;
+          const configured =
+            Boolean(pid) ||
+            Boolean(
+              t.contract_code_hash &&
+              String(t.contract_code_hash).trim() !== '',
+            );
+          return {
+            id: t.id,
+            slug: t.slug,
+            name: t.name,
+            brandName: t.brand_name ?? null,
+            logoUrl: t.logo_url ?? null,
+            contractPortfolioId: pid,
+            contractConfigured: configured,
+            contractBoundLogin:
+              pid != null ? (boundByPortfolioId.get(pid) ?? null) : null,
+          };
+        }),
+      });
+    } catch (error: unknown) {
+      return res
+        .status(500)
+        .json({ error: getErrorMessage(error) || 'Erro ao listar tenants' });
+    }
+  }
+
+  async createTenant(req: AuthRequest, res: Response) {
+    try {
+      const slug = String(req.body?.slug || '').trim();
+      const name = String(req.body?.name || '').trim();
+      if (!slug || !name) {
+        return res.status(400).json({ error: 'slug e name são obrigatórios' });
+      }
+      const slugTaken = await tenantRepo.findIdBySlug(slug);
+      if (slugTaken != null) {
+        return res.status(409).json({
+          error:
+            'Já existe um abrigo com este slug. Cada abrigo precisa de um identificador (slug) único.',
+        });
+      }
+      const ccRaw = req.body?.contract_code;
+      let contract_code_hash: string | null = null;
+      let contract_portfolio_id: number | null = null;
+      if (ccRaw != null && String(ccRaw).trim() !== '') {
+        const resolved = await portfolioRepo.resolveOrCreateByPlainText(
+          String(ccRaw).trim(),
+        );
+        contract_code_hash = resolved.hash;
+        contract_portfolio_id = resolved.id;
+      }
+      const created = await tenantRepo.create({
+        slug,
+        name,
+        contract_code_hash,
+        contract_portfolio_id,
+      });
+      await setorRepo.ensureDefaultSetores(created.id);
+      await configService.set(created.id, DEFAULT_TENANT_MODULES);
+      return res.status(201).json(created);
+    } catch (error: unknown) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        return res.status(409).json({
+          error:
+            'Já existe um abrigo com este slug. Cada abrigo precisa de um identificador (slug) único.',
+        });
+      }
+      return res
+        .status(500)
+        .json({ error: getErrorMessage(error) || 'Erro ao criar tenant' });
+    }
+  }
+
+  async updateTenant(req: AuthRequest, res: Response) {
+    try {
+      const id = Number(req.params.id);
+      if (!id || Number.isNaN(id))
+        return res.status(400).json({ error: 'id inválido' });
+      const slug =
+        req.body?.slug != null ? String(req.body.slug).trim() : undefined;
+      const name =
+        req.body?.name != null ? String(req.body.name).trim() : undefined;
+      const patch: Partial<{
+        slug: string;
+        name: string;
+        contract_code_hash: string | null;
+        contract_portfolio_id: number | null;
+      }> = {};
+      if (slug !== undefined) patch.slug = slug;
+      if (name !== undefined) patch.name = name;
+      if (req.body?.clear_contract_code === true) {
+        patch.contract_code_hash = null;
+        patch.contract_portfolio_id = null;
+      } else if (
+        req.body?.contract_code != null &&
+        String(req.body.contract_code).trim() !== ''
+      ) {
+        const resolved = await portfolioRepo.resolveOrCreateByPlainText(
+          String(req.body.contract_code).trim(),
+        );
+        const currentPid =
+          await tenantRepo.findContractPortfolioIdByTenantId(id);
+        if (currentPid != null && currentPid !== resolved.id) {
+          return res.status(409).json({
+            error:
+              'Este abrigo já tem outro código de contrato associado. Para trocar, use clear_contract_code no corpo e volte a enviar o novo código, ou crie um novo abrigo com outro slug.',
+          });
+        }
+        patch.contract_code_hash = resolved.hash;
+        patch.contract_portfolio_id = resolved.id;
+      }
+      if (Object.keys(patch).length === 0) {
+        return res.status(400).json({ error: 'Nada para atualizar' });
+      }
+      const updated = await tenantRepo.update(id, patch);
+      return res.json(updated);
+    } catch (error: unknown) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        return res.status(409).json({
+          error:
+            'Já existe um abrigo com este slug. Cada abrigo precisa de um identificador (slug) único.',
+        });
+      }
+      return res
+        .status(500)
+        .json({ error: getErrorMessage(error) || 'Erro ao atualizar tenant' });
+    }
+  }
+
+  async setContractCodeBySlug(req: AuthRequest, res: Response) {
+    try {
+      const slug = String(req.params.slug ?? '').trim();
+      if (!slug) {
+        return res.status(400).json({ error: 'slug obrigatório' });
+      }
+      const id = await tenantRepo.findIdBySlug(slug);
+
+      if (req.body?.clear_contract_code === true) {
+        if (!id) {
+          return res.status(404).json({ error: 'Abrigo não encontrado' });
+        }
+        await tenantRepo.update(id, {
+          contract_code_hash: null,
+          contract_portfolio_id: null,
+        });
+        return res.json({ ok: true, slug, contractCodeConfigured: false });
+      }
+
+      const cc = req.body?.contract_code;
+      if (cc == null || String(cc).trim() === '') {
+        return res.status(400).json({
+          error:
+            'Envie contract_code (texto) ou clear_contract_code: true. Para criar um abrigo novo, contract_code é obrigatório.',
+        });
+      }
+
+      const boundRaw = String(
+        req.body?.bound_login ?? req.body?.boundLogin ?? req.body?.email ?? '',
+      ).trim();
+      if (!boundRaw) {
+        return res.status(400).json({
+          error:
+            'Com contract_code, envie também bound_login (e-mail) ao qual o código fica reservado (ou boundLogin / email).',
+        });
+      }
+
+      const resolved = await portfolioRepo.resolveOrCreateByPlainText(
+        String(cc).trim(),
+        { boundLogin: boundRaw },
+      );
+
+      if (id != null) {
+        const payload = await tenantRepo.findContractVerifyPayloadBySlug(slug);
+        const currentPid = payload?.contract_portfolio_id ?? null;
+        if (currentPid != null && currentPid !== resolved.id) {
+          return res.status(409).json({
+            error:
+              'Este slug já está em uso por um abrigo com outro código de contrato. Para um segundo abrigo, use um slug diferente (ex.: outro identificador na URL). Para alterar o contrato deste abrigo, limpe primeiro com clear_contract_code: true.',
+          });
+        }
+      }
+
+      if (!id) {
+        const name = String(req.body?.name ?? '').trim() || slug;
+        const created = await tenantRepo.create({
+          slug,
+          name,
+          contract_code_hash: resolved.hash,
+          contract_portfolio_id: resolved.id,
+        });
+        await setorRepo.ensureDefaultSetores(created.id);
+        await configService.set(created.id, DEFAULT_TENANT_MODULES);
+        return res.status(201).json({
+          ok: true,
+          slug,
+          contractCodeConfigured: true,
+          created: true,
+          tenant: created,
+        });
+      }
+
+      await tenantRepo.update(id, {
+        contract_code_hash: resolved.hash,
+        contract_portfolio_id: resolved.id,
+      });
+      return res.json({
+        ok: true,
+        slug,
+        contractCodeConfigured: true,
+        created: false,
+      });
+    } catch (error: unknown) {
+      const msg = getErrorMessage(error) || '';
+      if (
+        msg.includes('duplicate') ||
+        msg.includes('unique') ||
+        msg.includes('23505')
+      ) {
+        return res.status(409).json({
+          error: 'Já existe um abrigo com este slug',
+        });
+      }
+      return res.status(500).json({
+        error: getErrorMessage(error) || 'Erro ao definir código de contrato',
+      });
+    }
+  }
+
+  async deleteTenant(req: AuthRequest, res: Response) {
+    try {
+      const id = Number(req.params.id);
+      if (!id || Number.isNaN(id))
+        return res.status(400).json({ error: 'id inválido' });
+      if (id === 1)
+        return res
+          .status(400)
+          .json({ error: 'Não é permitido remover o tenant padrão' });
+      const ok = await tenantRepo.delete(id);
+      return res.json({ ok });
+    } catch (error: unknown) {
+      return res
+        .status(500)
+        .json({ error: getErrorMessage(error) || 'Erro ao remover tenant' });
+    }
+  }
+
+  async getTenantConfig(req: AuthRequest, res: Response) {
+    try {
+      const tenantId = Number(req.params.id);
+      if (!tenantId || Number.isNaN(tenantId)) {
+        return res.status(400).json({ error: 'tenant id inválido' });
+      }
+      const cfg = await configService.get(tenantId);
+      return res.json({ tenantId, modules: cfg });
+    } catch (error: unknown) {
+      return res.status(500).json({
+        error: getErrorMessage(error) || 'Erro ao carregar config do tenant',
+      });
+    }
+  }
+
+  async setTenantConfig(req: AuthRequest, res: Response) {
+    try {
+      const tenantId = Number(req.params.id);
+      if (!tenantId || Number.isNaN(tenantId)) {
+        return res.status(400).json({ error: 'tenant id inválido' });
+      }
+      const modules = await configService.set(tenantId, req.body?.modules);
+      return res.json({ tenantId, modules });
+    } catch (error: unknown) {
+      return res.status(400).json({
+        error: getErrorMessage(error) || 'Config inválida',
+      });
+    }
+  }
+}

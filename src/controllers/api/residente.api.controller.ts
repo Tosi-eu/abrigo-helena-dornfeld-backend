@@ -1,0 +1,126 @@
+import {
+  Controller,
+  Delete,
+  Get,
+  Post,
+  Put,
+  Req,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiBody,
+  ApiCookieAuth,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiSecurity,
+  ApiTags,
+} from '@nestjs/swagger';
+import type { Request, Response } from 'express';
+import { ResidentController } from '@controllers/residente.controller';
+import { TenantId } from '@decorators/tenant-id.decorator';
+import { UseExpressMwGuard } from '@middlewares/express.middleware';
+import { requireModule } from '@middlewares/module.middleware';
+import {
+  validateCaselaParam,
+  validatePagination,
+} from '@middlewares/validation.middleware';
+import {
+  ResidentCreateBodyDto,
+  ResidentUpdateBodyDto,
+} from '@domain/dto/entities.api.dto';
+import { UseValidatedBody } from '@validation/use-validated-body.guard';
+
+const resModule = UseExpressMwGuard(requireModule('residents'));
+const resPaginate = UseExpressMwGuard(
+  validatePagination,
+  requireModule('residents'),
+);
+const resCasela = UseExpressMwGuard(
+  validateCaselaParam,
+  requireModule('residents'),
+);
+const resCreateBody = UseValidatedBody(ResidentCreateBodyDto);
+const resUpdateBody = UseValidatedBody(ResidentUpdateBodyDto);
+
+@ApiTags('Residentes')
+@ApiSecurity('bearer')
+@ApiCookieAuth('authToken')
+@Controller('residentes')
+export class ResidenteApiController {
+  constructor(private readonly controller: ResidentController) {}
+
+  @Get()
+  @ApiOperation({ summary: 'Listar residentes (paginado)' })
+  @ApiQuery({ name: 'page', required: false })
+  @ApiQuery({ name: 'limit', required: false })
+  @UseGuards(resPaginate)
+  findAll(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.findAll(req, res, tenantId);
+  }
+
+  @Get('count')
+  @ApiOperation({ summary: 'Contagem de residentes' })
+  @UseGuards(resModule)
+  count(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.getCount(req, res, tenantId);
+  }
+
+  @Get(':casela')
+  @ApiOperation({ summary: 'Residente por número de casela' })
+  @ApiParam({ name: 'casela', type: Number })
+  @UseGuards(resCasela)
+  findByCasela(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.findByCasela(req, res, tenantId);
+  }
+
+  @Post()
+  @ApiOperation({ summary: 'Criar residente' })
+  @ApiBody({ type: ResidentCreateBodyDto })
+  @UseGuards(resCreateBody, resModule)
+  create(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.create(req, res, tenantId);
+  }
+
+  @Put(':casela')
+  @ApiOperation({ summary: 'Atualizar residente' })
+  @ApiParam({ name: 'casela', type: Number })
+  @ApiBody({ type: ResidentUpdateBodyDto })
+  @UseGuards(resUpdateBody, resCasela)
+  update(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.update(req, res, tenantId);
+  }
+
+  @Delete(':casela')
+  @ApiOperation({ summary: 'Remover residente' })
+  @ApiParam({ name: 'casela', type: Number })
+  @UseGuards(resCasela)
+  delete(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.delete(req, res, tenantId);
+  }
+}

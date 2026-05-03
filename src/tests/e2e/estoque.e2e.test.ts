@@ -1,12 +1,8 @@
 import request from 'supertest';
-import { setupTestApp } from '../../infrastructure/helpers/database.helper';
-import { sequelize } from '../../infrastructure/database/sequelize';
+import { closeTestApp, setupTestApp } from '@tests/helpers/database.helper';
 import { App } from 'supertest/types';
-import {
-  seedDB,
-  SeedResult,
-} from '../../infrastructure/database/seed/estoque.seed';
-import { ItemType, StockRawResponse } from '../../core/utils/utils';
+import { seedDB, SeedResult } from '@repositories/seed/estoque.seed';
+import { ItemType, StockRawResponse } from '@helpers/utils';
 
 let app: App;
 let seed: SeedResult;
@@ -17,7 +13,7 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await sequelize.close();
+  await closeTestApp();
 });
 
 describe('Input Stock E2E - CRUD', () => {
@@ -26,7 +22,7 @@ describe('Input Stock E2E - CRUD', () => {
   it('deve registrar entrada de insumo', async () => {
     const res = await request(app)
       .post('/api/v1/estoque/entrada')
-      .set('Cookie', seed.cookie)
+      .set('Authorization', `Bearer ${seed.token}`)
       .send({
         insumo_id: seed.inputId,
         armario_id: seed.cabinetId,
@@ -43,15 +39,18 @@ describe('Input Stock E2E - CRUD', () => {
 
   it('deve listar insumos no estoque', async () => {
     const res = await request(app)
-      .get('/api/v1/estoque')
-      .set('Cookie', seed.cookie);
+      .get(
+        `/api/v1/estoque?type=insumo&page=1&limit=100&cabinet=${encodeURIComponent(String(seed.cabinetId))}`,
+      )
+      .set('Authorization', `Bearer ${seed.token}`);
 
     expect(res.status).toBe(200);
     expect(res.body.data).toBeDefined();
 
     const found = res.body.data.find(
       (item: StockRawResponse) =>
-        item.item_id === seed.inputId && item.tipo_item === 'insumo',
+        Number(item.item_id) === Number(seed.inputId) &&
+        item.tipo_item === 'insumo',
     );
 
     expect(found).toBeDefined();
@@ -62,7 +61,7 @@ describe('Input Stock E2E - CRUD', () => {
     expect(createdInputStockId).toBeDefined();
     const res = await request(app)
       .post('/api/v1/estoque/saida')
-      .set('Cookie', seed.cookie)
+      .set('Authorization', `Bearer ${seed.token}`)
       .send({
         estoqueId: createdInputStockId,
         tipo: ItemType.INSUMO,
@@ -77,7 +76,7 @@ describe('Input Stock E2E - CRUD', () => {
     expect(createdInputStockId).toBeDefined();
     const res = await request(app)
       .post('/api/v1/estoque/saida')
-      .set('Cookie', seed.cookie)
+      .set('Authorization', `Bearer ${seed.token}`)
       .send({
         estoqueId: createdInputStockId,
         tipo: ItemType.INSUMO,

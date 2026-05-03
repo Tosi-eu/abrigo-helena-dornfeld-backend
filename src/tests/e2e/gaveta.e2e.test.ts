@@ -1,30 +1,34 @@
 import request from 'supertest';
-import { setupTestApp } from '../../infrastructure/helpers/database.helper';
-import { getAuthCookie } from '../helpers/auth.helper';
+import { closeTestApp, setupTestApp } from '@tests/helpers/database.helper';
+import { getAuthToken } from '@tests/helpers/auth.helper';
 import { App } from 'supertest/types';
 
 describe('Drawer E2E - CRUD básico', () => {
   let app: App;
   let createdNumber: number;
   let categoryId: number;
-  let authCookie: string;
+  let authToken: string;
 
   beforeAll(async () => {
     app = await setupTestApp();
-    authCookie = await getAuthCookie(app);
+    authToken = await getAuthToken(app);
 
     const cat = await request(app)
       .post('/api/v1/categoria-gaveta')
-      .set('Cookie', authCookie)
+      .set('Authorization', `Bearer ${authToken}`)
       .send({ nome: 'Categoria Teste' });
 
     categoryId = cat.body.id;
   });
 
+  afterAll(async () => {
+    await closeTestApp();
+  });
+
   it('deve criar uma gaveta', async () => {
     const res = await request(app)
       .post('/api/v1/gavetas')
-      .set('Cookie', authCookie)
+      .set('Authorization', `Bearer ${authToken}`)
       .send({ numero: 1, categoria_id: categoryId });
 
     expect(res.status).toBe(201);
@@ -36,7 +40,7 @@ describe('Drawer E2E - CRUD básico', () => {
   it('deve atualizar uma gaveta', async () => {
     const res = await request(app)
       .put(`/api/v1/gavetas/${createdNumber}`)
-      .set('Cookie', authCookie)
+      .set('Authorization', `Bearer ${authToken}`)
       .send({ categoria_id: categoryId });
 
     expect(res.status).toBe(200);
@@ -46,7 +50,7 @@ describe('Drawer E2E - CRUD básico', () => {
   it('não deve atualizar com categoria inválida', async () => {
     const res = await request(app)
       .put(`/api/v1/gavetas/${createdNumber}`)
-      .set('Cookie', authCookie)
+      .set('Authorization', `Bearer ${authToken}`)
       .send({ categoria_id: 0 });
 
     expect(res.status).toBe(400);
@@ -55,14 +59,14 @@ describe('Drawer E2E - CRUD básico', () => {
   it('deve remover uma gaveta', async () => {
     const res = await request(app)
       .delete(`/api/v1/gavetas/${createdNumber}`)
-      .set('Cookie', authCookie);
+      .set('Authorization', `Bearer ${authToken}`);
     expect(res.status).toBe(204);
   });
 
   it('não deve remover novamente', async () => {
     const res = await request(app)
       .delete(`/api/v1/gavetas/${createdNumber}`)
-      .set('Cookie', authCookie);
+      .set('Authorization', `Bearer ${authToken}`);
     expect(res.status).toBe(404);
   });
 });

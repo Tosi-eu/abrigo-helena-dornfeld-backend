@@ -1,0 +1,115 @@
+import {
+  Controller,
+  Delete,
+  Get,
+  Patch,
+  Post,
+  Req,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiBody,
+  ApiCookieAuth,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiSecurity,
+  ApiTags,
+} from '@nestjs/swagger';
+import type { Request, Response } from 'express';
+import { NotificationEventController } from '@controllers/notificacao.controller';
+import { TenantId } from '@decorators/tenant-id.decorator';
+import { UseExpressMwGuard } from '@middlewares/express.middleware';
+import { requireModule } from '@middlewares/module.middleware';
+import {
+  validateIdParam,
+  validatePagination,
+} from '@middlewares/validation.middleware';
+import {
+  NotificationCreateBodyDto,
+  NotificationUpdateBodyDto,
+} from '@domain/dto/entities.api.dto';
+import { UseValidatedBody } from '@validation/use-validated-body.guard';
+
+const notModule = UseExpressMwGuard(requireModule('notifications'));
+const notPaginate = UseExpressMwGuard(
+  validatePagination,
+  requireModule('notifications'),
+);
+const notId = UseExpressMwGuard(
+  validateIdParam,
+  requireModule('notifications'),
+);
+const notCreateBody = UseValidatedBody(NotificationCreateBodyDto);
+const notPatchBody = UseValidatedBody(NotificationUpdateBodyDto);
+
+@ApiTags('Notificações')
+@ApiSecurity('bearer')
+@ApiCookieAuth('authToken')
+@Controller('notificacao')
+export class NotificacaoApiController {
+  constructor(private readonly controller: NotificationEventController) {}
+
+  @Post()
+  @ApiOperation({ summary: 'Criar evento de notificação' })
+  @ApiBody({ type: NotificationCreateBodyDto })
+  @UseGuards(notCreateBody, notModule)
+  create(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.create(req, res, tenantId);
+  }
+
+  @Get()
+  @ApiOperation({ summary: 'Listar notificações (paginado)' })
+  @ApiQuery({ name: 'page', required: false })
+  @ApiQuery({ name: 'limit', required: false })
+  @UseGuards(notPaginate)
+  getAll(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.getAll(req, res, tenantId);
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Obter notificação por id' })
+  @ApiParam({ name: 'id', type: Number })
+  @UseGuards(notId)
+  getById(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.getById(req, res, tenantId);
+  }
+
+  @Patch(':id')
+  @ApiOperation({ summary: 'Atualizar notificação' })
+  @ApiParam({ name: 'id', type: Number })
+  @ApiBody({ type: NotificationUpdateBodyDto })
+  @UseGuards(notPatchBody, notId)
+  patch(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.update(req, res, tenantId);
+  }
+
+  @Delete(':id')
+  @ApiOperation({ summary: 'Eliminar notificação' })
+  @ApiParam({ name: 'id', type: Number })
+  @UseGuards(notId)
+  delete(
+    @TenantId() tenantId: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ): void {
+    void this.controller.delete(req, res, tenantId);
+  }
+}

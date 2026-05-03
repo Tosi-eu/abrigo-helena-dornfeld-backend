@@ -45,17 +45,24 @@ REDIS_PORT=6379
 
 # JWT (Autenticação)
 JWT_SECRET=seu_jwt_secret_aqui
-JWT_EXPIRES_IN=24h
 
-# CORS (Origens permitidas)
-ALLOWED_ORIGINS=http://localhost:8081,http://localhost:5173
-
-# Rate Limiting (por IP)
-RATE_LIMIT_MAX=200
-RATE_LIMIT_WINDOW_MS=900000
+# Redis, R2, X_API_KEY, etc. — ver backend/.env.example (API de preços: campo `system.pricing`)
 ```
 
-O limite é aplicado **por IP**: cada endereço pode fazer no máximo `RATE_LIMIT_MAX` requisições a cada `RATE_LIMIT_WINDOW_MS` ms (padrão 15 min). Requisições OPTIONS são ignoradas.
+### Configuração runtime (`system_config`)
+
+Comportamento que antes vinha só de variáveis de ambiente (CORS, TTL de health/cache, URL/chave da API de preços, retries/concorrência dessa API, backfill, rate limits global e público, expiração JWT de sessão, cookies de auth) está na tabela **`system_config`** (chaves `runtime.*`) e exposto como objeto **`system`** em:
+
+- `GET /api/v1/admin/config` — resposta `{ display, system }`
+- `PUT /api/v1/admin/config` — corpo `{ display?: {...}, system?: {...} }` (formato novo) ou o mapa legado só para chaves `display_*`
+
+Autenticação: **sessão JWT de admin** do tenant ou **`X-API-Key`** (super-admin), o mesmo modelo das rotas de tenants.
+
+Valores por omissão estão em `getBuiltinDefaultSystemConfig()` e são gravados na migração `20260502190000_seed_system_config_runtime`; sobrescritos por linhas em `system_config`. Estas opções **não** são lidas do `.env`.
+
+O **desktop admin** (`abrigo-admin-desktop`) inclui o separador **Sistema** para editar o DTO sem JWT.
+
+O limite global é aplicado **por IP** (requisições OPTIONS ignoradas). Limites públicos de listagem/branding de tenants seguem a secção `system.rateLimits.publicTenant`.
 
 > ⚠️ **Importante**: Substitua os valores de exemplo pelos seus dados reais. Nunca commite o arquivo `.env` no repositório.
 
@@ -88,13 +95,24 @@ Certifique-se de que o PostgreSQL está rodando e acessível com as credenciais 
 
 Inicie o Redis localmente ou use o Docker Compose.
 
-### 4. Executar Migrations e Seeders
+### 4. Migrações (Prisma)
 
-O Sequelize criará automaticamente as tabelas quando o servidor iniciar pela primeira vez. Se preferir executar manualmente:
+Com `DATABASE_URL` definida no `.env`:
 
 ```bash
-npx sequelize-cli db:migrate
-npx sequelize-cli db:seed:all
+npx prisma migrate deploy
+```
+
+**Erro P3005 (“The database schema is not empty”)** — aparece quando a base já tem tabelas (por exemplo `db push` ou restore de dump) e o histórico em `_prisma_migrations` não está alinhado com as pastas em `prisma/migrations`. Opções:
+
+1. **Docker Compose:** use `PRISMA_AUTO_BASELINE=1` no serviço `backend` (o compose em `backup/docker-compose.yml` define por defeito `1` via variável). O `docker-entrypoint.sh` aplica o SQL, corre `migrate resolve --applied` e volta a executar `migrate deploy`.
+2. **Recriar volume:** `docker compose down -v` (apaga dados do Postgres) e subir de novo.
+3. **Manual (uma vez):** `npx prisma db execute --file prisma/migrations/<pasta>/migration.sql` e `npx prisma migrate resolve --applied "<nome_da_pasta>"`.
+
+Em desenvolvimento, para criar migrações a partir do schema:
+
+```bash
+npm run db:migrate:dev
 ```
 
 ## 🏃 Como Executar
@@ -122,42 +140,35 @@ docker compose up -d backend
 
 ## 📁 Estrutura do Projeto
 
+Camadas (ver também `docs/ESTRUTURA-PASTAS.md`):
+
 ```
 backend/
 ├── src/
-│   ├── core/                    # Lógica de negócio
-│   │   ├── domain/              # Entidades do domínio
-│   │   ├── services/            # Serviços de negócio
-│   │   ├── types/               # Tipos TypeScript
-│   │   └── utils/               # Utilitários
-│   ├── infrastructure/          # Infraestrutura
-│   │   ├── database/            # Banco de dados
-│   │   │   ├── models/          # Modelos Sequelize
-│   │   │   ├── migrations/      # Migrations
-│   │   │   ├── repositories/    # Repositórios
-│   │   │   └── redis/           # Cliente Redis
-│   │   ├── helpers/             # Funções auxiliares
-│   │   ├── types/               # Tipos de infraestrutura
-│   │   └── web/                 # API REST
-│   │       ├── controllers/     # Controladores
-│   │       ├── routes/          # Rotas
-│   │       └── main.ts          # Entry point
-│   └── middleware/              # Middlewares
-│       ├── auth.middleware.ts   # Autenticação
-│       ├── rbac.middleware.ts   # Autorização
-│       ├── validation.middleware.ts
-│       └── ...
-├── tests/                       # Testes
-│   ├── unit/                    # Testes unitários
-│   └── e2e/                     # Testes end-to-end
+│   ├── main.ts              # Entrada
+│   ├── bootstrap.ts         # NestFactory + HTTP global
+│   ├── controllers/         # Express + Nest (`api/*.api.controller.ts`)
+│   ├── services/            # Regras de negócio
+│   ├── repositories/        # Prisma, repositórios, seeds
+│   ├── domain/              # dto/, tipos de domínio
+│   ├── helpers/             # Utilitários
+│   ├── config/              # JWT, DB, Redis, `http/` (helmet, CORS, …)
+│   ├── middlewares/         # Express middlewares + middleware-stacks
+│   ├── modules/             # app/api.module, guards, cron
+│   ├── decorators/
+│   └── tests/               # Unitários e e2e
+├── prisma/
+├── docs/
 ├── package.json
 ├── tsconfig.json
-└── .env                         # Variáveis de ambiente (não versionado)
+└── .env
 ```
+
+Aliases: `@controllers/*`, `@services/*`, `@repositories/*`, `@helpers/*`, `@domain/*`, `@config/*`, `@middlewares/*`, `@modules/*`, `@decorators/*`, `@tests/*`.
 
 ## 🧪 Testes
 
-A configuração do ambiente de teste fica no **`jest.config.ts`** (raiz do backend), que carrega as variáveis de teste em **`jest.env.js`**. A variável **`NODE_ENV`** (test | development | production) define qual banco usar; o pipeline de testes só roda quando `NODE_ENV=test` (os scripts `npm test` e `npm run test:e2e` já setam isso).
+A configuração do ambiente de teste fica no **`jest.config.cjs`** (raiz do backend), que carrega as variáveis de teste em **`jest.env.js`**. A variável **`NODE_ENV`** (test | development | production) define qual banco usar; o pipeline de testes só roda quando `NODE_ENV=test` (os scripts `npm test` e `npm run test:e2e` já setam isso).
 
 Os testes usam um **banco dedicado** (`estoque_test`) para não afetar o ambiente de desenvolvimento.
 
@@ -218,7 +229,7 @@ Principais rotas:
 - `/residentes` - Gerenciamento de residentes
 - `/notificacao` - Notificações
 
-Para documentação completa da API, consulte a pasta `src/infrastructure/web/routes/`.
+As rotas HTTP da API são registadas pelo Nest: `src/modules/api.module.ts` e controladores em `src/controllers/api/*.api.controller.ts`.
 
 ## 🔐 Autenticação
 
@@ -253,10 +264,9 @@ O sistema usa RLS no PostgreSQL com dois níveis de acesso:
 - **Admin** (usuário com `id = 1`): acesso total — pode ler e escrever (SELECT, INSERT, UPDATE, DELETE) em todas as tabelas.
 - **User** (demais usuários): **somente leitura** — pode apenas SELECT (ver dados); não pode criar, editar nem excluir (nenhum POST, PUT, DELETE, INSERT).
 
-- **Helper**: `src/infrastructure/database/rls.context.ts` — `withRlsContext(sequelize, { current_user_id }, fn)` define a variável de sessão `app.current_user_id` na transação.
-- **Middleware**: `rlsContextMiddleware` define `req.rlsContext` a partir do usuário autenticado; `withRls(sequelize, handler)` envolve o handler para rodar toda a lógica de DB dentro dessa transação e define `req.transaction`.
-- **Migração**: `20260223130000-enable-rls-all-tables.js` habilita RLS em todas as tabelas: política de SELECT para todos; políticas de INSERT, UPDATE e DELETE apenas para admin.
-- **Uso nas rotas**: As rotas de **notificação** e **estoque** usam `withRls(sequelize, ...)` e os controllers passam `req.transaction` aos services/repos; as demais rotas podem ser integradas do mesmo jeito (controller → service → repo com `transaction` opcional).
+- **Helper**: `src/repositories/rls.context.ts` — `setRlsSessionGucs` / transações Prisma definem GUCs de sessão (ex. `app.current_user_id`, super-admin) para as políticas RLS.
+- **Middleware**: `request-rls-transaction.middleware` e afins envolvem handlers com transação Prisma quando necessário.
+- **Uso nas rotas**: **notificação** e **estoque** passam `transaction` (cliente Prisma) aos services/repos; outras rotas podem seguir o mesmo padrão.
 
 ### Proteção contra escalação de privilégios (browser)
 
