@@ -39,7 +39,6 @@ const superAdminUpload = UseExpressMwGuard(
   requireSuperAdmin,
   adminBackupUpload.single('file'),
 );
-const superAdminOnly = UseExpressMwGuard(requireSuperAdmin);
 const adminCreateUserBody = UseValidatedBody(AdminCreateUserBodyDto);
 const adminUpdateUserBody = UseValidatedBody(AdminUpdateUserBodyDto);
 const adminMergeMeds = UseValidatedBody(AdminMergeMedicinesBodyDto);
@@ -166,20 +165,6 @@ export class AdminApiController {
   @ApiOperation({ summary: 'Estado de saúde detalhado (admin)' })
   health(@Req() req: Request, @Res() res: Response): void {
     void this.controller.getHealth(req, res);
-  }
-
-  @Get('backup/status')
-  @ApiOperation({ summary: '[Super-admin] Estado dos backups' })
-  @UseGuards(superAdminOnly)
-  backupStatus(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.getBackupStatus(req, res);
-  }
-
-  @Post('backup/run')
-  @ApiOperation({ summary: '[Super-admin] Disparar backup agora' })
-  @UseGuards(superAdminOnly)
-  backupRun(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.runBackupNow(req, res);
   }
 
   @Get('config')

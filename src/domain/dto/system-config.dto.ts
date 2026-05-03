@@ -57,6 +57,12 @@ export const SystemConfigSchema = z.object({
     manualCooldownErrorSec: z.number().int().min(1),
   }),
 
+  scheduledBackup: z.object({
+    enabled: z.boolean(),
+    cronExpression: z.string().min(1, 'expressão cron vazia'),
+    timezone: z.string().min(1),
+  }),
+
   logging: z.object({
     level: z.string().min(1),
     format: z.enum(['json', 'pretty']),
@@ -87,6 +93,7 @@ export type SystemConfigPatch = Partial<{
   }>;
   pricing?: Partial<SystemConfigDto['pricing']>;
   scheduledPriceBackfill?: Partial<SystemConfigDto['scheduledPriceBackfill']>;
+  scheduledBackup?: Partial<SystemConfigDto['scheduledBackup']>;
   logging?: Partial<SystemConfigDto['logging']>;
   tenantImport?: Partial<SystemConfigDto['tenantImport']>;
 }>;
@@ -121,6 +128,9 @@ export const RUNTIME_DB_KEYS = {
   scheduledPriceBackfillCronExpression: `${RUNTIME_CONFIG_PREFIX}scheduled_price_backfill.cron_expression`,
   scheduledPriceBackfillManualCooldownSuccessSec: `${RUNTIME_CONFIG_PREFIX}scheduled_price_backfill.manual_cooldown_success_sec`,
   scheduledPriceBackfillManualCooldownErrorSec: `${RUNTIME_CONFIG_PREFIX}scheduled_price_backfill.manual_cooldown_error_sec`,
+  scheduledBackupEnabled: `${RUNTIME_CONFIG_PREFIX}scheduled_backup.enabled`,
+  scheduledBackupCronExpression: `${RUNTIME_CONFIG_PREFIX}scheduled_backup.cron_expression`,
+  scheduledBackupTimezone: `${RUNTIME_CONFIG_PREFIX}scheduled_backup.timezone`,
   loggingLevel: `${RUNTIME_CONFIG_PREFIX}logging.level`,
   loggingFormat: `${RUNTIME_CONFIG_PREFIX}logging.format`,
   tenantImportPgDumpBirthDateFallback: `${RUNTIME_CONFIG_PREFIX}tenant_import.pg_dump_birth_date_fallback`,
@@ -173,6 +183,9 @@ export function encodeSystemConfigToDb(
     [k.scheduledPriceBackfillManualCooldownErrorSec]: String(
       dto.scheduledPriceBackfill.manualCooldownErrorSec,
     ),
+    [k.scheduledBackupEnabled]: dto.scheduledBackup.enabled ? 'true' : 'false',
+    [k.scheduledBackupCronExpression]: dto.scheduledBackup.cronExpression,
+    [k.scheduledBackupTimezone]: dto.scheduledBackup.timezone,
     [k.loggingLevel]: dto.logging.level,
     [k.loggingFormat]: dto.logging.format,
     [k.tenantImportPgDumpBirthDateFallback]:
@@ -350,6 +363,26 @@ export function decodeRuntimeDbRows(
       spb as SystemConfigDto['scheduledPriceBackfill'];
   }
 
+  const sb: Partial<SystemConfigDto['scheduledBackup']> = {};
+  if (all[k.scheduledBackupEnabled] != null) {
+    sb.enabled = parseBool(all[k.scheduledBackupEnabled], true);
+  }
+  if (
+    all[k.scheduledBackupCronExpression] != null &&
+    String(all[k.scheduledBackupCronExpression]).trim() !== ''
+  ) {
+    sb.cronExpression = String(all[k.scheduledBackupCronExpression]).trim();
+  }
+  if (
+    all[k.scheduledBackupTimezone] != null &&
+    String(all[k.scheduledBackupTimezone]).trim() !== ''
+  ) {
+    sb.timezone = String(all[k.scheduledBackupTimezone]).trim();
+  }
+  if (Object.keys(sb).length) {
+    out.scheduledBackup = sb as SystemConfigDto['scheduledBackup'];
+  }
+
   const lg: Partial<SystemConfigDto['logging']> = {};
   if (
     all[k.loggingLevel] != null &&
@@ -436,6 +469,10 @@ export function mergeSystemConfigPatch(
     scheduledPriceBackfill: {
       ...base.scheduledPriceBackfill,
       ...stripUndefined(patch.scheduledPriceBackfill ?? {}),
+    },
+    scheduledBackup: {
+      ...base.scheduledBackup,
+      ...stripUndefined(patch.scheduledBackup ?? {}),
     },
     logging: {
       ...base.logging,

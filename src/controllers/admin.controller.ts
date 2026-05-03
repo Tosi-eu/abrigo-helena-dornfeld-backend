@@ -1,6 +1,7 @@
 import { Response } from 'express';
+import { Connection } from '@temporalio/client';
 import { spawn } from 'child_process';
-import { writeFileSync, unlinkSync, existsSync, statSync } from 'fs';
+import { writeFileSync, unlinkSync, existsSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import crypto from 'crypto';
@@ -17,6 +18,11 @@ import { type TenantRequest } from '@middlewares/tenant.middleware';
 import { getErrorMessage } from '@domain/error.types';
 import { withRootTransaction } from '@repositories/prisma';
 import { getRedisClient } from '@config/redis.client';
+import {
+  envTemporalAddress,
+  envTemporalTaskQueue,
+  getTemporalClient,
+} from '@temporal/client';
 import {
   MovementPeriod,
   type GenerateReportParams,
@@ -504,6 +510,106 @@ export class AdminController {
     }
   }
 
+  async getInfraHealth(_req: AuthRequest, res: Response) {
+    const checkedAt = new Date().toISOString();
+
+    const temporalDisabled =
+      String(process.env.ENABLE_TEMPORAL ?? '')
+        .trim()
+        .toLowerCase() === 'false';
+
+    type Check = {
+      status:
+        | 'ok'
+        | 'error'
+        | 'degraded'
+        | 'skipped'
+        | 'disabled'
+        | 'unavailable';
+      latencyMs?: number;
+      detail?: string;
+      url?: string;
+      httpStatus?: number;
+    };
+
+    let database: Check = { status: 'error', detail: 'not probed' };
+    let redis: Check = { status: 'unavailable', detail: 'not probed' };
+
+    try {
+      const t0 = Date.now();
+      await getDb().$queryRaw(Prisma.sql`SELECT 1`);
+      database = { status: 'ok', latencyMs: Date.now() - t0 };
+    } catch (err: unknown) {
+      database = {
+        status: 'error',
+        detail: getErrorMessage(err) || 'database probe failed',
+      };
+    }
+
+    try {
+      const rc = getRedisClient();
+      if (!rc) {
+        redis = { status: 'unavailable', detail: 'Redis não configurado' };
+      } else {
+        const t0 = Date.now();
+        const pong = await rc.ping();
+        redis =
+          pong === 'PONG'
+            ? { status: 'ok', latencyMs: Date.now() - t0 }
+            : {
+                status: 'degraded',
+                detail: `Resposta inesperada: ${String(pong)}`,
+              };
+      }
+    } catch (err: unknown) {
+      redis = {
+        status: 'error',
+        detail: getErrorMessage(err) || 'redis probe failed',
+      };
+    }
+
+    let temporal: Check = { status: 'disabled', detail: 'not probed' };
+    if (temporalDisabled) {
+      temporal = {
+        status: 'disabled',
+        detail: 'ENABLE_TEMPORAL=false',
+      };
+    } else {
+      let conn: Awaited<ReturnType<typeof Connection.connect>> | null = null;
+      try {
+        const t0 = Date.now();
+        conn = await Connection.connect({
+          address: envTemporalAddress(),
+          connectTimeout: '4s',
+        });
+        temporal = { status: 'ok', latencyMs: Date.now() - t0 };
+      } catch (err: unknown) {
+        temporal = {
+          status: 'error',
+          detail: getErrorMessage(err) || 'Temporal indisponível',
+        };
+      } finally {
+        if (conn) {
+          await conn.close().catch(() => undefined);
+        }
+      }
+    }
+
+    const payload = {
+      checkedAt,
+      services: {
+        database,
+        redis,
+        temporal,
+      },
+    };
+
+    if (database.status === 'error') {
+      return res.status(503).json(payload);
+    }
+    return res.json(payload);
+  }
+
   async getBackupStatus(_req: AuthRequest, res: Response) {
     if (!this.systemConfigRepo) {
       return res.status(501).json({ error: 'Configurações não disponíveis' });
@@ -544,110 +650,36 @@ export class AdminController {
   }
 
   async runBackupNow(_req: AuthRequest, res: Response) {
-    if (!this.systemConfigRepo) {
-      return res.status(501).json({ error: 'Configurações não disponíveis' });
+    const temporalDisabled =
+      String(process.env.ENABLE_TEMPORAL ?? '')
+        .trim()
+        .toLowerCase() === 'false';
+    if (temporalDisabled) {
+      return res.status(503).json({
+        error:
+          'Temporal desativado (ENABLE_TEMPORAL). Ative o worker e o Temporal para backups.',
+      });
     }
 
-    const startedAt = Date.now();
-    const dbHost = process.env.DB_HOST || 'localhost';
-    const dbPort = process.env.DB_PORT || '5432';
-    const dbUser = process.env.DB_USER || 'postgres';
-    const dbPassword = process.env.DB_PASSWORD || '';
-    const dbName = process.env.DB_NAME || 'estoque';
-    const env = { ...process.env, PGPASSWORD: dbPassword };
-
-    const token = crypto.randomBytes(8).toString('hex');
-    const tmpSql = join(tmpdir(), `admin_backup_${Date.now()}_${token}.sql`);
-    const tmpGz = `${tmpSql}.gz`;
-
-    const cleanup = () => {
-      try {
-        if (existsSync(tmpSql)) unlinkSync(tmpSql);
-      } catch {
-        // no-op
-      }
-      try {
-        if (existsSync(tmpGz)) unlinkSync(tmpGz);
-      } catch {
-        // no-op
-      }
-    };
-
-    const persistStatus = async (data: Record<string, string>) => {
-      const repo = this.systemConfigRepo;
-      if (!repo) return;
-      await repo.setMany(data);
-    };
-
     try {
-      await new Promise<void>((resolve, reject) => {
-        let stderr = '';
-        const p = spawn(
-          'pg_dump',
-          [
-            '-Fp',
-            '--data-only',
-            '-h',
-            dbHost,
-            '-p',
-            dbPort,
-            '-U',
-            dbUser,
-            dbName,
-            '-f',
-            tmpSql,
-          ],
-          { env, stdio: ['ignore', 'ignore', 'pipe'] },
-        );
-        p.stderr?.on('data', (d: Buffer) => (stderr += d.toString()));
-        p.on('close', code => {
-          if (code === 0) return resolve();
-          reject(new Error(stderr.trim() || `pg_dump failed (code ${code})`));
-        });
+      const { client } = await getTemporalClient();
+      const workflowId = `system-backup-manual:${crypto.randomUUID()}`;
+      const handle = await client.workflow.start('systemBackupCronWorkflow', {
+        taskQueue: envTemporalTaskQueue(),
+        workflowId,
+        args: [],
       });
 
-      await new Promise<void>((resolve, reject) => {
-        let stderr = '';
-        const p = spawn('gzip', ['-f', tmpSql], {
-          stdio: ['ignore', 'ignore', 'pipe'],
-        });
-        p.stderr?.on('data', (d: Buffer) => (stderr += d.toString()));
-        p.on('close', code => {
-          if (code === 0) return resolve();
-          reject(new Error(stderr.trim() || `gzip failed (code ${code})`));
-        });
-      });
-
-      const durationMs = Date.now() - startedAt;
-      const sizeBytes = existsSync(tmpGz) ? Number(statSync(tmpGz).size) : null;
-
-      await persistStatus({
-        last_backup_at: new Date().toISOString(),
-        last_backup_status: 'ok',
-        last_backup_duration_ms: String(durationMs),
-        ...(sizeBytes != null
-          ? { last_backup_size_bytes: String(sizeBytes) }
-          : {}),
-        last_backup_error: '',
-      });
-
-      cleanup();
-
-      return res.json({
-        message: 'Backup gerado com sucesso.',
-        durationMs,
-        sizeBytes,
+      return res.status(202).json({
+        accepted: true,
+        workflowId,
+        runId: handle.firstExecutionRunId,
+        message:
+          'Workflow de backup enfileirado no Temporal. Acompanhe o worker e o estado em backup/status.',
       });
     } catch (error: unknown) {
-      const durationMs = Date.now() - startedAt;
-      const msg = getErrorMessage(error) || 'Erro ao gerar backup';
-      await persistStatus({
-        last_backup_at: new Date().toISOString(),
-        last_backup_status: 'error',
-        last_backup_duration_ms: String(durationMs),
-        last_backup_error: msg,
-      }).catch(() => null);
-      cleanup();
+      const msg =
+        getErrorMessage(error) || 'Erro ao iniciar workflow de backup';
       return res.status(500).json({ error: msg });
     }
   }

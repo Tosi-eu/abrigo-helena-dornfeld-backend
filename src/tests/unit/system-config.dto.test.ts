@@ -30,6 +30,11 @@ describe('system-config.dto', () => {
     expect(parsed.scheduledPriceBackfill.manualCooldownErrorSec).toBe(
       base.scheduledPriceBackfill.manualCooldownErrorSec,
     );
+    expect(parsed.scheduledBackup.enabled).toBe(base.scheduledBackup.enabled);
+    expect(parsed.scheduledBackup.cronExpression).toBe(
+      base.scheduledBackup.cronExpression,
+    );
+    expect(parsed.scheduledBackup.timezone).toBe(base.scheduledBackup.timezone);
     expect(parsed.logging.level).toBe(base.logging.level);
     expect(parsed.logging.format).toBe(base.logging.format);
     expect(parsed.tenantImport.pgDumpBirthDateFallback).toBe(

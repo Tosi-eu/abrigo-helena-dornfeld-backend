@@ -12,6 +12,7 @@ import { PrismaSetorRepository } from '@repositories/setor.repository';
 import { TenantConfigService } from '@services/tenant-config.service';
 import { NotificationEventService } from '@services/notificacao.service';
 import { prisma } from '@repositories/prisma';
+import { runSystemBackup } from '@services/system-backup.runner';
 import { TenantImportService } from '@services/tenant-import.service';
 import { TenantPgDumpImportService } from '@services/tenant-pg-dump-import.service';
 import { readFile } from 'node:fs/promises';
@@ -64,6 +65,7 @@ async function createActivities() {
         await notificationService.bootstrapReplacementNotifications();
       return { createdCount };
     },
+    runSystemBackup,
     runTenantImportJob: async (jobId: string) => {
       const job = await prisma.tenantImportJob.findUnique({
         where: { id: jobId },

@@ -57,6 +57,11 @@ export function getBuiltinDefaultSystemConfig(): SystemConfigDto {
       manualCooldownSuccessSec: 60,
       manualCooldownErrorSec: 300,
     },
+    scheduledBackup: {
+      enabled: true,
+      cronExpression: '0 8-18/2 * * *',
+      timezone: 'America/Sao_Paulo',
+    },
     logging: {
       level: 'debug',
       format: 'pretty',

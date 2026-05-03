@@ -18,10 +18,12 @@ import {
   ApiSecurity,
   ApiTags,
 } from '@nestjs/swagger';
+import type { AuthRequest } from '@middlewares/auth.middleware';
 import type { Request, RequestHandler, Response } from 'express';
 import rateLimit from 'express-rate-limit';
 import { getRuntimeHttpConfig } from '@config/http/runtime-http-config';
 import { AppController } from '@controllers/app.controller';
+import { AdminController } from '@controllers/admin.controller';
 import { AdminTenantsController } from '@controllers/admin-tenants.controller';
 import { UseExpressMwGuard } from '@middlewares/express.middleware';
 import { optionalAuthMiddleware } from '@middlewares/auth.middleware';
@@ -118,6 +120,7 @@ export class AppApiController {
   constructor(
     private readonly appController: AppController,
     private readonly tenantsController: AdminTenantsController,
+    private readonly adminController: AdminController,
   ) {}
 
   @Get('status')
@@ -258,5 +261,35 @@ export class AppApiController {
   @UseGuards(adminTenantsChain)
   setTenantConfig(@Req() req: Request, @Res() res: Response): void {
     void this.tenantsController.setTenantConfig(req, res);
+  }
+
+  @Get('admin/infra-health')
+  @ApiOperation({
+    summary:
+      '[Super-admin] Saúde da infraestrutura (PostgreSQL, Redis, Temporal)',
+  })
+  @ApiSecurity('bearer')
+  @ApiResponse({ status: 200, description: 'Estado por serviço' })
+  @UseGuards(adminTenantsChain)
+  infraHealth(@Req() req: Request, @Res() res: Response): void {
+    void this.adminController.getInfraHealth(req as AuthRequest, res);
+  }
+
+  @Get('admin/backup/status')
+  @ApiOperation({ summary: '[Super-admin] Estado dos backups' })
+  @ApiSecurity('bearer')
+  @UseGuards(adminTenantsChain)
+  backupStatus(@Req() req: Request, @Res() res: Response): void {
+    void this.adminController.getBackupStatus(req as AuthRequest, res);
+  }
+
+  @Post('admin/backup/run')
+  @ApiOperation({
+    summary: '[Super-admin] Disparar backup agora (workflow Temporal)',
+  })
+  @ApiSecurity('bearer')
+  @UseGuards(adminTenantsChain)
+  backupRun(@Req() req: Request, @Res() res: Response): void {
+    void this.adminController.runBackupNow(req as AuthRequest, res);
   }
 }

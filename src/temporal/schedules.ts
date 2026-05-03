@@ -63,6 +63,79 @@ async function ensurePriceBackfillSchedule(
   }
 }
 
+type ScheduledBackupScheduleCfg = {
+  enabled: boolean;
+  cronExpression: string;
+  timezone: string;
+};
+
+async function ensureScheduledBackupSchedule(
+  client: Client,
+  cfg: ScheduledBackupScheduleCfg,
+): Promise<void> {
+  const scheduleId = 'system-backup-cron';
+  const taskQueue = process.env.TEMPORAL_TASK_QUEUE?.trim() || 'abrigo';
+
+  const tz = cfg.timezone?.trim();
+  const spec = {
+    cronExpressions: [cfg.cronExpression],
+    ...(tz ? { timezone: tz } : {}),
+  };
+
+  try {
+    await client.schedule.create({
+      scheduleId,
+      spec,
+      action: {
+        type: 'startWorkflow',
+        workflowType: 'systemBackupCronWorkflow',
+        taskQueue,
+        args: [],
+      },
+    });
+
+    logger.info('Temporal schedule created', {
+      operation: 'temporal_schedule_create',
+      scheduleId,
+      cronExpression: cfg.cronExpression,
+      timezone: tz,
+      workflowType: 'systemBackupCronWorkflow',
+      taskQueue,
+    });
+  } catch (err: unknown) {
+    if (!isScheduleAlreadyExists(err)) throw err;
+
+    const handle = client.schedule.getHandle(scheduleId);
+    await handle.update(prev => {
+      const nextSpec = { ...prev.spec } as Record<string, unknown>;
+      delete nextSpec.timezone;
+      nextSpec.cronExpressions = [cfg.cronExpression];
+      if (tz) nextSpec.timezone = tz;
+      return {
+        spec: nextSpec as typeof prev.spec,
+        action: prev.action,
+        policies: prev.policies,
+        state: prev.state,
+        memo: prev.memo,
+      };
+    });
+
+    logger.info('Temporal schedule updated', {
+      operation: 'temporal_schedule_update',
+      scheduleId,
+      cronExpression: cfg.cronExpression,
+      timezone: tz,
+    });
+  }
+
+  const handle = client.schedule.getHandle(scheduleId);
+  if (cfg.enabled) {
+    await handle.unpause().catch(() => undefined);
+  } else {
+    await handle.pause().catch(() => undefined);
+  }
+}
+
 async function ensureSchedule(
   client: Client,
   scheduleId: string,
@@ -130,11 +203,17 @@ async function main(): Promise<void> {
 
   const priceCron = sys.scheduledPriceBackfill.cronExpression;
   const notifCron = process.env.NOTIFICATION_BOOTSTRAP_CRON || '*/30 * * * *';
+  const backup = sys.scheduledBackup;
 
   const conn = await Connection.connect({ address });
   const client = new Client({ connection: conn, namespace });
 
   await ensurePriceBackfillSchedule(client, priceCron);
+  await ensureScheduledBackupSchedule(client, {
+    enabled: backup.enabled,
+    cronExpression: backup.cronExpression,
+    timezone: backup.timezone,
+  });
   await ensureSchedule(
     client,
     'notification-bootstrap-cron',

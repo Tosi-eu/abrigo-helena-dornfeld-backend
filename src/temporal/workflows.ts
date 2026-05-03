@@ -1,4 +1,5 @@
 import type { ScheduledPriceBackfillResult } from '@services/price-backfill-scheduled.runner';
+import type { SystemBackupResult } from '@services/system-backup.runner';
 import type { ManualPriceBackfillStatus } from '@services/price-backfill-manual.guard';
 import {
   defineQuery,
@@ -14,6 +15,7 @@ type Activities = {
     tenantId: number,
   ): Promise<{ processed: number }>;
   runNotificationBootstrap(): Promise<{ createdCount: number }>;
+  runSystemBackup(): Promise<SystemBackupResult>;
   getPriceBackfillManualStatus(
     tenantId: number,
   ): Promise<ManualPriceBackfillStatus>;
@@ -31,6 +33,16 @@ const { runScheduledPriceBackfillForAllTenants, runNotificationBootstrap } =
     },
   });
 
+const { runSystemBackup } = proxyActivities<Activities>({
+  startToCloseTimeout: '2 hours',
+  retry: {
+    maximumAttempts: 3,
+    initialInterval: '30s',
+    backoffCoefficient: 2,
+    maximumInterval: '15m',
+  },
+});
+
 export async function priceBackfillCronWorkflow(): Promise<ScheduledPriceBackfillResult> {
   return runScheduledPriceBackfillForAllTenants();
 }
@@ -39,6 +51,10 @@ export async function notificationBootstrapCronWorkflow(): Promise<{
   createdCount: number;
 }> {
   return runNotificationBootstrap();
+}
+
+export async function systemBackupCronWorkflow(): Promise<SystemBackupResult> {
+  return runSystemBackup();
 }
 
 export async function manualPriceBackfillWorkflow(
