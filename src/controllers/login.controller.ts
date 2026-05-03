@@ -553,9 +553,18 @@ export class LoginController {
 
   async getDisplayConfig(_req: AuthRequest, res: Response) {
     if (!this.systemConfigRepo) {
+      logger.warn('Login: systemConfigRepo não injectado', {
+        operation: 'getDisplayConfig',
+      });
       return res
-        .status(501)
-        .json({ error: 'Configuração de exibição indisponível' });
+        .status(503)
+        .set('Retry-After', '120')
+        .set('X-Stokio-Availability', 'unavailable')
+        .json({
+          error: 'Configuração de exibição indisponível',
+          code: 'SERVICE_UNAVAILABLE',
+          service: 'systemConfig',
+        });
     }
     try {
       const all = await this.systemConfigRepo.getAll();

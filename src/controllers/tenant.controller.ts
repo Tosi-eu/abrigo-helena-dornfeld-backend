@@ -29,6 +29,7 @@ import {
 } from '@services/price-backfill-manual.guard';
 import { repairStaleManualPriceBackfillLock } from '@services/price-backfill-stale-lock.repair';
 import { envTemporalTaskQueue, getTemporalClient } from '@temporal/client';
+import type { PriceBackfillQueueStatus } from '@temporal/workflows';
 import {
   assertLogoUrlBelongsToOurR2,
   deleteTenantLogoObjectsExceptKey,
@@ -292,7 +293,9 @@ export class TenantController {
       try {
         const { client } = await getTemporalClient();
         const handle = client.workflow.getHandle(wid);
-        const s = (await handle.query('priceBackfillQueueStatus')) as any;
+        const s = (await handle.query(
+          'priceBackfillQueueStatus',
+        )) as PriceBackfillQueueStatus;
 
         const redis = await getManualPriceBackfillStatus(tenantId);
 

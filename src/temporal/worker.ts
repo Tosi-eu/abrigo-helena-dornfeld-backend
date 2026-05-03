@@ -17,6 +17,13 @@ import { runSystemBackup } from '@services/system-backup.runner';
 import { TenantImportService } from '@services/tenant-import.service';
 import { TenantPgDumpImportService } from '@services/tenant-pg-dump-import.service';
 import { readFile } from 'node:fs/promises';
+import { Prisma } from '@prisma/client';
+
+function toPrismaJsonValue(value: unknown): Prisma.InputJsonValue {
+  // Prisma JSON não aceita classes / tipos "estruturais" como arrays de objetos tipados.
+  // Serializar garante uma árvore JSON pura (string/number/bool/null/array/object).
+  return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
+}
 
 async function createActivities() {
   const tenantConfigService = new TenantConfigService(
@@ -84,7 +91,10 @@ async function createActivities() {
 
       try {
         const buf = Buffer.from(await readFile(job.file_path));
-        const options = (job.options_json ?? {}) as any;
+        const options =
+          job.options_json && typeof job.options_json === 'object'
+            ? (job.options_json as Prisma.JsonObject)
+            : ({} satisfies Prisma.JsonObject);
 
         if (job.kind === 'xlsx') {
           const result = await tenantImportService.importXlsx({
@@ -97,7 +107,7 @@ async function createActivities() {
             data: {
               status: 'succeeded',
               finished_at: new Date(),
-              result_json: result as any,
+              result_json: toPrismaJsonValue(result),
             },
           });
           return;
@@ -108,23 +118,23 @@ async function createActivities() {
             tenantId: job.tenant_id,
             actorUserId: job.actor_user_id,
             fileBuffer: buf,
-            replaceTenantData: Boolean(options?.replaceTenantData),
+            replaceTenantData: Boolean(options.replaceTenantData),
             birthDateFallback:
-              typeof options?.birthDateFallback === 'string'
+              typeof options.birthDateFallback === 'string'
                 ? options.birthDateFallback
                 : undefined,
             sourceTenantId:
-              typeof options?.sourceTenantId === 'number' &&
+              typeof options.sourceTenantId === 'number' &&
               Number.isFinite(options.sourceTenantId)
                 ? options.sourceTenantId
                 : undefined,
-          } as any);
+          });
           await prisma.tenantImportJob.update({
             where: { id: jobId },
             data: {
               status: 'succeeded',
               finished_at: new Date(),
-              result_json: result as any,
+              result_json: toPrismaJsonValue(result),
             },
           });
           return;

@@ -24,6 +24,12 @@ import { UseExpressMwGuard } from '@middlewares/express.middleware';
 import { optionalAuthMiddleware } from '@middlewares/auth.middleware';
 import { bindSuperAdminRlsTransaction } from '@middlewares/request-rls-transaction.middleware';
 import { requireSuperAdminOrApiKey } from '@middlewares/super-admin.middleware';
+import type { AuthRequest } from '@middlewares/auth.middleware';
+
+type UploadRequest = Request &
+  AuthRequest & { file?: Express.Multer.File } & {
+    params: { slug?: string; jobId?: string };
+  };
 
 const adminImportGuard = UseExpressMwGuard(
   bindSuperAdminRlsTransaction,
@@ -76,8 +82,8 @@ export class AdminTenantImportApiController {
     },
   })
   @UseGuards(adminImportXlsxUploadGuard)
-  importXlsx(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.importXlsx(req as any, res);
+  importXlsx(@Req() req: UploadRequest, @Res() res: Response): void {
+    void this.controller.importXlsx(req, res);
   }
 
   @Post('xlsx/async')
@@ -95,8 +101,8 @@ export class AdminTenantImportApiController {
     },
   })
   @UseGuards(adminImportXlsxUploadGuard)
-  importXlsxAsync(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.importXlsxAsync(req as any, res);
+  importXlsxAsync(@Req() req: UploadRequest, @Res() res: Response): void {
+    void this.controller.importXlsxAsync(req, res);
   }
 
   @Post('pg-dump')
@@ -116,8 +122,8 @@ export class AdminTenantImportApiController {
     },
   })
   @UseGuards(adminImportPgDumpUploadGuard)
-  importPgDump(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.importPgDump(req as any, res);
+  importPgDump(@Req() req: UploadRequest, @Res() res: Response): void {
+    void this.controller.importPgDump(req, res);
   }
 
   @Post('pg-dump/async')
@@ -135,8 +141,8 @@ export class AdminTenantImportApiController {
     },
   })
   @UseGuards(adminImportPgDumpUploadGuard)
-  importPgDumpAsync(@Req() req: Request, @Res() res: Response): void {
-    void this.controller.importPgDumpAsync(req as any, res);
+  importPgDumpAsync(@Req() req: UploadRequest, @Res() res: Response): void {
+    void this.controller.importPgDumpAsync(req, res);
   }
 
   @Get('jobs/:jobId')
@@ -147,10 +153,10 @@ export class AdminTenantImportApiController {
   @UseGuards(adminImportGuard)
   getJob(
     @Param('jobId') jobId: string,
-    @Req() req: Request,
+    @Req() req: UploadRequest,
     @Res() res: Response,
   ): void {
-    (req as any).params = { ...(req as any).params, jobId };
-    void this.controller.getJob(req as any, res);
+    req.params = { ...(req.params ?? {}), jobId };
+    void this.controller.getJob(req, res);
   }
 }
