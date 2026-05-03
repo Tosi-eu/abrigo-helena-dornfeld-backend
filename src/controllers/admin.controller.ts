@@ -39,6 +39,7 @@ import {
 } from '@domain/dto/system-config.dto';
 import { logger } from '@helpers/logger.helper';
 import type { AdminMetricsResponse } from '@stokio/sdk';
+import { syncScheduledBackupSchedule } from '@temporal/scheduled-backup-schedule';
 
 const DEFAULT_DAYS = 30;
 const MAX_DAYS = 365;
@@ -1246,6 +1247,19 @@ export class AdminController {
       return res.status(400).json({ error: displayErr });
     }
 
+    if (systemPatch?.scheduledBackup !== undefined) {
+      const viaApiKey = Boolean(
+        (req as AuthRequest & { adminConfigViaApiKey?: boolean })
+          .adminConfigViaApiKey,
+      );
+      if (!req.user?.isSuperAdmin && !viaApiKey) {
+        return res.status(403).json({
+          error:
+            'Only super-admin can change the backup schedule.',
+        });
+      }
+    }
+
     try {
       if (Object.keys(displayPatch).length > 0) {
         await this.systemConfigRepo.setMany(displayPatch);
@@ -1259,6 +1273,21 @@ export class AdminController {
           );
         }
         await this.systemConfigService.update(systemPatch);
+        if (systemPatch.scheduledBackup != null) {
+          try {
+            await syncScheduledBackupSchedule(
+              this.systemConfigService.get().scheduledBackup,
+            );
+          } catch (e: unknown) {
+            logger.warn(
+              '[admin/config] Falha ao sincronizar schedule Temporal de backup (cron pode ficar desatualizado até ao próximo bootstrap)',
+              {
+                operation: 'sync_scheduled_backup_schedule',
+                error: e instanceof Error ? e.message : String(e),
+              },
+            );
+          }
+        }
       }
       const all = await this.systemConfigRepo.getAll();
       const display = filterNonRuntimeConfig(all);
