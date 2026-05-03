@@ -8,6 +8,7 @@ import { prisma } from '@repositories/prisma';
 import { getRedisClient } from '@config/redis.client';
 import { getRuntimeHttpConfig } from './runtime-http-config';
 import { globalRateLimitMiddleware } from './http-rate-limit-wrappers';
+import { requestIdMiddleware } from '@middlewares/request-id.middleware';
 
 let lastHealthCheckAt = 0;
 let lastHealthHttpStatus = 503;
@@ -19,6 +20,8 @@ function isSwaggerUiPath(path: string): boolean {
 
 export function configureHttpLayer(app: Application): void {
   app.set('trust proxy', 1);
+
+  app.use(requestIdMiddleware);
 
   const helmetMiddleware = helmet({
     crossOriginResourcePolicy: { policy: 'cross-origin' },

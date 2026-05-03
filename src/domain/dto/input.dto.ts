@@ -1,4 +1,4 @@
-import type { Input } from '@porto-sdk/sdk';
+import type { Input } from '@stokio/sdk';
 
 export type { Input };
 export type InputDto = Input;

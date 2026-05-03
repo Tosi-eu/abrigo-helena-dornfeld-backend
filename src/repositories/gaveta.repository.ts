@@ -1,4 +1,4 @@
-import type { DrawerPersist } from '@porto-sdk/sdk';
+import type { DrawerPersist } from '@stokio/sdk';
 import { getDb } from '@repositories/prisma';
 
 export class PrismaDrawerRepository {

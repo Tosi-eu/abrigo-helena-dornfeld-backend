@@ -1,5 +1,5 @@
 import type { PrismaInputRepository } from '@repositories/insumo.repository';
-import type { Input } from '@porto-sdk/sdk';
+import type { Input } from '@stokio/sdk';
 import { withRlsContext } from '@repositories/rls.context';
 import type { TenantConfigService } from './tenant-config.service';
 import { getPriceSearchService } from '@helpers/price-service.helper';

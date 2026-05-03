@@ -3,6 +3,6 @@ import type {
   CabinetCategory,
   Drawer,
   DrawerCategory,
-} from '@porto-sdk/sdk';
+} from '@stokio/sdk';
 
 export type { Cabinet, CabinetCategory, Drawer, DrawerCategory };

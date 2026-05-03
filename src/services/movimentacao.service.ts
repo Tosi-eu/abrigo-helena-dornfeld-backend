@@ -4,7 +4,7 @@ import { formatDateToPtBr } from '@helpers/date.helper';
 import { CacheKeyHelper } from '@helpers/redis.helper';
 import { MovementType, NonMovementedItem } from '@helpers/utils';
 import { CacheService } from './redis.service';
-import type { MovementRecord } from '@porto-sdk/sdk';
+import type { MovementRecord } from '@stokio/sdk';
 import {
   MovementQueryParams,
   MovementRankingParams,

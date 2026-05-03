@@ -390,3 +390,32 @@ model TenantInvite {
   @@index([tenant_id, email], map: "idx_tenant_invite_tenant_email")
   @@map("tenant_invite")
 }
+
+model ErrorEvent {
+  id                String   @id @default(uuid()) @db.Uuid
+  occurredAt        DateTime @map("occurred_at")
+  receivedAt        DateTime @default(now()) @map("received_at")
+  source            String   @db.VarChar(20)
+  severity          String   @db.VarChar(20)
+  category          String   @db.VarChar(20)
+  code              String?  @db.VarChar(60)
+  messageRaw        String   @map("message_raw") @db.Text
+  messageSanitized  String?  @map("message_sanitized") @db.Text
+  fingerprint       String   @db.VarChar(40)
+  contextJson       Json?    @map("context_json")
+  stack             String?  @db.Text
+  correlationId     String?  @map("correlation_id") @db.VarChar(80)
+  tenantId          Int?     @map("tenant_id")
+  httpMethod        String?  @map("http_method") @db.VarChar(10)
+  httpPath          String?  @map("http_path") @db.VarChar(500)
+  httpStatus        Int?     @map("http_status")
+  workflowId        String?  @map("workflow_id") @db.VarChar(120)
+  workflowRunId     String?  @map("workflow_run_id") @db.VarChar(120)
+  originApp         String?  @map("origin_app") @db.VarChar(40)
+
+  @@index([occurredAt], map: "idx_error_event_occurred_at")
+  @@index([source, occurredAt], map: "idx_error_event_source_occurred_at")
+  @@index([fingerprint], map: "idx_error_event_fingerprint")
+  @@index([correlationId], map: "idx_error_event_correlation_id")
+  @@map("error_event")
+}

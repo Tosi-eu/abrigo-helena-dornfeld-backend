@@ -1,4 +1,4 @@
-import type { Medicine } from '@porto-sdk/sdk';
+import type { Medicine } from '@stokio/sdk';
 import type { PrismaMedicineRepository } from '@repositories/medicamento.repository';
 import { withRlsContext } from '@repositories/rls.context';
 import type { TenantConfigService } from './tenant-config.service';

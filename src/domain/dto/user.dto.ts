@@ -3,7 +3,7 @@ import type {
   LoginCreateWithTenant,
   LoggedUser,
   UserPermissions,
-} from '@porto-sdk/sdk';
+} from '@stokio/sdk';
 
 export type { Login, LoginCreateWithTenant, LoggedUser, UserPermissions };
 

@@ -11,7 +11,7 @@ import type {
   TenantUiDisplayCaselaSetor,
   TenantUiDisplayArmario,
   TenantUiDisplayGaveta,
-} from '@porto-sdk/sdk';
+} from '@stokio/sdk';
 
 export type {
   PublicTenantListItem,

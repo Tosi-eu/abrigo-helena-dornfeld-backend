@@ -1,4 +1,4 @@
-import type { CabinetPersist } from '@porto-sdk/sdk';
+import type { CabinetPersist } from '@stokio/sdk';
 import type { PrismaCabinetRepository } from '@repositories/armario.repository';
 
 export class CabinetService {

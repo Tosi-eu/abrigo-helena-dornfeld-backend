@@ -1,4 +1,4 @@
-import type { Medicine } from '@porto-sdk/sdk';
+import type { Medicine } from '@stokio/sdk';
 
 export type { Medicine };
 export type MedicineDto = Medicine;

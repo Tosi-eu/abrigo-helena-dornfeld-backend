@@ -10,17 +10,17 @@ import {
   getHttpErrorStatus,
 } from '@helpers/error-response.helper';
 import { logger } from '@helpers/logger.helper';
+import type { AuthRequest } from '@middlewares/auth.middleware';
+import { getErrorEventService } from '@services/error-event.service';
 
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
     const res = ctx.getResponse<Response>();
-    const req = ctx.getRequest<{
-      method?: string;
-      path?: string;
-      url?: string;
-    }>();
+    const req = ctx.getRequest<
+      AuthRequest & { method?: string; path?: string; url?: string }
+    >();
 
     const status =
       exception instanceof HttpException
@@ -37,6 +37,17 @@ export class HttpExceptionFilter implements ExceptionFilter {
       },
       exception instanceof Error ? exception : new Error(String(exception)),
     );
+
+    void getErrorEventService()
+      .recordFromUnknown(exception, {
+        source: 'backend_http',
+        httpMethod: req?.method,
+        httpPath: req?.path ?? req?.url,
+        httpStatus: status,
+        correlationId: req.requestId,
+        tenantId: req.user?.tenantId ?? null,
+      })
+      .catch(() => undefined);
 
     if (exception instanceof HttpException) {
       const body = exception.getResponse();

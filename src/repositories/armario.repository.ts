@@ -1,4 +1,4 @@
-import type { CabinetPersist } from '@porto-sdk/sdk';
+import type { CabinetPersist } from '@stokio/sdk';
 import { getDb } from '@repositories/prisma';
 
 export class PrismaCabinetRepository {

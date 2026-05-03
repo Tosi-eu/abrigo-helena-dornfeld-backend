@@ -1,4 +1,4 @@
-import type { TenantConfigResponse, TenantProfile } from '@porto-sdk/sdk';
+import type { TenantConfigResponse, TenantProfile } from '@stokio/sdk';
 import type { Response } from 'express';
 import type { AuthRequest } from '@middlewares/auth.middleware';
 import { type TenantRequest } from '@middlewares/tenant.middleware';

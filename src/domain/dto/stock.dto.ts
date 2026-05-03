@@ -4,7 +4,7 @@ import type {
   StockExpiryStatus,
   StockQuantityStatus,
   StockFilterType,
-} from '@porto-sdk/sdk';
+} from '@stokio/sdk';
 
 export type {
   StockItem,

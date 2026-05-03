@@ -1,6 +1,6 @@
 import type { Prisma } from '@prisma/client';
 import * as XLSX from 'xlsx';
-import type { MedicineStockRecord, InputStockRecord } from '@porto-sdk/sdk';
+import type { MedicineStockRecord, InputStockRecord } from '@stokio/sdk';
 import { withRootTransaction } from '@repositories/prisma';
 import { setRlsSessionGucs } from '@repositories/rls.context';
 import { PrismaMedicineRepository } from '@repositories/medicamento.repository';

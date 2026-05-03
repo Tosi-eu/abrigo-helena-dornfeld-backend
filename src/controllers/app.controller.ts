@@ -1,4 +1,4 @@
-import type { TenantBrandingApiResponse } from '@porto-sdk/sdk';
+import type { TenantBrandingApiResponse } from '@stokio/sdk';
 import { createHash } from 'node:crypto';
 import { Request, Response } from 'express';
 import { withRlsContext } from '@repositories/rls.context';

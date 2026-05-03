@@ -1,4 +1,4 @@
-import type { MovementRecord } from '@porto-sdk/sdk';
+import type { MovementRecord } from '@stokio/sdk';
 
 export type MovementCreateInput = MovementRecord & {
   sector_id?: number | null;

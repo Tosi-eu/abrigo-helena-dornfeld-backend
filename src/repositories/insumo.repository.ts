@@ -1,5 +1,5 @@
 import type { Prisma } from '@prisma/client';
-import type { Input } from '@porto-sdk/sdk';
+import type { Input } from '@stokio/sdk';
 import { getDb } from '@repositories/prisma';
 
 function db(tx?: Prisma.TransactionClient) {

@@ -1,5 +1,5 @@
 import type { PrismaResidentRepository } from '@repositories/residente.repository';
-import type { Resident } from '@porto-sdk/sdk';
+import type { Resident } from '@stokio/sdk';
 import {
   assertBirthDateNotFuture,
   parseDateOnlyInput,

@@ -4,7 +4,7 @@ import type {
   MedicineStockRecord,
   InputStockRecord,
   MovementRecord,
-} from '@porto-sdk/sdk';
+} from '@stokio/sdk';
 
 export type {
   CabinetPersist,

@@ -1,4 +1,4 @@
-import type { PublicTenantListItem } from '@porto-sdk/sdk';
+import type { PublicTenantListItem } from '@stokio/sdk';
 import type { Prisma } from '@prisma/client';
 import { getDb } from '@repositories/prisma';
 

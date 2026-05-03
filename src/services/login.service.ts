@@ -10,7 +10,7 @@ import { PrismaContractPortfolioRepository } from '@repositories/contract-portfo
 import { PrismaTenantInviteRepository } from '@repositories/tenant-invite.repository';
 import { digestInviteTokenPlain } from '@helpers/invite-token.helper';
 import { HttpError, isHttpError } from '@domain/error.types';
-import type { LoginCreateWithTenant } from '@porto-sdk/sdk';
+import type { LoginCreateWithTenant } from '@stokio/sdk';
 import { DEFAULT_TENANT_MODULES } from './tenant-config.service';
 import { PrismaSetorRepository } from '@repositories/setor.repository';
 import type { UserPermissions } from '@domain/user.types';

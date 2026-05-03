@@ -7,4 +7,4 @@ export {
   SectorType,
   NotificationEventType,
   NotificationDestinoType,
-} from '@porto-sdk/sdk';
+} from '@stokio/sdk';

@@ -1,4 +1,4 @@
-import type { InputStockRecord, MedicineStockRecord } from '@porto-sdk/sdk';
+import type { InputStockRecord, MedicineStockRecord } from '@stokio/sdk';
 import { Prisma } from '@prisma/client';
 import type { EstoqueInsumo, EstoqueMedicamento } from '@prisma/client';
 import { getDb } from '@repositories/prisma';

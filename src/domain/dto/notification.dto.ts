@@ -1,3 +1,3 @@
-import type { AdminNotificationItem } from '@porto-sdk/sdk';
+import type { AdminNotificationItem } from '@stokio/sdk';
 
 export type { AdminNotificationItem };

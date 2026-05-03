@@ -4,6 +4,8 @@ import {
   getHttpErrorStatus,
 } from '@helpers/error-response.helper';
 import { logger } from '@helpers/logger.helper';
+import type { AuthRequest } from '@middlewares/auth.middleware';
+import { getErrorEventService } from '@services/error-event.service';
 
 export function errorHandler(
   err: unknown,
@@ -11,6 +13,7 @@ export function errorHandler(
   res: Response,
   _next: NextFunction,
 ) {
+  const ar = req as AuthRequest;
   const errorMessage =
     err instanceof Error ? err.message : 'Internal server error';
 
@@ -26,5 +29,16 @@ export function errorHandler(
   );
 
   const statusCode = getHttpErrorStatus(err);
+
+  void getErrorEventService()
+    .recordFromUnknown(err, {
+      source: 'backend_http',
+      httpMethod: req.method,
+      httpPath: req.path,
+      httpStatus: statusCode,
+      correlationId: req.requestId,
+      tenantId: ar.user?.tenantId ?? null,
+    })
+    .catch(() => undefined);
   res.status(statusCode).json(buildErrorJsonBody(err));
 }

@@ -1,4 +1,5 @@
 import { NativeConnection, Worker } from '@temporalio/worker';
+import { activityErrorInterceptorsFactory } from './activity-error-interceptor';
 import { loadMergedSystemConfigFromDb } from '@config/load-system-config-from-db';
 import { setSystemConfigWorkerSnapshot } from '@config/system-config-runtime';
 import { applyRuntimeLogging, logger } from '@helpers/logger.helper';
@@ -174,6 +175,9 @@ async function main(): Promise<void> {
     taskQueue,
     workflowsPath: require.resolve('./workflows'),
     activities,
+    interceptors: {
+      activity: [activityErrorInterceptorsFactory],
+    },
   });
 
   logger.info('Temporal worker started', {

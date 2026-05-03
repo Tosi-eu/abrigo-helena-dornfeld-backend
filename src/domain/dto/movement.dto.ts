@@ -1,3 +1,3 @@
-import type { Movement, StockHistoryEntry } from '@porto-sdk/sdk';
+import type { Movement, StockHistoryEntry } from '@stokio/sdk';
 
 export type { Movement, StockHistoryEntry };

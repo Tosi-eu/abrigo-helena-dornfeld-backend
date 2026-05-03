@@ -1,6 +1,6 @@
 import type { PrismaStockRepository } from '@repositories/estoque.repository';
 import { CacheKeyHelper } from '@helpers/redis.helper';
-import type { InputStockRecord, MedicineStockRecord } from '@porto-sdk/sdk';
+import type { InputStockRecord, MedicineStockRecord } from '@stokio/sdk';
 import {
   ItemType,
   StockItemStatus,
