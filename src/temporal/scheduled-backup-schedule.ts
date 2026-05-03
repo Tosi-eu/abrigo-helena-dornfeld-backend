@@ -88,7 +88,11 @@ export async function ensureScheduledBackupSchedule(
 export async function syncScheduledBackupSchedule(
   cfg: ScheduledBackupScheduleCfg,
 ): Promise<void> {
-  if (String(process.env.ENABLE_TEMPORAL ?? '').trim().toLowerCase() === 'false') {
+  if (
+    String(process.env.ENABLE_TEMPORAL ?? '')
+      .trim()
+      .toLowerCase() === 'false'
+  ) {
     return;
   }
   const { client } = await getTemporalClient();

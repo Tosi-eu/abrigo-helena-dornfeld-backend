@@ -31,7 +31,7 @@
     "@nestjs/schedule": "^4.1.2",
     "@nestjs/swagger": "^7.4.2",
     "@prisma/client": "5.22.0",
-    "@stokio/sdk": "^0.4.0",
+    "@stokio/sdk": "^0.4.1",
     "@temporalio/client": "^1.13.0",
     "@temporalio/worker": "^1.13.0",
     "@temporalio/workflow": "^1.13.0",

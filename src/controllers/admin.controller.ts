@@ -1254,8 +1254,7 @@ export class AdminController {
       );
       if (!req.user?.isSuperAdmin && !viaApiKey) {
         return res.status(403).json({
-          error:
-            'Only super-admin can change the backup schedule.',
+          error: 'Only super-admin can change the backup schedule.',
         });
       }
     }

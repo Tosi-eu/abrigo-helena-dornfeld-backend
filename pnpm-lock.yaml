@@ -1566,7 +1566,7 @@ packages:
   '@so-ric/colorspace@1.1.6':
     resolution: {integrity: sha512-/KiKkpHNOBgkFJwu9sh48LkHSMYGyuTcSFK/qMBdnOAlrRJzRSXAOFB5qwzaVQuDl8wAvHVMkaASQDReTahxuw==}
 
-  '@stokio/sdk@0.4.0':
+  '@stokio/sdk@0.4.1':
     resolution: {integrity: sha512-c+WoREEU1ZZqu+tDXUVKJrlZ7NU6Vc8x1aPJ+63wfDyfWtMq+0eq1HT+cXZFY5dzwynNPEvOPRXSgVpznKDN5Q==}
 
   '@swc/core-darwin-arm64@1.15.33':
@@ -6669,7 +6669,7 @@ snapshots:
       color: 5.0.3
       text-hex: 1.0.0
 
-  '@stokio/sdk@0.4.0': {}
+  '@stokio/sdk@0.4.1': {}
 
   '@swc/core-darwin-arm64@1.15.33':
     optional: true
