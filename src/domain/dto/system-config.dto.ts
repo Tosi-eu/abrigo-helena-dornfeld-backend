@@ -61,6 +61,12 @@ export const SystemConfigSchema = z.object({
     level: z.string().min(1),
     format: z.enum(['json', 'pretty']),
   }),
+
+  tenantImport: z.object({
+    pgDumpBirthDateFallback: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, 'use YYYY-MM-DD'),
+  }),
 });
 
 export type SystemConfigDto = z.infer<typeof SystemConfigSchema>;
@@ -82,7 +88,11 @@ export type SystemConfigPatch = Partial<{
   pricing?: Partial<SystemConfigDto['pricing']>;
   scheduledPriceBackfill?: Partial<SystemConfigDto['scheduledPriceBackfill']>;
   logging?: Partial<SystemConfigDto['logging']>;
+  tenantImport?: Partial<SystemConfigDto['tenantImport']>;
 }>;
+
+/** Legado (antes de runtime.tenant_import.*) — lido em decode para migração */
+export const LEGACY_IMPORT_BIRTH_DATE_FALLBACK_KEY = 'import_birth_date_fallback';
 
 export const RUNTIME_DB_KEYS = {
   corsAllowedOrigins: `${RUNTIME_CONFIG_PREFIX}cors.allowed_origins`,
@@ -112,6 +122,7 @@ export const RUNTIME_DB_KEYS = {
   scheduledPriceBackfillManualCooldownErrorSec: `${RUNTIME_CONFIG_PREFIX}scheduled_price_backfill.manual_cooldown_error_sec`,
   loggingLevel: `${RUNTIME_CONFIG_PREFIX}logging.level`,
   loggingFormat: `${RUNTIME_CONFIG_PREFIX}logging.format`,
+  tenantImportPgDumpBirthDateFallback: `${RUNTIME_CONFIG_PREFIX}tenant_import.pg_dump_birth_date_fallback`,
 } as const;
 
 export function isRuntimeConfigKey(key: string): boolean {
@@ -163,6 +174,8 @@ export function encodeSystemConfigToDb(
     ),
     [k.loggingLevel]: dto.logging.level,
     [k.loggingFormat]: dto.logging.format,
+    [k.tenantImportPgDumpBirthDateFallback]:
+      dto.tenantImport.pgDumpBirthDateFallback,
   };
 }
 
@@ -351,6 +364,25 @@ export function decodeRuntimeDbRows(
     out.logging = lg as SystemConfigDto['logging'];
   }
 
+  const tiKey = k.tenantImportPgDumpBirthDateFallback;
+  const legacyTi = all[LEGACY_IMPORT_BIRTH_DATE_FALLBACK_KEY];
+  if (
+    all[tiKey] != null &&
+    /^\d{4}-\d{2}-\d{2}$/.test(String(all[tiKey]).trim())
+  ) {
+    out.tenantImport = {
+      pgDumpBirthDateFallback: String(all[tiKey]).trim(),
+    };
+  } else if (
+    legacyTi != null &&
+    String(legacyTi).trim() !== '' &&
+    /^\d{4}-\d{2}-\d{2}$/.test(String(legacyTi).trim())
+  ) {
+    out.tenantImport = {
+      pgDumpBirthDateFallback: String(legacyTi).trim(),
+    };
+  }
+
   return out;
 }
 
@@ -407,6 +439,10 @@ export function mergeSystemConfigPatch(
     logging: {
       ...base.logging,
       ...stripUndefined(patch.logging ?? {}),
+    },
+    tenantImport: {
+      ...base.tenantImport,
+      ...stripUndefined(patch.tenantImport ?? {}),
     },
   };
   return merged;

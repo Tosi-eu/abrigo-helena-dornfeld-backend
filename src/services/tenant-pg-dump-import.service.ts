@@ -1,17 +1,27 @@
 import type { Prisma } from '@prisma/client';
+import { tryGetSystemConfigRuntime } from '@config/system-config-runtime';
+import { LEGACY_IMPORT_BIRTH_DATE_FALLBACK_KEY } from '@domain/dto/system-config.dto';
 import { prisma } from '@repositories/prisma';
 
 const BIRTH_FALLBACK_ENV = 'IMPORT_BIRTH_DATE_FALLBACK';
-const BIRTH_FALLBACK_SYSCONFIG_KEY = 'import_birth_date_fallback';
 
 async function resolveBirthDateFallback(
   queryOverride?: string,
 ): Promise<string> {
   if (queryOverride?.trim()) return queryOverride.trim();
+  const rt = tryGetSystemConfigRuntime();
+  if (rt) {
+    try {
+      const v = rt.get().tenantImport?.pgDumpBirthDateFallback?.trim();
+      if (v) return v;
+    } catch {
+      /* SystemConfig ainda não inicializado */
+    }
+  }
   const fromEnv = process.env[BIRTH_FALLBACK_ENV]?.trim();
   if (fromEnv) return fromEnv;
   const row = await prisma.systemConfig.findUnique({
-    where: { key: BIRTH_FALLBACK_SYSCONFIG_KEY },
+    where: { key: LEGACY_IMPORT_BIRTH_DATE_FALLBACK_KEY },
     select: { value: true },
   });
   if (row?.value?.trim()) return row.value.trim();
@@ -195,7 +205,7 @@ export class TenantPgDumpImportService {
     const fbDate = parseDateOnly(resolvedBirth);
     if (!fbDate) {
       throw new Error(
-        'Data de nascimento de recurso inválida no servidor (IMPORT_BIRTH_DATE_FALLBACK ou system_config import_birth_date_fallback). Use YYYY-MM-DD.',
+        'Data de nascimento de recurso inválida no servidor (Sistema → importação pg_dump, IMPORT_BIRTH_DATE_FALLBACK ou chave legada import_birth_date_fallback). Use YYYY-MM-DD.',
       );
     }
 

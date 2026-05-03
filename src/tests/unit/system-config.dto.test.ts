@@ -32,6 +32,9 @@ describe('system-config.dto', () => {
     );
     expect(parsed.logging.level).toBe(base.logging.level);
     expect(parsed.logging.format).toBe(base.logging.format);
+    expect(parsed.tenantImport.pgDumpBirthDateFallback).toBe(
+      base.tenantImport.pgDumpBirthDateFallback,
+    );
   });
 
   it('mergeSystemConfigPatch aplica ramos parciais', () => {

@@ -61,5 +61,8 @@ export function getBuiltinDefaultSystemConfig(): SystemConfigDto {
       level: 'debug',
       format: 'pretty',
     },
+    tenantImport: {
+      pgDumpBirthDateFallback: '1970-01-01',
+    },
   };
 }
