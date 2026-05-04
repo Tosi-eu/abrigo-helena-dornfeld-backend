@@ -351,9 +351,7 @@ export class AdminController {
           : undefined;
       const userIdRaw = req.query.userId;
       const userIdFilter =
-        userIdRaw != null && userIdRaw !== ''
-          ? Number(userIdRaw)
-          : undefined;
+        userIdRaw != null && userIdRaw !== '' ? Number(userIdRaw) : undefined;
       if (
         userIdFilter != null &&
         (!Number.isInteger(userIdFilter) || userIdFilter < 1)

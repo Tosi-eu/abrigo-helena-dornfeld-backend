@@ -30,7 +30,9 @@ export class PricingAuditApiController {
   private readonly auditRepo = new PrismaAuditRepository();
 
   @Post('internal/pricing-audit')
-  @ApiOperation({ summary: 'Registar auditoria da API de preços (JWT ou X-API-Key)' })
+  @ApiOperation({
+    summary: 'Registar auditoria da API de preços (JWT ou X-API-Key)',
+  })
   @ApiSecurity('bearer')
   @ApiBody({ description: 'Evento de auditoria (serviço price-search)' })
   @UseGuards(pricingAuditChain)
