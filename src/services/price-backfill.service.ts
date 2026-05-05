@@ -1,7 +1,40 @@
+import { Prisma } from '@prisma/client';
 import { withRlsContext } from '@repositories/rls.context';
 import { getPriceSearchService } from '@helpers/price-service.helper';
 import { normalizeDosage } from '@helpers/dosage.helper';
 import { getRuntimeHttpConfig } from '@config/http/runtime-http-config';
+
+/** Dump/import frequentemente usa 0 em vez de NULL para «sem preço». */
+const DECIMAL_ZERO = new Prisma.Decimal(0);
+
+function whereItemNeedsPrice(tenantId: number) {
+  return {
+    tenant_id: tenantId,
+    OR: [{ preco: null }, { preco: { equals: DECIMAL_ZERO } }],
+  };
+}
+
+function whereMedicamentoStillNeedsPrice(
+  tenantId: number,
+  id: number,
+): Prisma.MedicamentoWhereInput {
+  return {
+    id,
+    tenant_id: tenantId,
+    OR: [{ preco: null }, { preco: { equals: DECIMAL_ZERO } }],
+  };
+}
+
+function whereInsumoStillNeedsPrice(
+  tenantId: number,
+  id: number,
+): Prisma.InsumoWhereInput {
+  return {
+    id,
+    tenant_id: tenantId,
+    OR: [{ preco: null }, { preco: { equals: DECIMAL_ZERO } }],
+  };
+}
 
 function sleep(ms: number): Promise<void> {
   return new Promise(resolve => {
@@ -36,7 +69,7 @@ export class PriceBackfillService {
         { tenant_id: String(tenantId) },
         async tx => {
           const m = await tx.medicamento.findMany({
-            where: { tenant_id: tenantId, preco: null },
+            where: whereItemNeedsPrice(tenantId),
             select: {
               id: true,
               nome: true,
@@ -47,7 +80,7 @@ export class PriceBackfillService {
             take,
           });
           const i = await tx.insumo.findMany({
-            where: { tenant_id: tenantId, preco: null },
+            where: whereItemNeedsPrice(tenantId),
             select: { id: true, nome: true },
             orderBy: { id: 'asc' },
             take,
@@ -95,13 +128,13 @@ export class PriceBackfillService {
         await withRlsContext({ tenant_id: String(tenantId) }, async tx => {
           for (const [id, preco] of medPrices) {
             await tx.medicamento.updateMany({
-              where: { id, tenant_id: tenantId, preco: null },
+              where: whereMedicamentoStillNeedsPrice(tenantId, id),
               data: { preco },
             });
           }
           for (const [id, preco] of inputPrices) {
             await tx.insumo.updateMany({
-              where: { id, tenant_id: tenantId, preco: null },
+              where: whereInsumoStillNeedsPrice(tenantId, id),
               data: { preco },
             });
           }

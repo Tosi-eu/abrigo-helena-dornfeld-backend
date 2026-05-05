@@ -47,7 +47,6 @@ export const SystemConfigSchema = z.object({
 
   pricing: z.object({
     baseUrl: z.string(),
-    apiKey: z.string(),
   }),
 
   scheduledPriceBackfill: z.object({
@@ -123,7 +122,6 @@ export const RUNTIME_DB_KEYS = {
   rlPublicListMax: `${RUNTIME_CONFIG_PREFIX}rate_limits.public_tenant.list_max`,
   rlPublicBrandingMax: `${RUNTIME_CONFIG_PREFIX}rate_limits.public_tenant.branding_max`,
   pricingBaseUrl: `${RUNTIME_CONFIG_PREFIX}pricing.base_url`,
-  pricingApiKey: `${RUNTIME_CONFIG_PREFIX}pricing.api_key`,
   scheduledPriceBackfillEnabled: `${RUNTIME_CONFIG_PREFIX}scheduled_price_backfill.enabled`,
   scheduledPriceBackfillCronExpression: `${RUNTIME_CONFIG_PREFIX}scheduled_price_backfill.cron_expression`,
   scheduledPriceBackfillManualCooldownSuccessSec: `${RUNTIME_CONFIG_PREFIX}scheduled_price_backfill.manual_cooldown_success_sec`,
@@ -171,7 +169,6 @@ export function encodeSystemConfigToDb(
     [k.rlPublicListMax]: String(dto.rateLimits.publicTenant.listMax),
     [k.rlPublicBrandingMax]: String(dto.rateLimits.publicTenant.brandingMax),
     [k.pricingBaseUrl]: dto.pricing.baseUrl,
-    [k.pricingApiKey]: dto.pricing.apiKey,
     [k.scheduledPriceBackfillEnabled]: dto.scheduledPriceBackfill.enabled
       ? 'true'
       : 'false',
@@ -324,11 +321,9 @@ export function decodeRuntimeDbRows(
   if (Object.keys(rl).length)
     out.rateLimits = rl as SystemConfigDto['rateLimits'];
 
-  if (all[k.pricingBaseUrl] != null || all[k.pricingApiKey] != null) {
+  if (all[k.pricingBaseUrl] != null) {
     out.pricing = {
-      baseUrl:
-        all[k.pricingBaseUrl] != null ? String(all[k.pricingBaseUrl]) : '',
-      apiKey: all[k.pricingApiKey] != null ? String(all[k.pricingApiKey]) : '',
+      baseUrl: String(all[k.pricingBaseUrl]),
     };
   }
 

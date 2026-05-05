@@ -3,6 +3,7 @@ import { activityErrorInterceptorsFactory } from './activity-error-interceptor';
 import { loadMergedSystemConfigFromDb } from '@config/load-system-config-from-db';
 import { setSystemConfigWorkerSnapshot } from '@config/system-config-runtime';
 import { applyRuntimeLogging, logger } from '@helpers/logger.helper';
+import { assertPricingIntegrationComplete } from '@config/pricing-integration.validation';
 import { runScheduledPriceBackfillForAllTenants } from '@services/price-backfill-scheduled.runner';
 import { PriceBackfillService } from '@services/price-backfill.service';
 import { finishManualPriceBackfill } from '@services/price-backfill-manual.guard';
@@ -20,8 +21,6 @@ import { readFile } from 'node:fs/promises';
 import { Prisma } from '@prisma/client';
 
 function toPrismaJsonValue(value: unknown): Prisma.InputJsonValue {
-  // Prisma JSON não aceita classes / tipos "estruturais" como arrays de objetos tipados.
-  // Serializar garante uma árvore JSON pura (string/number/bool/null/array/object).
   return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
 }
 
@@ -175,6 +174,8 @@ async function main(): Promise<void> {
     );
     setSystemConfigWorkerSnapshot(null);
   }
+
+  assertPricingIntegrationComplete();
 
   const conn = await NativeConnection.connect({ address });
   const activities = await createActivities();
