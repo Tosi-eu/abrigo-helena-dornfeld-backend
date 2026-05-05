@@ -344,12 +344,29 @@ export class AdminController {
         return res.status(400).json({ error: 'operationType inválido' });
       }
 
+      const resourceRaw = req.query.resource;
+      const resourceFilter =
+        typeof resourceRaw === 'string' && resourceRaw.trim()
+          ? resourceRaw.trim()
+          : undefined;
+      const userIdRaw = req.query.userId;
+      const userIdFilter =
+        userIdRaw != null && userIdRaw !== '' ? Number(userIdRaw) : undefined;
+      if (
+        userIdFilter != null &&
+        (!Number.isInteger(userIdFilter) || userIdFilter < 1)
+      ) {
+        return res.status(400).json({ error: 'userId inválido' });
+      }
+
       const insights = await this.auditRepo.getInsights(
         startDate,
         endDate,
         limit,
         offset,
         operationType,
+        resourceFilter,
+        userIdFilter,
       );
       return res.json(insights);
     } catch (error: unknown) {

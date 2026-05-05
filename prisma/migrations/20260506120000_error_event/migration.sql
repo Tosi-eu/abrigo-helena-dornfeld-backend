@@ -1,5 +1,4 @@
--- CreateTable
-CREATE TABLE "error_event" (
+CREATE TABLE IF NOT EXISTS "error_event" (
     "id" UUID NOT NULL,
     "occurred_at" TIMESTAMP(3) NOT NULL,
     "received_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -24,14 +23,10 @@ CREATE TABLE "error_event" (
     CONSTRAINT "error_event_pkey" PRIMARY KEY ("id")
 );
 
--- CreateIndex
-CREATE INDEX "idx_error_event_occurred_at" ON "error_event"("occurred_at");
+CREATE INDEX IF NOT EXISTS "idx_error_event_occurred_at" ON "error_event"("occurred_at");
 
--- CreateIndex
-CREATE INDEX "idx_error_event_source_occurred_at" ON "error_event"("source", "occurred_at");
+CREATE INDEX IF NOT EXISTS "idx_error_event_source_occurred_at" ON "error_event"("source", "occurred_at");
 
--- CreateIndex
-CREATE INDEX "idx_error_event_fingerprint" ON "error_event"("fingerprint");
+CREATE INDEX IF NOT EXISTS "idx_error_event_fingerprint" ON "error_event"("fingerprint");
 
--- CreateIndex
-CREATE INDEX "idx_error_event_correlation_id" ON "error_event"("correlation_id");
+CREATE INDEX IF NOT EXISTS "idx_error_event_correlation_id" ON "error_event"("correlation_id");

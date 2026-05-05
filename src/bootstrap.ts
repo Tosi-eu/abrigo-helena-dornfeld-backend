@@ -10,6 +10,7 @@ import {
 import { setupSwagger } from './config/swagger.setup';
 import { logger } from '@helpers/logger.helper';
 import { wireSystemConfigAfterNestInit } from '@config/bootstrap-system-config';
+import { assertPricingIntegrationComplete } from '@config/pricing-integration.validation';
 
 dotenv.config();
 
@@ -27,6 +28,7 @@ export async function bootstrap(): Promise<INestApplication> {
   registerExpressErrorHandlerLast(app);
 
   await wireSystemConfigAfterNestInit(app);
+  assertPricingIntegrationComplete();
   logger.info('Database connection established', {
     operation: 'database',
     status: 'connected',

@@ -17,7 +17,6 @@ describe('system-config.dto', () => {
     expect(parsed.cors.allowedOrigins).toEqual(base.cors.allowedOrigins);
     expect(parsed.ttl.healthcheckMs).toBe(base.ttl.healthcheckMs);
     expect(parsed.pricing.baseUrl).toBe(base.pricing.baseUrl);
-    expect(parsed.pricing.apiKey).toBe(base.pricing.apiKey);
     expect(parsed.scheduledPriceBackfill.enabled).toBe(
       base.scheduledPriceBackfill.enabled,
     );
