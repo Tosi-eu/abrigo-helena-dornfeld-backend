@@ -3,6 +3,7 @@ import { activityErrorInterceptorsFactory } from './activity-error-interceptor';
 import { loadMergedSystemConfigFromDb } from '@config/load-system-config-from-db';
 import { setSystemConfigWorkerSnapshot } from '@config/system-config-runtime';
 import { applyRuntimeLogging, logger } from '@helpers/logger.helper';
+import { assertPricingIntegrationComplete } from '@config/pricing-integration.validation';
 import { runScheduledPriceBackfillForAllTenants } from '@services/price-backfill-scheduled.runner';
 import { PriceBackfillService } from '@services/price-backfill.service';
 import { finishManualPriceBackfill } from '@services/price-backfill-manual.guard';
@@ -17,6 +18,11 @@ import { runSystemBackup } from '@services/system-backup.runner';
 import { TenantImportService } from '@services/tenant-import.service';
 import { TenantPgDumpImportService } from '@services/tenant-pg-dump-import.service';
 import { readFile } from 'node:fs/promises';
+import { Prisma } from '@prisma/client';
+
+function toPrismaJsonValue(value: unknown): Prisma.InputJsonValue {
+  return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
+}
 
 async function createActivities() {
   const tenantConfigService = new TenantConfigService(
@@ -84,7 +90,10 @@ async function createActivities() {
 
       try {
         const buf = Buffer.from(await readFile(job.file_path));
-        const options = (job.options_json ?? {}) as any;
+        const options =
+          job.options_json && typeof job.options_json === 'object'
+            ? (job.options_json as Prisma.JsonObject)
+            : ({} satisfies Prisma.JsonObject);
 
         if (job.kind === 'xlsx') {
           const result = await tenantImportService.importXlsx({
@@ -97,7 +106,7 @@ async function createActivities() {
             data: {
               status: 'succeeded',
               finished_at: new Date(),
-              result_json: result as any,
+              result_json: toPrismaJsonValue(result),
             },
           });
           return;
@@ -108,23 +117,23 @@ async function createActivities() {
             tenantId: job.tenant_id,
             actorUserId: job.actor_user_id,
             fileBuffer: buf,
-            replaceTenantData: Boolean(options?.replaceTenantData),
+            replaceTenantData: Boolean(options.replaceTenantData),
             birthDateFallback:
-              typeof options?.birthDateFallback === 'string'
+              typeof options.birthDateFallback === 'string'
                 ? options.birthDateFallback
                 : undefined,
             sourceTenantId:
-              typeof options?.sourceTenantId === 'number' &&
+              typeof options.sourceTenantId === 'number' &&
               Number.isFinite(options.sourceTenantId)
                 ? options.sourceTenantId
                 : undefined,
-          } as any);
+          });
           await prisma.tenantImportJob.update({
             where: { id: jobId },
             data: {
               status: 'succeeded',
               finished_at: new Date(),
-              result_json: result as any,
+              result_json: toPrismaJsonValue(result),
             },
           });
           return;
@@ -165,6 +174,8 @@ async function main(): Promise<void> {
     );
     setSystemConfigWorkerSnapshot(null);
   }
+
+  assertPricingIntegrationComplete();
 
   const conn = await NativeConnection.connect({ address });
   const activities = await createActivities();

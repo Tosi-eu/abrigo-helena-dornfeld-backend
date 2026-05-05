@@ -30,22 +30,28 @@ export interface AuditInsights {
 export class PrismaAuditRepository {
   async create(data: {
     user_id: number | null;
+    tenant_id?: number | null;
     method: string;
     path: string;
     operation_type: AuditOperationType;
     resource: string | null;
     status_code: number;
     duration_ms: number;
+    old_value?: Prisma.InputJsonValue | null;
+    new_value?: Prisma.InputJsonValue | null;
   }) {
     return getDb().auditLog.create({
       data: {
         user_id: data.user_id,
+        tenant_id: data.tenant_id ?? null,
         method: data.method,
         path: data.path,
         operation_type: data.operation_type,
         resource: data.resource,
         status_code: data.status_code,
         duration_ms: data.duration_ms,
+        old_value: data.old_value ?? undefined,
+        new_value: data.new_value ?? undefined,
       },
     });
   }
@@ -56,10 +62,20 @@ export class PrismaAuditRepository {
     limit = 50,
     offset = 0,
     operationType?: AuditOperationFilter,
+    resourceFilter?: string,
+    userIdFilter?: number,
   ): Promise<AuditInsights> {
     const range: Prisma.DateTimeFilter = { gte: startDate, lte: endDate };
 
-    const baseWhere: Prisma.AuditLogWhereInput = { created_at: range };
+    const baseWhere: Prisma.AuditLogWhereInput = {
+      created_at: range,
+      ...(resourceFilter
+        ? { resource: { equals: resourceFilter, mode: 'insensitive' } }
+        : {}),
+      ...(userIdFilter != null && Number.isInteger(userIdFilter)
+        ? { user_id: userIdFilter }
+        : {}),
+    };
     const eventsWhere: Prisma.AuditLogWhereInput = operationType
       ? { ...baseWhere, operation_type: operationType }
       : baseWhere;

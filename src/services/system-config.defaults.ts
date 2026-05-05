@@ -49,7 +49,6 @@ export function getBuiltinDefaultSystemConfig(): SystemConfigDto {
 
     pricing: {
       baseUrl: '',
-      apiKey: '',
     },
     scheduledPriceBackfill: {
       enabled: true,

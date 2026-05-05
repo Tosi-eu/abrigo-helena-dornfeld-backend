@@ -101,7 +101,7 @@ export async function authMiddleware(
           role,
           permissionsRaw: user.permissions,
           tenantId,
-          isTenantOwner: Boolean((user as any).is_tenant_owner),
+          isTenantOwner: Boolean(user.is_tenant_owner),
           isSuperAdmin: Boolean(user.is_super_admin),
         } satisfies AuthCacheEntry;
       },
@@ -203,7 +203,7 @@ export async function optionalAuthMiddleware(
           role,
           permissionsRaw: user.permissions,
           tenantId,
-          isTenantOwner: Boolean((user as any).is_tenant_owner),
+          isTenantOwner: Boolean(user.is_tenant_owner),
           isSuperAdmin: Boolean(user.is_super_admin),
         } satisfies AuthCacheEntry;
       },

@@ -29,6 +29,7 @@ import {
 } from '@services/price-backfill-manual.guard';
 import { repairStaleManualPriceBackfillLock } from '@services/price-backfill-stale-lock.repair';
 import { envTemporalTaskQueue, getTemporalClient } from '@temporal/client';
+import type { PriceBackfillQueueStatus } from '@temporal/workflows';
 import {
   assertLogoUrlBelongsToOurR2,
   deleteTenantLogoObjectsExceptKey,
@@ -200,7 +201,7 @@ export class TenantController {
         return res.status(503).json({
           code: 'PRICING_API_UNAVAILABLE',
           error:
-            'Busca de preços não está disponível: defina em configuração global o URL e a chave da API de preços (GET/PUT /api/v1/admin/config, campo system.pricing, ou desktop «Sistema»). No Docker, o URL costuma ser http://host.docker.internal:PORT em vez de 127.0.0.1.',
+            'Busca de preços não está disponível: defina PRICING_API_KEY no ambiente do backend (a mesma string que o serviço price-search valida) e um URL acessível — na base/admin só persiste o URL base em pricing (ou use PRICING_BASE_URL no ambiente para sobrescrever). Entre contentores na mesma rede Docker use tipicamente http://price-search:3010; no host use http://localhost:3010. Com backend fora do Docker, evite 127.0.0.1 no URL se o price-search só existir na rede Docker.',
         });
       }
 
@@ -292,7 +293,9 @@ export class TenantController {
       try {
         const { client } = await getTemporalClient();
         const handle = client.workflow.getHandle(wid);
-        const s = (await handle.query('priceBackfillQueueStatus')) as any;
+        const s = (await handle.query(
+          'priceBackfillQueueStatus',
+        )) as PriceBackfillQueueStatus;
 
         const redis = await getManualPriceBackfillStatus(tenantId);
 

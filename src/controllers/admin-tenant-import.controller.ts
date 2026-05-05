@@ -5,13 +5,16 @@ import { TenantImportService } from '@services/tenant-import.service';
 import { TenantPgDumpImportService } from '@services/tenant-pg-dump-import.service';
 import { buildTenantImportTemplateBuffer } from '@helpers/tenant-import-template.excel';
 import { prisma } from '@repositories/prisma';
+import { Prisma } from '@prisma/client';
 import { envTemporalTaskQueue, getTemporalClient } from '@temporal/client';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import crypto from 'node:crypto';
 
 type UploadRequest = Request &
-  AuthRequest & { file?: Express.Multer.File } & { params: { slug?: string } };
+  AuthRequest & { file?: Express.Multer.File } & {
+    params: { slug?: string; jobId?: string };
+  };
 
 const tenantRepo = new PrismaTenantRepository();
 
@@ -222,7 +225,7 @@ export class AdminTenantImportController {
             sourceTenantId != null && Number.isFinite(sourceTenantId)
               ? sourceTenantId
               : undefined,
-        } as any,
+        } satisfies Prisma.InputJsonObject,
       },
     });
 
@@ -240,7 +243,7 @@ export class AdminTenantImportController {
   async getJob(req: UploadRequest, res: Response) {
     const tenantId = await this.resolveTenantIdFromSlug(req, res);
     if (tenantId == null) return;
-    const id = String((req as any).params?.jobId ?? '').trim();
+    const id = String(req.params?.jobId ?? '').trim();
     if (!id) return res.status(400).json({ error: 'jobId obrigatório' });
     const job = await prisma.tenantImportJob.findFirst({
       where: { id, tenant_id: tenantId },

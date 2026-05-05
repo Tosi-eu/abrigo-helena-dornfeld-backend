@@ -37,6 +37,9 @@ import {
   filterNonRuntimeConfig,
   isRuntimeConfigKey,
 } from '@domain/dto/system-config.dto';
+import { logger } from '@helpers/logger.helper';
+import type { AdminMetricsResponse } from '@stokio/sdk';
+import { syncScheduledBackupSchedule } from '@temporal/scheduled-backup-schedule';
 
 const DEFAULT_DAYS = 30;
 const MAX_DAYS = 365;
@@ -52,6 +55,27 @@ export class AdminController {
     private readonly notificationService?: NotificationEventService,
     private readonly systemConfigService?: SystemConfigService,
   ) {}
+
+  /** Dependência opcional ausente: 503 (não 501) para alertar proxies/monitorização. */
+  private adminServiceUnavailable(
+    res: Response,
+    serviceKey: string,
+    message: string,
+  ): Response {
+    logger.warn('Admin: dependência opcional não injectada', {
+      operation: 'admin_service_unavailable',
+      service: serviceKey,
+    });
+    return res
+      .status(503)
+      .set('Retry-After', '120')
+      .set('X-Stokio-Availability', 'unavailable')
+      .json({
+        error: message,
+        code: 'SERVICE_UNAVAILABLE',
+        service: serviceKey,
+      });
+  }
 
   private async isTenantOwner(
     tenantId: number,
@@ -320,12 +344,29 @@ export class AdminController {
         return res.status(400).json({ error: 'operationType inválido' });
       }
 
+      const resourceRaw = req.query.resource;
+      const resourceFilter =
+        typeof resourceRaw === 'string' && resourceRaw.trim()
+          ? resourceRaw.trim()
+          : undefined;
+      const userIdRaw = req.query.userId;
+      const userIdFilter =
+        userIdRaw != null && userIdRaw !== '' ? Number(userIdRaw) : undefined;
+      if (
+        userIdFilter != null &&
+        (!Number.isInteger(userIdFilter) || userIdFilter < 1)
+      ) {
+        return res.status(400).json({ error: 'userId inválido' });
+      }
+
       const insights = await this.auditRepo.getInsights(
         startDate,
         endDate,
         limit,
         offset,
         operationType,
+        resourceFilter,
+        userIdFilter,
       );
       return res.json(insights);
     } catch (error: unknown) {
@@ -337,7 +378,11 @@ export class AdminController {
 
   async getLoginLog(req: AuthRequest, res: Response) {
     if (!this.loginLogRepo) {
-      return res.status(501).json({ error: 'Log de acessos não disponível' });
+      return this.adminServiceUnavailable(
+        res,
+        'loginLog',
+        'Log de acessos não disponível',
+      );
     }
     try {
       const page = Math.max(1, Number(req.query.page) || 1);
@@ -385,9 +430,11 @@ export class AdminController {
 
   async getStockHistory(req: AuthRequest, res: Response) {
     if (!this.movementService) {
-      return res
-        .status(501)
-        .json({ error: 'Serviço de movimentação não disponível' });
+      return this.adminServiceUnavailable(
+        res,
+        'movement',
+        'Serviço de movimentação não disponível',
+      );
     }
     try {
       const lote = (req.query.lote as string)?.trim();
@@ -430,7 +477,11 @@ export class AdminController {
 
   async getExport(req: AuthRequest, res: Response) {
     if (!this.reportService) {
-      return res.status(501).json({ error: 'Exportação não disponível' });
+      return this.adminServiceUnavailable(
+        res,
+        'reportExport',
+        'Exportação não disponível',
+      );
     }
     try {
       const type = (req.query.type as string)?.trim();
@@ -612,7 +663,11 @@ export class AdminController {
 
   async getBackupStatus(_req: AuthRequest, res: Response) {
     if (!this.systemConfigRepo) {
-      return res.status(501).json({ error: 'Configurações não disponíveis' });
+      return this.adminServiceUnavailable(
+        res,
+        'systemConfig',
+        'Configurações não disponíveis',
+      );
     }
 
     try {
@@ -985,10 +1040,11 @@ export class AdminController {
       const activeUsersThisMonth = this.loginLogRepo
         ? await this.loginLogRepo.countActiveUsersThisMonth()
         : 0;
-      return res.json({
+      const payload: AdminMetricsResponse = {
         movementsThisMonth,
         activeUsersThisMonth,
-      });
+      };
+      return res.json(payload);
     } catch (error: unknown) {
       return res.status(500).json({
         error: getErrorMessage(error) || 'Erro ao carregar métricas',
@@ -998,7 +1054,11 @@ export class AdminController {
 
   async getActiveUsersThisMonth(req: AuthRequest, res: Response) {
     if (!this.loginLogRepo) {
-      return res.status(501).json({ error: 'Log de acessos não disponível' });
+      return this.adminServiceUnavailable(
+        res,
+        'loginLog',
+        'Log de acessos não disponível',
+      );
     }
     try {
       const page = Math.max(1, Number(req.query.page) || 1);
@@ -1018,7 +1078,11 @@ export class AdminController {
 
   async getMovementsThisMonth(req: AuthRequest, res: Response) {
     if (!this.movementService) {
-      return res.status(501).json({ error: 'Movimentações não disponíveis' });
+      return this.adminServiceUnavailable(
+        res,
+        'movement',
+        'Movimentações não disponíveis',
+      );
     }
     try {
       const page = Math.max(1, Number(req.query.page) || 1);
@@ -1037,7 +1101,11 @@ export class AdminController {
 
   async getConfig(_req: AuthRequest, res: Response) {
     if (!this.systemConfigRepo) {
-      return res.status(501).json({ error: 'Configurações não disponíveis' });
+      return this.adminServiceUnavailable(
+        res,
+        'systemConfig',
+        'Configurações não disponíveis',
+      );
     }
     try {
       const all = await this.systemConfigRepo.getAll();
@@ -1056,7 +1124,11 @@ export class AdminController {
 
   async getNotifications(req: AuthRequest, res: Response) {
     if (!this.notificationService) {
-      return res.status(501).json({ error: 'Notificações não disponíveis' });
+      return this.adminServiceUnavailable(
+        res,
+        'notifications',
+        'Notificações não disponíveis',
+      );
     }
     try {
       const page = Math.max(1, Number(req.query.page) || 1);
@@ -1086,7 +1158,11 @@ export class AdminController {
 
   async patchNotification(req: AuthRequest, res: Response, tenantId: number) {
     if (!this.notificationService) {
-      return res.status(501).json({ error: 'Notificações não disponíveis' });
+      return this.adminServiceUnavailable(
+        res,
+        'notifications',
+        'Notificações não disponíveis',
+      );
     }
     const id = Number(req.params.id);
     if (Number.isNaN(id) || id < 1) {
@@ -1122,7 +1198,11 @@ export class AdminController {
 
   async updateConfig(req: AuthRequest, res: Response) {
     if (!this.systemConfigRepo) {
-      return res.status(501).json({ error: 'Configurações não disponíveis' });
+      return this.adminServiceUnavailable(
+        res,
+        'systemConfig',
+        'Configurações não disponíveis',
+      );
     }
     const body = req.body ?? {};
     if (typeof body !== 'object' || body === null || Array.isArray(body)) {
@@ -1184,17 +1264,46 @@ export class AdminController {
       return res.status(400).json({ error: displayErr });
     }
 
+    if (systemPatch?.scheduledBackup !== undefined) {
+      const viaApiKey = Boolean(
+        (req as AuthRequest & { adminConfigViaApiKey?: boolean })
+          .adminConfigViaApiKey,
+      );
+      if (!req.user?.isSuperAdmin && !viaApiKey) {
+        return res.status(403).json({
+          error: 'Only super-admin can change the backup schedule.',
+        });
+      }
+    }
+
     try {
       if (Object.keys(displayPatch).length > 0) {
         await this.systemConfigRepo.setMany(displayPatch);
       }
       if (systemPatch != null && Object.keys(systemPatch).length > 0) {
         if (!this.systemConfigService) {
-          return res
-            .status(501)
-            .json({ error: 'SystemConfigService não disponível' });
+          return this.adminServiceUnavailable(
+            res,
+            'systemConfigService',
+            'SystemConfigService não disponível',
+          );
         }
         await this.systemConfigService.update(systemPatch);
+        if (systemPatch.scheduledBackup != null) {
+          try {
+            await syncScheduledBackupSchedule(
+              this.systemConfigService.get().scheduledBackup,
+            );
+          } catch (e: unknown) {
+            logger.warn(
+              '[admin/config] Falha ao sincronizar schedule Temporal de backup (cron pode ficar desatualizado até ao próximo bootstrap)',
+              {
+                operation: 'sync_scheduled_backup_schedule',
+                error: e instanceof Error ? e.message : String(e),
+              },
+            );
+          }
+        }
       }
       const all = await this.systemConfigRepo.getAll();
       const display = filterNonRuntimeConfig(all);

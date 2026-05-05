@@ -116,6 +116,11 @@ export class AdminApiController {
   @Get('insights')
   @ApiOperation({ summary: 'Indicadores / insights' })
   @ApiQuery({ name: 'days', required: false })
+  @ApiQuery({ name: 'page', required: false })
+  @ApiQuery({ name: 'limit', required: false })
+  @ApiQuery({ name: 'operationType', required: false })
+  @ApiQuery({ name: 'resource', required: false })
+  @ApiQuery({ name: 'userId', required: false })
   insights(@Req() req: Request, @Res() res: Response): void {
     void this.controller.getInsights(req, res);
   }

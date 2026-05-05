@@ -77,6 +77,7 @@ import { TenantImportApiController } from '@controllers/api/tenant-import.api.co
 import { AdminTenantImportApiController } from '@controllers/api/admin-tenant-import.api.controller';
 import { InternalPriceBackfillApiController } from '@controllers/api/internal-price-backfill.api.controller';
 import { ErrorEventApiController } from '@controllers/api/error-event.api.controller';
+import { PricingAuditApiController } from '@controllers/api/pricing-audit.api.controller';
 import { TenantImportController } from '@controllers/tenant-import.controller';
 import { AdminTenantImportController } from '@controllers/admin-tenant-import.controller';
 import { TenantImportService } from '@services/tenant-import.service';
@@ -232,6 +233,7 @@ const adminTenantImportController = new AdminTenantImportController(
     TenantImportApiController,
     AdminTenantImportApiController,
     InternalPriceBackfillApiController,
+    PricingAuditApiController,
     ErrorEventApiController,
   ],
   providers: [

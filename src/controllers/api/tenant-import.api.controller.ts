@@ -22,6 +22,14 @@ import { TenantImportController } from '@controllers/tenant-import.controller';
 import { TenantId } from '@decorators/tenant-id.decorator';
 import { UseExpressMwGuard } from '@middlewares/express.middleware';
 import { requireAdmin } from '@middlewares/admin.middleware';
+import type { AuthRequest } from '@middlewares/auth.middleware';
+import type { TenantRequest } from '@middlewares/tenant.middleware';
+
+type UploadRequest = Request &
+  AuthRequest &
+  TenantRequest & { file?: Express.Multer.File } & {
+    params?: { jobId?: string };
+  };
 
 const requireAdminGuard = UseExpressMwGuard(requireAdmin);
 const importUploadGuard = UseExpressMwGuard(
@@ -65,10 +73,10 @@ export class TenantImportApiController {
   @UseGuards(importUploadGuard)
   importXlsx(
     @TenantId() tenantId: number,
-    @Req() req: Request,
+    @Req() req: UploadRequest,
     @Res() res: Response,
   ): void {
-    void this.controller.importXlsx(req as any, res, tenantId);
+    void this.controller.importXlsx(req, res, tenantId);
   }
 
   @Post('xlsx/async')
@@ -88,10 +96,10 @@ export class TenantImportApiController {
   @UseGuards(importUploadGuard)
   importXlsxAsync(
     @TenantId() tenantId: number,
-    @Req() req: Request,
+    @Req() req: UploadRequest,
     @Res() res: Response,
   ): void {
-    void this.controller.importXlsxAsync(req as any, res, tenantId);
+    void this.controller.importXlsxAsync(req, res, tenantId);
   }
 
   @Post('pg-dump')
@@ -114,10 +122,10 @@ export class TenantImportApiController {
   @UseGuards(pgDumpUploadGuard)
   importPgDump(
     @TenantId() tenantId: number,
-    @Req() req: Request,
+    @Req() req: UploadRequest,
     @Res() res: Response,
   ): void {
-    void this.controller.importPgDump(req as any, res, tenantId);
+    void this.controller.importPgDump(req, res, tenantId);
   }
 
   @Post('pg-dump/async')
@@ -138,10 +146,10 @@ export class TenantImportApiController {
   @UseGuards(pgDumpUploadGuard)
   importPgDumpAsync(
     @TenantId() tenantId: number,
-    @Req() req: Request,
+    @Req() req: UploadRequest,
     @Res() res: Response,
   ): void {
-    void this.controller.importPgDumpAsync(req as any, res, tenantId);
+    void this.controller.importPgDumpAsync(req, res, tenantId);
   }
 
   @Get('jobs/:jobId')
@@ -150,10 +158,10 @@ export class TenantImportApiController {
   getJob(
     @TenantId() tenantId: number,
     @Param('jobId') jobId: string,
-    @Req() req: Request,
+    @Req() req: UploadRequest,
     @Res() res: Response,
   ): void {
-    (req as any).params = { ...(req as any).params, jobId };
-    void this.controller.getJob(req as any, res, tenantId);
+    req.params = { ...(req.params ?? {}), jobId };
+    void this.controller.getJob(req, res, tenantId);
   }
 }

@@ -68,6 +68,7 @@ const backendEnvSchemaProduction = z
     DB_NAME: z.string().trim().min(1).optional(),
     DB_PASSWORD: z.string().optional(),
     DB_PORT: z.string().optional(),
+    PRICING_API_KEY: z.string().optional(),
   })
   .superRefine((data, ctx) => {
     const hasUrl =
@@ -83,6 +84,18 @@ const backendEnvSchemaProduction = z
         message:
           'Defina DATABASE_URL (ou STOKIO_DATABASE_URL) ou o trio DB_HOST, DB_USER e DB_NAME.',
         path: ['DATABASE_URL'],
+      });
+    }
+  })
+  .superRefine((_data, ctx) => {
+    if (process.env.ALLOW_MISSING_PRICING === '1') return;
+    const k = process.env.PRICING_API_KEY?.trim();
+    if (!k || k.length < 8) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          'PRICING_API_KEY é obrigatório (mínimo 8 caracteres, igual ao price-search). Sem pricing local: ALLOW_MISSING_PRICING=1.',
+        path: ['PRICING_API_KEY'],
       });
     }
   });
