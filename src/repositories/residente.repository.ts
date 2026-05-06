@@ -12,6 +12,7 @@ function db(tx?: Prisma.TransactionClient) {
 export type ResidentApiRow = {
   casela: number;
   name: string;
+  cpf: string | null;
   data_nascimento: string | null;
   idade: number | null;
 };
@@ -19,12 +20,14 @@ export type ResidentApiRow = {
 function mapResidentRow(r: {
   num_casela: number;
   nome: string;
+  cpf?: string | null;
   data_nascimento: Date | null;
 }): ResidentApiRow {
   const birth = r.data_nascimento;
   return {
     casela: r.num_casela,
     name: r.nome,
+    cpf: r.cpf ? String(r.cpf) : null,
     data_nascimento: birth ? formatDateOnlyIsoUtc(birth) : null,
     idade: birth ? computeAgeFromBirthDate(birth) : null,
   };
@@ -67,6 +70,7 @@ export class PrismaResidentRepository {
     data: {
       num_casela: number;
       nome: string;
+      cpf?: string | null;
       tenant_id: number;
       data_nascimento?: Date | null;
     },
@@ -76,6 +80,7 @@ export class PrismaResidentRepository {
       data: {
         num_casela: data.num_casela,
         nome: data.nome,
+        cpf: data.cpf ?? undefined,
         tenant_id: data.tenant_id,
         data_nascimento: data.data_nascimento ?? undefined,
       },
@@ -90,16 +95,22 @@ export class PrismaResidentRepository {
     data: {
       num_casela: number;
       nome: string;
+      cpf?: string | null;
       tenant_id: number;
       data_nascimento?: Date | null;
     },
     tx?: Prisma.TransactionClient,
   ) {
-    const updateData: { nome: string; data_nascimento?: Date | null } = {
-      nome: data.nome,
-    };
+    const updateData: {
+      nome: string;
+      cpf?: string | null;
+      data_nascimento?: Date | null;
+    } = { nome: data.nome };
     if (Object.prototype.hasOwnProperty.call(data, 'data_nascimento')) {
       updateData.data_nascimento = data.data_nascimento ?? null;
+    }
+    if (Object.prototype.hasOwnProperty.call(data, 'cpf')) {
+      updateData.cpf = data.cpf ?? null;
     }
     const res = await db(tx).residente.updateMany({
       where: { num_casela: data.num_casela, tenant_id: data.tenant_id },

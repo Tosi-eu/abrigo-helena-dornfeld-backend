@@ -24,7 +24,7 @@ export class InputService {
         if (priceResult?.averagePrice) {
           await withRlsContext({ tenant_id: String(tenantId) }, async tx => {
             await tx.insumo.updateMany({
-              where: { id: inputId, tenant_id: tenantId },
+              where: { id: inputId, tenant_id: tenantId, deleted_at: null },
               data: { preco: priceResult.averagePrice },
             });
           });

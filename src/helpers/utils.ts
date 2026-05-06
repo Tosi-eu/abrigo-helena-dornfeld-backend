@@ -32,6 +32,7 @@ export enum StockFilterType {
   BELOW_MIN = 'belowMin',
   EXPIRED = 'expired',
   EXPIRING_SOON = 'expiringSoon',
+  NO_PRICE = 'noPrice',
 }
 
 export enum StockQueryType {

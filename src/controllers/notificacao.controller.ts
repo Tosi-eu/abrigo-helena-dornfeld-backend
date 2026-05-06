@@ -9,8 +9,12 @@ export class NotificationEventController {
 
   async create(req: TenantRequest, res: Response, tenantId: number) {
     try {
+      const body = { ...(req.body as Record<string, unknown>) };
+      if (typeof body.data_prevista === 'string' && body.data_prevista.trim()) {
+        body.data_prevista = new Date(body.data_prevista);
+      }
       const created = await this.service.create({
-        ...req.body,
+        ...(body as typeof req.body),
         tenant_id: tenantId,
       });
       return res.status(201).json(created);
@@ -63,7 +67,11 @@ export class NotificationEventController {
   async update(req: TenantRequest, res: Response, tenantId: number) {
     try {
       const id = Number(req.params.id);
-      const updated = await this.service.update(tenantId, id, req.body);
+      const body = { ...(req.body as Record<string, unknown>) };
+      if (typeof body.data_prevista === 'string' && body.data_prevista.trim()) {
+        body.data_prevista = new Date(body.data_prevista);
+      }
+      const updated = await this.service.update(tenantId, id, body);
 
       if (!updated) {
         return res.status(404).json({ error: 'Notificação não encontrada' });

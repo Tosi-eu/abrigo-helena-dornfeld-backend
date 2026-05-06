@@ -138,6 +138,21 @@ export class ResidentCreateBodyDto {
   nome!: string;
 
   @IsOptional()
+  @Transform(({ value }) => {
+    if (value === undefined || value === null) return value;
+    const s = String(value).trim();
+    if (!s) return '';
+    return s.replace(/\D/g, '');
+  })
+  @Matches(/^\d{11}$/, { message: 'CPF deve ter 11 dígitos' })
+  @ApiPropertyOptional({
+    example: '12345678901',
+    description:
+      'CPF (11 dígitos). Pode enviar com pontuação; será normalizado.',
+  })
+  cpf?: string;
+
+  @IsOptional()
   @IsDateString()
   @ApiPropertyOptional({
     example: '1990-05-15',
@@ -150,6 +165,26 @@ export class ResidentUpdateBodyDto {
   @TrimmedString(1, 255)
   @ApiProperty({ example: 'Maria Silva' })
   nome!: string;
+
+  @IsOptional()
+  @ValidateIf((_o, v) => {
+    if (v === undefined) return false;
+    if (v === null || v === '') return false;
+    return true;
+  })
+  @Transform(({ value }) => {
+    if (value === undefined || value === null) return value;
+    const s = String(value).trim();
+    if (!s) return '';
+    return s.replace(/\D/g, '');
+  })
+  @Matches(/^\d{11}$/, { message: 'CPF deve ter 11 dígitos' })
+  @ApiPropertyOptional({
+    example: '12345678901',
+    nullable: true,
+    description: 'Omitir para manter; null ou string vazia remove o CPF.',
+  })
+  cpf?: string | null;
 
   @IsOptional()
   @ValidateIf((_o, v) => {

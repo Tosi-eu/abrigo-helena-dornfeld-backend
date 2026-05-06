@@ -232,6 +232,26 @@ export class ReportService {
     return data.map(item => ({
       ...item,
       validade: formatDateToPtBr(item.validade),
+      ...(Object.prototype.hasOwnProperty.call(item, 'data_entrada')
+        ? {
+            data_entrada: (item as unknown as { data_entrada?: Date | null })
+              .data_entrada
+              ? formatDateToPtBr(
+                  (item as unknown as { data_entrada: Date }).data_entrada,
+                )
+              : null,
+          }
+        : {}),
+      ...(Object.prototype.hasOwnProperty.call(item, 'data_saida')
+        ? {
+            data_saida: (item as unknown as { data_saida?: Date | null })
+              .data_saida
+              ? formatDateToPtBr(
+                  (item as unknown as { data_saida: Date }).data_saida,
+                )
+              : null,
+          }
+        : {}),
     }));
   }
 }

@@ -198,6 +198,8 @@ export class PrismaReportRepository {
         validade: Date;
         quantidade: bigint | number;
         residente: string | null;
+        data_entrada: Date | null;
+        data_saida: Date | null;
       }[]
     >(Prisma.sql`
       SELECT
@@ -205,10 +207,20 @@ export class PrismaReportRepository {
         m.principio_ativo AS principio_ativo,
         em.validade AS validade,
         SUM(em.quantidade)::int AS quantidade,
-        r.nome AS residente
+        r.nome AS residente,
+        MIN(em."createdAt") AS data_entrada,
+        MAX(ms.data_saida) AS data_saida
       FROM estoque_medicamento em
       INNER JOIN medicamento m ON m.id = em.medicamento_id
       LEFT JOIN residente r ON r.tenant_id = em.tenant_id AND r.num_casela = em.casela_id
+      LEFT JOIN LATERAL (
+        SELECT MAX(mov.data) AS data_saida
+        FROM movimentacao mov
+        WHERE mov.tenant_id = em.tenant_id
+          AND mov.tipo = ${MovementType.SAIDA}
+          AND mov.medicamento_id = em.medicamento_id
+          AND (mov.casela_id IS NOT DISTINCT FROM em.casela_id)
+      ) ms ON true
       GROUP BY m.nome, m.principio_ativo, em.validade, r.nome
       ORDER BY m.nome ASC, em.validade ASC
     `);
@@ -219,6 +231,8 @@ export class PrismaReportRepository {
       validade: row.validade != null ? String(row.validade) : '',
       quantidade: toNum(row.quantidade),
       residente: row.residente,
+      data_entrada: row.data_entrada,
+      data_saida: row.data_saida,
     }));
   }
 
@@ -230,6 +244,8 @@ export class PrismaReportRepository {
         armario: number | null;
         quantidade: bigint | number;
         residente: string | null;
+        data_entrada: Date | null;
+        data_saida: Date | null;
       }[]
     >(Prisma.sql`
       SELECT
@@ -237,10 +253,20 @@ export class PrismaReportRepository {
         ei.validade AS validade,
         ei.armario_id AS armario,
         SUM(ei.quantidade)::int AS quantidade,
-        r.nome AS residente
+        r.nome AS residente,
+        MIN(ei."createdAt") AS data_entrada,
+        MAX(ms.data_saida) AS data_saida
       FROM estoque_insumo ei
       INNER JOIN insumo i ON i.id = ei.insumo_id
       LEFT JOIN residente r ON r.tenant_id = ei.tenant_id AND r.num_casela = ei.casela_id
+      LEFT JOIN LATERAL (
+        SELECT MAX(mov.data) AS data_saida
+        FROM movimentacao mov
+        WHERE mov.tenant_id = ei.tenant_id
+          AND mov.tipo = ${MovementType.SAIDA}
+          AND mov.insumo_id = ei.insumo_id
+          AND (mov.casela_id IS NOT DISTINCT FROM ei.casela_id)
+      ) ms ON true
       GROUP BY i.nome, ei.validade, ei.armario_id, r.nome
       ORDER BY i.nome ASC, ei.validade ASC
     `);
@@ -251,6 +277,8 @@ export class PrismaReportRepository {
       quantidade: toNum(row.quantidade),
       armario: row.armario ?? 0,
       residente: row.residente,
+      data_entrada: row.data_entrada,
+      data_saida: row.data_saida,
     }));
   }
 

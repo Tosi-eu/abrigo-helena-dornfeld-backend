@@ -44,8 +44,10 @@ export class PrismaInputRepository {
   }> {
     const offset = (page - 1) * limit;
 
-    const where: Prisma.InsumoWhereInput = {};
-    where.tenant_id = tenantId;
+    const where: Prisma.InsumoWhereInput = {
+      tenant_id: tenantId,
+      deleted_at: null,
+    };
     const trimmed = name?.trim();
     if (trimmed) {
       where.nome = { contains: trimmed, mode: 'insensitive' };
@@ -78,7 +80,7 @@ export class PrismaInputRepository {
 
   async findInputById(tenantId: number, id: number): Promise<Input | null> {
     const insumo = await getDb().insumo.findFirst({
-      where: { id, tenant_id: tenantId },
+      where: { id, tenant_id: tenantId, deleted_at: null },
     });
     if (!insumo) return null;
 
@@ -98,10 +100,11 @@ export class PrismaInputRepository {
     tx?: Prisma.TransactionClient,
   ): Promise<Input | null> {
     const res = await db(tx).insumo.updateMany({
-      where: { id, tenant_id: tenantId },
+      where: { id, tenant_id: tenantId, deleted_at: null },
       data: {
         ...data,
         preco: data.preco ?? undefined,
+        ...(data.preco !== undefined ? { preco_busca_tentativas: 0 } : {}),
       },
     });
     if (res.count === 0) return null;
@@ -109,8 +112,9 @@ export class PrismaInputRepository {
   }
 
   async deleteInputById(tenantId: number, id: number): Promise<boolean> {
-    const res = await getDb().insumo.deleteMany({
-      where: { id, tenant_id: tenantId },
+    const res = await getDb().insumo.updateMany({
+      where: { id, tenant_id: tenantId, deleted_at: null },
+      data: { deleted_at: new Date() },
     });
     return res.count > 0;
   }

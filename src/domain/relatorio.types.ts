@@ -5,6 +5,8 @@ export interface MedicineReport {
   principio_ativo: string;
   quantidade: number;
   validade: string;
+  data_entrada?: Date | string | null;
+  data_saida?: Date | string | null;
   residente: string | null;
 }
 
@@ -13,6 +15,8 @@ export interface InputReport {
   quantidade: number;
   armario: number;
   validade: Date;
+  data_entrada?: Date | string | null;
+  data_saida?: Date | string | null;
   residente: string | null;
 }
 

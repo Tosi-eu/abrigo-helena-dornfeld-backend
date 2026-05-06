@@ -75,11 +75,15 @@ export class ResidentController {
     try {
       const body = req.body as {
         nome: string;
+        cpf?: string | null;
         data_nascimento?: string | null;
       };
       const updated = await this.service.updateResident(tenantId, {
         casela,
         nome: body.nome,
+        ...(Object.prototype.hasOwnProperty.call(body, 'cpf')
+          ? { cpf: body.cpf }
+          : {}),
         ...(Object.prototype.hasOwnProperty.call(body, 'data_nascimento')
           ? { data_nascimento: body.data_nascimento }
           : {}),

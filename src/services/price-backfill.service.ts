@@ -4,12 +4,15 @@ import { getPriceSearchService } from '@helpers/price-service.helper';
 import { normalizeDosage } from '@helpers/dosage.helper';
 import { getRuntimeHttpConfig } from '@config/http/runtime-http-config';
 
-/** Dump/import frequentemente usa 0 em vez de NULL para «sem preço». */
 const DECIMAL_ZERO = new Prisma.Decimal(0);
+
+export const MAX_PRICE_SEARCH_ATTEMPTS = 3;
 
 function whereItemNeedsPrice(tenantId: number) {
   return {
     tenant_id: tenantId,
+    deleted_at: null,
+    preco_busca_tentativas: { lt: MAX_PRICE_SEARCH_ATTEMPTS },
     OR: [{ preco: null }, { preco: { equals: DECIMAL_ZERO } }],
   };
 }
@@ -21,6 +24,7 @@ function whereMedicamentoStillNeedsPrice(
   return {
     id,
     tenant_id: tenantId,
+    deleted_at: null,
     OR: [{ preco: null }, { preco: { equals: DECIMAL_ZERO } }],
   };
 }
@@ -32,6 +36,7 @@ function whereInsumoStillNeedsPrice(
   return {
     id,
     tenant_id: tenantId,
+    deleted_at: null,
     OR: [{ preco: null }, { preco: { equals: DECIMAL_ZERO } }],
   };
 }
@@ -136,6 +141,38 @@ export class PriceBackfillService {
             await tx.insumo.updateMany({
               where: whereInsumoStillNeedsPrice(tenantId, id),
               data: { preco },
+            });
+          }
+        });
+      }
+
+      const failedMedIds = meds
+        .filter(m => !medPrices.has(m.id))
+        .map(m => m.id);
+      const failedInputIds = inputs
+        .filter(i => !inputPrices.has(i.id))
+        .map(i => i.id);
+
+      if (failedMedIds.length > 0 || failedInputIds.length > 0) {
+        await withRlsContext({ tenant_id: String(tenantId) }, async tx => {
+          for (const id of failedMedIds) {
+            await tx.medicamento.updateMany({
+              where: {
+                id,
+                tenant_id: tenantId,
+                preco_busca_tentativas: { lt: MAX_PRICE_SEARCH_ATTEMPTS },
+              },
+              data: { preco_busca_tentativas: { increment: 1 } },
+            });
+          }
+          for (const id of failedInputIds) {
+            await tx.insumo.updateMany({
+              where: {
+                id,
+                tenant_id: tenantId,
+                preco_busca_tentativas: { lt: MAX_PRICE_SEARCH_ATTEMPTS },
+              },
+              data: { preco_busca_tentativas: { increment: 1 } },
             });
           }
         });

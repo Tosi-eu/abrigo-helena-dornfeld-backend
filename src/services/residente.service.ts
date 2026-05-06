@@ -7,6 +7,18 @@ import {
 
 type ResidentInput = Resident & { data_nascimento?: string | null };
 
+function normalizeCpf(raw: unknown): string | null {
+  if (raw === undefined) return null;
+  if (raw === null) return null;
+  const s = String(raw).trim();
+  if (!s) return null;
+  const digits = s.replace(/\D/g, '');
+  if (digits.length !== 11) {
+    throw new Error('CPF inválido (use 11 dígitos)');
+  }
+  return digits;
+}
+
 export class ResidentService {
   constructor(private readonly repo: PrismaResidentRepository) {}
 
@@ -37,6 +49,10 @@ export class ResidentService {
     if (exists)
       throw new Error(`Já existe um residente com a casela ${data.casela}`);
 
+    const cpf = Object.prototype.hasOwnProperty.call(data, 'cpf')
+      ? normalizeCpf((data as unknown as { cpf?: unknown }).cpf)
+      : null;
+
     let dataNascimento: Date | undefined;
     if (
       data.data_nascimento != null &&
@@ -50,6 +66,7 @@ export class ResidentService {
     return this.repo.createResident({
       num_casela: data.casela,
       nome: data.nome,
+      ...(cpf ? { cpf } : {}),
       tenant_id: tenantId,
       data_nascimento: dataNascimento,
     });
@@ -85,6 +102,17 @@ export class ResidentService {
         const d = parseDateOnlyInput(String(raw));
         assertBirthDateNotFuture(d);
         payload.data_nascimento = d;
+      }
+    }
+
+    if (Object.prototype.hasOwnProperty.call(data, 'cpf')) {
+      const raw = (data as unknown as { cpf?: unknown }).cpf;
+      if (raw === undefined) {
+        /* omitido no corpo transformado — não alterar */
+      } else if (raw === null || String(raw).trim() === '') {
+        payload.cpf = null;
+      } else {
+        payload.cpf = normalizeCpf(raw);
       }
     }
 
