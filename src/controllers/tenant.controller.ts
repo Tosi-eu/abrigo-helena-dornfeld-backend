@@ -22,6 +22,7 @@ import { PrismaContractPortfolioRepository } from '@repositories/contract-portfo
 import { getMissingR2AssetsEnvKeys } from '@config/env.validation';
 import { logger } from '@helpers/logger.helper';
 import { getPriceSearchService } from '@helpers/price-service.helper';
+import { canCrud } from '@helpers/permission-matrix.resolver';
 import {
   acquireManualPriceBackfillSlot,
   finishManualPriceBackfill,
@@ -72,7 +73,18 @@ async function loadUiDisplayForPayload(): Promise<UiDisplayPayload> {
 }
 
 function assertCanUpdateModules(req: AuthRequest): boolean {
-  return req.user?.role === 'admin' || Boolean(req.user?.isSuperAdmin);
+  const u = req.user;
+  if (!u) return false;
+  if (u.isSuperAdmin) return true;
+  if (u.isTenantOwner) return true;
+  if (u.role === 'admin') return true;
+  if (!u.permissionMatrix) return false;
+  // Allow either "tenant:update" (route permission) or legacy "admin:update"
+  // so tenants can delegate module management without full admin powers.
+  return (
+    canCrud(u.permissionMatrix, 'tenant', 'update') ||
+    canCrud(u.permissionMatrix, 'admin', 'update')
+  );
 }
 
 async function assertCanUpdateBranding(

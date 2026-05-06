@@ -153,10 +153,12 @@ model Residente {
   id                BigInt    @id @default(autoincrement())
   num_casela        Int
   nome              String    @db.VarChar(255)
+  cpf               String?   @db.VarChar(14)
   tenant_id         Int
   data_nascimento   DateTime? @db.Date
 
   @@unique([tenant_id, num_casela], map: "uq_residente_tenant_num_casela")
+  @@unique([tenant_id, cpf], map: "uq_residente_tenant_cpf")
   @@index([tenant_id], map: "idx_residente_tenant_id")
   @@map("residente")
 }
@@ -167,11 +169,12 @@ model Insumo {
   descricao      String?  @db.VarChar(255)
   estoque_minimo Int?
   preco          Decimal? @db.Decimal(10, 2)
+  preco_busca_tentativas Int @default(0)
   tenant_id      Int
+  deleted_at     DateTime?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  @@unique([tenant_id, nome], map: "uniq_insumo_tenant_nome")
   @@index([tenant_id], map: "idx_insumo_tenant_id")
   @@map("insumo")
 }
@@ -184,11 +187,12 @@ model Medicamento {
   principio_ativo String
   estoque_minimo  Int?
   preco           Decimal? @db.Decimal(10, 2)
+  preco_busca_tentativas Int @default(0)
   tenant_id       Int
+  deleted_at      DateTime?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  @@unique([tenant_id, nome, principio_ativo, dosagem, unidade_medida], map: "uniq_medicamento_tenant_nome_principio_dosagem")
   @@index([tenant_id], map: "idx_medicamento_tenant_id")
   @@map("medicamento")
 }

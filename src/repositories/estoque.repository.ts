@@ -8,6 +8,7 @@ import {
 } from '@helpers/expiry-status';
 import {
   ItemType,
+  MovementType,
   StockItemStatus,
   OperationType,
   QueryPaginationParams,
@@ -28,6 +29,8 @@ function db(tx?: Prisma.TransactionClient) {
 }
 
 type PrismaTx = Prisma.TransactionClient | ReturnType<typeof getDb>;
+
+const DECIMAL_ZERO_PRICE = new Prisma.Decimal(0);
 
 function startOfDay(d: Date): Date {
   const x = new Date(d);
@@ -223,6 +226,16 @@ export class PrismaStockRepository {
     const client = db(transaction);
     const { tenantId, filter, type, page = 1, limit = 20 } = params;
     const offset = (page - 1) * limit;
+
+    if (filter === StockFilterType.NO_PRICE) {
+      return this.listCatalogItemsWithoutPrice(
+        tenantId,
+        page,
+        limit,
+        offset,
+        transaction,
+      );
+    }
 
     if (type === 'armarios') {
       const cabinets = await client.armario.findMany({
@@ -467,6 +480,31 @@ export class PrismaStockRepository {
         });
 
         const medIds = [...new Set(medicineStocks.map(s => s.medicamento_id))];
+
+        const caselaIdForOut =
+          params.casela != null && String(params.casela).trim() !== ''
+            ? Number(params.casela)
+            : null;
+        const medOutMap =
+          caselaIdForOut != null &&
+          Number.isFinite(caselaIdForOut) &&
+          medIds.length
+            ? new Map(
+                (
+                  await client.movimentacao.groupBy({
+                    by: ['medicamento_id'],
+                    where: {
+                      tenant_id: tenantId,
+                      tipo: MovementType.SAIDA,
+                      casela_id: caselaIdForOut,
+                      medicamento_id: { in: medIds },
+                    },
+                    _max: { data: true },
+                  })
+                ).map(r => [r.medicamento_id as number, r._max.data ?? null]),
+              )
+            : new Map<number, Date | null>();
+
         const medicines = await client.medicamento.findMany({
           where: { tenant_id: tenantId, id: { in: medIds } },
         });
@@ -548,6 +586,8 @@ export class PrismaStockRepository {
             observacao: stock.observacao || null,
             dias_para_repor: stock.dias_para_repor ?? null,
             destino: null,
+            data_entrada: stock.createdAt,
+            data_saida: medOutMap.get(stock.medicamento_id) ?? null,
           } as StockQueryResult);
         }
       }
@@ -606,6 +646,31 @@ export class PrismaStockRepository {
         });
 
         const insIds = [...new Set(inputStocks.map(s => s.insumo_id))];
+
+        const caselaIdForOutInp =
+          params.casela != null && String(params.casela).trim() !== ''
+            ? Number(params.casela)
+            : null;
+        const inpOutMap =
+          caselaIdForOutInp != null &&
+          Number.isFinite(caselaIdForOutInp) &&
+          insIds.length
+            ? new Map(
+                (
+                  await client.movimentacao.groupBy({
+                    by: ['insumo_id'],
+                    where: {
+                      tenant_id: tenantId,
+                      tipo: MovementType.SAIDA,
+                      casela_id: caselaIdForOutInp,
+                      insumo_id: { in: insIds },
+                    },
+                    _max: { data: true },
+                  })
+                ).map(r => [r.insumo_id as number, r._max.data ?? null]),
+              )
+            : new Map<number, Date | null>();
+
         const insumos = await client.insumo.findMany({
           where: { tenant_id: tenantId, id: { in: insIds } },
         });
@@ -685,6 +750,8 @@ export class PrismaStockRepository {
             lote: stock.lote || null,
             observacao: stock.observacao || null,
             dias_para_repor: stock.dias_para_repor ?? null,
+            data_entrada: stock.createdAt,
+            data_saida: inpOutMap.get(stock.insumo_id) ?? null,
           } as StockQueryResult);
         }
       }
@@ -726,6 +793,18 @@ export class PrismaStockRepository {
       return {
         ...item,
         validade: item.validade ? formatDateToPtBr(item.validade) : null,
+        data_entrada:
+          item.data_entrada instanceof Date
+            ? formatDateToPtBr(item.data_entrada)
+            : item.data_entrada
+              ? formatDateToPtBr(new Date(item.data_entrada as string))
+              : null,
+        data_saida:
+          item.data_saida instanceof Date
+            ? formatDateToPtBr(item.data_saida)
+            : item.data_saida
+              ? formatDateToPtBr(new Date(item.data_saida as string))
+              : null,
         st_expiracao: expiryInfo.status,
         msg_expiracao: expiryInfo.message,
         st_quantidade: quantityInfo.status,
@@ -1850,6 +1929,116 @@ export class PrismaStockRepository {
     return Number(rows[0]?.count ?? 0);
   }
 
+  /** Lista medicamentos/insumos do catálogo sem preço (não é posição de estoque). */
+  private async listCatalogItemsWithoutPrice(
+    tenantId: number,
+    page: number,
+    limit: number,
+    offset: number,
+    transaction?: Prisma.TransactionClient,
+  ) {
+    const client = db(transaction);
+    const tid = Number(tenantId);
+    const noPriceClause = {
+      OR: [{ preco: null }, { preco: { equals: DECIMAL_ZERO_PRICE } }],
+      deleted_at: null,
+    };
+
+    const [medicamentos, insumos] = await Promise.all([
+      client.medicamento.findMany({
+        where: { tenant_id: tid, ...noPriceClause },
+        select: {
+          id: true,
+          nome: true,
+          principio_ativo: true,
+          estoque_minimo: true,
+          preco_busca_tentativas: true,
+        },
+      }),
+      client.insumo.findMany({
+        where: { tenant_id: tid, ...noPriceClause },
+        select: {
+          id: true,
+          nome: true,
+          descricao: true,
+          estoque_minimo: true,
+          preco_busca_tentativas: true,
+        },
+      }),
+    ]);
+
+    type Merged = {
+      tipo_item: 'medicamento' | 'insumo';
+      item_id: number;
+      nome: string;
+      detalhe: string | null;
+      minimo: number;
+      tentativas_busca: number;
+    };
+
+    const merged: Merged[] = [
+      ...medicamentos.map(m => ({
+        tipo_item: 'medicamento' as const,
+        item_id: m.id,
+        nome: m.nome,
+        detalhe: m.principio_ativo ?? null,
+        minimo: m.estoque_minimo ?? 0,
+        tentativas_busca: m.preco_busca_tentativas ?? 0,
+      })),
+      ...insumos.map(i => ({
+        tipo_item: 'insumo' as const,
+        item_id: i.id,
+        nome: i.nome,
+        detalhe: i.descricao ?? null,
+        minimo: i.estoque_minimo ?? 0,
+        tentativas_busca: i.preco_busca_tentativas ?? 0,
+      })),
+    ].sort((a, b) =>
+      a.nome.localeCompare(b.nome, 'pt-BR', { sensitivity: 'base' }),
+    );
+
+    const total = merged.length;
+    const pageRows = merged.slice(offset, offset + limit);
+
+    const mapped = pageRows.map(row => ({
+      tipo_item: row.tipo_item,
+      estoque_id: 0,
+      item_id: row.item_id,
+      nome: row.nome,
+      principio_ativo: row.tipo_item === 'medicamento' ? row.detalhe : null,
+      descricao: row.tipo_item === 'insumo' ? row.detalhe : null,
+      validade: null,
+      quantidade: 0,
+      minimo: row.minimo,
+      setor: '—',
+      armario_id: null,
+      gaveta_id: null,
+      casela_id: null,
+      lote: null,
+      observacao: null,
+      paciente: null,
+      origem: null,
+      status: null,
+      suspenso_em: null,
+      tipo: '',
+      data_entrada: null,
+      data_saida: null,
+      st_expiracao: null,
+      msg_expiracao: null,
+      st_quantidade: null,
+      msg_quantidade: null,
+      tentativas_busca: row.tentativas_busca,
+    }));
+
+    return {
+      data: mapped,
+      total,
+      page,
+      limit,
+      hasNext: offset + mapped.length < total,
+    };
+  }
+
   async getAlertCounts(
     tenantId: number,
     transaction?: Prisma.TransactionClient,
@@ -1860,6 +2049,7 @@ export class PrismaStockRepository {
     nearMin: number;
     expired: number;
     expiringSoon: number;
+    noPrice: number;
   }> {
     const tid = Number(tenantId);
     if (!Number.isInteger(tid) || tid < 1) {
@@ -1868,6 +2058,11 @@ export class PrismaStockRepository {
     const client = db(transaction);
     const safeDays = Math.min(365, Math.max(1, expiringDays));
     const todayDate = new Date(new Date().toISOString().slice(0, 10));
+
+    const noPriceWhere = {
+      OR: [{ preco: null }, { preco: { equals: DECIMAL_ZERO_PRICE } }],
+      deleted_at: null,
+    };
 
     const [
       noStockMed,
@@ -1880,6 +2075,8 @@ export class PrismaStockRepository {
       expiredInp,
       expiringMed,
       expiringInp,
+      noPriceMed,
+      noPriceInp,
     ] = await Promise.all([
       client.estoqueMedicamento.count({
         where: { tenant_id: tid, quantidade: 0 },
@@ -1961,6 +2158,12 @@ export class PrismaStockRepository {
           AND ei.validade >= CURRENT_DATE
           AND ei.validade <= CURRENT_DATE + ${safeDays} * INTERVAL '1 day'`,
       ),
+      client.medicamento.count({
+        where: { tenant_id: tid, ...noPriceWhere },
+      }),
+      client.insumo.count({
+        where: { tenant_id: tid, ...noPriceWhere },
+      }),
     ]);
 
     return {
@@ -1969,6 +2172,7 @@ export class PrismaStockRepository {
       nearMin: nearMinMed + nearMinInp,
       expired: expiredMed + expiredInp,
       expiringSoon: expiringMed + expiringInp,
+      noPrice: noPriceMed + noPriceInp,
     };
   }
 }

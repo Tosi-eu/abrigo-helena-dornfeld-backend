@@ -184,6 +184,7 @@ export class DashboardService {
         nearMin: alerts.nearMin,
         expired: alerts.expired,
         expiringSoon: alerts.expiringSoon,
+        noPrice: alerts.noPrice,
       },
       recentMovements,
       medicineRankingMore: rankingMore,

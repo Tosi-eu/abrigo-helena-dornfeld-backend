@@ -36,7 +36,7 @@ export class MedicineService {
         if (priceResult?.averagePrice) {
           await withRlsContext({ tenant_id: String(tenantId) }, async tx => {
             await tx.medicamento.updateMany({
-              where: { id: medicineId, tenant_id: tenantId },
+              where: { id: medicineId, tenant_id: tenantId, deleted_at: null },
               data: { preco: priceResult.averagePrice },
             });
           });

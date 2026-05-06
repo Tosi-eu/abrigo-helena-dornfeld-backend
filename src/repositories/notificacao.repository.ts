@@ -8,9 +8,23 @@ import {
 } from '@domain/notificacao.types';
 import { MovementType, StockItemStatus } from '@helpers/utils';
 import { getDb } from '@repositories/prisma';
+import { logger } from '@helpers/logger.helper';
 
 function db(tx?: Prisma.TransactionClient) {
   return tx ?? getDb();
+}
+
+/** Quantidade sugerida para reposição (falta até o mínimo; se já no mínimo, sugere um lote do próprio mínimo). */
+function computeQuantidadeReposicao(
+  estoqueMinimo: number | null | undefined,
+  quantidadeEstoque: number,
+): number | null {
+  const minimo = estoqueMinimo ?? 0;
+  if (minimo <= 0) return null;
+  if (quantidadeEstoque < minimo) {
+    return minimo - quantidadeEstoque;
+  }
+  return minimo;
 }
 
 export function getTodayInBrazil(): string {
@@ -275,11 +289,23 @@ export class PrismaNotificationEventRepository {
             ? row.quantidade
             : qtdFromMov
           : undefined;
+      const diasFromRow =
+        row.dias_para_repor != null ? Number(row.dias_para_repor) : null;
+      const diasFromStock =
+        estoque?.dias_para_repor != null
+          ? Number(estoque.dias_para_repor)
+          : null;
+      const diasCandidate =
+        diasFromRow != null && Number.isFinite(diasFromRow)
+          ? diasFromRow
+          : diasFromStock != null && Number.isFinite(diasFromStock)
+            ? diasFromStock
+            : null;
       const diasOut =
         tipo === NotificationEventType.REPOSICAO_ESTOQUE
-          ? row.dias_para_repor != null
-            ? row.dias_para_repor
-            : Number(estoque?.dias_para_repor ?? 0) || null
+          ? diasCandidate != null && diasCandidate > 0
+            ? diasCandidate
+            : null
           : null;
 
       return {
@@ -439,25 +465,137 @@ export class PrismaNotificationEventRepository {
 
     const medicineStocks = await getDb().estoqueMedicamento.findMany({
       where: {
-        dias_para_repor: { not: null },
+        dias_para_repor: { gt: 0 },
         status: StockItemStatus.ATIVO,
         quantidade: { gte: 0 },
       },
     });
 
     for (const stock of medicineStocks) {
-      if (!stock.ultima_reposicao || !stock.casela_id) continue;
-
       const stockTenantId = stock.tenant_id;
-      if (stockTenantId != null && skipTenantIds?.has(Number(stockTenantId))) {
+      if (stockTenantId == null) {
+        logger.warn('[reposicao-bootstrap] skip: tenant ausente no estoque', {
+          operation: 'reposicao_bootstrap',
+          estoque_id: stock.id,
+        });
+        continue;
+      }
+      if (skipTenantIds?.has(Number(stockTenantId))) {
+        continue;
+      }
+
+      if (!stock.casela_id) {
+        logger.warn(
+          '[reposicao-bootstrap] skip: residente/casela não definido',
+          {
+            operation: 'reposicao_bootstrap',
+            tenant_id: stockTenantId,
+            estoque_id: stock.id,
+            medicamento_id: stock.medicamento_id,
+          },
+        );
+        continue;
+      }
+
+      if (!stock.ultima_reposicao) {
+        logger.warn(
+          '[reposicao-bootstrap] skip: última reposição não definida',
+          {
+            operation: 'reposicao_bootstrap',
+            tenant_id: stockTenantId,
+            estoque_id: stock.id,
+            medicamento_id: stock.medicamento_id,
+          },
+        );
+        continue;
+      }
+
+      const intervalDays = Number(stock.dias_para_repor);
+      if (!Number.isFinite(intervalDays) || intervalDays <= 0) {
+        logger.warn('[reposicao-bootstrap] skip: intervalo de dias inválido', {
+          operation: 'reposicao_bootstrap',
+          tenant_id: stockTenantId,
+          estoque_id: stock.id,
+          dias_para_repor: stock.dias_para_repor,
+        });
+        continue;
+      }
+
+      const medicamento = await getDb().medicamento.findFirst({
+        where: {
+          id: stock.medicamento_id,
+          tenant_id: stockTenantId,
+          deleted_at: null,
+        },
+        select: { id: true, estoque_minimo: true },
+      });
+      if (!medicamento) {
+        logger.warn(
+          '[reposicao-bootstrap] skip: medicamento inexistente ou excluído do catálogo',
+          {
+            operation: 'reposicao_bootstrap',
+            tenant_id: stockTenantId,
+            medicamento_id: stock.medicamento_id,
+          },
+        );
+        continue;
+      }
+
+      const residenteOk = await getDb().residente.findFirst({
+        where: {
+          tenant_id: stockTenantId,
+          num_casela: stock.casela_id,
+        },
+        select: { id: true },
+      });
+      if (!residenteOk) {
+        logger.warn(
+          '[reposicao-bootstrap] skip: residente não encontrado para a casela',
+          {
+            operation: 'reposicao_bootstrap',
+            tenant_id: stockTenantId,
+            casela_id: stock.casela_id,
+            medicamento_id: stock.medicamento_id,
+          },
+        );
+        continue;
+      }
+
+      const quantidadeTransferencia = computeQuantidadeReposicao(
+        medicamento.estoque_minimo,
+        stock.quantidade,
+      );
+      if (quantidadeTransferencia == null || quantidadeTransferencia <= 0) {
+        logger.warn(
+          '[reposicao-bootstrap] skip: quantidade de transferência não calculável (defina estoque mínimo > 0 no medicamento)',
+          {
+            operation: 'reposicao_bootstrap',
+            tenant_id: stockTenantId,
+            estoque_id: stock.id,
+            medicamento_id: stock.medicamento_id,
+            estoque_minimo: medicamento.estoque_minimo,
+            quantidade_estoque: stock.quantidade,
+          },
+        );
         continue;
       }
 
       const lastReposition = toBrazilDateOnly(stock.ultima_reposicao);
       const nextReposition = new Date(lastReposition);
-      nextReposition.setDate(
-        nextReposition.getDate() + Number(stock.dias_para_repor),
-      );
+      nextReposition.setDate(nextReposition.getDate() + intervalDays);
+
+      if (!Number.isFinite(nextReposition.getTime())) {
+        logger.warn(
+          '[reposicao-bootstrap] skip: data da próxima reposição inválida',
+          {
+            operation: 'reposicao_bootstrap',
+            tenant_id: stockTenantId,
+            estoque_id: stock.id,
+            ultima_reposicao: stock.ultima_reposicao,
+          },
+        );
+        continue;
+      }
 
       const existsNotification = await getDb().notificacao.findFirst({
         where: {
@@ -470,9 +608,6 @@ export class PrismaNotificationEventRepository {
 
       if (existsNotification) continue;
 
-      if (stockTenantId == null) {
-        throw new Error('Tenant não identificado no registro de estoque');
-      }
       await getDb().notificacao.create({
         data: {
           tenant_id: stockTenantId,
@@ -484,8 +619,8 @@ export class PrismaNotificationEventRepository {
           criado_por: 1,
           visto: false,
           status: EventStatus.PENDENTE,
-          quantidade: stock.quantidade,
-          dias_para_repor: stock.dias_para_repor,
+          quantidade: quantidadeTransferencia,
+          dias_para_repor: intervalDays,
         },
       });
 

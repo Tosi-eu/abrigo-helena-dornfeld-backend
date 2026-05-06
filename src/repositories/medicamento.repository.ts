@@ -48,8 +48,10 @@ export class PrismaMedicineRepository {
   }) {
     const offset = (page - 1) * limit;
 
-    const where: Prisma.MedicamentoWhereInput = {};
-    where.tenant_id = tenantId;
+    const where: Prisma.MedicamentoWhereInput = {
+      tenant_id: tenantId,
+      deleted_at: null,
+    };
     const trimmed = name?.trim();
     if (trimmed) {
       where.nome = { contains: trimmed, mode: 'insensitive' };
@@ -87,7 +89,7 @@ export class PrismaMedicineRepository {
     id: number,
   ): Promise<Medicine | null> {
     const row = await getDb().medicamento.findFirst({
-      where: { id, tenant_id: tenantId },
+      where: { id, tenant_id: tenantId, deleted_at: null },
     });
     return row
       ? {
@@ -119,6 +121,7 @@ export class PrismaMedicineRepository {
         principio_ativo: fields.principio_ativo,
         dosagem: fields.dosagem,
         unidade_medida: fields.unidade_medida,
+        deleted_at: null,
       },
     });
     return row
@@ -141,10 +144,11 @@ export class PrismaMedicineRepository {
     tx?: Prisma.TransactionClient,
   ): Promise<Medicine | null> {
     const res = await db(tx).medicamento.updateMany({
-      where: { id, tenant_id: tenantId },
+      where: { id, tenant_id: tenantId, deleted_at: null },
       data: {
         ...data,
         preco: data.preco ?? undefined,
+        ...(data.preco !== undefined ? { preco_busca_tentativas: 0 } : {}),
       },
     });
     if (res.count === 0) return null;
@@ -152,9 +156,33 @@ export class PrismaMedicineRepository {
   }
 
   async deleteMedicineById(tenantId: number, id: number): Promise<boolean> {
-    const res = await getDb().medicamento.deleteMany({
-      where: { id, tenant_id: tenantId },
+    const res = await getDb().medicamento.updateMany({
+      where: { id, tenant_id: tenantId, deleted_at: null },
+      data: { deleted_at: new Date() },
     });
     return res.count > 0;
+  }
+
+  async applySoftDeleteIfNoStock(
+    tenantId: number,
+    medicamentoId: number,
+    tx?: Prisma.TransactionClient,
+  ): Promise<void> {
+    const client = db(tx);
+    const agg = await client.estoqueMedicamento.aggregate({
+      where: { tenant_id: tenantId, medicamento_id: medicamentoId },
+      _sum: { quantidade: true },
+    });
+    const total = Number(agg._sum.quantidade ?? 0);
+    if (total !== 0) return;
+
+    await client.medicamento.updateMany({
+      where: {
+        id: medicamentoId,
+        tenant_id: tenantId,
+        deleted_at: null,
+      },
+      data: { deleted_at: new Date() },
+    });
   }
 }
