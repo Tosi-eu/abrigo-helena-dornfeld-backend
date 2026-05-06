@@ -55,6 +55,30 @@ export class StockService {
     await redisRepository.incrBy(this.stockCacheVersionKey, 1);
   }
 
+  private async maybeCatalogSoftDeleteAfterStockChange(
+    tenantId: number,
+    tipo: ItemType,
+    medicamentoId: number | null,
+    insumoId: number | null,
+    transaction?: Prisma.TransactionClient,
+  ): Promise<void> {
+    if (tipo === ItemType.MEDICAMENTO && medicamentoId != null) {
+      await this.medicineRepo.applySoftDeleteIfNoStock(
+        tenantId,
+        medicamentoId,
+        transaction,
+      );
+      return;
+    }
+    if (tipo === ItemType.INSUMO && insumoId != null) {
+      await this.inputRepo.applySoftDeleteIfNoStock(
+        tenantId,
+        insumoId,
+        transaction,
+      );
+    }
+  }
+
   async medicineStockIn(
     data: MedicineStockRecord,
     login_id: number,
@@ -289,6 +313,14 @@ export class StockService {
         gaveta_id: stockItem.gaveta_id ?? undefined,
         lote,
       },
+      transaction,
+    );
+
+    await this.maybeCatalogSoftDeleteAfterStockChange(
+      tenantId,
+      tipo,
+      medicamentoId,
+      insumoId,
       transaction,
     );
 
@@ -573,6 +605,14 @@ export class StockService {
       );
     }
 
+    await this.maybeCatalogSoftDeleteAfterStockChange(
+      tenantId,
+      ItemType.MEDICAMENTO,
+      stock.medicamento_id,
+      null,
+      transaction,
+    );
+
     await this.bumpStockCacheVersion();
 
     return result;
@@ -693,6 +733,14 @@ export class StockService {
         destino: targetDestino,
         observacao: observacao || null,
       },
+      transaction,
+    );
+
+    await this.maybeCatalogSoftDeleteAfterStockChange(
+      tenantId,
+      ItemType.INSUMO,
+      null,
+      stock.insumo_id,
       transaction,
     );
 
@@ -823,6 +871,21 @@ export class StockService {
       }
     }
 
+    const updatedRow = result.data as EstoqueMedicamento | EstoqueInsumo | null;
+    if (updatedRow?.tenant_id != null) {
+      await this.maybeCatalogSoftDeleteAfterStockChange(
+        updatedRow.tenant_id,
+        tipo,
+        tipo === ItemType.MEDICAMENTO
+          ? (updatedRow as EstoqueMedicamento).medicamento_id
+          : null,
+        tipo === ItemType.INSUMO
+          ? (updatedRow as EstoqueInsumo).insumo_id
+          : null,
+        transaction,
+      );
+    }
+
     await this.bumpStockCacheVersion();
 
     return result;
@@ -833,11 +896,39 @@ export class StockService {
     tipo: ItemType,
     transaction?: Prisma.TransactionClient,
   ) {
+    let tenantId: number | null = null;
+    let medicamentoId: number | null = null;
+    let insumoId: number | null = null;
+
+    if (tipo === ItemType.MEDICAMENTO) {
+      const row = await this.repo.findMedicineStockById(estoqueId, transaction);
+      if (row) {
+        tenantId = row.tenant_id;
+        medicamentoId = row.medicamento_id;
+      }
+    } else {
+      const row = await this.repo.findInputStockById(estoqueId, transaction);
+      if (row) {
+        tenantId = row.tenant_id;
+        insumoId = row.insumo_id;
+      }
+    }
+
     const result = await this.repo.deleteStockItem(
       estoqueId,
       tipo,
       transaction,
     );
+
+    if (tenantId != null) {
+      await this.maybeCatalogSoftDeleteAfterStockChange(
+        tenantId,
+        tipo,
+        medicamentoId,
+        insumoId,
+        transaction,
+      );
+    }
 
     await this.bumpStockCacheVersion();
 

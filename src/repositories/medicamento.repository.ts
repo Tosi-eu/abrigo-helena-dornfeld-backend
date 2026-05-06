@@ -162,4 +162,27 @@ export class PrismaMedicineRepository {
     });
     return res.count > 0;
   }
+
+  async applySoftDeleteIfNoStock(
+    tenantId: number,
+    medicamentoId: number,
+    tx?: Prisma.TransactionClient,
+  ): Promise<void> {
+    const client = db(tx);
+    const agg = await client.estoqueMedicamento.aggregate({
+      where: { tenant_id: tenantId, medicamento_id: medicamentoId },
+      _sum: { quantidade: true },
+    });
+    const total = Number(agg._sum.quantidade ?? 0);
+    if (total !== 0) return;
+
+    await client.medicamento.updateMany({
+      where: {
+        id: medicamentoId,
+        tenant_id: tenantId,
+        deleted_at: null,
+      },
+      data: { deleted_at: new Date() },
+    });
+  }
 }

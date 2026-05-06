@@ -118,4 +118,31 @@ export class PrismaInputRepository {
     });
     return res.count > 0;
   }
+
+  /**
+   * Quando a soma das quantidades em `estoque_insumo` para o tenant chega a zero,
+   * marca o insumo como excluído logicamente.
+   */
+  async applySoftDeleteIfNoStock(
+    tenantId: number,
+    insumoId: number,
+    tx?: Prisma.TransactionClient,
+  ): Promise<void> {
+    const client = db(tx);
+    const agg = await client.estoqueInsumo.aggregate({
+      where: { tenant_id: tenantId, insumo_id: insumoId },
+      _sum: { quantidade: true },
+    });
+    const total = Number(agg._sum.quantidade ?? 0);
+    if (total !== 0) return;
+
+    await client.insumo.updateMany({
+      where: {
+        id: insumoId,
+        tenant_id: tenantId,
+        deleted_at: null,
+      },
+      data: { deleted_at: new Date() },
+    });
+  }
 }
